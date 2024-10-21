@@ -1,6 +1,7 @@
 _G.love.graphics.setDefaultFilter("nearest", "nearest")
 _G.nativefs = require("lib.nativefs")
 _G.work_dir = nativefs.getWorkingDirectory()
+_G.skyscraper = require("lib.skyscraper")
 
 base_scraper_command = "./Skyscraper -s screenscraper"
 
@@ -15,38 +16,13 @@ function load_image(filename)
   end
 end
 
-_G.artworks = { "artwork" }
+_G.artworks = { "artwork", "retro-dither-logo" }
 -- _G.artworks = { "retro-dither-logo", "retro-dither", "simple-box-cart" }
-_G.current_artwork = 1
-
-function init_skyscraper(path)
-  local ini = require("lib.ini")
-
-  local quick_id = nativefs.read("sample/quickid.xml")
-  if quick_id then
-    quick_id = string.gsub(quick_id, "filepath=\"%S+\"", "filepath=\"" .. work_dir .. "/sample/fake-rom.zip\"")
-    nativefs.write("sample/quickid.xml", quick_id)
-  end
-
-  local ini_file = ini.load(path)
-  if ini_file then
-    print(ini.readKey(ini_file, "main", "videos"))
-  else
-    print("Config file not present, creating one")
-    ini_file = ini.load("skyscraper_config.ini.example")
-    ini.addKey(ini_file, "main", "inputFolder", "\"/mnt/mmc/roms\"")
-    ini.addKey(ini_file, "main", "cacheFolder", '"' .. work_dir .. "/data/cache" .. '"')
-    ini.addKey(ini_file, "main", "gameListFolder", '"' .. work_dir .. "/data/output" .. '"')
-    ini.addKey(ini_file, "main", "artworkXml", '"' .. work_dir .. "/templates/artwork.xml" .. '"')
-    if ini.save(ini_file, path) then
-      print("Config file created successfully")
-    end
-  end
-end
+_G.current_artwork = 2
 
 function love.load()
   cover = load_image("sample/media/covers/fake-rom.png")
-  init_skyscraper("config.ini")
+  skyscraper.init("config.ini")
 end
 
 function love.update(dt)
@@ -73,19 +49,22 @@ function love.keypressed(key)
     local sample_path = work_dir .. "/sample"
     local artwork_path = work_dir .. "/templates/" .. artworks[current_artwork] .. ".xml"
 
-    local command = "./Skyscraper -p megadrive -d " ..
-        sample_path .. " -i " .. sample_path .. " -a " .. artwork_path .. " --flags " .. flags
+    -- local command = "./Skyscraper -p megadrive -d " ..
+    --     sample_path .. " -i " .. sample_path .. " -a " .. artwork_path .. " --flags " .. flags
 
     -- prep
     -- local command = "./Skyscraper -p snes -c " .. work_dir .. "/config.ini"
 
-    local handle = io.popen(command)
-    if handle == nil then
-      return
-    end
-    local result = handle:read("*a")
-    handle:close()
-    print(result)
+    skyscraper.change_artwork(artwork_path)
+    skyscraper.update_sample(artwork_path)
+    skyscraper.update_artwork("snes", artwork_path)
+    -- local handle = io.popen(command)
+    -- if handle == nil then
+    --   return
+    -- end
+    -- local result = handle:read("*a")
+    -- handle:close()
+    -- print(result)
 
     cover = load_image("sample/media/covers/fake-rom.png")
   end
