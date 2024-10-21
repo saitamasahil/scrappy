@@ -1,10 +1,12 @@
 [main]
 inputFolder=""
 cacheFolder=""
+gameListFolder=""
 gameListBackup="false"
 videos="false"
 unattend="true"
 verbosity="1"
+artworkXml=""
 
 [screenscraper]
 userCreds="USER:PASS"
