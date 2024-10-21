@@ -8,6 +8,15 @@ local skyscraper = {
   config_path = "",
 }
 
+local thread
+local channel
+
+local function push_command(command)
+  channel = love.thread.getChannel("skyscraper-command")
+  if channel then
+    channel:push(command)
+  end
+end
 
 function skyscraper.init(config_path)
   print("Initializing Skyscraper")
@@ -35,7 +44,9 @@ function skyscraper.init(config_path)
     end
   end
 
-  os.execute(skyscraper.base_command .. "-v")
+  thread = love.thread.newThread("lib/backend.lua")
+  thread:start()
+  push_command(skyscraper.base_command .. "-v")
 end
 
 function skyscraper.change_artwork(artworkXml)
@@ -48,7 +59,7 @@ end
 
 function skyscraper.run(command)
   print("Running Skyscraper")
-  os.execute(skyscraper.base_command .. command)
+  push_command(skyscraper.base_command .. command)
 end
 
 function skyscraper.update_sample(artwork_path)
