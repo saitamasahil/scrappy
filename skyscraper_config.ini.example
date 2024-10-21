@@ -1,0 +1,10 @@
+[main]
+inputFolder=""
+cacheFolder=""
+gameListBackup="false"
+videos="false"
+unattend="true"
+verbosity="1"
+
+[screenscraper]
+userCreds="USER:PASS"
