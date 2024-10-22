@@ -1,12 +1,12 @@
-local input_channel = love.thread.getChannel("skyscraper-command")
-local output_channel = love.thread.getChannel("skyscraper-output")
+require("consts")
+local parser = require("lib.parser")
 
 while true do
-  local command = input_channel:demand()
-  local parser = require("lib.parser")
+  local command = INPUT_CHANNEL:demand()
+  OUTPUT_CHANNEL:push({ data = {}, error = "", loading = true })
   local output = io.popen(command)
   if not output then
-    output_channel:push({ data = {}, error = "Failed to run Skyscraper" })
+    OUTPUT_CHANNEL:push({ data = {}, error = "Failed to run Skyscraper", loading = false })
   end
 
   if output then
@@ -14,7 +14,7 @@ while true do
       -- print(line)
       local data, error = parser.parse(line)
       if next(data) ~= nil or error ~= "" then
-        output_channel:push({ data = data, error = error })
+        OUTPUT_CHANNEL:push({ data = data, error = error, loading = false })
       end
       if error ~= "" then
         break
