@@ -1,3 +1,5 @@
+require("consts")
+
 local parser = {}
 
 local games = {
@@ -16,9 +18,19 @@ function parser.parse(line)
 
     table.insert(games.titles, game_title)
 
-    return string.format("%d/%d - %s", game_number, total_games, game_title)
+    return {
+      index = tonumber(game_number),
+      total = tonumber(total_games),
+      title = game_title
+    }, ""
   else
-    return nil
+    -- print("Line did not match: " .. line)
+    for _, error in ipairs(SKYSCRAPER_ERRORS) do
+      if line:match(error) then
+        return {}, error
+      end
+    end
+    return {}, ""
   end
 end
 

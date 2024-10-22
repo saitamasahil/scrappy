@@ -67,20 +67,25 @@ function skyscraper.update_sample(artwork_path)
 end
 
 function skyscraper.custom_update_artwork(platform, cache, input, artwork)
-  local command = "-p" .. platform .. " -d " ..
+  local command = "-p " .. platform .. " -d " ..
       cache .. " -i " .. input .. " -a " .. artwork .. " --flags unattend"
   skyscraper.run(command)
 end
 
-function skyscraper.fetch_artwork()
-  local command = "-p snes -s " .. skyscraper.module .. " -c " .. skyscraper.config_path
+function skyscraper.fetch_artwork(platform, artwork)
+  local command = "-p " .. platform .. " -s " .. skyscraper.module .. " -c " .. skyscraper.config_path
   -- print(command)
   skyscraper.run(command)
 end
 
 function skyscraper.update_artwork(platform, artwork)
-  local command = "-p" .. platform .. " -c " .. skyscraper.config_path .. " -a " .. artwork
+  local command = "-p " .. platform .. " -c " .. skyscraper.config_path .. " -a " .. artwork
   skyscraper.run(command)
+end
+
+function love.threaderror(thread, errorstr)
+  print("Thread error!\n" .. errorstr)
+  -- thread:getError() will return the same error string now.
 end
 
 return skyscraper

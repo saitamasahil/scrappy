@@ -5,18 +5,19 @@ while true do
   local command = input_channel:demand()
   local parser = require("lib.parser")
   local output = io.popen(command)
-  -- local output = io.popen("sh lib/script.sh")
   if not output then
-    print("error")
-    output_channel:push("error")
+    output_channel:push({ data = {}, error = "Failed to run Skyscraper" })
   end
 
   if output then
     for line in output:lines() do
-      print(line)
-      local game = parser.parse(line)
-      if game then
-        output_channel:push(game)
+      -- print(line)
+      local data, error = parser.parse(line)
+      if next(data) ~= nil or error ~= "" then
+        output_channel:push({ data = data, error = error })
+      end
+      if error ~= "" then
+        break
       end
     end
     output:close()
