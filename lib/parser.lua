@@ -10,7 +10,7 @@ function parser.parse(line)
   local game_number, total_games, game_title = line:match("#(%d+)/(%d+).+Game%s+'(.-)'")
 
   if game_number and total_games and game_title then
-    print("Line matched: " .. line)
+    -- print("Line matched: " .. line)
     games.current = tonumber(game_number)
     games.total = tonumber(total_games)
 

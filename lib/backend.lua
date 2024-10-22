@@ -7,11 +7,13 @@ while true do
   local output = io.popen(command)
   -- local output = io.popen("sh lib/script.sh")
   if not output then
+    print("error")
     output_channel:push("error")
   end
 
   if output then
     for line in output:lines() do
+      print(line)
       local game = parser.parse(line)
       if game then
         output_channel:push(game)

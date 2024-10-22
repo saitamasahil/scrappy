@@ -1,6 +1,6 @@
+require("consts")
+
 local ini = require("lib.ini")
-local nativefs = require("lib.nativefs")
-local work_dir = nativefs.getWorkingDirectory()
 
 local skyscraper = {
   base_command = "./Skyscraper ",
@@ -9,23 +9,21 @@ local skyscraper = {
 }
 
 local thread
-local channel
 
 local function push_command(command)
-  channel = love.thread.getChannel("skyscraper-command")
-  if channel then
-    channel:push(command)
+  if INPUT_CHANNEL then
+    INPUT_CHANNEL:push(command)
   end
 end
 
 function skyscraper.init(config_path)
   print("Initializing Skyscraper")
-  skyscraper.config_path = work_dir .. "/" .. config_path
+  skyscraper.config_path = WORK_DIR .. "/" .. config_path
 
   local quick_id = nativefs.read("sample/quickid.xml")
   if quick_id then
     print("Writing quickid.xml")
-    quick_id = string.gsub(quick_id, "filepath=\"%S+\"", "filepath=\"" .. work_dir .. "/sample/fake-rom.zip\"")
+    quick_id = string.gsub(quick_id, "filepath=\"%S+\"", "filepath=\"" .. WORK_DIR .. "/sample/fake-rom.zip\"")
     nativefs.write("sample/quickid.xml", quick_id)
   end
 
@@ -36,9 +34,9 @@ function skyscraper.init(config_path)
     print("Config file not present, creating one")
     ini_file = ini.load("skyscraper_config.ini.example")
     ini.addKey(ini_file, "main", "inputFolder", "\"/mnt/mmc/roms\"")
-    ini.addKey(ini_file, "main", "cacheFolder", '"' .. work_dir .. "/data/cache" .. '"')
-    ini.addKey(ini_file, "main", "gameListFolder", '"' .. work_dir .. "/data/output" .. '"')
-    ini.addKey(ini_file, "main", "artworkXml", '"' .. work_dir .. "/templates/artwork.xml" .. '"')
+    ini.addKey(ini_file, "main", "cacheFolder", '"' .. WORK_DIR .. "/data/cache" .. '"')
+    ini.addKey(ini_file, "main", "gameListFolder", '"' .. WORK_DIR .. "/data/output" .. '"')
+    ini.addKey(ini_file, "main", "artworkXml", '"' .. WORK_DIR .. "/templates/artwork.xml" .. '"')
     if ini.save(ini_file, config_path) then
       print("Config file created successfully")
     end
@@ -58,13 +56,13 @@ function skyscraper.change_artwork(artworkXml)
 end
 
 function skyscraper.run(command)
-  print("Running Skyscraper")
+  -- print("Running Skyscraper")
   push_command(skyscraper.base_command .. command)
 end
 
 function skyscraper.update_sample(artwork_path)
-  print("Updating sample")
-  skyscraper.custom_update_artwork("megadrive", work_dir .. "/sample", work_dir .. "/sample",
+  -- print("Updating sample")
+  skyscraper.custom_update_artwork("megadrive", WORK_DIR .. "/sample", WORK_DIR .. "/sample",
     artwork_path)
 end
 
