@@ -26,8 +26,8 @@ function parser.parse(line)
   else
     -- print("Line did not match: " .. line)
     for _, error in ipairs(SKYSCRAPER_ERRORS) do
-      if line:match(error) then
-        return {}, error
+      if line:find(error) then
+        return {}, line
       end
     end
     return {}, ""

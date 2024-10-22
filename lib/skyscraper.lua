@@ -3,7 +3,7 @@ require("consts")
 local ini = require("lib.ini")
 
 local skyscraper = {
-  base_command = "./Skyscraper ",
+  base_command = "./Skyscraper_arm64 ",
   module = "screenscraper",
   config_path = "",
 }
@@ -81,11 +81,6 @@ end
 function skyscraper.update_artwork(platform, artwork)
   local command = "-p " .. platform .. " -c " .. skyscraper.config_path .. " -a " .. artwork
   skyscraper.run(command)
-end
-
-function love.threaderror(thread, errorstr)
-  print("Thread error!\n" .. errorstr)
-  -- thread:getError() will return the same error string now.
 end
 
 return skyscraper
