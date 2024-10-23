@@ -1,14 +1,15 @@
-require("consts")
-
+require("globals")
 love.graphics.setDefaultFilter("nearest", "nearest")
+
 local skyscraper = require("lib.skyscraper")
 local splash = require("lib.splash")
+local input = require("helpers.input")
 
 local artworks = { "artwork", "retro-dither-logo" }
 local current_artwork = 1
 
 -- local timer = 0 -- A timer used to animate our circle.
-local cover_preview = nil
+local cover_preview
 
 local state = {
   data = {
@@ -31,8 +32,24 @@ local function load_image(filename)
   end
 end
 
+local function update_preview(direction)
+  local direction = direction or 1
+  current_artwork = current_artwork + direction
+  if current_artwork < 1 then
+    current_artwork = #artworks
+  end
+  if current_artwork > #artworks then
+    current_artwork = 1
+  end
+  local sample_artwork = WORK_DIR .. "/templates/" .. artworks[current_artwork] .. ".xml"
+  skyscraper.change_artwork(sample_artwork)
+  skyscraper.update_sample(sample_artwork)
+  state.reload_preview = true
+end
+
 function love.load()
   splash.load()
+  input.load()
   cover_preview = load_image("sample/media/covers/fake-rom.png")
   skyscraper.init("config.ini")
 end
@@ -48,8 +65,20 @@ local function update_state()
   end
 end
 
+local function handle_input()
+  input.onEvent(function(event)
+    if event == input.events.LEFT then
+      update_preview(-1)
+    elseif event == input.events.RIGHT then
+      update_preview(1)
+    end
+  end)
+end
+
 function love.update(dt)
   splash.update(dt)
+  input.update(dt)
+  handle_input()
   -- timer = timer + dt
 end
 
@@ -87,43 +116,10 @@ local function main_draw()
 end
 
 function love.draw()
+  love.graphics.setBackgroundColor(0, 0, 0, 1)
   splash.draw()
 
   if splash.finished then
     main_draw()
-  end
-end
-
-function love.keypressed(key)
-  if key == "escape" then
-    love.event.quit()
-  end
-
-  if key == "left" then
-    current_artwork = current_artwork - 1
-    if current_artwork < 1 then
-      current_artwork = #artworks
-    end
-    local sample_artwork = WORK_DIR .. "/templates/" .. artworks[current_artwork] .. ".xml"
-    skyscraper.change_artwork(sample_artwork)
-    skyscraper.update_sample(sample_artwork)
-    state.reload_preview = true
-  end
-
-  if key == "right" then
-    current_artwork = current_artwork + 1
-    if current_artwork > #artworks then
-      current_artwork = 1
-    end
-    local sample_artwork = WORK_DIR .. "/templates/" .. artworks[current_artwork] .. ".xml"
-    skyscraper.change_artwork(sample_artwork)
-    skyscraper.update_sample(sample_artwork)
-    state.reload_preview = true
-  end
-
-  if key == "space" then
-    local sample_artwork = WORK_DIR .. "/templates/" .. artworks[current_artwork] .. ".xml"
-    skyscraper.fetch_artwork("snes", sample_artwork)
-    -- skyscraper.update_artwork("snes", sample_artwork)
   end
 end

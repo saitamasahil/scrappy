@@ -1,9 +1,9 @@
-require("consts")
+require("globals")
 
 local ini = require("lib.ini")
 
 local skyscraper = {
-  base_command = "./Skyscraper_arm64 ",
+  base_command = "./Skyscraper ",
   module = "screenscraper",
   config_path = "",
 }

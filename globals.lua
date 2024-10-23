@@ -8,5 +8,6 @@ _G.OUTPUT_CHANNEL = love.thread.getChannel("skyscraper-output")
 _G.SKYSCRAPER_ERRORS = {
   "doesn't exist or can't be accessed by current user. Please check path and permissions.",
   "ScreenScraper APIv2 returned invalid / empty Json.",
-  "No such file or directory"
+  "No such file or directory",
+  "cannot execute binary file: Exec format error",
 }

@@ -1,4 +1,4 @@
-require("consts")
+require("globals")
 
 local parser = {}
 
