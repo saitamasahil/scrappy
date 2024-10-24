@@ -24,6 +24,7 @@ function skyscraper.init(config_path)
   if quick_id then
     print("Writing quickid.xml")
     quick_id = string.gsub(quick_id, "filepath=\"%S+\"", "filepath=\"" .. WORK_DIR .. "/sample/fake-rom.zip\"")
+    quick_id = string.gsub(quick_id, "id=\"%S+\"", "id=\"fake-rom\"")
     nativefs.write("sample/quickid.xml", quick_id)
   end
 

@@ -8,7 +8,6 @@ local input = require("helpers.input")
 local artworks = { "artwork", "retro-dither-logo" }
 local current_artwork = 1
 
--- local timer = 0 -- A timer used to animate our circle.
 local cover_preview
 
 local state = {
@@ -68,7 +67,8 @@ end
 local function handle_input()
   input.onEvent(function(event)
     if event == input.events.LEFT then
-      update_preview(-1)
+      skyscraper.fetch_artwork("snes", artworks[current_artwork])
+      -- update_preview(-1)
     elseif event == input.events.RIGHT then
       update_preview(1)
     end
@@ -110,8 +110,10 @@ local function main_draw()
     love.graphics.print("ERROR: " .. state.error, 10, 40)
   end
   if state.reload_preview and state.data.title == "fake-rom" then
-    cover_preview = load_image("sample/media/covers/fake-rom.png")
-    state.reload_preview = false
+    timer.after(0.5, function()
+      cover_preview = load_image("sample/media/covers/fake-rom.png")
+      state.reload_preview = false
+    end)
   end
 end
 

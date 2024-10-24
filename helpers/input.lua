@@ -16,7 +16,7 @@ input.events = {
 }
 
 local function trigger(event)
-  print("Triggered: " .. event)
+  -- print("Triggered: " .. event)
   state.last_event = state.current_event
   state.current_event = event
   state.trigger = true
