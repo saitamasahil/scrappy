@@ -25,7 +25,7 @@ end
 function splash.draw()
   if splash.finished then return end
   local width, height = love.graphics.getDimensions()
-  local logoScale = 0.5
+  local logoScale = 1
   local logoWidth, logoHeight = logo:getWidth(), logo:getHeight()
 
   love.graphics.clear(0, 0, 0, 1)

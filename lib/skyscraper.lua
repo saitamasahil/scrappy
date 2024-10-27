@@ -31,6 +31,10 @@ function skyscraper.init(config_path)
   local ini_file = ini.load(config_path)
   if ini_file then
     print("Found config.ini, using it")
+    local skyscraperBinary = ini.readKey(ini_file, "main", "binary")
+    if skyscraperBinary then
+      skyscraper.base_command = "./" .. skyscraperBinary .. " "
+    end
   else
     print("Config file not present, creating one")
     ini_file = ini.load("skyscraper_config.ini.example")
