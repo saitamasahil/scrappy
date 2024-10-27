@@ -1,8 +1,11 @@
 *.ini
 gamelist.xml
-Skyscraper
 
 roms/
 cache/
 sample/media/*
 data/*
+
+docker/libs
+docker/out
+docker/Qt*
