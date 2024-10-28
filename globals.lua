@@ -10,4 +10,5 @@ _G.SKYSCRAPER_ERRORS = {
   "ScreenScraper APIv2 returned invalid / empty Json.",
   "No such file or directory",
   "cannot execute binary file: Exec format error",
+  "Couldn't read artwork xml file",
 }

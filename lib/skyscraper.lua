@@ -79,11 +79,11 @@ end
 
 function skyscraper.fetch_artwork(platform, artwork)
   local command = "-p " .. platform .. " -s " .. skyscraper.module .. " -c " .. skyscraper.config_path
-  -- print(command)
   skyscraper.run(command)
 end
 
 function skyscraper.update_artwork(platform, artwork)
+  local artwork = WORK_DIR .. "/templates/" .. artwork .. ".xml"
   local command = "-p " .. platform .. " -c " .. skyscraper.config_path .. " -a " .. artwork
   skyscraper.run(command)
 end

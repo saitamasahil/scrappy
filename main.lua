@@ -10,9 +10,11 @@ local templates = {}
 local current_template = 0
 
 local canvas = love.graphics.newCanvas(640 / 2, 480 / 2)
+local default_cover_path = "sample/media/covers/fake-rom.png"
+local cover_preview_path = default_cover_path
 local cover_preview
 
-local width, height = love.window.getMode()
+local w_width, w_height = love.window.getMode()
 local spinner = loading.new("spinner", 1)
 
 local state = {
@@ -36,6 +38,7 @@ local function load_image(filename)
 end
 
 local function update_preview(direction)
+  cover_preview_path = default_cover_path
   local direction = direction or 1
   current_template = current_template + direction
   if current_template < 1 then
@@ -67,7 +70,7 @@ end
 
 local function render_canvas()
   print("Rendering canvas")
-  cover_preview = load_image("sample/media/covers/fake-rom.png") -- Update here
+  cover_preview = load_image(cover_preview_path)
   canvas:renderTo(function()
     love.graphics.clear()
     if cover_preview then
@@ -93,6 +96,10 @@ local function update_state()
     end
     if t.data ~= nil and next(t.data) ~= nil then
       state.data = t.data
+      if state.data.title ~= nil and state.data.title ~= "fake-rom" then
+        cover_preview_path = "data/output/snes/media/covers/" .. state.data.title .. ".png"
+        state.reload_preview = true
+      end
     end
     if t.loading ~= nil then
       state.loading = t.loading
@@ -104,7 +111,8 @@ local function handle_input()
   input.onEvent(function(event)
     if event == input.events.LEFT then
       -- skyscraper.fetch_artwork("snes", templates[current_template])
-      update_preview(-1)
+      skyscraper.update_artwork("snes", templates[current_template])
+      -- update_preview(-1)
     elseif event == input.events.RIGHT then
       update_preview(1)
     end
@@ -125,24 +133,34 @@ function love.update(dt)
   end
 end
 
-local function main_draw()
-  love.graphics.setColor(1, 1, 1);
+local function draw_preview(x, y, width, height)
+  love.graphics.push()
+  love.graphics.translate(x, y)
   love.graphics.draw(canvas);
-  love.graphics.rectangle("line", 0, 0, width / 2, height / 2)
-  love.graphics.print(templates[current_template], 0, 0)
-  love.graphics.rectangle("line", 10, 20, 100, 20)
-  -- love.graphics.rectangle("fill", 10, 20, 100 * data.index / data.total, 20)
-  -- love.graphics.print("Current data: " .. data.title, 10, 40)
+  love.graphics.setColor(1, 1, 1, 0.5);
+  love.graphics.rectangle("line", 0, 0, width, height)
   if state.loading then
-    spinner:reset()
     love.graphics.push()
     love.graphics.setColor(0, 0, 0, 0.5);
-    love.graphics.rectangle("fill", 0, 0, width / 2, height / 2)
-    spinner:draw(width / 4, height / 4, 0.5)
+    love.graphics.rectangle("fill", 0, 0, width, height)
+    spinner:draw(width / 2, height / 2, 0.5)
     love.graphics.pop()
   end
+  love.graphics.setColor(1, 1, 1);
+  love.graphics.pop()
+end
+
+local function main_draw()
+  love.graphics.print(templates[current_template], 0, 0)
+  love.graphics.rectangle("line", 10, 20, 100, 20)
+  draw_preview(0, 0, w_width / 2, w_height / 2)
   if state.error ~= "" then
     love.graphics.print("ERROR: " .. state.error, 10, 40)
+  end
+  if state.data ~= nil and next(state.data) ~= nil then
+    love.graphics.print("Title: " .. state.data.title, 10, 60)
+    love.graphics.print("Index: " .. state.data.index, 10, 80)
+    love.graphics.print("Total: " .. state.data.total, 10, 100)
   end
 end
 

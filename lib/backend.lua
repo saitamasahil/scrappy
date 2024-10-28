@@ -10,7 +10,7 @@ while true do
 
   if output then
     for line in output:lines() do
-      print(line)
+      -- print(line)
       local data, error = parser.parse(line)
       if next(data) ~= nil or error ~= "" then
         OUTPUT_CHANNEL:push({ data = data, error = error, loading = false })
