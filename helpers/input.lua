@@ -15,11 +15,25 @@ input.events = {
   ESC = "escape",
 }
 
+local cooldown_duration = 0.5
+local last_trigger_time = -cooldown_duration
+
+local function can_trigger_global(dt)
+  local current_time = love.timer.getTime()
+  if current_time - last_trigger_time >= cooldown_duration then
+    last_trigger_time = current_time
+    return true
+  end
+  return false
+end
+
 local function trigger(event)
-  -- print("Triggered: " .. event)
-  state.last_event = state.current_event
-  state.current_event = event
-  state.trigger = true
+  if can_trigger_global() then
+    state.last_event = state.current_event
+    state.current_event = event
+    state.trigger = true
+    -- print("Triggered: " .. event)  -- Debug
+  end
 end
 
 function input.load()
