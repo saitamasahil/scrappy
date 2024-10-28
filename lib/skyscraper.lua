@@ -49,7 +49,7 @@ function skyscraper.init(config_path)
 
   thread = love.thread.newThread("lib/backend.lua")
   thread:start()
-  push_command(skyscraper.base_command .. "-v")
+  -- push_command(skyscraper.base_command .. "-v")
 end
 
 function skyscraper.change_artwork(artworkXml)

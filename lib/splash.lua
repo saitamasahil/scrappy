@@ -6,6 +6,7 @@ local splash = {
 local logo
 local rotation = { value = 0 }
 local scale = { value = 1 }
+local splash_timer = timer.new()
 
 local colors = {
   main = { 1, 1, 1 },
@@ -14,19 +15,19 @@ local colors = {
 
 function splash.load()
   logo = love.graphics.newImage("assets/muos-logo.png")
-  timer.after(0,
+  splash_timer:after(0,
     function(func)
-      timer.tween(2, rotation, { value = rotation.value + 1 }, 'in-out-quad')
-      timer.after(2, func)
+      splash_timer:tween(2, rotation, { value = rotation.value + 1 }, 'in-out-quad')
+      splash_timer:after(2, func)
     end)
-  timer.after(2, function() splash.finished = true end)
+  splash_timer:after(2, function() splash.finished = true end)
 end
 
 function splash.draw()
   if splash.finished then return end
   local width, height = love.graphics.getDimensions()
   local logoScale = 1
-  local logoWidth, logoHeight = logo:getWidth(), logo:getHeight()
+  -- local logoWidth, logoHeight = logo:getWidth(), logo:getHeight()
 
   love.graphics.clear(0, 0, 0, 1)
 
@@ -41,7 +42,7 @@ function splash.draw()
 end
 
 function splash.update(dt)
-  timer.update(dt)
+  splash_timer:update(dt)
 end
 
 return splash

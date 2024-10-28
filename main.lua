@@ -3,6 +3,7 @@ love.graphics.setDefaultFilter("nearest", "nearest")
 
 local skyscraper = require("lib.skyscraper")
 local splash = require("lib.splash")
+local loading = require("lib.loading")
 local input = require("helpers.input")
 
 local templates = {}
@@ -10,6 +11,9 @@ local current_template = 0
 
 local canvas = love.graphics.newCanvas(640 / 2, 480 / 2)
 local cover_preview
+
+local width, height = love.window.getMode()
+local spinner = loading.new("spinner", 1)
 
 local state = {
   data = {
@@ -75,6 +79,7 @@ end
 function love.load()
   splash.load()
   input.load()
+  spinner:load()
   get_templates()
   render_canvas()
   skyscraper.init("config.ini")
@@ -109,32 +114,32 @@ end
 function love.update(dt)
   splash.update(dt)
   input.update(dt)
+  spinner:update(dt)
   handle_input()
   update_state()
 
   if state.reload_preview and not state.loading then
     print("Reloading preview")
     state.reload_preview = false
-    render_canvas() -- Reload image without a timer
+    render_canvas()
   end
-  -- if state.reload_preview and not state.loading then
-  --   state.reload_preview = false
-  --   timer.after(0.5, function()
-  --     render_canvas()
-  --   end)
-  -- end
 end
 
 local function main_draw()
   love.graphics.setColor(1, 1, 1);
   love.graphics.draw(canvas);
-  love.graphics.rectangle("line", 0, 0, 640 / 2, 480 / 2)
+  love.graphics.rectangle("line", 0, 0, width / 2, height / 2)
   love.graphics.print(templates[current_template], 0, 0)
   love.graphics.rectangle("line", 10, 20, 100, 20)
   -- love.graphics.rectangle("fill", 10, 20, 100 * data.index / data.total, 20)
   -- love.graphics.print("Current data: " .. data.title, 10, 40)
   if state.loading then
-    love.graphics.print("LOADING...", 10, 40)
+    spinner:reset()
+    love.graphics.push()
+    love.graphics.setColor(0, 0, 0, 0.5);
+    love.graphics.rectangle("fill", 0, 0, width / 2, height / 2)
+    spinner:draw(width / 4, height / 4, 0.5)
+    love.graphics.pop()
   end
   if state.error ~= "" then
     love.graphics.print("ERROR: " .. state.error, 10, 40)

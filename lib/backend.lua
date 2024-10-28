@@ -21,6 +21,7 @@ while true do
       end
     end
     output:close()
+    -- OUTPUT_CHANNEL:push({ loading = false })
   else
     OUTPUT_CHANNEL:push({ data = {}, error = "Failed to run Skyscraper", loading = false })
   end
