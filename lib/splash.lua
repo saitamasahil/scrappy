@@ -3,7 +3,7 @@ require("globals")
 local splash = {
   finished = false
 }
-local logo
+local logo, spin
 local rotation = { value = 0 }
 local scale = { value = 1 }
 local splash_timer = timer.new()
@@ -15,11 +15,7 @@ local colors = {
 
 function splash.load()
   logo = love.graphics.newImage("assets/muos-logo.png")
-  splash_timer:after(0,
-    function(func)
-      splash_timer:tween(2, rotation, { value = rotation.value + 1 }, 'in-out-quad')
-      splash_timer:after(2, func)
-    end)
+  spin = splash_timer:tween(2, rotation, { value = rotation.value + 1 }, 'in-out-quad', spin)
   splash_timer:after(2, function() splash.finished = true end)
 end
 

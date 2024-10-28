@@ -3,7 +3,7 @@ require("globals")
 local loading = {}
 loading.__index = loading
 
-local spinner
+local spinner, spin
 
 local rotation = { value = 0 }
 local width = { value = 0 }
@@ -15,14 +15,12 @@ function loading.new(type, update_duration)
 end
 
 function loading:load()
+  spin = function()
+    loading_timer:tween(self.update_duration, rotation, { value = rotation.value + 1 }, 'linear', spin)
+  end
   if self.type == "spinner" then
     spinner = love.graphics.newImage("assets/muos-logo.png")
-    -- spinner
-    loading_timer:after(0,
-      function(func)
-        loading_timer:tween(self.update_duration, rotation, { value = rotation.value + 1 }, 'linear')
-        loading_timer:after(self.update_duration, func)
-      end)
+    spin()
   else
     print("Unknown loading type: " .. self.type)
   end
