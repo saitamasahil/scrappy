@@ -88,7 +88,10 @@ end
 
 local function setup_configs()
   local rom_path = muos.SD1_PATH
-  if not user_config:load() then
+  if user_config:load() then
+    skyscraper_binary = user_config:read("main", "binary")
+    if user_config:read("main", "sd") == 2 then rom_path = muos.SD2_PATH end
+  else
     local loaded = user_config:create_from("config.ini.example")
     if loaded then
       user_config:insert("main", "binary", skyscraper_binary)
@@ -96,10 +99,6 @@ local function setup_configs()
       user_config:load_platforms()
       user_config:save()
     end
-  end
-
-  if user_config:read("main", "sd") == 2 then
-    rom_path = muos.SD2_PATH
   end
 
   if not skyscraper_config:load() then
