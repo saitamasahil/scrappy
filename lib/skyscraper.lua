@@ -88,4 +88,16 @@ function skyscraper.update_artwork(platform, artwork)
   skyscraper.run(command)
 end
 
+function skyscraper.fetch_and_update_artwork(rom, platform, artwork)
+  local artwork = WORK_DIR .. "/templates/" .. artwork .. ".xml"
+  local rom = "\"" .. rom .. "\""
+  local fetch_command = "-p " ..
+      platform ..
+      " -s " .. skyscraper.module .. " -c " .. skyscraper.config_path .. " --startat " .. rom .. " --endat " .. rom
+  local update_command = "-p " ..
+      platform .. " -c " .. skyscraper.config_path .. " -a " .. artwork .. " --startat " .. rom .. " --endat " .. rom
+  skyscraper.run(fetch_command)
+  skyscraper.run(update_command)
+end
+
 return skyscraper

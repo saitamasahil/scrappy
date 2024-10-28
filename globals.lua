@@ -11,4 +11,5 @@ _G.SKYSCRAPER_ERRORS = {
   "No such file or directory",
   "cannot execute binary file: Exec format error",
   "Couldn't read artwork xml file",
+  "requested either on command line or with",
 }

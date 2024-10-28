@@ -111,7 +111,14 @@ local function handle_input()
   input.onEvent(function(event)
     if event == input.events.LEFT then
       -- skyscraper.fetch_artwork("snes", templates[current_template])
-      skyscraper.update_artwork("snes", templates[current_template])
+      local roms = nativefs.getDirectoryItems("roms/snes")
+      for i = 1, #roms do
+        local file = roms[i]
+        if file:sub(-4) == ".zip" then
+          skyscraper.fetch_and_update_artwork(file, "snes", templates[current_template])
+        end
+      end
+      -- skyscraper.update_artwork("snes", templates[current_template])
       -- update_preview(-1)
     elseif event == input.events.RIGHT then
       update_preview(1)
