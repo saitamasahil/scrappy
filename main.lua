@@ -2,14 +2,15 @@ require("globals")
 love.graphics.setDefaultFilter("nearest", "nearest")
 
 local skyscraper = require("lib.skyscraper")
-local ini = require("lib.ini")
 local splash = require("lib.splash")
 local loading = require("lib.loading")
 local input = require("helpers.input")
 local config = require("helpers.config")
+local muos = require("muos")
 
 local skyscraper_binary = "bin/Skyscraper.aarch64"
 local user_config = config.new("user", "config.ini")
+local skyscraper_config = config.new("skyscraper", "skyscraper_config.ini")
 local templates = {}
 local current_template = 0
 
@@ -86,6 +87,7 @@ local function render_canvas()
 end
 
 local function setup_configs()
+  local rom_path = muos.SD1_PATH
   if not user_config:load() then
     local loaded = user_config:create_from("config.ini.example")
     if loaded then
@@ -93,6 +95,22 @@ local function setup_configs()
       user_config:detect_sd()
       user_config:load_platforms()
       user_config:save()
+    end
+  end
+
+  if user_config:read("main", "sd") == 2 then
+    rom_path = muos.SD2_PATH
+  end
+
+  if not skyscraper_config:load() then
+    local loaded = skyscraper_config:create_from("skyscraper_config.ini.example")
+    if loaded then
+      print("Config file not present, creating one")
+      skyscraper_config:insert("main", "inputFolder", string.format("\"%s\"", rom_path))
+      skyscraper_config:insert("main", "cacheFolder", string.format("\"%s/%s\"", WORK_DIR, "data/cache"))
+      skyscraper_config:insert("main", "gameListFolder", string.format("\"%s/%s\"", WORK_DIR, "data/output"))
+      skyscraper_config:insert("main", "artworkXml", string.format("\"%s/%s\"", WORK_DIR, "templates/box2d.xml"))
+      skyscraper_config:save()
     end
   end
 end

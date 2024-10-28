@@ -27,7 +27,11 @@ end
 
 function config:create_from(example_file)
   local example = ini.load(example_file)
-  return ini.save(example, self.path) ~= nil
+  if ini.save(example, self.path) ~= nil == nil then
+    return nil
+  end
+
+  return self:load()
 end
 
 function config:read(section, key)

@@ -29,21 +29,6 @@ function skyscraper.init(config_path, binary)
     nativefs.write("sample/quickid.xml", quick_id)
   end
 
-  local ini_file = ini.load(config_path)
-  if ini_file then
-    print(string.format("Found config at %s", config_path))
-  else
-    print("Config file not present, creating one")
-    ini_file = ini.load("skyscraper_config.ini.example")
-    ini.addKey(ini_file, "main", "inputFolder", "\"/mnt/mmc/roms\"")
-    ini.addKey(ini_file, "main", "cacheFolder", '"' .. WORK_DIR .. "/data/cache" .. '"')
-    ini.addKey(ini_file, "main", "gameListFolder", '"' .. WORK_DIR .. "/data/output" .. '"')
-    ini.addKey(ini_file, "main", "artworkXml", '"' .. WORK_DIR .. "/templates/artwork.xml" .. '"')
-    if ini.save(ini_file, config_path) then
-      print("Config file created successfully")
-    end
-  end
-
   thread = love.thread.newThread("lib/backend.lua")
   thread:start()
   -- push_command(skyscraper.base_command .. "-v")
