@@ -23,6 +23,7 @@ RUN apt-get update && \
   wget \
   vim \
   sudo \
+  p7zip-full \
   software-properties-common \
   libgles2-mesa-dev \
   libgl1-mesa-dev && \
