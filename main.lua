@@ -14,6 +14,8 @@ local default_cover_path = "sample/media/covers/fake-rom.png"
 local cover_preview_path = default_cover_path
 local cover_preview
 
+local current_platform = "gba"
+
 local w_width, w_height = love.window.getMode()
 local spinner = loading.new("spinner", 1)
 
@@ -97,7 +99,7 @@ local function update_state()
     if t.data ~= nil and next(t.data) ~= nil then
       state.data = t.data
       if state.data.title ~= nil and state.data.title ~= "fake-rom" then
-        cover_preview_path = "data/output/snes/media/covers/" .. state.data.title .. ".png"
+        cover_preview_path = string.format("data/output/%s/media/covers/%s.png", current_platform, state.data.title)
         state.reload_preview = true
       end
     end
@@ -110,15 +112,17 @@ end
 local function handle_input()
   input.onEvent(function(event)
     if event == input.events.LEFT then
-      -- skyscraper.fetch_artwork("snes", templates[current_template])
-      local roms = nativefs.getDirectoryItems("roms/snes")
+      local roms = nativefs.getDirectoryItems(string.format("roms/%s", current_platform))
       for i = 1, #roms do
         local file = roms[i]
         if file:sub(-4) == ".zip" then
-          skyscraper.fetch_and_update_artwork(file, "snes", templates[current_template])
+          skyscraper.fetch_and_update_artwork(
+            string.format("roms/%s/%s", current_platform, file),
+            current_platform,
+            templates[current_template]
+          )
         end
       end
-      -- skyscraper.update_artwork("snes", templates[current_template])
       -- update_preview(-1)
     elseif event == input.events.RIGHT then
       update_preview(1)
