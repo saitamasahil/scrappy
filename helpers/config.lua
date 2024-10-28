@@ -45,6 +45,10 @@ function config:insert(section, key, value)
   ini.addKey(self.values, section, key, value)
 end
 
+function config:get()
+  return self.values
+end
+
 function config:detect_sd()
   local sd1 = muos.SD1_PATH
   local sd2 = muos.SD2_PATH
@@ -84,7 +88,7 @@ function config:load_platforms()
     -- Iterate through muos assign table
     for key, value in pairs(muos.assign) do
       if platform == key then
-        self:insert("platforms", platforms[i], "\"" .. value .. "\"")
+        self:insert("platforms", platforms[i], value)
         mapped_total = mapped_total + 1
         break
       end

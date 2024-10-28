@@ -19,16 +19,13 @@ local default_cover_path = "sample/media/covers/fake-rom.png"
 local cover_preview_path = default_cover_path
 local cover_preview
 
-local current_platform = "gba"
-
 local w_width, w_height = love.window.getMode()
 local spinner = loading.new("spinner", 1)
 
 local state = {
   data = {
-    index = 0,
-    total = 0,
     title = "N/A",
+    platform = "",
   },
   error = "",
   loading = nil,
@@ -133,7 +130,8 @@ local function update_state()
     if t.data ~= nil and next(t.data) ~= nil then
       state.data = t.data
       if state.data.title ~= nil and state.data.title ~= "fake-rom" then
-        cover_preview_path = string.format("data/output/%s/media/covers/%s.png", current_platform, state.data.title)
+        cover_preview_path = string.format("data/output/%s/media/covers/%s.png", state.data.platform, state.data
+          .title)
         state.reload_preview = true
       end
     end
@@ -146,18 +144,20 @@ end
 local function handle_input()
   input.onEvent(function(event)
     if event == input.events.LEFT then
-      -- local roms = nativefs.getDirectoryItems(string.format("roms/%s", current_platform))
-      -- for i = 1, #roms do
-      --   local file = roms[i]
-      --   if file:sub(-4) == ".zip" then
-      --     skyscraper.fetch_and_update_artwork(
-      --       string.format("roms/%s/%s", current_platform, file),
-      --       current_platform,
-      --       templates[current_template]
-      --     )
-      --   end
-      -- end
-      update_preview(-1)
+      local platforms = user_config:get().platforms
+      for src, dest in pairs(platforms) do
+        local rom_path = string.format("%s/%s", muos.SD1_PATH, src)
+        local roms = nativefs.getDirectoryItems(rom_path)
+        for i = 1, #roms do
+          local file = roms[i]
+          skyscraper.fetch_and_update_artwork(
+            string.format(rom_path .. "/" .. file, dest, file),
+            dest,
+            templates[current_template]
+          )
+        end
+      end
+      -- update_preview(-1)
     elseif event == input.events.RIGHT then
       update_preview(1)
     end
@@ -204,6 +204,7 @@ local function main_draw()
   end
   if state.data ~= nil and next(state.data) ~= nil then
     love.graphics.print("Title: " .. state.data.title, 10, 60)
+    love.graphics.print("PLATFORM: " .. state.data.platform, 10, 80)
   end
 end
 

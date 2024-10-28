@@ -18,7 +18,7 @@ end
 
 function skyscraper.init(config_path, binary)
   print("Initializing Skyscraper")
-  skyscraper.config_path = config_path
+  skyscraper.config_path = WORK_DIR .. "/" .. config_path
   skyscraper.base_command = "./" .. binary
 
   local quick_id = nativefs.read("sample/quickid.xml")
@@ -58,11 +58,11 @@ local function generate_command(config)
   if config.input then
     command = string.format("%s -i %s", command, config.input)
   end
-  if config.artwork then
-    command = string.format("%s -a %s", command, config.artwork)
-  end
   if config.rom then
     command = string.format("%s --startat %s --endat %s", command, config.rom, config.rom)
+  end
+  if config.artwork then
+    command = string.format("%s -a %s", command, config.artwork)
   end
   if config.flags and next(config.flags) then
     command = string.format("%s --flags %s", command, table.concat(config.flags, ","))
