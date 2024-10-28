@@ -166,8 +166,6 @@ local function main_draw()
   end
   if state.data ~= nil and next(state.data) ~= nil then
     love.graphics.print("Title: " .. state.data.title, 10, 60)
-    love.graphics.print("Index: " .. state.data.index, 10, 80)
-    love.graphics.print("Total: " .. state.data.total, 10, 100)
   end
 end
 
