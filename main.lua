@@ -2,10 +2,14 @@ require("globals")
 love.graphics.setDefaultFilter("nearest", "nearest")
 
 local skyscraper = require("lib.skyscraper")
+local ini = require("lib.ini")
 local splash = require("lib.splash")
 local loading = require("lib.loading")
 local input = require("helpers.input")
+local config = require("helpers.config")
 
+local skyscraper_binary = "bin/Skyscraper.aarch64"
+local user_config = config.new("user", "config.ini")
 local templates = {}
 local current_template = 0
 
@@ -81,13 +85,26 @@ local function render_canvas()
   end)
 end
 
+local function setup_configs()
+  if not user_config:load() then
+    local loaded = user_config:create_from("config.ini.example")
+    if loaded then
+      user_config:insert("main", "binary", skyscraper_binary)
+      user_config:detect_sd()
+      user_config:load_platforms()
+      user_config:save()
+    end
+  end
+end
+
 function love.load()
   splash.load()
+  setup_configs()
   input.load()
   spinner:load()
   get_templates()
   render_canvas()
-  skyscraper.init("config.ini")
+  skyscraper.init("skyscraper_config.ini", skyscraper_binary)
 end
 
 local function update_state()
@@ -112,18 +129,18 @@ end
 local function handle_input()
   input.onEvent(function(event)
     if event == input.events.LEFT then
-      local roms = nativefs.getDirectoryItems(string.format("roms/%s", current_platform))
-      for i = 1, #roms do
-        local file = roms[i]
-        if file:sub(-4) == ".zip" then
-          skyscraper.fetch_and_update_artwork(
-            string.format("roms/%s/%s", current_platform, file),
-            current_platform,
-            templates[current_template]
-          )
-        end
-      end
-      -- update_preview(-1)
+      -- local roms = nativefs.getDirectoryItems(string.format("roms/%s", current_platform))
+      -- for i = 1, #roms do
+      --   local file = roms[i]
+      --   if file:sub(-4) == ".zip" then
+      --     skyscraper.fetch_and_update_artwork(
+      --       string.format("roms/%s/%s", current_platform, file),
+      --       current_platform,
+      --       templates[current_template]
+      --     )
+      --   end
+      -- end
+      update_preview(-1)
     elseif event == input.events.RIGHT then
       update_preview(1)
     end

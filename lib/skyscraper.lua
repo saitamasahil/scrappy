@@ -16,9 +16,10 @@ local function push_command(command)
   end
 end
 
-function skyscraper.init(config_path)
+function skyscraper.init(config_path, binary)
   print("Initializing Skyscraper")
-  skyscraper.config_path = WORK_DIR .. "/" .. config_path
+  skyscraper.config_path = config_path
+  skyscraper.base_command = "./" .. binary
 
   local quick_id = nativefs.read("sample/quickid.xml")
   if quick_id then
@@ -30,11 +31,7 @@ function skyscraper.init(config_path)
 
   local ini_file = ini.load(config_path)
   if ini_file then
-    print("Found config.ini, using it")
-    local skyscraperBinary = ini.readKey(ini_file, "main", "binary")
-    if skyscraperBinary then
-      skyscraper.base_command = "./" .. skyscraperBinary
-    end
+    print(string.format("Found config at %s", config_path))
   else
     print("Config file not present, creating one")
     ini_file = ini.load("skyscraper_config.ini.example")
