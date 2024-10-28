@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <artwork>
     <output type="cover" width="640" height="480">
-        <layer resource="cover" width="180" align="center" valign="middle" x="193" y="0" />
+        <layer resource="screenshot" mpixels="0.7" width="640" align="center" valign="middle" opacity="50">
+        </layer>
     </output>
 </artwork>

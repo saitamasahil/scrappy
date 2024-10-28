@@ -5,9 +5,10 @@ local skyscraper = require("lib.skyscraper")
 local splash = require("lib.splash")
 local input = require("helpers.input")
 
-local artworks = { "artwork", "retro-dither-logo" }
-local current_artwork = 1
+local templates = {}
+local current_template = 0
 
+local canvas = love.graphics.newCanvas(640 / 2, 480 / 2)
 local cover_preview
 
 local state = {
@@ -17,8 +18,7 @@ local state = {
     title = "N/A",
   },
   error = "",
-  loading = true,
-  reload_preview = false
+  loading = nil,
 }
 
 local function load_image(filename)
@@ -33,23 +33,50 @@ end
 
 local function update_preview(direction)
   local direction = direction or 1
-  current_artwork = current_artwork + direction
-  if current_artwork < 1 then
-    current_artwork = #artworks
+  current_template = current_template + direction
+  if current_template < 1 then
+    current_template = #templates
   end
-  if current_artwork > #artworks then
-    current_artwork = 1
+  if current_template > #templates then
+    current_template = 1
   end
-  local sample_artwork = WORK_DIR .. "/templates/" .. artworks[current_artwork] .. ".xml"
+  local sample_artwork = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
   skyscraper.change_artwork(sample_artwork)
   skyscraper.update_sample(sample_artwork)
+  state.loading = true
   state.reload_preview = true
+end
+
+local function get_templates()
+  local items = nativefs.getDirectoryItems(WORK_DIR .. "/templates")
+  if not items then
+    return
+  end
+  current_template = 1
+  for i = 1, #items do
+    local file = items[i]
+    if file:sub(-4) == ".xml" then
+      table.insert(templates, file:sub(1, -5))
+    end
+  end
+end
+
+local function render_canvas()
+  print("Rendering canvas")
+  cover_preview = load_image("sample/media/covers/fake-rom.png") -- Update here
+  canvas:renderTo(function()
+    love.graphics.clear()
+    if cover_preview then
+      love.graphics.draw(cover_preview, 0, 0, 0, 0.5, 0.5)
+    end
+  end)
 end
 
 function love.load()
   splash.load()
   input.load()
-  cover_preview = load_image("sample/media/covers/fake-rom.png")
+  get_templates()
+  render_canvas()
   skyscraper.init("config.ini")
 end
 
@@ -58,8 +85,12 @@ local function update_state()
   if t then
     if t.error ~= "" then
       state.error = t.error
-    elseif next(t.data) ~= nil then
+    end
+    if t.data ~= nil and next(t.data) ~= nil then
       state.data = t.data
+    end
+    if t.loading ~= nil then
+      state.loading = t.loading
     end
   end
 end
@@ -67,8 +98,8 @@ end
 local function handle_input()
   input.onEvent(function(event)
     if event == input.events.LEFT then
-      skyscraper.fetch_artwork("snes", artworks[current_artwork])
-      -- update_preview(-1)
+      -- skyscraper.fetch_artwork("snes", templates[current_template])
+      update_preview(-1)
     elseif event == input.events.RIGHT then
       update_preview(1)
     end
@@ -79,41 +110,34 @@ function love.update(dt)
   splash.update(dt)
   input.update(dt)
   handle_input()
-  -- timer = timer + dt
+  update_state()
+
+  if state.reload_preview and not state.loading then
+    print("Reloading preview")
+    state.reload_preview = false
+    render_canvas() -- Reload image without a timer
+  end
+  -- if state.reload_preview and not state.loading then
+  --   state.reload_preview = false
+  --   timer.after(0.5, function()
+  --     render_canvas()
+  --   end)
+  -- end
 end
 
 local function main_draw()
-  update_state()
-  if cover_preview then
-    love.graphics.draw(cover_preview, 0, 0, 0, 0.5, 0.5)
-  end
+  love.graphics.setColor(1, 1, 1);
+  love.graphics.draw(canvas);
   love.graphics.rectangle("line", 0, 0, 640 / 2, 480 / 2)
-  love.graphics.print(artworks[current_artwork], 0, 0)
-  -- love.graphics.rectangle('fill', 10, 25 + math.sin(timer * 10) * 5, 4, 10)
-  -- local t = OUTPUT_CHANNEL:pop()
-  -- if t then
-  --   if t.error ~= "" then
-  --     error = t.error
-  --   elseif next(t.data) ~= nil then
-  --     data = t.data
-  --     if reload_preview and t.data.title == "fake-rom" then
-  --       cover_preview = load_image("sample/media/covers/fake-rom.png")
-  --       reload_preview = false
-  --     end
-  --   end
-  -- end
-
+  love.graphics.print(templates[current_template], 0, 0)
   love.graphics.rectangle("line", 10, 20, 100, 20)
   -- love.graphics.rectangle("fill", 10, 20, 100 * data.index / data.total, 20)
   -- love.graphics.print("Current data: " .. data.title, 10, 40)
+  if state.loading then
+    love.graphics.print("LOADING...", 10, 40)
+  end
   if state.error ~= "" then
     love.graphics.print("ERROR: " .. state.error, 10, 40)
-  end
-  if state.reload_preview and state.data.title == "fake-rom" then
-    timer.after(0.5, function()
-      cover_preview = load_image("sample/media/covers/fake-rom.png")
-      state.reload_preview = false
-    end)
   end
 end
 
