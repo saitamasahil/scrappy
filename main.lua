@@ -29,6 +29,7 @@ local state = {
   },
   error = "",
   loading = nil,
+  scraping = false
 }
 
 local function load_image(filename)
@@ -144,13 +145,20 @@ end
 local function handle_input()
   input.onEvent(function(event)
     if event == input.events.LEFT then
+      -- Load platforms from config
       local platforms = user_config:get().platforms
+      state.scraping = true
+      -- For each source = destionation pair in config, fetch and update artwork
       for src, dest in pairs(platforms) do
+        -- TODO: Respect SD selection in config
         local rom_path = string.format("%s/%s", muos.SD1_PATH, src)
+        -- Get list of roms
         local roms = nativefs.getDirectoryItems(rom_path)
         for i = 1, #roms do
           local file = roms[i]
+          -- Fetch and update artwork
           skyscraper.fetch_and_update_artwork(
+            rom_path,
             string.format(rom_path .. "/" .. file, dest, file),
             dest,
             templates[current_template]
@@ -164,12 +172,51 @@ local function handle_input()
   end)
 end
 
+local function copy_artwork()
+  -- Get list of scraped artwork
+  local scraped_art = nativefs.getDirectoryItems("data/output")
+  if not scraped_art then
+    return
+  end
+  -- Iterate over folders in output
+  for i = 1, #scraped_art do
+    local item = scraped_art[i]
+    -- Check if item is a folder
+    local item_info = nativefs.getInfo(string.format("data/output/%s", item))
+    if item_info and item_info.type == "directory" then
+      -- Get designated MUOS platform
+      local destination_folder = muos.platforms[item]
+      if destination_folder then
+        -- Destination folder should be in info/catalogue/{System}/box
+        destination_folder = string.format("%s/%s/box", muos.CATALOGUE, destination_folder)
+        -- Get list of artwork
+        local artwork = nativefs.getDirectoryItems(string.format("data/output/%s/media/covers", item))
+        for j = 1, #artwork do
+          local file = nativefs.read(string.format("data/output/%s/media/covers/%s", item, artwork[j]))
+          if file then
+            -- Write to destination
+            nativefs.write(string.format("%s/%s", destination_folder, artwork[j]), file)
+          end
+        end
+      end
+    end
+  end
+end
+
 function love.update(dt)
   splash.update(dt)
   input.update(dt)
   spinner:update(dt)
   handle_input()
   update_state()
+
+  if state.scraping then
+    local input_count = INPUT_CHANNEL:getCount()
+    if input_count == 0 then
+      state.scraping = false
+      copy_artwork()
+    end
+  end
 
   if state.reload_preview and not state.loading then
     print("Reloading preview")
