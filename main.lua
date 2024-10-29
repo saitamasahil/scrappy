@@ -14,7 +14,8 @@ local skyscraper_config = config.new("skyscraper", "skyscraper_config.ini")
 local templates = {}
 local current_template = 0
 
-local canvas = love.graphics.newCanvas(640 / 2, 480 / 2)
+local canvas = love.graphics.newCanvas(640, 480)
+local background, overlay
 local default_cover_path = "sample/media/covers/fake-rom.png"
 local cover_preview_path = default_cover_path
 local cover_preview
@@ -73,13 +74,13 @@ local function get_templates()
   end
 end
 
-local function render_canvas()
-  print("Rendering canvas")
+local function render_to_canvas()
+  -- print("Rendering canvas")
   cover_preview = load_image(cover_preview_path)
   canvas:renderTo(function()
     love.graphics.clear()
     if cover_preview then
-      love.graphics.draw(cover_preview, 0, 0, 0, 0.5, 0.5)
+      love.graphics.draw(cover_preview, 0, 0, 0)
     end
   end)
 end
@@ -118,8 +119,15 @@ function love.load()
   input.load()
   spinner:load()
   get_templates()
-  render_canvas()
+  background = load_image("assets/muxsysinfo.png")
+  overlay = load_image("assets/preview.png")
+  render_to_canvas()
   skyscraper.init("skyscraper_config.ini", skyscraper_binary)
+
+  local debug = user_config:read("main", "debug")
+  if not debug or debug == 0 then
+    function _G.print() end
+  end
 end
 
 local function update_state()
@@ -150,7 +158,6 @@ local function scrape_platforms()
   state.scraping = true
   -- For each source = destionation pair in config, fetch and update artwork
   for src, dest in pairs(platforms) do
-    -- TODO: Respect SD selection in config
     local platform_path = string.format("%s/%s", rom_path, src)
     -- Get list of roms
     local roms = nativefs.getDirectoryItems(platform_path)
@@ -228,21 +235,30 @@ function love.update(dt)
   if state.reload_preview and not state.loading then
     print("Reloading preview")
     state.reload_preview = false
-    render_canvas()
+    render_to_canvas()
   end
 end
 
-local function draw_preview(x, y, width, height)
+local function draw_preview(x, y, scale, show_overlay)
+  show_overlay = show_overlay or false
+  scale = scale or 0.5
   love.graphics.push()
   love.graphics.translate(x, y)
-  love.graphics.draw(canvas);
+  love.graphics.scale(scale)
+  if show_overlay and background then
+    love.graphics.draw(background, 0, 0, 0)
+  end
+  love.graphics.draw(canvas, 0, 0, 0);
+  if show_overlay and overlay then
+    love.graphics.draw(overlay, 0, 0, 0)
+  end
   love.graphics.setColor(1, 1, 1, 0.5);
-  love.graphics.rectangle("line", 0, 0, width, height)
+  love.graphics.rectangle("line", 0, 0, w_width, w_height)
   if state.loading then
     love.graphics.push()
     love.graphics.setColor(0, 0, 0, 0.5);
-    love.graphics.rectangle("fill", 0, 0, width, height)
-    spinner:draw(width / 2, height / 2, 0.5)
+    love.graphics.rectangle("fill", 0, 0, w_width, w_height)
+    spinner:draw(w_width / 2, w_height / 2)
     love.graphics.pop()
   end
   love.graphics.setColor(1, 1, 1);
@@ -252,7 +268,7 @@ end
 local function main_draw()
   love.graphics.print(templates[current_template], 0, 0)
   love.graphics.rectangle("line", 10, 20, 100, 20)
-  draw_preview(0, 0, w_width / 2, w_height / 2)
+  draw_preview(0, 0, 0.5, true)
   if state.error ~= "" then
     love.graphics.print("ERROR: " .. state.error, 10, 40)
   end

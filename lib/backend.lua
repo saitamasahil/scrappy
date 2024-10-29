@@ -11,11 +11,11 @@ while true do
   local stderr_to_stdout = " 2>&1"
   local output = io.popen(command .. stderr_to_stdout)
 
-  -- print("Command: " .. command .. " for Platform: " .. current_platform)
+  print("Command: " .. command .. "\nPlatform: " .. current_platform)
 
   if output then
     for line in output:lines() do
-      -- print(line)
+      print(line)
       local data, error = parser.parse(line)
       if next(data) ~= nil or error ~= "" then
         data.platform = current_platform
