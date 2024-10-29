@@ -6,7 +6,7 @@ local splash = require("lib.splash")
 local loading = require("lib.loading")
 local input = require("helpers.input")
 local config = require("helpers.config")
-local muos = require("muos")
+local muos = require("helpers.muos")
 
 local skyscraper_binary = "bin/Skyscraper.aarch64"
 local user_config = config.new("user", "config.ini")
@@ -142,29 +142,35 @@ local function update_state()
   end
 end
 
+local function scrape_platforms()
+  -- Load platforms from config
+  local platforms = user_config:get().platforms
+  local rom_path, _ = user_config:get_paths()
+  print(rom_path)
+  state.scraping = true
+  -- For each source = destionation pair in config, fetch and update artwork
+  for src, dest in pairs(platforms) do
+    -- TODO: Respect SD selection in config
+    local platform_path = string.format("%s/%s", rom_path, src)
+    -- Get list of roms
+    local roms = nativefs.getDirectoryItems(platform_path)
+    for i = 1, #roms do
+      local file = roms[i]
+      -- Fetch and update artwork
+      skyscraper.fetch_and_update_artwork(
+        platform_path,
+        string.format(platform_path .. "/" .. file, dest, file),
+        dest,
+        templates[current_template]
+      )
+    end
+  end
+end
+
 local function handle_input()
   input.onEvent(function(event)
     if event == input.events.LEFT then
-      -- Load platforms from config
-      local platforms = user_config:get().platforms
-      state.scraping = true
-      -- For each source = destionation pair in config, fetch and update artwork
-      for src, dest in pairs(platforms) do
-        -- TODO: Respect SD selection in config
-        local rom_path = string.format("%s/%s", muos.SD1_PATH, src)
-        -- Get list of roms
-        local roms = nativefs.getDirectoryItems(rom_path)
-        for i = 1, #roms do
-          local file = roms[i]
-          -- Fetch and update artwork
-          skyscraper.fetch_and_update_artwork(
-            rom_path,
-            string.format(rom_path .. "/" .. file, dest, file),
-            dest,
-            templates[current_template]
-          )
-        end
-      end
+      scrape_platforms()
       -- update_preview(-1)
     elseif event == input.events.RIGHT then
       update_preview(1)
@@ -178,6 +184,7 @@ local function copy_artwork()
   if not scraped_art then
     return
   end
+  local _, catalogue_path = user_config:get_paths()
   -- Iterate over folders in output
   for i = 1, #scraped_art do
     local item = scraped_art[i]
@@ -188,7 +195,7 @@ local function copy_artwork()
       local destination_folder = muos.platforms[item]
       if destination_folder then
         -- Destination folder should be in info/catalogue/{System}/box
-        destination_folder = string.format("%s/%s/box", muos.CATALOGUE, destination_folder)
+        destination_folder = string.format("%s/%s/box", catalogue_path, destination_folder)
         -- Get list of artwork
         local artwork = nativefs.getDirectoryItems(string.format("data/output/%s/media/covers", item))
         for j = 1, #artwork do
@@ -249,8 +256,10 @@ local function main_draw()
   if state.error ~= "" then
     love.graphics.print("ERROR: " .. state.error, 10, 40)
   end
-  if state.data ~= nil and next(state.data) ~= nil then
+  if state.data and state.data.title then
     love.graphics.print("Title: " .. state.data.title, 10, 60)
+  end
+  if state.data and state.data.platform then
     love.graphics.print("PLATFORM: " .. state.data.platform, 10, 80)
   end
 end
