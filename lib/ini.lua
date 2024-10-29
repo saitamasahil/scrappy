@@ -3,7 +3,7 @@
     Attribution is not required but always appreciated.
     https://github.com/nobytesgiven/ini_parser
 
-    modified to work with nativefs
+    modified to work with nativefs by gabrielfvale
 ]] --
 
 local nativefs = require("lib.nativefs")

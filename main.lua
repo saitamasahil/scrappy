@@ -1,5 +1,7 @@
 require("globals")
 love.graphics.setDefaultFilter("nearest", "nearest")
+local font = love.graphics.newFont("assets/monogram.ttf", 20)
+love.graphics.setFont(font)
 
 local skyscraper = require("lib.skyscraper")
 local splash = require("lib.splash")
