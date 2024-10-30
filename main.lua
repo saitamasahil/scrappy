@@ -71,11 +71,30 @@ local function get_templates()
   if not items then
     return
   end
+
   current_template = 1
+  -- Populate templates
   for i = 1, #items do
     local file = items[i]
     if file:sub(-4) == ".xml" then
       table.insert(templates, file:sub(1, -5))
+    end
+  end
+
+  -- Get the previously selected template
+  local artwork_path = skyscraper_config:read("main", "artworkXml")
+  if not artwork_path then
+    return
+  end
+
+  -- Remove double quotes
+  artwork_path = artwork_path:gsub('"', '')
+  local artwork_name = artwork_path:match("([^/]+)%.xml$") -- Extract the filename without path and extension
+  -- Find the index of artwork_name in templates
+  for i = 1, #templates do
+    if templates[i] == artwork_name then
+      current_template = i
+      break
     end
   end
 end
@@ -122,13 +141,13 @@ end
 function love.load()
   splash.load()
   setup_configs()
+  skyscraper.init("skyscraper_config.ini", skyscraper_binary)
   input.load()
   spinner:load()
   get_templates()
   background = load_image("assets/muxsysinfo.png")
   overlay = load_image("assets/preview.png")
   render_to_canvas()
-  skyscraper.init("skyscraper_config.ini", skyscraper_binary)
 
   local debug = user_config:read("main", "debug")
   if not debug or debug == 0 then
