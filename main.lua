@@ -235,7 +235,20 @@ function love.update(dt)
 
   -- Left side
   ui.layout(w_width / 2 + 10, 0, w_width / 2, w_height, 10, 10)
-  ui.element("icon_label", { 0, 0 }, "Platform: " .. state.data.platform,
+  ui.element("icon_label", { 0, 0 }, "Artwork", "folder_image")
+  ui.element("select",
+    { 0, 0, w_width / 2 - ui_padding * 3, 30 },
+    on_artwork_change,
+    templates,
+    current_template
+  )
+  ui.element("button",
+    { 0, 0, w_width / 2 - ui_padding * 3, 30 },
+    scrape_platforms,
+    "Start scraping",
+    "play"
+  )
+  ui.element("icon_label", { 0, 22 }, "Platform: " .. state.data.platform,
     "controller")
   ui.element("icon_label", { 0, 0 }, "Game: " .. state.data.title, "cd")
   ui.element("icon_label", { 0, 0 },
@@ -243,20 +256,6 @@ function love.update(dt)
     "info")
   ui.element("progress_bar", { 0, 0, w_width / 2 - ui_padding * 3, 20 },
     state.current / state.total)
-  ui.element("icon_label", { 0, 16 }, "Artwork", "folder_image")
-  ui.element("select",
-    { 0, 0, w_width / 2 - ui_padding * 3, 30 },
-    on_artwork_change,
-    templates,
-    current_template
-  )
-
-  ui.element("button",
-    { 0, 0, w_width / 2 - ui_padding * 3, 30 },
-    scrape_platforms,
-    "Start scraping",
-    "play"
-  )
   ui.element("button",
     { 0, 0, w_width / 2 - ui_padding * 3, 30 },
     on_refresh_press,
@@ -265,10 +264,10 @@ function love.update(dt)
   )
   ui.end_layout()
 
-
-
   -- Right side
-  ui.element("icon_label", { ui_padding, 10 }, "Preview", "file_image")
+  ui.layout(0, 0, w_width / 2, w_height, 10, 10)
+  ui.element("icon_label", { 0, 0 }, "Preview", "file_image")
+  ui.end_layout()
 
   if state.scraping then
     local input_count = INPUT_CHANNEL:getCount()
@@ -318,7 +317,7 @@ local function draw_preview(x, y, scale, show_overlay)
 end
 
 local function main_draw()
-  draw_preview(ui_padding, 30, 0.5, true)
+  draw_preview(ui_padding, 36, 0.5, true)
   if state.error ~= "" then
     love.graphics.print("ERROR: " .. state.error, 10, 40)
   end
