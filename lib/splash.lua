@@ -39,14 +39,16 @@ function splash.draw()
   love.graphics.push()
   love.graphics.translate(width / 2, height / 2)
   love.graphics.setColor(colors.main)
-  love.graphics.draw(logo, 0, half_height - anim.value * half_height, 0, logo_scale, logo_scale,
+  love.graphics.draw(logo, 0, -anim.value * half_height, 0, logo_scale,
+    logo_scale,
     logo:getWidth() / 2,
     half_height)
   love.graphics.setColor(1, 1, 1, anim.value)
   love.graphics.push()
+  love.graphics.translate(0, half_height)
   love.graphics.scale(1.5)
   love.graphics.draw(app_name, -app_name:getWidth() / 2,
-    half_height + app_name:getHeight() - anim.value * app_name:getHeight())
+    -anim.value * app_name:getHeight())
   love.graphics.pop()
   love.graphics.push()
   love.graphics.setColor(1, 1, 1, 0.5)

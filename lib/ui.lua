@@ -14,6 +14,7 @@ local ui = {
     info = love.graphics.newImage("assets/icons/Info.png"),
     cd = love.graphics.newImage("assets/icons/CD.png"),
     play = love.graphics.newImage("assets/icons/Play.png"),
+    at = love.graphics.newImage("assets/icons/Asperand-Sign.png")
   },
   registered_elements = {}, -- Store elements with unique identifiers
   focusable_elements = {},  -- Store focusable elements in order of appearance
@@ -28,7 +29,7 @@ local colors = {
   background = { 0, 0, 0 },
   button = { 0.1, 0.1, 0.1 },
   button_highlight = { 0.5, 0.5, 0.5 },
-  focus = { 0.5, 0.5, 0.2 }
+  focus = { 0.8, 0.8, 0.2 }
 }
 
 local padding = 4
@@ -51,12 +52,14 @@ local function draw_button(x, y, w, h, label, left_icon, right_icon, focused)
   local t = love.graphics.newText(font, label)
   local tw, th = t:getWidth(), t:getHeight()
 
+  local border = 2
+
   love.graphics.push()
   love.graphics.setScissor(x, y, w, h)
   love.graphics.setColor(focused and colors.focus or colors.button)
   love.graphics.rectangle("fill", x, y, w, h)
-  love.graphics.setColor(colors.button_highlight)
-  love.graphics.rectangle("line", x, y, w, h)
+  love.graphics.setColor(colors.button)
+  love.graphics.rectangle("fill", x + border, y + border, w - 2 * border, h - 2 * border)
   love.graphics.setColor(colors.text)
   if left_icon then
     draw_icon(left_icon, x + padding, y + h / 2 - icon_h / 2)
@@ -90,6 +93,16 @@ local function draw_progress_bar(x, y, w, h, progress)
   love.graphics.rectangle("line", 0, 0, w, h)
   love.graphics.setColor(colors.text)
   love.graphics.rectangle("fill", 0, 0, progress * w, h)
+  love.graphics.pop()
+end
+
+local function draw_multiline_text(x, y, w, h, text)
+  local _, wrappedtext = font:getWrap(text, w - 10)
+  love.graphics.push()
+  love.graphics.setColor(colors.button)
+  love.graphics.rectangle("fill", x, y, w - 20, #wrappedtext * h)
+  love.graphics.setColor(colors.text)
+  love.graphics.printf(wrappedtext, x + 10, y + 5, w - 10, "left")
   love.graphics.pop()
 end
 
@@ -243,6 +256,9 @@ function ui.element(type, pos, ...)
   elseif type == "progress_bar" then
     local progress = unpack({ ... }, 1, 1)
     ui.register(draw_progress_bar, x, y, w, h, progress)
+  elseif type == "multiline_text" then
+    local text = unpack({ ... }, 1, 1)
+    ui.register(draw_multiline_text, x, y, w, h, text)
   end
 end
 

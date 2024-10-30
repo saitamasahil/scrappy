@@ -16,7 +16,7 @@ input.events = {
   RETURN = "return",
 }
 
-local cooldown_duration = 0.5
+local cooldown_duration = 0.2
 local last_trigger_time = -cooldown_duration
 
 local function can_trigger_global(dt)

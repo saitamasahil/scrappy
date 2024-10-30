@@ -36,6 +36,7 @@ while true do
       end
       if error ~= nil and error ~= "" then
         print("ERROR: " .. error)
+        OUTPUT_CHANNEL:push({ data = {}, error = error, loading = false })
         break
       end
     end

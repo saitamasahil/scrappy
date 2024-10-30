@@ -304,6 +304,22 @@ function love.update(dt)
   ui.element("icon_label", { 0, 0 }, "Preview", "file_image")
   ui.end_layout()
 
+  -- Advanced
+  ui.layout(0, w_height / 2 + 46, w_width, w_height / 2, 10, 10)
+  ui.element("icon_label", { 0, 0 }, "Advanced", "at")
+  ui.element(
+    "button",
+    { 0, 0, w_width / 2 - ui_padding * 3, 30 },
+    function() end,
+    "Clear cache",
+    "disk"
+  )
+  if state.error ~= nil and state.error ~= "" then
+    ui.element("icon_label", { 0, 10 }, "Error", "warn")
+    ui.element("multiline_text", { 0, 0, w_width, 30 }, state.error, "warn")
+  end
+  ui.end_layout()
+
   if state.reload_preview and not state.loading then
     print("Reloading preview")
     state.reload_preview = false
