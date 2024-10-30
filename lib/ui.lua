@@ -13,6 +13,7 @@ local ui = {
     warn = love.graphics.newImage("assets/icons/Exclamation-Mark.png"),
     info = love.graphics.newImage("assets/icons/Info.png"),
     cd = love.graphics.newImage("assets/icons/CD.png"),
+    play = love.graphics.newImage("assets/icons/Play.png"),
   },
   registered_elements = {}, -- Store elements with unique identifiers
   focusable_elements = {},  -- Store focusable elements in order of appearance
@@ -147,6 +148,8 @@ function ui.keypressed(key)
   end
 
   if current_index then
+    local focused_element = ui.focusable_elements[current_index]
+    -- Handle navigation
     if key == "down" then
       -- Move focus down to the next element, wrapping around if needed
       local next_index = (current_index % #ui.focusable_elements) + 1
@@ -155,6 +158,17 @@ function ui.keypressed(key)
       -- Move focus up to the previous element, wrapping around if needed
       local prev_index = ((current_index - 2) % #ui.focusable_elements) + 1
       ui.setFocusById(ui.focusable_elements[prev_index].id)
+    end
+
+    -- Handle specific actions based on element type and keys
+    if focused_element.type == "select" then
+      if (key == "left" or key == "right") and focused_element.callback then
+        focused_element.callback(key) -- Call the callback function with the key as argument
+      end
+    elseif focused_element.type == "button" then
+      if key == "return" and focused_element.callback then
+        focused_element.callback() -- Call the onPress function
+      end
     end
   end
 end
@@ -166,7 +180,8 @@ function ui.element(type, pos, ...)
   if not ui.registered_elements[id] then
     ui.registered_elements[id] = true
     if type == "button" or type == "select" then
-      table.insert(ui.focusable_elements, { id = id, type = type, pos = pos })
+      local callback = select(1, ...)
+      table.insert(ui.focusable_elements, { id = id, type = type, pos = pos, callback = callback })
       if not ui.current_focus_id then
         ui.setFocusById(id)
       end
@@ -176,9 +191,9 @@ function ui.element(type, pos, ...)
   if type == "button" or type == "select" then
     local label, left_icon, right_icon
     if type == "button" then
-      label, left_icon, right_icon = unpack({ ... }, 1)
+      _, label, left_icon, right_icon = unpack({ ... }, 1)
     elseif type == "select" then
-      local data, current = unpack({ ... }, 1, 2)
+      local _, data, current = unpack({ ... }, 1, 3)
       label, left_icon, right_icon = data[current], "chevron_left", "chevron_right"
     end
     ui.register(draw_button, x, y, w, h, label, left_icon, right_icon, isFocused(id))

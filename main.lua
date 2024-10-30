@@ -181,18 +181,6 @@ local function scrape_platforms()
   end
 end
 
-local function handle_input()
-  input.onEvent(function(event)
-    ui.keypressed(event)
-    if event == input.events.LEFT then
-      scrape_platforms()
-      -- update_preview(-1)
-    elseif event == input.events.RIGHT then
-      update_preview(1)
-    end
-  end)
-end
-
 local function copy_artwork()
   -- Get list of scraped artwork
   local scraped_art = nativefs.getDirectoryItems("data/output")
@@ -225,17 +213,34 @@ local function copy_artwork()
   end
 end
 
+local function on_artwork_change(key)
+  if key == "left" then
+    update_preview(-1)
+  elseif key == "right" then
+    update_preview(1)
+  end
+end
+
+local function on_refresh_press()
+  user_config:load_platforms()
+  user_config:save()
+end
+
 function love.update(dt)
   splash.update(dt)
   input.update(dt)
   spinner:update(dt)
-  handle_input()
+  input.onEvent(ui.keypressed)
   update_state()
 
   -- Left side
   ui.element("icon_label", { w_width / 2 + ui_padding * 2, ui_padding }, "Artwork", "folder_image")
-  ui.element("select", { w_width / 2 + ui_padding * 2, ui_padding + 20, w_width / 2 - ui_padding * 3, 30 }, templates,
-    current_template)
+  ui.element("select",
+    { w_width / 2 + ui_padding * 2, ui_padding + 20, w_width / 2 - ui_padding * 3, 30 },
+    on_artwork_change,
+    templates,
+    current_template
+  )
   ui.element("icon_label", { w_width / 2 + ui_padding * 2, ui_padding * 4 + 50 }, "Platform: " .. state.data.platform,
     "controller")
   ui.element("icon_label", { w_width / 2 + ui_padding * 2, ui_padding * 4 + 70 }, "Game: " .. state.data.title, "cd")
@@ -244,9 +249,19 @@ function love.update(dt)
     "info")
   ui.element("progress_bar", { w_width / 2 + ui_padding * 2, ui_padding * 6 + 110, w_width / 2 - ui_padding * 3, 20 },
     state.current / state.total)
-  ui.element("button", { w_width / 2 + ui_padding * 2, ui_padding * 6 + 130, w_width / 2 - ui_padding * 3, 30 },
+  ui.element("button",
+    { w_width / 2 + ui_padding * 2, ui_padding * 6 + 130, w_width / 2 - ui_padding * 3, 30 },
+    on_refresh_press,
     "Refresh platforms",
-    "redo")
+    "redo"
+  )
+
+  ui.element("button",
+    { w_width / 2 + ui_padding * 2, ui_padding * 6 + 170, w_width / 2 - ui_padding * 3, 30 },
+    scrape_platforms,
+    "Start scraping",
+    "play"
+  )
 
   -- Right side
   ui.element("icon_label", { ui_padding, 10 }, "Preview", "file_image")
