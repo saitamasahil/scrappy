@@ -1,11 +1,12 @@
 require("globals")
+local font = love.graphics.newFont("assets/monogram.ttf", 30)
 love.graphics.setDefaultFilter("nearest", "nearest")
-local font = love.graphics.newFont("assets/monogram.ttf", 20)
 love.graphics.setFont(font)
 
 local skyscraper = require("lib.skyscraper")
 local splash = require("lib.splash")
 local loading = require("lib.loading")
+local ui = require("lib.ui")
 local input = require("helpers.input")
 local config = require("helpers.config")
 local muos = require("helpers.muos")
@@ -16,6 +17,7 @@ local skyscraper_config = config.new("skyscraper", "skyscraper_config.ini")
 local templates = {}
 local current_template = 0
 
+local ui_padding = 10
 local canvas = love.graphics.newCanvas(640, 480)
 local background, overlay
 local default_cover_path = "sample/media/covers/fake-rom.png"
@@ -28,7 +30,7 @@ local spinner = loading.new("spinner", 1)
 local state = {
   data = {
     title = "N/A",
-    platform = "",
+    platform = "N/A",
   },
   error = "",
   loading = nil,
@@ -226,6 +228,13 @@ function love.update(dt)
   handle_input()
   update_state()
 
+  ui.element("icon_label", { ui_padding, ui_padding }, "Artwork", "folder_image")
+  ui.element("select", { ui_padding, ui_padding + 20, w_width / 2 - ui_padding * 3, 30 }, templates, current_template)
+  ui.element("icon_label", { ui_padding, ui_padding * 2 + 50 }, "Platform: " .. state.data.platform, "controller")
+  ui.element("icon_label", { ui_padding, ui_padding * 2 + 70 }, "Game: " .. state.data.title, "cd")
+  ui.element("icon_label", { ui_padding, ui_padding * 2 + 90 }, "Progress", "info")
+  ui.element("icon_label", { w_width / 2 - 10, 10 }, "Preview", "file_image")
+
   if state.scraping then
     local input_count = INPUT_CHANNEL:getCount()
     if input_count == 0 then
@@ -268,17 +277,9 @@ local function draw_preview(x, y, scale, show_overlay)
 end
 
 local function main_draw()
-  love.graphics.print(templates[current_template], 0, 0)
-  love.graphics.rectangle("line", 10, 20, 100, 20)
-  draw_preview(0, 0, 0.5, true)
+  draw_preview(w_width / 2 - 10, 30, 0.5, true)
   if state.error ~= "" then
     love.graphics.print("ERROR: " .. state.error, 10, 40)
-  end
-  if state.data and state.data.title then
-    love.graphics.print("Title: " .. state.data.title, 10, 60)
-  end
-  if state.data and state.data.platform then
-    love.graphics.print("PLATFORM: " .. state.data.platform, 10, 80)
   end
 end
 
@@ -288,5 +289,6 @@ function love.draw()
 
   if splash.finished then
     main_draw()
+    ui.draw()
   end
 end
