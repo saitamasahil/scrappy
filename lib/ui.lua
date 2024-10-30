@@ -13,7 +13,10 @@ local ui = {
     warn = love.graphics.newImage("assets/icons/Exclamation-Mark.png"),
     info = love.graphics.newImage("assets/icons/Info.png"),
     cd = love.graphics.newImage("assets/icons/CD.png"),
-  }
+  },
+  registered_elements = {}, -- Store elements with unique identifiers
+  focusable_elements = {},  -- Store focusable elements in order of appearance
+  current_focus_id = nil    -- Track the focused element by ID
 }
 
 local draw_queue = { n = 0 }
@@ -22,7 +25,8 @@ local colors = {
   text = { 1, 1, 1 },
   background = { 0, 0, 0 },
   button = { 0.1, 0.1, 0.1 },
-  button_highlight = { 0.5, 0.5, 0.5 }
+  button_highlight = { 0.5, 0.5, 0.5 },
+  focus = { 0.5, 0.5, 0.2 }
 }
 
 local padding = 4
@@ -41,13 +45,13 @@ local function draw_icon(icon, x, y)
   love.graphics.pop()
 end
 
-local function draw_button(x, y, w, h, label, left_icon, right_icon)
+local function draw_button(x, y, w, h, label, left_icon, right_icon, focused)
   local t = love.graphics.newText(font, label)
   local tw, th = t:getWidth(), t:getHeight()
 
   love.graphics.push()
   love.graphics.setScissor(x, y, w, h)
-  love.graphics.setColor(colors.button)
+  love.graphics.setColor(focused and colors.focus or colors.button)
   love.graphics.rectangle("fill", x, y, w, h)
   love.graphics.setColor(colors.button_highlight)
   love.graphics.rectangle("line", x, y, w, h)
@@ -87,6 +91,18 @@ local function draw_progress_bar(x, y, w, h, progress)
   love.graphics.pop()
 end
 
+local function generate_id(type, x, y)
+  return type .. "_" .. tostring(x) .. "_" .. tostring(y)
+end
+
+function ui.setFocusById(id)
+  ui.current_focus_id = id
+end
+
+local function isFocused(id)
+  return id == ui.current_focus_id
+end
+
 function ui.register(fn, ...)
   local args = { ... }
   local nargs = select('#', ...)
@@ -119,25 +135,57 @@ function ui.draw()
   draw_queue.n = 0
 end
 
-function ui.update(dt)
-  -- TODO
+function ui.keypressed(key)
+  local current_index = nil
+
+  -- Find the current focus index in the focusable elements
+  for i, element in ipairs(ui.focusable_elements) do
+    if element.id == ui.current_focus_id then
+      current_index = i
+      break
+    end
+  end
+
+  if current_index then
+    if key == "down" then
+      -- Move focus down to the next element, wrapping around if needed
+      local next_index = (current_index % #ui.focusable_elements) + 1
+      ui.setFocusById(ui.focusable_elements[next_index].id)
+    elseif key == "up" then
+      -- Move focus up to the previous element, wrapping around if needed
+      local prev_index = ((current_index - 2) % #ui.focusable_elements) + 1
+      ui.setFocusById(ui.focusable_elements[prev_index].id)
+    end
+  end
 end
 
 function ui.element(type, pos, ...)
   local x, y, w, h = unpack(pos)
-  if type == "button" then
-    local label, left_icon, right_icon = unpack({ ... }, 1)
-    ui.register(draw_button, x, y, w, h, label, left_icon, right_icon)
+  local id = generate_id(type, x, y)
+
+  if not ui.registered_elements[id] then
+    ui.registered_elements[id] = true
+    if type == "button" or type == "select" then
+      table.insert(ui.focusable_elements, { id = id, type = type, pos = pos })
+      if not ui.current_focus_id then
+        ui.setFocusById(id)
+      end
+    end
   end
-  if type == "select" then
-    local data, current = unpack({ ... }, 1, 2)
-    ui.register(draw_button, x, y, w, h, data[current], "chevron_left", "chevron_right")
-  end
-  if type == "icon_label" then
+
+  if type == "button" or type == "select" then
+    local label, left_icon, right_icon
+    if type == "button" then
+      label, left_icon, right_icon = unpack({ ... }, 1)
+    elseif type == "select" then
+      local data, current = unpack({ ... }, 1, 2)
+      label, left_icon, right_icon = data[current], "chevron_left", "chevron_right"
+    end
+    ui.register(draw_button, x, y, w, h, label, left_icon, right_icon, isFocused(id))
+  elseif type == "icon_label" then
     local label, icon = unpack({ ... }, 1, 2)
     ui.register(draw_icon_label, label, icon, x, y)
-  end
-  if type == "progress_bar" then
+  elseif type == "progress_bar" then
     local progress = unpack({ ... }, 1, 1)
     ui.register(draw_progress_bar, x, y, w, h, progress)
   end

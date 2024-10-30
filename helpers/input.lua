@@ -13,6 +13,7 @@ input.events = {
   UP = "up",
   DOWN = "down",
   ESC = "escape",
+  RETURN = "return",
 }
 
 local cooldown_duration = 0.5
@@ -74,6 +75,18 @@ function love.keypressed(key)
 
   if key == "right" then
     trigger(input.events.RIGHT)
+  end
+
+  if key == "up" then
+    trigger(input.events.UP)
+  end
+
+  if key == "down" then
+    trigger(input.events.DOWN)
+  end
+
+  if key == "return" then
+    trigger(input.events.RETURN)
   end
 
   if key == "space" then

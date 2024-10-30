@@ -183,6 +183,7 @@ end
 
 local function handle_input()
   input.onEvent(function(event)
+    ui.keypressed(event)
     if event == input.events.LEFT then
       scrape_platforms()
       -- update_preview(-1)
@@ -232,18 +233,23 @@ function love.update(dt)
   update_state()
 
   -- Left side
-  ui.element("icon_label", { ui_padding, ui_padding }, "Artwork", "folder_image")
-  ui.element("select", { ui_padding, ui_padding + 20, w_width / 2 - ui_padding * 3, 30 }, templates, current_template)
-  ui.element("icon_label", { ui_padding, ui_padding * 4 + 50 }, "Platform: " .. state.data.platform, "controller")
-  ui.element("icon_label", { ui_padding, ui_padding * 4 + 70 }, "Game: " .. state.data.title, "cd")
-  ui.element("icon_label", { ui_padding, ui_padding * 6 + 90 },
+  ui.element("icon_label", { w_width / 2 + ui_padding * 2, ui_padding }, "Artwork", "folder_image")
+  ui.element("select", { w_width / 2 + ui_padding * 2, ui_padding + 20, w_width / 2 - ui_padding * 3, 30 }, templates,
+    current_template)
+  ui.element("icon_label", { w_width / 2 + ui_padding * 2, ui_padding * 4 + 50 }, "Platform: " .. state.data.platform,
+    "controller")
+  ui.element("icon_label", { w_width / 2 + ui_padding * 2, ui_padding * 4 + 70 }, "Game: " .. state.data.title, "cd")
+  ui.element("icon_label", { w_width / 2 + ui_padding * 2, ui_padding * 6 + 90 },
     string.format("Progress: %d / %d", state.current, state.total),
     "info")
-  ui.element("progress_bar", { ui_padding, ui_padding * 6 + 110, w_width / 2 - ui_padding * 3, 20 },
+  ui.element("progress_bar", { w_width / 2 + ui_padding * 2, ui_padding * 6 + 110, w_width / 2 - ui_padding * 3, 20 },
     state.current / state.total)
+  ui.element("button", { w_width / 2 + ui_padding * 2, ui_padding * 6 + 130, w_width / 2 - ui_padding * 3, 30 },
+    "Refresh platforms",
+    "redo")
 
   -- Right side
-  ui.element("icon_label", { w_width / 2 - 10, 10 }, "Preview", "file_image")
+  ui.element("icon_label", { ui_padding, 10 }, "Preview", "file_image")
 
   if state.scraping then
     local input_count = INPUT_CHANNEL:getCount()
@@ -293,7 +299,7 @@ local function draw_preview(x, y, scale, show_overlay)
 end
 
 local function main_draw()
-  draw_preview(w_width / 2 - 10, 30, 0.5, true)
+  draw_preview(ui_padding, 30, 0.5, true)
   if state.error ~= "" then
     love.graphics.print("ERROR: " .. state.error, 10, 40)
   end
