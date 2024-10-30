@@ -27,14 +27,18 @@ end
 
 function config:create_from(example_file)
   local example = ini.load(example_file)
-  if ini.save(example, self.path) ~= nil == nil then
-    return nil
+  if ini.save(example, self.path) ~= nil then
+    self.values = example
+    return 1
   end
 
-  return self:load()
+  return nil
 end
 
 function config:read(section, key)
+  if self.values[section] == nil then
+    return nil
+  end
   return ini.readKey(self.values, section, key)
 end
 
@@ -50,32 +54,54 @@ function config:get()
 end
 
 function config:detect_sd()
+  print("Detecting SD")
   local sd1 = muos.SD1_PATH
   local sd2 = muos.SD2_PATH
-  if nativefs.getInfo(sd2) then
+  if #nativefs.getDirectoryItems(sd2) > 0 then
     self:insert("main", "sd", 2)
-    -- print("Found SD2")
-  elseif nativefs.getInfo(sd1) then
+    print("Found SD2")
+  elseif #nativefs.getDirectoryItems(sd1) > 0 then
     self:insert("main", "sd", 1)
-    -- print("Found SD1")
+    print("Found SD1")
   else
-    -- print("No SD found")
+    print("No SD found")
     return
   end
-  self:save()
+end
+
+function config:get_paths()
+  if self.type == "skyscraper" then
+    return nil, nil
+  end
+  -- Check for overrides
+  local rom_path_override = self:read("overrides", "romPath")
+  local catalogue_path_override = self:read("overrides", "cataloguePath")
+  if rom_path_override ~= nil and catalogue_path_override ~= nil then
+    return rom_path_override, catalogue_path_override
+  end
+
+  -- Get paths
+  local sd = self:read("main", "sd")
+  local rom_path = string.format("%s/roms", muos.SD2_PATH)
+  local catalogue_path = string.format("%s/%s", muos.SD2_PATH, muos.CATALOGUE)
+  if tonumber(sd) == 1 then
+    rom_path = string.format("%s/ROMS", muos.SD1_PATH)
+    catalogue_path = string.format("%s/%s", muos.SD1_PATH, muos.CATALOGUE)
+  end
+
+  -- Check for overrides
+  if rom_path_override then rom_path = rom_path_override end
+  if catalogue_path_override then catalogue_path = catalogue_path_override end
+  return rom_path, catalogue_path
 end
 
 function config:load_platforms()
+  print("Loading platforms")
   if self.type == "skyscraper" then
     return
   end
 
-  local sd = self:read("main", "sd")
-  local rom_path = muos.SD1_PATH
-
-  if sd == 2 then
-    rom_path = muos.SD2_PATH
-  end
+  local rom_path, _ = self:get_paths()
 
   local platforms = nativefs.getDirectoryItems(rom_path)
   local mapped_total = 0
@@ -97,32 +123,6 @@ function config:load_platforms()
     end
   end
   print(string.format("Found %d platforms, mapped %d", #platforms, mapped_total))
-end
-
-function config:get_paths()
-  if self.type == "skyscraper" then
-    return nil, nil
-  end
-  -- Check for overrides
-  local rom_path_override = self:read("overrides", "romPath")
-  local catalogue_path_override = self:read("overrides", "cataloguePath")
-  if rom_path_override ~= nil and catalogue_path_override ~= nil then
-    return rom_path_override, catalogue_path_override
-  end
-
-  -- Get paths
-  local sd = self:read("main", "sd")
-  local rom_path = string.format("%s/roms", muos.SD2_PATH)
-  local catalogue_path = string.format("%s/%s", muos.SD2_PATH, muos.CATALOGUE)
-  if sd == 1 then
-    rom_path = string.format("%s/ROMS", muos.SD1_PATH)
-    catalogue_path = string.format("%s/%s", muos.SD1_PATH, muos.CATALOGUE)
-  end
-
-  -- Check for overrides
-  if rom_path_override ~= nil then rom_path = rom_path_override end
-  if catalogue_path_override ~= nil then catalogue_path = catalogue_path_override end
-  return rom_path, catalogue_path
 end
 
 return config

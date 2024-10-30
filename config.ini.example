@@ -2,4 +2,3 @@
 binary=bin/Skyscraper.x86
 sd=1
 [platforms]
-gba=gba

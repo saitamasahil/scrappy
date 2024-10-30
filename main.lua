@@ -94,7 +94,7 @@ end
 local function setup_configs()
   local rom_path = muos.SD1_PATH
   if user_config:load() then
-    skyscraper_binary = user_config:read("main", "binary")
+    skyscraper_binary = user_config:read("main", "binary") or skyscraper_binary
     if user_config:read("main", "sd") == 2 then rom_path = muos.SD2_PATH end
   else
     local loaded = user_config:create_from("config.ini.example")
@@ -157,10 +157,11 @@ local function update_state()
 end
 
 local function scrape_platforms()
+  print("Scraping platforms")
   -- Load platforms from config
   local platforms = user_config:get().platforms
   local rom_path, _ = user_config:get_paths()
-  print(rom_path)
+  print("ROM path: " .. rom_path)
   state.scraping = true
   -- For each source = destionation pair in config, fetch and update artwork
   for src, dest in pairs(platforms) do
