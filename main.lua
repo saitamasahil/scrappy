@@ -34,7 +34,9 @@ local state = {
   },
   error = "",
   loading = nil,
-  scraping = false
+  scraping = false,
+  total = 0,
+  current = 0,
 }
 
 local function load_image(filename)
@@ -228,15 +230,28 @@ function love.update(dt)
   handle_input()
   update_state()
 
+  -- Left side
   ui.element("icon_label", { ui_padding, ui_padding }, "Artwork", "folder_image")
   ui.element("select", { ui_padding, ui_padding + 20, w_width / 2 - ui_padding * 3, 30 }, templates, current_template)
-  ui.element("icon_label", { ui_padding, ui_padding * 2 + 50 }, "Platform: " .. state.data.platform, "controller")
-  ui.element("icon_label", { ui_padding, ui_padding * 2 + 70 }, "Game: " .. state.data.title, "cd")
-  ui.element("icon_label", { ui_padding, ui_padding * 2 + 90 }, "Progress", "info")
+  ui.element("icon_label", { ui_padding, ui_padding * 4 + 50 }, "Platform: " .. state.data.platform, "controller")
+  ui.element("icon_label", { ui_padding, ui_padding * 4 + 70 }, "Game: " .. state.data.title, "cd")
+  ui.element("icon_label", { ui_padding, ui_padding * 6 + 90 },
+    string.format("Progress: %d / %d", state.current, state.total),
+    "info")
+  ui.element("progress_bar", { ui_padding, ui_padding * 6 + 110, w_width / 2 - ui_padding * 3, 20 },
+    state.current / state.total)
+
+  -- Right side
   ui.element("icon_label", { w_width / 2 - 10, 10 }, "Preview", "file_image")
 
   if state.scraping then
     local input_count = INPUT_CHANNEL:getCount()
+
+    if input_count > state.total then
+      state.total = input_count
+    else
+      state.current = state.total - input_count
+    end
     if input_count == 0 then
       state.scraping = false
       copy_artwork()

@@ -75,6 +75,18 @@ local function draw_icon_label(label, icon, x, y)
   love.graphics.pop()
 end
 
+local function draw_progress_bar(x, y, w, h, progress)
+  love.graphics.push()
+  love.graphics.translate(x, y)
+  love.graphics.setColor(colors.button)
+  love.graphics.rectangle("fill", 0, 0, w, h)
+  love.graphics.setColor(colors.button_highlight)
+  love.graphics.rectangle("line", 0, 0, w, h)
+  love.graphics.setColor(colors.text)
+  love.graphics.rectangle("fill", 0, 0, progress * w, h)
+  love.graphics.pop()
+end
+
 function ui.register(fn, ...)
   local args = { ... }
   local nargs = select('#', ...)
@@ -111,16 +123,6 @@ function ui.update(dt)
   -- TODO
 end
 
-local function draw_container(x, y, w, h, fn)
-  love.graphics.push()
-  love.graphics.translate(x, y)
-  love.graphics.setColor(colors.background)
-  love.graphics.rectangle("fill", 0, 0, w, h)
-  love.graphics.setColor(colors.text)
-  love.graphics.rectangle("line", 0, 0, w, h)
-  love.graphics.pop()
-end
-
 function ui.element(type, pos, ...)
   local x, y, w, h = unpack(pos)
   if type == "button" then
@@ -135,23 +137,10 @@ function ui.element(type, pos, ...)
     local label, icon = unpack({ ... }, 1, 2)
     ui.register(draw_icon_label, label, icon, x, y)
   end
-  -- if type == "container" then
-  --   ui.register(draw_container, x, y, w, h, ...)
-  -- end
-  -- if type == "button" then
-  --   ui.elements[#ui.elements + 1] = {
-  --     type = type,
-  --     label = label,
-  --     x = x,
-  --     y = y,
-  --     w = w,
-  --     h = h,
-  --     state = {
-  --       focus = false,
-  --       click = false
-  --     }
-  --   }
-  -- end
+  if type == "progress_bar" then
+    local progress = unpack({ ... }, 1, 1)
+    ui.register(draw_progress_bar, x, y, w, h, progress)
+  end
 end
 
 return ui
