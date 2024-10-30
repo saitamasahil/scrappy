@@ -22,7 +22,7 @@ function parser.parse(line)
       index = tonumber(game_number),
       total = tonumber(total_games),
       title = game_title
-    }, ""
+    }, nil
   else
     -- print("Line did not match: " .. line)
     for _, error in ipairs(SKYSCRAPER_ERRORS) do
@@ -30,7 +30,7 @@ function parser.parse(line)
         return {}, line
       end
     end
-    return {}, ""
+    return {}, nil
   end
 end
 

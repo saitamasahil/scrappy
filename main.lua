@@ -136,32 +136,16 @@ function love.load()
   end
 end
 
-local function update_state()
-  local t = OUTPUT_CHANNEL:pop()
-  if t then
-    if t.error ~= "" then
-      state.error = t.error
-    end
-    if t.data ~= nil and next(t.data) ~= nil then
-      state.data = t.data
-      if state.data.title ~= nil and state.data.title ~= "fake-rom" then
-        cover_preview_path = string.format("data/output/%s/media/covers/%s.png", state.data.platform, state.data
-          .title)
-        state.reload_preview = true
-      end
-    end
-    if t.loading ~= nil then
-      state.loading = t.loading
-    end
-  end
-end
-
 local function scrape_platforms()
   print("Scraping platforms")
   -- Load platforms from config
   local platforms = user_config:get().platforms
   local rom_path, _ = user_config:get_paths()
   print("ROM path: " .. rom_path)
+  -- Set state
+  local tasks = 0
+  state.current = 0
+  state.total = 0
   state.scraping = true
   -- For each source = destionation pair in config, fetch and update artwork
   for src, dest in pairs(platforms) do
@@ -170,15 +154,17 @@ local function scrape_platforms()
     local roms = nativefs.getDirectoryItems(platform_path)
     for i = 1, #roms do
       local file = roms[i]
+      tasks = tasks + 1
       -- Fetch and update artwork
       skyscraper.fetch_and_update_artwork(
         platform_path,
-        string.format(platform_path .. "/" .. file, dest, file),
+        file,
         dest,
         templates[current_template]
       )
     end
   end
+  state.total = tasks
 end
 
 local function copy_artwork()
@@ -213,6 +199,33 @@ local function copy_artwork()
   end
 end
 
+local function update_state()
+  local t = OUTPUT_CHANNEL:pop()
+  if t then
+    if t.error ~= "" then
+      state.error = t.error
+    end
+    if t.data ~= nil and next(t.data) ~= nil then
+      state.data = t.data
+      if state.scraping then
+        state.current = state.current + 1
+        if state.current >= state.total then
+          state.scraping = false
+          copy_artwork()
+        end
+      end
+      if state.data.title ~= nil and state.data.title ~= "fake-rom" then
+        cover_preview_path = string.format("data/output/%s/media/covers/%s.png", state.data.platform, state.data
+          .title)
+        state.reload_preview = true
+      end
+    end
+    if t.loading ~= nil then
+      state.loading = t.loading
+    end
+  end
+end
+
 local function on_artwork_change(key)
   if key == "left" then
     update_preview(-1)
@@ -230,6 +243,7 @@ function love.update(dt)
   splash.update(dt)
   input.update(dt)
   spinner:update(dt)
+  timer.update(dt)
   input.onEvent(ui.keypressed)
   update_state()
 
@@ -248,7 +262,7 @@ function love.update(dt)
     "Start scraping",
     "play"
   )
-  ui.element("icon_label", { 0, 22 }, "Platform: " .. state.data.platform,
+  ui.element("icon_label", { 0, 22 }, "Platform: " .. (state.data.platform or "N/A"),
     "controller")
   ui.element("icon_label", { 0, 0 }, "Game: " .. state.data.title, "cd")
   ui.element("icon_label", { 0, 0 },
@@ -268,20 +282,6 @@ function love.update(dt)
   ui.layout(0, 0, w_width / 2, w_height, 10, 10)
   ui.element("icon_label", { 0, 0 }, "Preview", "file_image")
   ui.end_layout()
-
-  if state.scraping then
-    local input_count = INPUT_CHANNEL:getCount()
-
-    if input_count > state.total then
-      state.total = input_count
-    else
-      state.current = state.total - input_count
-    end
-    if input_count == 0 then
-      state.scraping = false
-      copy_artwork()
-    end
-  end
 
   if state.reload_preview and not state.loading then
     print("Reloading preview")
@@ -316,19 +316,12 @@ local function draw_preview(x, y, scale, show_overlay)
   love.graphics.pop()
 end
 
-local function main_draw()
-  draw_preview(ui_padding, 36, 0.5, true)
-  if state.error ~= "" then
-    love.graphics.print("ERROR: " .. state.error, 10, 40)
-  end
-end
-
 function love.draw()
   love.graphics.setBackgroundColor(0, 0, 0, 1)
   splash.draw()
 
   if splash.finished then
-    main_draw()
+    draw_preview(ui_padding, 36, 0.5, true)
     ui.draw()
   end
 end
