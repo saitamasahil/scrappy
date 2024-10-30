@@ -70,9 +70,17 @@ local function generate_command(config)
   return command
 end
 
-function skyscraper.run(command)
+function skyscraper.run(command, platform, op, game)
   -- print("Running Skyscraper")
-  push_command(skyscraper.base_command .. command)
+  platform = platform or "N/A"
+  op = op or "generate"
+  game = game or "N/A"
+  push_command({
+    command = skyscraper.base_command .. command,
+    platform = platform,
+    op = op,
+    game = game,
+  })
 end
 
 function skyscraper.change_artwork(artworkXml)
@@ -92,7 +100,7 @@ function skyscraper.update_sample(artwork_path)
     artwork = artwork_path,
     flags = { "unattend" },
   })
-  skyscraper.run(command)
+  skyscraper.run(command, "N/A", "generate", "fake-rom")
 end
 
 function skyscraper.custom_update_artwork(platform, cache, input, artwork)
@@ -126,22 +134,21 @@ end
 
 function skyscraper.fetch_and_update_artwork(rom_path, rom, platform, artwork)
   local artwork = WORK_DIR .. "/templates/" .. artwork .. ".xml"
-  local rom = "\"" .. rom .. "\""
   local fetch_command = generate_command({
     platform = platform,
     input = rom_path,
     fetch = true,
-    rom = rom,
+    rom = "\"" .. rom .. "\"",
     flags = { "unattend", "onlymissing" },
   })
   local update_command = generate_command({
     platform = platform,
     input = rom_path,
     artwork = artwork,
-    rom = rom,
+    rom = "\"" .. rom .. "\"",
   })
-  skyscraper.run(fetch_command)
-  skyscraper.run(update_command)
+  skyscraper.run(fetch_command, platform, "fetch", rom)
+  skyscraper.run(update_command, platform, "generate", rom)
 end
 
 return skyscraper

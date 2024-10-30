@@ -2,26 +2,39 @@ require("globals")
 local parser = require("lib.parser")
 
 while true do
-  local command = INPUT_CHANNEL:demand()
-  -- Extract the platform from command
-  local current_platform = string.match(command, "%-p%s+(%S+)") or ""
-  -- Push initial loading state with the current platform
-  OUTPUT_CHANNEL:push({ data = {}, error = "", loading = true })
+  -- Demand a table with command, platform, type, and game from INPUT_CHANNEL
+  local input_data = INPUT_CHANNEL:demand()
+
+  -- Extract the command, platform, type, and game
+  local command = input_data.command
+  local current_platform = input_data.platform
+  local operation_type = input_data.op
+  local game = input_data.game:gsub("%.%w+$", "") -- Remove file extension from game
+
+  OUTPUT_CHANNEL:push({ data = {}, error = nil, loading = true })
 
   local stderr_to_stdout = " 2>&1"
   local output = io.popen(command .. stderr_to_stdout)
 
-  print("Command: " .. command .. "\nPlatform: " .. current_platform)
+  print(string.format("Running command: %s\nPlatform: %s | Game: %s\n", command, current_platform, game))
 
   if output then
     for line in output:lines() do
-      print(line)
+      -- print(line)
       local data, error = parser.parse(line)
-      if next(data) ~= nil or error ~= "" then
-        data.platform = current_platform
-        OUTPUT_CHANNEL:push({ data = data, error = error, loading = false })
+      if next(data) ~= nil then
+        -- data.platform = current_platform
+        OUTPUT_CHANNEL:push({
+          data = {
+            title = game,
+            platform = current_platform,
+            status = operation_type == "fetch" and "fetching" or "generating",
+          },
+          error = error,
+          loading = false
+        })
       end
-      if error ~= "" then
+      if error ~= nil and error ~= "" then
         print("ERROR: " .. error)
         break
       end
