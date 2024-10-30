@@ -6,6 +6,7 @@ local skyscraper = {
   base_command = "./Skyscraper",
   module = "screenscraper",
   config_path = "",
+  config = {}
 }
 
 local thread
@@ -16,8 +17,9 @@ local function push_command(command)
   end
 end
 
-function skyscraper.init(config_path, binary)
+function skyscraper.init(config, config_path, binary)
   print("Initializing Skyscraper")
+  skyscraper.config = config
   skyscraper.config_path = WORK_DIR .. "/" .. config_path
   skyscraper.base_command = "./" .. binary
 

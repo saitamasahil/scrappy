@@ -137,11 +137,13 @@ local function setup_configs()
     end
   end
 end
-
 function love.load()
   splash.load()
   setup_configs()
-  skyscraper.init("skyscraper_config.ini", skyscraper_binary)
+  skyscraper.init(
+    skyscraper_config,
+    skyscraper_config.path,
+    skyscraper_binary)
   input.load()
   spinner:load()
   get_templates()

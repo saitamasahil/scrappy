@@ -53,6 +53,15 @@ function input.update(dt)
     if joystick:isGamepadDown("dpright") then
       trigger(input.events.RIGHT)
     end
+    if joystick:isGamepadDown("dpup") then
+      trigger(input.events.UP)
+    end
+    if joystick:isGamepadDown("dpdown") then
+      trigger(input.events.DOWN)
+    end
+    if joystick:isGamepadDown("a") then
+      trigger(input.events.RETURN)
+    end
   end
 end
 
