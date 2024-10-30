@@ -234,34 +234,38 @@ function love.update(dt)
   update_state()
 
   -- Left side
-  ui.element("icon_label", { w_width / 2 + ui_padding * 2, ui_padding }, "Artwork", "folder_image")
+  ui.layout(w_width / 2 + 10, 0, w_width / 2, w_height, 10, 10)
+  ui.element("icon_label", { 0, 0 }, "Platform: " .. state.data.platform,
+    "controller")
+  ui.element("icon_label", { 0, 0 }, "Game: " .. state.data.title, "cd")
+  ui.element("icon_label", { 0, 0 },
+    string.format("Progress: %d / %d", state.current, state.total),
+    "info")
+  ui.element("progress_bar", { 0, 0, w_width / 2 - ui_padding * 3, 20 },
+    state.current / state.total)
+  ui.element("icon_label", { 0, 16 }, "Artwork", "folder_image")
   ui.element("select",
-    { w_width / 2 + ui_padding * 2, ui_padding + 20, w_width / 2 - ui_padding * 3, 30 },
+    { 0, 0, w_width / 2 - ui_padding * 3, 30 },
     on_artwork_change,
     templates,
     current_template
   )
-  ui.element("icon_label", { w_width / 2 + ui_padding * 2, ui_padding * 4 + 50 }, "Platform: " .. state.data.platform,
-    "controller")
-  ui.element("icon_label", { w_width / 2 + ui_padding * 2, ui_padding * 4 + 70 }, "Game: " .. state.data.title, "cd")
-  ui.element("icon_label", { w_width / 2 + ui_padding * 2, ui_padding * 6 + 90 },
-    string.format("Progress: %d / %d", state.current, state.total),
-    "info")
-  ui.element("progress_bar", { w_width / 2 + ui_padding * 2, ui_padding * 6 + 110, w_width / 2 - ui_padding * 3, 20 },
-    state.current / state.total)
-  ui.element("button",
-    { w_width / 2 + ui_padding * 2, ui_padding * 6 + 130, w_width / 2 - ui_padding * 3, 30 },
-    on_refresh_press,
-    "Refresh platforms",
-    "redo"
-  )
 
   ui.element("button",
-    { w_width / 2 + ui_padding * 2, ui_padding * 6 + 170, w_width / 2 - ui_padding * 3, 30 },
+    { 0, 0, w_width / 2 - ui_padding * 3, 30 },
     scrape_platforms,
     "Start scraping",
     "play"
   )
+  ui.element("button",
+    { 0, 0, w_width / 2 - ui_padding * 3, 30 },
+    on_refresh_press,
+    "Refresh platforms",
+    "redo"
+  )
+  ui.end_layout()
+
+
 
   -- Right side
   ui.element("icon_label", { ui_padding, 10 }, "Preview", "file_image")

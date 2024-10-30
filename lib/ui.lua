@@ -17,7 +17,8 @@ local ui = {
   },
   registered_elements = {}, -- Store elements with unique identifiers
   focusable_elements = {},  -- Store focusable elements in order of appearance
-  current_focus_id = nil    -- Track the focused element by ID
+  current_focus_id = nil,   -- Track the focused element by ID
+  active_layout = nil       -- Track the currently active layout
 }
 
 local draw_queue = { n = 0 }
@@ -173,8 +174,46 @@ function ui.keypressed(key)
   end
 end
 
+function ui.layout(x, y, width, height, padding, spacing)
+  padding = padding or 0
+  spacing = spacing or 0
+  ui.active_layout = {
+    x = x + padding,
+    y = y + padding,
+    width = width - 2 * padding,
+    height = height - 2 * padding,
+    padding = padding,
+    spacing = spacing,
+    current_x = x + padding, -- Track horizontal position for left-to-right layout
+    current_y = y + padding  -- Track vertical position for top-to-bottom layout
+  }
+end
+
+-- End the current layout
+function ui.end_layout()
+  love.graphics.setScissor()
+  ui.active_layout = nil
+end
+
 function ui.element(type, pos, ...)
   local x, y, w, h = unpack(pos)
+  if type == "icon_label" then
+    w, h = font:getWidth(select(1, ...)) + icon_w + padding, icon_h
+  end
+
+  -- Apply active layout if it exists, adjusting for auto-spacing
+  if ui.active_layout then
+    -- Use current_x and current_y based on layout settings, starting from top with spacing
+    x = ui.active_layout.current_x + x
+    y = ui.active_layout.current_y + y
+
+    -- Update `current_y` or `current_x` for the next element
+    ui.active_layout.current_y = y + h + ui.active_layout.spacing
+
+    -- Set scissor to clip elements within the layout area
+    love.graphics.setScissor(ui.active_layout.x, ui.active_layout.y, ui.active_layout.width, ui.active_layout.height)
+  end
+
   local id = generate_id(type, x, y)
 
   if not ui.registered_elements[id] then
