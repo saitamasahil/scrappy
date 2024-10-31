@@ -72,16 +72,18 @@ local function generate_command(config)
   return command
 end
 
-function skyscraper.run(command, platform, op, game)
+function skyscraper.run(command, platform, op, game, ...)
   -- print("Running Skyscraper")
   platform = platform or "N/A"
   op = op or "generate"
   game = game or "N/A"
+  local task_id = select(1, ...) or nil
   push_command({
     command = skyscraper.base_command .. command,
     platform = platform,
     op = op,
     game = game,
+    task_id = task_id,
   })
 end
 
@@ -134,8 +136,9 @@ function skyscraper.update_artwork(platform, artwork)
   skyscraper.run(command)
 end
 
-function skyscraper.fetch_and_update_artwork(rom_path, rom, platform, artwork)
+function skyscraper.fetch_and_update_artwork(rom_path, rom, platform, artwork, ...)
   local artwork = WORK_DIR .. "/templates/" .. artwork .. ".xml"
+  local task_id = select(1, ...) or rom
   local fetch_command = generate_command({
     platform = platform,
     input = rom_path,
@@ -150,7 +153,7 @@ function skyscraper.fetch_and_update_artwork(rom_path, rom, platform, artwork)
     rom = "\"" .. rom .. "\"",
   })
   skyscraper.run(fetch_command, platform, "fetch", rom)
-  skyscraper.run(update_command, platform, "generate", rom)
+  skyscraper.run(update_command, platform, "generate", rom, task_id)
 end
 
 return skyscraper

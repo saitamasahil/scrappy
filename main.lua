@@ -35,6 +35,7 @@ local state = {
   error = "",
   loading = nil,
   scraping = false,
+  tasks = {},
   total = 0,
   current = 0,
 }
@@ -165,9 +166,7 @@ local function scrape_platforms()
   local rom_path, _ = user_config:get_paths()
   print("ROM path: " .. rom_path)
   -- Set state
-  local tasks = 0
-  state.current = 0
-  state.total = 0
+  -- local tasks = 0
   state.scraping = true
   -- For each source = destionation pair in config, fetch and update artwork
   for src, dest in pairs(platforms) do
@@ -180,17 +179,18 @@ local function scrape_platforms()
     end
     for i = 1, #roms do
       local file = roms[i]
-      tasks = tasks + 1
+      table.insert(state.tasks, file)
       -- Fetch and update artwork
       skyscraper.fetch_and_update_artwork(
         platform_path,
         file,
         dest,
-        templates[current_template]
+        templates[current_template],
+        file
       )
     end
   end
-  state.total = tasks
+  state.total = #state.tasks
 end
 
 local function copy_artwork()
@@ -234,8 +234,7 @@ local function update_state()
     if t.data and next(t.data) ~= nil then
       state.data = t.data
       if state.scraping then
-        state.current = state.current + 1
-        if state.current >= state.total then
+        if #state.tasks == 0 then
           state.scraping = false
           copy_artwork()
         end
@@ -248,6 +247,17 @@ local function update_state()
     end
     if t.loading ~= nil then
       state.loading = t.loading
+    end
+    if t.task_id then
+      print("Finished task: " .. t.task_id)
+      local pos = 0
+      for i = 1, #state.tasks do
+        if state.tasks[i] == t.task_id then
+          pos = i
+          break
+        end
+      end
+      table.remove(state.tasks, pos)
     end
   end
 end
@@ -294,10 +304,10 @@ function love.update(dt)
     "controller")
   ui.element("icon_label", { 0, 0 }, "Game: " .. state.data.title, "cd")
   ui.element("icon_label", { 0, 0 },
-    string.format("Progress: %d / %d", state.current, state.total),
+    string.format("Progress: %d / %d", state.total - #state.tasks, state.total),
     "info")
   ui.element("progress_bar", { 0, 0, w_width / 2 - ui_padding * 3, 20 },
-    state.current / state.total)
+    (state.total - #state.tasks) / state.total)
   ui.element("button",
     { 0, 0, w_width / 2 - ui_padding * 3, 30 },
     on_refresh_press,

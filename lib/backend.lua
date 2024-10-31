@@ -9,7 +9,7 @@ end
 
 local function write_log()
   local timestamp = os.date("%Y%m%d%H%M")
-  nativefs.write(string.format("scrappy-%s.log", timestamp), table.concat(log, "\n"))
+  nativefs.write(string.format("logs/scrappy-%s.log", timestamp), table.concat(log, "\n"))
   log = {}
 end
 
@@ -22,6 +22,7 @@ while true do
   local current_platform = input_data.platform
   local operation_type = input_data.op
   local game = input_data.game:gsub("%.%w+$", "") -- Remove file extension from game
+  local task_id = input_data.task_id
 
   OUTPUT_CHANNEL:push({ data = {}, error = nil, loading = true })
 
@@ -33,17 +34,17 @@ while true do
 
   if output then
     for line in output:lines() do
-      -- print(line)
+      print(line)
       log[#log + 1] = strip_ansi_colors(line)
       local data, error = parser.parse(line)
       if next(data) ~= nil then
-        -- data.platform = current_platform
         OUTPUT_CHANNEL:push({
           data = {
             title = game,
             platform = current_platform,
             status = operation_type == "fetch" and "fetching" or "generating",
           },
+          task_id = task_id,
           error = error,
           loading = false
         })
