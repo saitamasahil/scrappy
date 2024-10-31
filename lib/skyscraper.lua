@@ -46,37 +46,37 @@ local function generate_command(config)
 
   local command = ""
   if config.platform then
-    command = string.format("%s -p %s", command, config.platform)
+    command = string.format('%s -p %s', command, config.platform)
   end
   if config.fetch then
-    command = string.format("%s -s %s", command, skyscraper.module)
+    command = string.format('%s -s %s', command, skyscraper.module)
   end
   if config.use_config then
-    command = string.format("%s -c %s", command, skyscraper.config_path)
+    command = string.format('%s -c "%s"', command, skyscraper.config_path)
   end
   if config.cache then
-    command = string.format("%s -d %s", command, config.cache)
+    command = string.format('%s -d "%s"', command, config.cache)
   end
   if config.input then
-    command = string.format("%s -i %s", command, config.input)
+    command = string.format('%s -i "%s"', command, config.input)
   end
   if config.rom then
-    command = string.format("%s --startat %s --endat %s", command, config.rom, config.rom)
+    command = string.format('%s --startat "%s" --endat "%s"', command, config.rom, config.rom)
   end
   if config.artwork then
-    command = string.format("%s -a %s", command, config.artwork)
+    command = string.format('%s -a "%s"', command, config.artwork)
   end
   if config.flags and next(config.flags) then
-    command = string.format("%s --flags %s", command, table.concat(config.flags, ","))
+    command = string.format('%s --flags %s', command, table.concat(config.flags, ","))
   end
   return command
 end
 
 function skyscraper.run(command, platform, op, game, ...)
   -- print("Running Skyscraper")
-  platform = platform or "N/A"
+  platform = platform or "none"
   op = op or "generate"
-  game = game or "N/A"
+  game = game or "none"
   local task_id = select(1, ...) or nil
   push_command({
     command = skyscraper.base_command .. command,
@@ -143,14 +143,14 @@ function skyscraper.fetch_and_update_artwork(rom_path, rom, platform, artwork, .
     platform = platform,
     input = rom_path,
     fetch = true,
-    rom = "\"" .. rom .. "\"",
+    rom = rom,
     flags = { "unattend", "onlymissing" },
   })
   local update_command = generate_command({
     platform = platform,
     input = rom_path,
     artwork = artwork,
-    rom = "\"" .. rom .. "\"",
+    rom = rom,
   })
   skyscraper.run(fetch_command, platform, "fetch", rom)
   skyscraper.run(update_command, platform, "generate", rom, task_id)

@@ -25,7 +25,7 @@ local cover_preview_path = default_cover_path
 local cover_preview
 
 local w_width, w_height = love.window.getMode()
-local spinner = loading.new("spinner", 1)
+local pixel_loading = loading.new("pixel", 0.5)
 
 local state = {
   data = {
@@ -147,7 +147,7 @@ function love.load()
     skyscraper_config.path,
     skyscraper_binary)
   input.load()
-  spinner:load()
+  pixel_loading:load()
   get_templates()
   background = load_image("assets/muxsysinfo.png")
   overlay = load_image("assets/preview.png")
@@ -276,7 +276,7 @@ end
 function love.update(dt)
   splash.update(dt)
   input.update(dt)
-  spinner:update(dt)
+  pixel_loading:update(dt)
   timer.update(dt)
   if not state.scraping then
     input.onEvent(ui.keypressed)
@@ -376,7 +376,7 @@ local function draw_preview(x, y, scale, show_overlay)
     love.graphics.push()
     love.graphics.setColor(0, 0, 0, 0.5);
     love.graphics.rectangle("fill", 0, 0, w_width, w_height)
-    spinner:draw(w_width / 2, w_height / 2)
+    pixel_loading:draw(w_width / 2, w_height / 2, 2)
     love.graphics.pop()
   end
   love.graphics.setColor(1, 1, 1);
