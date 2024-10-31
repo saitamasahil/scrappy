@@ -31,5 +31,5 @@ SET_VAR "system" "foreground_process" "love"
 
 # Run Application
 $GPTOKEYB "love" &
-./love .
+./bin/love .
 kill -9 "$(pidof gptokeyb2.armhf)"
