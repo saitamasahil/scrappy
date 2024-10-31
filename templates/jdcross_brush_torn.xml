@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+    <output type="cover" width="640" height="480">
+        <layer resource="screenshot" mpixels="0.7" width="640" align="center" valign="middle" opacity="100">
+        </layer>
+        <mask file="mask/brush_transparent_inverted.png"/>
+    </output>
+</artwork>
