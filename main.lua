@@ -137,6 +137,7 @@ local function setup_configs()
     end
   end
 end
+
 function love.load()
   splash.load()
   setup_configs()
@@ -269,7 +270,9 @@ function love.update(dt)
   input.update(dt)
   spinner:update(dt)
   timer.update(dt)
-  input.onEvent(ui.keypressed)
+  if not state.scraping then
+    input.onEvent(ui.keypressed)
+  end
   update_state()
 
   -- Left side
