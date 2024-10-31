@@ -37,7 +37,6 @@ local state = {
   scraping = false,
   tasks = {},
   total = 0,
-  current = 0,
 }
 
 local function load_image(filename)
@@ -65,6 +64,7 @@ local function update_preview(direction)
   skyscraper.update_sample(sample_artwork)
   state.loading = true
   state.reload_preview = true
+  state.total = 0
 end
 
 local function get_templates()
@@ -233,12 +233,6 @@ local function update_state()
     end
     if t.data and next(t.data) ~= nil then
       state.data = t.data
-      if state.scraping then
-        if #state.tasks == 0 then
-          state.scraping = false
-          copy_artwork()
-        end
-      end
       if state.data.title ~= nil and state.data.title ~= "fake-rom" then
         cover_preview_path = string.format("data/output/%s/media/covers/%s.png", state.data.platform, state.data
           .title)
@@ -258,6 +252,10 @@ local function update_state()
         end
       end
       table.remove(state.tasks, pos)
+      if state.scraping and #state.tasks == 0 then
+        state.scraping = false
+        copy_artwork()
+      end
     end
   end
 end
@@ -287,7 +285,15 @@ function love.update(dt)
 
   -- Left side
   ui.layout(w_width / 2 + 10, 0, w_width / 2, w_height, 10, 10)
-  ui.element("icon_label", { 0, 0 }, "Artwork", "folder_image")
+  ui.element("icon_label", { 0, 26 }, "Platform: " .. (state.data.platform or "N/A"),
+    "controller")
+  ui.element("icon_label", { 0, 0 }, "Game: " .. state.data.title, "cd")
+  ui.element("icon_label", { 0, 0 },
+    string.format("Progress: %d / %d", state.total - #state.tasks, state.total),
+    "info")
+  ui.element("progress_bar", { 0, 0, w_width / 2 - ui_padding * 3, 20 },
+    (state.total - #state.tasks) / state.total)
+  ui.element("icon_label", { 0, 36 }, "Artwork", "folder_image")
   ui.element("select",
     { 0, 0, w_width / 2 - ui_padding * 3, 30 },
     on_artwork_change,
@@ -300,20 +306,6 @@ function love.update(dt)
     "Start scraping",
     "play"
   )
-  ui.element("icon_label", { 0, 22 }, "Platform: " .. (state.data.platform or "N/A"),
-    "controller")
-  ui.element("icon_label", { 0, 0 }, "Game: " .. state.data.title, "cd")
-  ui.element("icon_label", { 0, 0 },
-    string.format("Progress: %d / %d", state.total - #state.tasks, state.total),
-    "info")
-  ui.element("progress_bar", { 0, 0, w_width / 2 - ui_padding * 3, 20 },
-    (state.total - #state.tasks) / state.total)
-  ui.element("button",
-    { 0, 0, w_width / 2 - ui_padding * 3, 30 },
-    on_refresh_press,
-    "Refresh platforms",
-    "redo"
-  )
   ui.end_layout()
 
   -- Right side
@@ -323,18 +315,39 @@ function love.update(dt)
 
   -- Advanced
   ui.layout(0, w_height / 2 + 46, w_width, w_height / 2, 10, 10)
-  ui.element("icon_label", { 0, 0 }, "Advanced", "at")
-  ui.element(
-    "button",
-    { 0, 0, w_width / 2 - ui_padding * 3, 30 },
-    function() end,
-    "Clear cache",
-    "disk"
-  )
   if state.error ~= nil and state.error ~= "" then
-    ui.element("icon_label", { 0, 10 }, "Error", "warn")
+    ui.element("icon_label", { 0, 0 }, "Error", "warn")
     ui.element("multiline_text", { 0, 0, w_width, 30 }, state.error, "warn")
+  else
+    ui.element("icon_label", { 0, 0 }, "Advanced", "at")
+    ui.element("button",
+      { 0, 0, w_width / 2, 30 },
+      on_refresh_press,
+      "Refresh platforms",
+      "redo"
+    )
   end
+  ui.end_layout()
+
+  -- TODO
+  -- ui.layout(w_width / 2, w_height / 2 + 46, w_width / 2, 30, 10, 10)
+  -- ui.element(
+  --   "button",
+  --   { 0, 0, w_width / 2, 30 },
+  --   function() end,
+  --   "Clear cache",
+  --   "disk"
+  -- )
+  -- ui.end_layout()
+
+  ui.layout(w_width / 2 - w_width / 8, w_height - 40, w_width, w_height, 0, 0)
+  ui.element("button",
+    { 0, 0, w_width / 4, 30 },
+    function()
+      love.event.quit()
+    end,
+    "Quit"
+  )
   ui.end_layout()
 
   if state.reload_preview and not state.loading then
