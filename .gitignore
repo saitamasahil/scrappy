@@ -1,4 +1,5 @@
 *.ini
+*.log
 gamelist.xml
 
 roms/

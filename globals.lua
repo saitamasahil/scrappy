@@ -12,4 +12,6 @@ _G.SKYSCRAPER_ERRORS = {
   "cannot execute binary file: Exec format error",
   "Couldn't read artwork xml file",
   "requested either on command line or with",
+  "Couldn't create cache folders, please check folder permissions and try again...",
+
 }

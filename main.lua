@@ -173,6 +173,10 @@ local function scrape_platforms()
     local platform_path = string.format("%s/%s", rom_path, src)
     -- Get list of roms
     local roms = nativefs.getDirectoryItems(platform_path)
+    if not roms or #roms == 0 then
+      state.error = "No roms found in " .. platform_path
+      return
+    end
     for i = 1, #roms do
       local file = roms[i]
       tasks = tasks + 1
@@ -223,10 +227,10 @@ end
 local function update_state()
   local t = OUTPUT_CHANNEL:pop()
   if t then
-    if t.error ~= "" then
+    if t.error and t.error ~= "" then
       state.error = t.error
     end
-    if t.data ~= nil and next(t.data) ~= nil then
+    if t.data and next(t.data) ~= nil then
       state.data = t.data
       if state.scraping then
         state.current = state.current + 1
