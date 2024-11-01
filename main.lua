@@ -19,6 +19,7 @@ local skyscraper_config = config.new("skyscraper", "skyscraper_config.ini")
 local templates = {}
 local current_template = 0
 
+local main_ui = ui.new()
 local ui_padding = 10
 local canvas = love.graphics.newCanvas(640, 480)
 local background, overlay
@@ -267,48 +268,50 @@ function love.update(dt)
   pixel_loading:update(dt)
   timer.update(dt)
   if not state.scraping then
-    input.onEvent(ui.keypressed)
+    input.onEvent(function(key)
+      main_ui:keypressed(key)
+    end)
   end
   update_state()
 
   -- Left side
-  ui.layout(w_width / 2 + 10, 0, w_width / 2, w_height, 10, 10)
-  ui.element("icon_label", { 0, 26 }, "Platform: " .. (state.data.platform or "N/A"),
+  main_ui:layout(w_width / 2 + 10, 0, w_width / 2, w_height, 10, 10)
+  main_ui:element("icon_label", { 0, 26 }, "Platform: " .. (state.data.platform or "N/A"),
     "controller")
-  ui.element("icon_label", { 0, 0 }, "Game: " .. state.data.title, "cd")
-  ui.element("icon_label", { 0, 0 },
+  main_ui:element("icon_label", { 0, 0 }, "Game: " .. state.data.title, "cd")
+  main_ui:element("icon_label", { 0, 0 },
     string.format("Progress: %d / %d", state.total - #state.tasks, state.total),
     "info")
-  ui.element("progress_bar", { 0, 0, w_width / 2 - ui_padding * 3, 20 },
+  main_ui:element("progress_bar", { 0, 0, w_width / 2 - ui_padding * 3, 20 },
     (state.total - #state.tasks) / state.total)
-  ui.element("icon_label", { 0, 36 }, "Artwork", "folder_image")
-  ui.element("select",
+  main_ui:element("icon_label", { 0, 36 }, "Artwork", "folder_image")
+  main_ui:element("select",
     { 0, 0, w_width / 2 - ui_padding * 3, 30 },
     on_artwork_change,
     templates,
     current_template
   )
-  ui.element("button",
+  main_ui:element("button",
     { 0, 0, w_width / 2 - ui_padding * 3, 30 },
     scrape_platforms,
     "Start scraping",
     "play"
   )
-  ui.end_layout()
+  main_ui:end_layout()
 
   -- Right side
-  ui.layout(0, 0, w_width / 2, w_height, 10, 10)
-  ui.element("icon_label", { 0, 0 }, "Preview", "file_image")
-  ui.end_layout()
+  main_ui:layout(0, 0, w_width / 2, w_height, 10, 10)
+  main_ui:element("icon_label", { 0, 0 }, "Preview", "file_image")
+  main_ui:end_layout()
 
   -- Advanced
-  ui.layout(0, w_height / 2 + 46, w_width, w_height / 2, 10, 10)
+  main_ui:layout(0, w_height / 2 + 46, w_width, w_height / 2, 10, 10)
   if state.error ~= nil and state.error ~= "" then
-    ui.element("icon_label", { 0, 0 }, "Error", "warn")
-    ui.element("multiline_text", { 0, 0, w_width, 30 }, state.error, "warn")
+    main_ui:element("icon_label", { 0, 0 }, "Error", "warn")
+    main_ui:element("multiline_text", { 0, 0, w_width, 30 }, state.error, "warn")
   else
-    ui.element("icon_label", { 0, 0 }, "Advanced", "at")
-    ui.element("button",
+    main_ui:element("icon_label", { 0, 0 }, "Advanced", "at")
+    main_ui:element("button",
       { 0, 0, w_width / 2, 30 },
       function()
         scenes:push("settings")
@@ -317,28 +320,28 @@ function love.update(dt)
       "redo"
     )
   end
-  ui.end_layout()
+  main_ui:end_layout()
 
   -- TODO
-  -- ui.layout(w_width / 2, w_height / 2 + 46, w_width / 2, 30, 10, 10)
-  -- ui.element(
+  -- main_ui:layout(w_width / 2, w_height / 2 + 46, w_width / 2, 30, 10, 10)
+  -- main_ui:element(
   --   "button",
   --   { 0, 0, w_width / 2, 30 },
   --   function() end,
   --   "Clear cache",
   --   "disk"
   -- )
-  -- ui.end_layout()
+  -- main_ui:end_layout()
 
-  ui.layout(w_width / 2 - w_width / 8, w_height - 40, w_width, w_height, 0, 0)
-  ui.element("button",
+  main_ui:layout(w_width / 2 - w_width / 8, w_height - 40, w_width, w_height, 0, 0)
+  main_ui:element("button",
     { 0, 0, w_width / 4, 30 },
     function()
       love.event.quit()
     end,
     "Quit"
   )
-  ui.end_layout()
+  main_ui:end_layout()
 
   if state.reload_preview and not state.loading then
     print("Reloading preview")
@@ -379,7 +382,7 @@ function love.draw()
 
   if splash.finished then
     draw_preview(ui_padding, 36, 0.5, true)
-    ui.draw()
+    main_ui:draw()
     scenes:draw()
   end
 end

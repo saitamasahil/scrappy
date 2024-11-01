@@ -1,28 +1,29 @@
 local ui = {
-  icons = {
-    chevron_left = love.graphics.newImage("assets/icons/Chevron-Arrow-Left.png"),
-    chevron_right = love.graphics.newImage("assets/icons/Chevron-Arrow-Right.png"),
-    gear = love.graphics.newImage("assets/icons/Gear.png"),
-    folder = love.graphics.newImage("assets/icons/Folder.png"),
-    redo = love.graphics.newImage("assets/icons/Redo.png"),
-    disk = love.graphics.newImage("assets/icons/Disk.png"),
-    folder_image = love.graphics.newImage("assets/icons/Folder-Image.png"),
-    file_image = love.graphics.newImage("assets/icons/File-Image.png"),
-    controller = love.graphics.newImage("assets/icons/Game-Controller.png"),
-    clock = love.graphics.newImage("assets/icons/Clock.png"),
-    warn = love.graphics.newImage("assets/icons/Exclamation-Mark.png"),
-    info = love.graphics.newImage("assets/icons/Info.png"),
-    cd = love.graphics.newImage("assets/icons/CD.png"),
-    play = love.graphics.newImage("assets/icons/Play.png"),
-    at = love.graphics.newImage("assets/icons/Asperand-Sign.png")
-  },
   registered_elements = {}, -- Store elements with unique identifiers
   focusable_elements = {},  -- Store focusable elements in order of appearance
   current_focus_id = nil,   -- Track the focused element by ID
-  layout_stack = {}         -- Stack to track active layouts
+  layout_stack = {},        -- Stack to track active layouts
+  draw_queue = { n = 0 }    -- Draw queue
 }
+ui.__index = ui
 
-local draw_queue = { n = 0 }
+local icons = {
+  chevron_left = love.graphics.newImage("assets/icons/Chevron-Arrow-Left.png"),
+  chevron_right = love.graphics.newImage("assets/icons/Chevron-Arrow-Right.png"),
+  gear = love.graphics.newImage("assets/icons/Gear.png"),
+  folder = love.graphics.newImage("assets/icons/Folder.png"),
+  redo = love.graphics.newImage("assets/icons/Redo.png"),
+  disk = love.graphics.newImage("assets/icons/Disk.png"),
+  folder_image = love.graphics.newImage("assets/icons/Folder-Image.png"),
+  file_image = love.graphics.newImage("assets/icons/File-Image.png"),
+  controller = love.graphics.newImage("assets/icons/Game-Controller.png"),
+  clock = love.graphics.newImage("assets/icons/Clock.png"),
+  warn = love.graphics.newImage("assets/icons/Exclamation-Mark.png"),
+  info = love.graphics.newImage("assets/icons/Info.png"),
+  cd = love.graphics.newImage("assets/icons/CD.png"),
+  play = love.graphics.newImage("assets/icons/Play.png"),
+  at = love.graphics.newImage("assets/icons/Asperand-Sign.png")
+}
 
 local colors = {
   text = { 1, 1, 1 },
@@ -38,8 +39,12 @@ local icon_w, icon_h = 16, 16
 local window_w, window_h = love.window.getMode()
 local font = love.graphics.getFont()
 
+function ui.new() -- Create a new UI instance
+  return setmetatable({}, ui)
+end
+
 local function draw_icon(icon, x, y)
-  icon = ui.icons[icon] or ui.icons["warn"]
+  icon = icons[icon] or icons["warn"]
   local iw, ih = icon:getWidth(), icon:getHeight()
   love.graphics.push()
   -- love.graphics.rectangle("fill", x, y, icon_w, icon_h)
@@ -110,19 +115,19 @@ local function generate_id(type, x, y)
   return type .. "_" .. tostring(x) .. "_" .. tostring(y)
 end
 
-function ui.setFocusById(id)
-  ui.current_focus_id = id
+function ui:setFocusById(id)
+  self.current_focus_id = id
 end
 
-local function isFocused(id)
-  return id == ui.current_focus_id
+function ui:isFocused(id)
+  return id == self.current_focus_id
 end
 
-function ui.register(fn, ...)
+function ui:register(fn, ...)
   local args = { ... }
   local nargs = select('#', ...)
-  draw_queue.n = draw_queue.n + 1
-  draw_queue[draw_queue.n] = function()
+  self.draw_queue.n = self.draw_queue.n + 1
+  self.draw_queue[self.draw_queue.n] = function()
     fn(unpack(args, 1, nargs))
   end
 end
@@ -131,7 +136,7 @@ function ui.load()
   -- TODO
 end
 
-function ui.draw()
+function ui:draw()
   -- love.graphics.push()
   -- love.graphics.translate(w_width / 2, w_height / 2)
   -- love.graphics.setColor(1, 1, 1, 1)
@@ -143,35 +148,35 @@ function ui.draw()
   -- love.graphics.pop()
 
   love.graphics.push('all')
-  for i = draw_queue.n, 1, -1 do
-    draw_queue[i]()
+  for i = self.draw_queue.n, 1, -1 do
+    self.draw_queue[i]()
   end
   love.graphics.pop()
-  draw_queue.n = 0
+  self.draw_queue.n = 0
 end
 
-function ui.keypressed(key)
+function ui:keypressed(key)
   local current_index = nil
 
   -- Find the current focus index in the focusable elements
-  for i, element in ipairs(ui.focusable_elements) do
-    if element.id == ui.current_focus_id then
+  for i, element in ipairs(self.focusable_elements) do
+    if element.id == self.current_focus_id then
       current_index = i
       break
     end
   end
 
   if current_index then
-    local focused_element = ui.focusable_elements[current_index]
+    local focused_element = self.focusable_elements[current_index]
     -- Handle navigation
     if key == "down" then
       -- Move focus down to the next element, wrapping around if needed
-      local next_index = (current_index % #ui.focusable_elements) + 1
-      ui.setFocusById(ui.focusable_elements[next_index].id)
+      local next_index = (current_index % #self.focusable_elements) + 1
+      ui:setFocusById(self.focusable_elements[next_index].id)
     elseif key == "up" then
       -- Move focus up to the previous element, wrapping around if needed
-      local prev_index = ((current_index - 2) % #ui.focusable_elements) + 1
-      ui.setFocusById(ui.focusable_elements[prev_index].id)
+      local prev_index = ((current_index - 2) % #self.focusable_elements) + 1
+      ui:setFocusById(self.focusable_elements[prev_index].id)
     end
 
     -- Handle specific actions based on element type and keys
@@ -188,7 +193,7 @@ function ui.keypressed(key)
 end
 
 -- Start a layout with specified position, size, padding, and optional spacing between elements
-function ui.layout(x, y, width, height, padding, spacing)
+function ui:layout(x, y, width, height, padding, spacing)
   padding = padding or 0
   spacing = spacing or 0
   local new_layout = {
@@ -198,26 +203,26 @@ function ui.layout(x, y, width, height, padding, spacing)
     height = height - 2 * padding,
     padding = padding,
     spacing = spacing,
-    current_x = x + padding,                -- Track horizontal position for left-to-right layout
-    current_y = y + padding                 -- Track vertical position for top-to-bottom layout
+    current_x = x + padding,                  -- Track horizontal position for left-to-right layout
+    current_y = y + padding                   -- Track vertical position for top-to-bottom layout
   }
-  table.insert(ui.layout_stack, new_layout) -- Push new layout to the stack
+  table.insert(self.layout_stack, new_layout) -- Push new layout to the stack
 end
 
 -- End the current layout and reset scissor
-function ui.end_layout()
-  love.graphics.setScissor()    -- Reset scissor to end layout clipping
-  table.remove(ui.layout_stack) -- Pop the last layout from the stack
+function ui:end_layout()
+  love.graphics.setScissor()      -- Reset scissor to end layout clipping
+  table.remove(self.layout_stack) -- Pop the last layout from the stack
 end
 
-function ui.element(type, pos, ...)
+function ui:element(type, pos, ...)
   local x, y, w, h = unpack(pos)
   if type == "icon_label" then
     w, h = font:getWidth(select(1, ...)) + icon_w + padding, icon_h
   end
 
   -- Apply the current layout if the layout stack is not empty
-  local current_layout = ui.layout_stack[#ui.layout_stack]
+  local current_layout = self.layout_stack[#self.layout_stack]
   if current_layout then
     -- Position element relative to the layout's current position with spacing
     x = current_layout.current_x + x
@@ -230,13 +235,13 @@ function ui.element(type, pos, ...)
 
   local id = generate_id(type, x, y)
 
-  if not ui.registered_elements[id] then
-    ui.registered_elements[id] = true
+  if not self.registered_elements[id] then
+    self.registered_elements[id] = true
     if type == "button" or type == "select" then
       local callback = select(1, ...)
-      table.insert(ui.focusable_elements, { id = id, type = type, pos = pos, callback = callback })
-      if not ui.current_focus_id then
-        ui.setFocusById(id)
+      table.insert(self.focusable_elements, { id = id, type = type, pos = pos, callback = callback })
+      if not self.current_focus_id then
+        ui:setFocusById(id)
       end
     end
   end
@@ -249,16 +254,16 @@ function ui.element(type, pos, ...)
       local _, data, current = unpack({ ... }, 1, 3)
       label, left_icon, right_icon = data[current], "chevron_left", "chevron_right"
     end
-    ui.register(draw_button, x, y, w, h, label, left_icon, right_icon, isFocused(id))
+    ui:register(draw_button, x, y, w, h, label, left_icon, right_icon, ui:isFocused(id))
   elseif type == "icon_label" then
     local label, icon = unpack({ ... }, 1, 2)
-    ui.register(draw_icon_label, label, icon, x, y)
+    ui:register(draw_icon_label, label, icon, x, y)
   elseif type == "progress_bar" then
     local progress = unpack({ ... }, 1, 1)
-    ui.register(draw_progress_bar, x, y, w, h, progress)
+    ui:register(draw_progress_bar, x, y, w, h, progress)
   elseif type == "multiline_text" then
     local text = unpack({ ... }, 1, 1)
-    ui.register(draw_multiline_text, x, y, w, h, text)
+    ui:register(draw_multiline_text, x, y, w, h, text)
   end
 end
 
