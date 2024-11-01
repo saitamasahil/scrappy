@@ -34,8 +34,9 @@ while true do
 
   if output then
     for line in output:lines() do
-      print(line)
-      log[#log + 1] = strip_ansi_colors(line)
+      line = strip_ansi_colors(line)
+      -- print(line)
+      log[#log + 1] = line
       local data, error = parser.parse(line)
       if next(data) ~= nil then
         OUTPUT_CHANNEL:push({
