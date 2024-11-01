@@ -22,7 +22,8 @@ local icons = {
   info = love.graphics.newImage("assets/icons/Info.png"),
   cd = love.graphics.newImage("assets/icons/CD.png"),
   play = love.graphics.newImage("assets/icons/Play.png"),
-  at = love.graphics.newImage("assets/icons/Asperand-Sign.png")
+  at = love.graphics.newImage("assets/icons/Asperand-Sign.png"),
+  left_arrow = love.graphics.newImage("assets/icons/Left-Arrow.png"),
 }
 
 local colors = {
@@ -40,7 +41,19 @@ local window_w, window_h = love.window.getMode()
 local font = love.graphics.getFont()
 
 function ui.new() -- Create a new UI instance
-  return setmetatable({}, ui)
+  local self = setmetatable({
+    registered_elements = {},
+    focusable_elements = {},
+    current_focus_id = nil,
+    layout_stack = {},
+    draw_queue = { n = 0 }
+  }, ui)
+  -- self.registered_elements = {}
+  -- self.focusable_elements = {}
+  -- self.current_focus_id = nil
+  -- self.layout_stack = {}
+  -- self.draw_queue = { n = 0 }
+  return self
 end
 
 local function draw_icon(icon, x, y)
@@ -172,11 +185,11 @@ function ui:keypressed(key)
     if key == "down" then
       -- Move focus down to the next element, wrapping around if needed
       local next_index = (current_index % #self.focusable_elements) + 1
-      ui:setFocusById(self.focusable_elements[next_index].id)
+      self:setFocusById(self.focusable_elements[next_index].id)
     elseif key == "up" then
       -- Move focus up to the previous element, wrapping around if needed
       local prev_index = ((current_index - 2) % #self.focusable_elements) + 1
-      ui:setFocusById(self.focusable_elements[prev_index].id)
+      self:setFocusById(self.focusable_elements[prev_index].id)
     end
 
     -- Handle specific actions based on element type and keys
@@ -241,7 +254,7 @@ function ui:element(type, pos, ...)
       local callback = select(1, ...)
       table.insert(self.focusable_elements, { id = id, type = type, pos = pos, callback = callback })
       if not self.current_focus_id then
-        ui:setFocusById(id)
+        self:setFocusById(id)
       end
     end
   end
@@ -254,16 +267,16 @@ function ui:element(type, pos, ...)
       local _, data, current = unpack({ ... }, 1, 3)
       label, left_icon, right_icon = data[current], "chevron_left", "chevron_right"
     end
-    ui:register(draw_button, x, y, w, h, label, left_icon, right_icon, ui:isFocused(id))
+    self:register(draw_button, x, y, w, h, label, left_icon, right_icon, self:isFocused(id))
   elseif type == "icon_label" then
     local label, icon = unpack({ ... }, 1, 2)
-    ui:register(draw_icon_label, label, icon, x, y)
+    self:register(draw_icon_label, label, icon, x, y)
   elseif type == "progress_bar" then
     local progress = unpack({ ... }, 1, 1)
-    ui:register(draw_progress_bar, x, y, w, h, progress)
+    self:register(draw_progress_bar, x, y, w, h, progress)
   elseif type == "multiline_text" then
     local text = unpack({ ... }, 1, 1)
-    ui:register(draw_multiline_text, x, y, w, h, text)
+    self:register(draw_multiline_text, x, y, w, h, text)
   end
 end
 

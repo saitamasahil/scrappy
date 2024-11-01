@@ -34,7 +34,7 @@ function scenes:pop()
 end
 
 function scenes:switch(state)
-  for i, v in ipairs(self.focus) do
+  for i, _ in ipairs(self.focus) do
     self.focus[i] = nil
   end
   self.focus = {}
@@ -45,12 +45,16 @@ function scenes:currentFocus()
   return self.focus[#self.focus]
 end
 
+function scenes:keypressed(key)
+  self.states[self:currentFocus()]:keypressed(key)
+end
+
 function scenes:update(dt)
   self.states[self:currentFocus()]:update(dt)
 end
 
 function scenes:draw()
-  for i, v in pairs(self.focus) do
+  for _, v in pairs(self.focus) do
     self.states[v]:draw()
   end
 end

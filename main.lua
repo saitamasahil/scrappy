@@ -64,6 +64,9 @@ function love.update(dt)
   splash.update(dt)
   input.update(dt)
   scenes:update(dt)
+  input.onEvent(function(key)
+    scenes:keypressed(key)
+  end)
 end
 
 function love.draw()

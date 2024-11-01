@@ -74,7 +74,6 @@ end
 
 function love.keypressed(key)
   if key == "escape" then
-    love.event.quit()
     trigger(input.events.ESC)
   end
 
