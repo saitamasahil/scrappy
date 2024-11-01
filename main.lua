@@ -3,6 +3,7 @@ local font = love.graphics.newFont("assets/monogram.ttf", 30)
 love.graphics.setDefaultFilter("nearest", "nearest")
 love.graphics.setFont(font)
 
+local scenes = require("lib.scenes")
 local skyscraper = require("lib.skyscraper")
 local splash = require("lib.splash")
 local loading = require("lib.loading")
@@ -142,6 +143,7 @@ end
 
 function love.load()
   splash.load()
+  scenes:load("main")
   setup_configs()
   skyscraper.init(
     skyscraper_config,
@@ -308,7 +310,9 @@ function love.update(dt)
     ui.element("icon_label", { 0, 0 }, "Advanced", "at")
     ui.element("button",
       { 0, 0, w_width / 2, 30 },
-      on_refresh_press,
+      function()
+        scenes:push("settings")
+      end,
       "Refresh platforms",
       "redo"
     )
@@ -376,5 +380,6 @@ function love.draw()
   if splash.finished then
     draw_preview(ui_padding, 36, 0.5, true)
     ui.draw()
+    scenes:draw()
   end
 end
