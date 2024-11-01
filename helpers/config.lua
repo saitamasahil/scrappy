@@ -70,8 +70,22 @@ function config:detect_sd()
 end
 
 function config:get_paths()
+  --[[
+    Get paths from config
+    Args:
+      None
+    Returns:
+    (skyscraper)
+      cache_path: string
+      output_path: string
+    (user)
+      rom_path: string
+      catalogue_path: string
+  --]]
   if self.type == "skyscraper" then
-    return nil, nil
+    local cache_path = self:read("main", "cacheFolder")
+    local output_path = self:read("main", "gameListFolder")
+    return cache_path, output_path
   end
   -- Check for overrides
   local rom_path_override = self:read("overrides", "romPath")

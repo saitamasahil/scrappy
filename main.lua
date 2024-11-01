@@ -10,6 +10,7 @@ local ui = require("lib.ui")
 local input = require("helpers.input")
 local config = require("helpers.config")
 local muos = require("helpers.muos")
+local utils = require("helpers.utils")
 
 local skyscraper_binary = "bin/Skyscraper.aarch64"
 local user_config = config.new("user", "config.ini")
@@ -193,36 +194,21 @@ local function scrape_platforms()
   state.total = #state.tasks
 end
 
-local function copy_artwork()
-  -- Get list of scraped artwork
-  local scraped_art = nativefs.getDirectoryItems("data/output")
-  if not scraped_art then
+local function copy_game_artwork(platform, game)
+  local _, output_path = skyscraper_config:get_paths()
+  local _, catalogue_path = user_config:get_paths()
+  if output_path == nil or catalogue_path == nil then
     return
   end
-  local _, catalogue_path = user_config:get_paths()
-  -- Iterate over folders in output
-  for i = 1, #scraped_art do
-    local item = scraped_art[i]
-    -- Check if item is a folder
-    local item_info = nativefs.getInfo(string.format("data/output/%s", item))
-    if item_info and item_info.type == "directory" then
-      -- Get designated MUOS platform
-      local destination_folder = muos.platforms[item]
-      if destination_folder then
-        -- Destination folder should be in info/catalogue/{System}/box
-        destination_folder = string.format("%s/%s/box", catalogue_path, destination_folder)
-        -- Get list of artwork
-        local artwork = nativefs.getDirectoryItems(string.format("data/output/%s/media/covers", item))
-        for j = 1, #artwork do
-          local file = nativefs.read(string.format("data/output/%s/media/covers/%s", item, artwork[j]))
-          if file then
-            -- Write to destination
-            nativefs.write(string.format("%s/%s", destination_folder, artwork[j]), file)
-          end
-        end
-      end
-    end
-  end
+  local path = string.format("%s/%s/media/covers/%s.png", utils.strip_quotes(output_path), platform, game)
+  local destination_folder = muos.platforms[platform]
+  if not destination_folder then return end
+
+  local scraped_art = nativefs.newFileData(path)
+  if not scraped_art then return end
+
+  destination_folder = string.format("%s/%s/box", catalogue_path, destination_folder)
+  nativefs.write(string.format("%s/%s.png", destination_folder, game), scraped_art)
 end
 
 local function update_state()
@@ -252,9 +238,9 @@ local function update_state()
         end
       end
       table.remove(state.tasks, pos)
+      copy_game_artwork(state.data.platform, state.data.title)
       if state.scraping and #state.tasks == 0 then
         state.scraping = false
-        copy_artwork()
       end
     end
   end

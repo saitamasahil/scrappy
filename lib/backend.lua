@@ -1,12 +1,9 @@
 require("globals")
 local parser = require("lib.parser")
 local nativefs = require("lib.nativefs")
+local utils = require("helpers.utils")
 
 local log = {}
-local function strip_ansi_colors(str)
-  return str:gsub("\27%[%d*;*%d*m", "")
-end
-
 local function write_log()
   local timestamp = os.date("%Y%m%d%H%M")
   nativefs.write(string.format("logs/scrappy-%s.log", timestamp), table.concat(log, "\n"))
@@ -21,7 +18,7 @@ while true do
   local command = input_data.command
   local current_platform = input_data.platform
   local operation_type = input_data.op
-  local game = input_data.game:gsub("%.%w+$", "") -- Remove file extension from game
+  local game = utils.get_filename(input_data.game)
   local task_id = input_data.task_id
 
   OUTPUT_CHANNEL:push({ data = {}, error = nil, loading = true })
@@ -34,7 +31,7 @@ while true do
 
   if output then
     for line in output:lines() do
-      line = strip_ansi_colors(line)
+      line = utils.strip_ansi_colors(line)
       -- print(line)
       log[#log + 1] = line
       local data, error = parser.parse(line)
