@@ -1,5 +1,6 @@
-local scenes = require("lib.scenes")
 local skyscraper = require("lib.skyscraper")
+local log = require("lib.log")
+local scenes = require("lib.scenes")
 local loading = require("lib.loading")
 local ui = require("lib.ui")
 local config = require("helpers.config")
@@ -64,13 +65,11 @@ local function update_preview(direction)
 end
 
 local function scrape_platforms()
-  print("Scraping platforms")
+  log.write("Scraping artwork")
   -- Load platforms from config
   local platforms = user_config:get().platforms
   local rom_path, _ = user_config:get_paths()
-  print("ROM path: " .. rom_path)
   -- Set state
-  -- local tasks = 0
   state.scraping = true
   -- For each source = destionation pair in config, fetch and update artwork
   for src, dest in pairs(platforms) do
@@ -79,6 +78,7 @@ local function scrape_platforms()
     local roms = nativefs.getDirectoryItems(platform_path)
     if not roms or #roms == 0 then
       state.error = "No roms found in " .. platform_path
+      log.write(state.error)
       return
     end
     for i = 1, #roms do
@@ -95,23 +95,35 @@ local function scrape_platforms()
     end
   end
   state.total = #state.tasks
+  log.write(string.format("Generated %d Skyscraper tasks", state.total))
 end
 
 local function copy_game_artwork(platform, game)
+  log.write(string.format("Copying artwork for %s: %s", platform, game))
   local _, output_path = skyscraper_config:get_paths()
   local _, catalogue_path = user_config:get_paths()
   if output_path == nil or catalogue_path == nil then
+    log.write("Missing paths from config")
     return
   end
   local path = string.format("%s/%s/media/covers/%s.png", utils.strip_quotes(output_path), platform, game)
   local destination_folder = muos.platforms[platform]
-  if not destination_folder then return end
+  if not destination_folder then
+    log.write("Catalogue destination folder not found")
+    return
+  end
 
   local scraped_art = nativefs.newFileData(path)
-  if not scraped_art then return end
+  if not scraped_art then
+    log.write("Scraped artwork not found")
+    return
+  end
 
   destination_folder = string.format("%s/%s/box", catalogue_path, destination_folder)
-  nativefs.write(string.format("%s/%s.png", destination_folder, game), scraped_art)
+  local _, err = nativefs.write(string.format("%s/%s.png", destination_folder, game), scraped_art)
+  if err then
+    log.write(err)
+  end
 end
 
 local function update_state()
@@ -132,7 +144,7 @@ local function update_state()
       state.loading = t.loading
     end
     if t.task_id then
-      print("Finished task: " .. t.task_id)
+      log.write("Finished Skyscraper task: " .. t.task_id)
       local pos = 0
       for i = 1, #state.tasks do
         if state.tasks[i] == t.task_id then
@@ -143,6 +155,7 @@ local function update_state()
       table.remove(state.tasks, pos)
       copy_game_artwork(state.data.platform, state.data.title)
       if state.scraping and #state.tasks == 0 then
+        log.write("Finished scraping")
         state.scraping = false
       end
     end
@@ -249,7 +262,6 @@ function main:update(dt)
   update_state()
   pixel_loading:update(dt)
   if state.reload_preview and not state.loading then
-    print("Reloading preview")
     state.reload_preview = false
     render_to_canvas()
   end

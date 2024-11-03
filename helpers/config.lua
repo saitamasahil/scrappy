@@ -1,3 +1,5 @@
+local log = require("lib.log")
+
 local config = {
   type = "",
   path = "",
@@ -54,17 +56,17 @@ function config:get()
 end
 
 function config:detect_sd()
-  print("Detecting SD")
+  log.write("Detecting SD storage preference")
   local sd1 = muos.SD1_PATH
   local sd2 = muos.SD2_PATH
   if #nativefs.getDirectoryItems(sd2) > 0 then
     self:insert("main", "sd", 2)
-    print("Found SD2")
+    log.write("Found SD2")
   elseif #nativefs.getDirectoryItems(sd1) > 0 then
     self:insert("main", "sd", 1)
-    print("Found SD1")
+    log.write("Found SD1")
   else
-    print("No SD found")
+    log.write("No SD found")
     return
   end
 end
@@ -110,10 +112,11 @@ function config:get_paths()
 end
 
 function config:load_platforms()
-  print("Loading platforms")
   if self.type == "skyscraper" then
     return
   end
+
+  log.write("Loading platforms")
 
   local rom_path, _ = self:get_paths()
 
@@ -121,7 +124,7 @@ function config:load_platforms()
   local mapped_total = 0
 
   if next(platforms) == nil then
-    print("No platforms found")
+    log.write("No platforms found")
     return
   end
   -- Iterate through platforms
@@ -136,7 +139,7 @@ function config:load_platforms()
       end
     end
   end
-  print(string.format("Found %d platforms, mapped %d", #platforms, mapped_total))
+  log.write(string.format("Found %d platforms, mapped %d", #platforms, mapped_total))
 end
 
 return config
