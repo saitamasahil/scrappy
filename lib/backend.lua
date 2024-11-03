@@ -3,7 +3,21 @@ local parser = require("lib.parser")
 local log = require("lib.log")
 local utils = require("helpers.utils")
 
+local function log_version(output)
+  if output then
+    for line in output:lines() do
+      local version = line:match("(%d+%.%d+%.%d+)")
+      if version then
+        log.write(string.format("Skyscraper version: %s\n", version))
+        break
+      end
+    end
+    output:close()
+  end
+end
+
 while true do
+  ::continue::
   -- Demand a table with command, platform, type, and game from INPUT_CHANNEL
   local input_data = INPUT_CHANNEL:demand()
 
@@ -14,10 +28,15 @@ while true do
   local game = utils.get_filename(input_data.game)
   local task_id = input_data.task_id
 
-  OUTPUT_CHANNEL:push({ data = {}, error = nil, loading = true })
-
   local stderr_to_stdout = " 2>&1"
   local output = io.popen(command .. stderr_to_stdout)
+
+  if input_data.version then -- Special command. Log version only
+    log_version(output)
+    goto continue
+  end
+
+  OUTPUT_CHANNEL:push({ data = {}, error = nil, loading = true })
 
   log.write(string.format("Running command: %s", command))
   log.write(string.format("Platform: %s | Game: %s\n", current_platform, game))

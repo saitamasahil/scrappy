@@ -1,5 +1,6 @@
 require("globals")
 
+local log = require("lib.log")
 local ini = require("lib.ini")
 
 local skyscraper = {
@@ -18,7 +19,7 @@ local function push_command(command)
 end
 
 function skyscraper.init(config, config_path, binary)
-  print("Initializing Skyscraper")
+  log.write("Initializing Skyscraper")
   skyscraper.config = config
   skyscraper.config_path = WORK_DIR .. "/" .. config_path
   skyscraper.base_command = "./" .. binary
@@ -33,7 +34,7 @@ function skyscraper.init(config, config_path, binary)
 
   thread = love.thread.newThread("lib/backend.lua")
   thread:start()
-  -- push_command(skyscraper.base_command .. "-v")
+  push_command({ command = string.format("%s -v", skyscraper.base_command), version = 1 })
 end
 
 local function generate_command(config)
