@@ -1,19 +1,18 @@
 local scenes = require("lib.scenes")
-local ui = require("lib.ui")
-local input = require("helpers.input")
 local skyscraper = require("lib.skyscraper")
 local loading = require("lib.loading")
+local ui = require("lib.ui")
 local config = require("helpers.config")
 local muos = require("helpers.muos")
 local utils = require("helpers.utils")
 
 local main = {}
-local main_ui = ui.new()
 local pixel_loading = loading.new("pixel", 0.5)
 
 local user_config = config.new("user", "config.ini")
 local skyscraper_config = config.new("skyscraper", "skyscraper_config.ini")
 
+local main_ui = ui.new()
 local ui_padding = 10
 local canvas = love.graphics.newCanvas(640, 480)
 local background, overlay
@@ -238,6 +237,7 @@ function main:load()
   user_config:load()
   skyscraper_config:load()
   pixel_loading:load()
+
   main_ui:load()
   get_templates()
   background = load_image("assets/muxsysinfo.png")
@@ -248,11 +248,6 @@ end
 function main:update(dt)
   update_state()
   pixel_loading:update(dt)
-  if not state.scraping then
-    input.onEvent(function(key)
-      main_ui:keypressed(key)
-    end)
-  end
   if state.reload_preview and not state.loading then
     print("Reloading preview")
     state.reload_preview = false
@@ -332,6 +327,15 @@ end
 function main:draw()
   draw_preview(ui_padding, 36, 0.5, true)
   main_ui:draw()
+end
+
+function main:keypressed(key)
+  if key == "escape" then
+    love.event.quit()
+  end
+  if not state.scraping then
+    main_ui:keypressed(key)
+  end
 end
 
 return main
