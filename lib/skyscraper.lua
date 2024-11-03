@@ -1,13 +1,12 @@
 require("globals")
 
 local log = require("lib.log")
-local ini = require("lib.ini")
+local skyscraper_config = require("helpers.config").skyscraper_config
 
 local skyscraper = {
   base_command = "./Skyscraper",
   module = "screenscraper",
   config_path = "",
-  config = {}
 }
 
 local thread
@@ -18,9 +17,8 @@ local function push_command(command)
   end
 end
 
-function skyscraper.init(config, config_path, binary)
+function skyscraper.init(config_path, binary)
   log.write("Initializing Skyscraper")
-  skyscraper.config = config
   skyscraper.config_path = WORK_DIR .. "/" .. config_path
   skyscraper.base_command = "./" .. binary
 
@@ -89,11 +87,8 @@ function skyscraper.run(command, platform, op, game, ...)
 end
 
 function skyscraper.change_artwork(artworkXml)
-  local config = ini.load(skyscraper.config_path)
-  if config then
-    ini.addKey(config, "main", "artworkXml", '"' .. artworkXml .. '"')
-    ini.save(config, skyscraper.config_path)
-  end
+  skyscraper_config:insert("main", "artworkXml", '"' .. artworkXml .. '"')
+  skyscraper_config:save()
 end
 
 function skyscraper.update_sample(artwork_path)

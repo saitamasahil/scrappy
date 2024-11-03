@@ -1,4 +1,4 @@
 [main]
-binary=bin/Skyscraper.x86
+binary=bin/Skyscraper.aarch64
 sd=1
 [platforms]

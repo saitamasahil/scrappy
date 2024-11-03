@@ -1,18 +1,13 @@
 local log = require("lib.log")
-
-local config = {
-  type = "",
-  path = "",
-  values = {}
-}
-config.__index = config
-
 local ini = require("lib.ini")
 local nativefs = require("lib.nativefs")
 local muos = require("helpers.muos")
 
+local config = {}
+config.__index = config
+
 function config.new(type, path)
-  return setmetatable({ type = type or "user", path = path or "config.ini" }, config)
+  return setmetatable({ type = type, path = path, values = {} }, config)
 end
 
 function config:load()
@@ -55,7 +50,33 @@ function config:get()
   return self.values
 end
 
-function config:detect_sd()
+-- User-specific config
+local user_config = setmetatable({}, { __index = config })
+user_config.__index = user_config
+
+function user_config.create(config_path)
+  local self = config.new("user", config_path or "config.ini")
+  setmetatable(self, user_config)
+  self:init()
+  return self
+end
+
+function user_config:init()
+  if self:load() then
+    log.write("Loaded user config")
+  else
+    if self:create_from("config.ini.example") then
+      log.write("Created user config")
+      self:detect_sd()
+      self:load_platforms()
+      self:save()
+    else
+      log.write("Failed to create user config")
+    end
+  end
+end
+
+function user_config:detect_sd()
   log.write("Detecting SD storage preference")
   local sd1 = muos.SD1_PATH
   local sd2 = muos.SD2_PATH
@@ -71,51 +92,33 @@ function config:detect_sd()
   end
 end
 
-function config:get_paths()
+function user_config:get_paths()
   --[[
     Get paths from config
     Args:
       None
     Returns:
-    (skyscraper)
-      cache_path: string
-      output_path: string
     (user)
       rom_path: string
       catalogue_path: string
   --]]
-  if self.type == "skyscraper" then
-    local cache_path = self:read("main", "cacheFolder")
-    local output_path = self:read("main", "gameListFolder")
-    return cache_path, output_path
-  end
   -- Check for overrides
   local rom_path_override = self:read("overrides", "romPath")
   local catalogue_path_override = self:read("overrides", "cataloguePath")
-  if rom_path_override ~= nil and catalogue_path_override ~= nil then
+  if rom_path_override and catalogue_path_override then
     return rom_path_override, catalogue_path_override
   end
 
   -- Get paths
   local sd = self:read("main", "sd")
-  local rom_path = string.format("%s/roms", muos.SD2_PATH)
-  local catalogue_path = string.format("%s/%s", muos.SD2_PATH, muos.CATALOGUE)
-  if tonumber(sd) == 1 then
-    rom_path = string.format("%s/ROMS", muos.SD1_PATH)
-    catalogue_path = string.format("%s/%s", muos.SD1_PATH, muos.CATALOGUE)
-  end
+  local rom_path = sd == "1" and string.format("%s/ROMS", muos.SD1_PATH) or string.format("%s/roms", muos.SD2_PATH)
+  local catalogue_path = sd == "1" and string.format("%s/%s", muos.SD1_PATH, muos.CATALOGUE) or
+      string.format("%s/%s", muos.SD2_PATH, muos.CATALOGUE)
 
-  -- Check for overrides
-  if rom_path_override then rom_path = rom_path_override end
-  if catalogue_path_override then catalogue_path = catalogue_path_override end
-  return rom_path, catalogue_path
+  return rom_path_override or rom_path, catalogue_path_override or catalogue_path
 end
 
-function config:load_platforms()
-  if self.type == "skyscraper" then
-    return
-  end
-
+function user_config:load_platforms()
   log.write("Loading platforms")
 
   local rom_path, _ = self:get_paths()
@@ -123,23 +126,61 @@ function config:load_platforms()
   local platforms = nativefs.getDirectoryItems(rom_path)
   local mapped_total = 0
 
-  if next(platforms) == nil then
+  if not platforms or next(platforms) == nil then
     log.write("No platforms found")
     return
   end
   -- Iterate through platforms
-  for i = 1, #platforms do
-    local platform = platforms[i]:lower()
-    -- Iterate through muos assign table
-    for key, value in pairs(muos.assign) do
-      if platform == key then
-        self:insert("platforms", platforms[i], value)
-        mapped_total = mapped_total + 1
-        break
-      end
+  for _, platform in ipairs(platforms) do
+    platform = platform:lower()
+    if muos.assign[platform] then
+      self:insert("platforms", platform, muos.assign[platform])
+      mapped_total = mapped_total + 1
     end
   end
   log.write(string.format("Found %d platforms, mapped %d", #platforms, mapped_total))
 end
 
-return config
+-- Skyscraper-specific config
+local skyscraper_config = {}
+skyscraper_config.__index = skyscraper_config
+setmetatable(skyscraper_config, { __index = config })
+
+function skyscraper_config.create(config_path)
+  local self = config.new("skyscraper", config_path or "skyscraper_config.ini")
+  setmetatable(self, skyscraper_config)
+  self:init()
+  return self
+end
+
+function skyscraper_config:init()
+  if self:load() then
+    log.write("Loaded skyscraper config")
+  else
+    if self:create_from("skyscraper_config.ini.example") then
+      log.write("Created skyscraper config")
+      -- skyscraper_config:insert("main", "inputFolder", string.format("\"%s\"", rom_path))
+      self:insert("main", "cacheFolder", string.format("\"%s/%s\"", WORK_DIR, "data/cache"))
+      self:insert("main", "gameListFolder", string.format("\"%s/%s\"", WORK_DIR, "data/output"))
+      self:insert("main", "artworkXml", string.format("\"%s/%s\"", WORK_DIR, "templates/box2d.xml"))
+      self:save()
+    else
+      log.write("Failed to create skyscraper config")
+    end
+  end
+end
+
+function skyscraper_config:get_paths()
+  local cache_path = self:read("main", "cacheFolder")
+  local output_path = self:read("main", "gameListFolder")
+  return cache_path, output_path
+end
+
+-- Singleton instances
+local user_config_instance = user_config.create("config.ini")
+local skyscraper_config_instance = skyscraper_config.create("skyscraper_config.ini")
+
+return {
+  user_config = user_config_instance,
+  skyscraper_config = skyscraper_config_instance
+}

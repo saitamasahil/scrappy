@@ -3,15 +3,14 @@ local log = require("lib.log")
 local scenes = require("lib.scenes")
 local loading = require("lib.loading")
 local ui = require("lib.ui")
-local config = require("helpers.config")
+local configs = require("helpers.config")
 local muos = require("helpers.muos")
 local utils = require("helpers.utils")
 
 local main = {}
 local pixel_loading = loading.new("pixel", 0.5)
 
-local user_config = config.new("user", "config.ini")
-local skyscraper_config = config.new("skyscraper", "skyscraper_config.ini")
+local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 
 local main_ui = ui.new()
 local ui_padding = 10
@@ -246,9 +245,6 @@ local function draw_preview(x, y, scale, show_overlay)
 end
 
 function main:load()
-  -- TODO: share config states between screens
-  user_config:load()
-  skyscraper_config:load()
   pixel_loading:load()
 
   main_ui:load()
