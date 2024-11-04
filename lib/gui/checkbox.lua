@@ -18,6 +18,7 @@ return function(props)
   return component {
     text = text,
     checked = props.checked or false,
+    id = props.id,
     -- Positioning and layout properties
     x = props.x or 0,
     y = props.y or 0,

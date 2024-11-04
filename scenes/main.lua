@@ -2,7 +2,6 @@ local skyscraper = require("lib.skyscraper")
 local log = require("lib.log")
 local scenes = require("lib.scenes")
 local loading = require("lib.loading")
-local ui = require("lib.ui")
 local configs = require("helpers.config")
 local muos = require("helpers.muos")
 local utils = require("helpers.utils")
@@ -12,9 +11,8 @@ local pixel_loading = loading.new("pixel", 0.5)
 
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 
-local main_ui = ui.new()
-local ui_padding = 10
-local canvas = love.graphics.newCanvas(640, 480)
+local w_width, w_height = love.window.getMode()
+local canvas = love.graphics.newCanvas(w_width, w_height)
 local background, overlay
 local default_cover_path = "sample/media/covers/fake-rom.png"
 local cover_preview_path = default_cover_path
@@ -22,7 +20,6 @@ local cover_preview
 local templates = {}
 local current_template = 0
 
-local w_width, w_height = love.window.getMode()
 local state = {
   data = {
     title = "N/A",
@@ -220,37 +217,11 @@ local function render_to_canvas()
   end)
 end
 
-local function draw_preview(x, y, scale, show_overlay)
-  show_overlay = show_overlay or false
-  scale = scale or 0.5
-  love.graphics.push()
-  love.graphics.translate(x, y)
-  love.graphics.scale(scale)
-  if show_overlay and background then
-    love.graphics.draw(background, 0, 0, 0)
-  end
-  love.graphics.draw(canvas, 0, 0, 0);
-  if show_overlay and overlay then
-    love.graphics.draw(overlay, 0, 0, 0)
-  end
-  love.graphics.setColor(1, 1, 1, 0.5);
-  love.graphics.rectangle("line", 0, 0, w_width, w_height)
-  if state.loading then
-    love.graphics.push()
-    love.graphics.setColor(0, 0, 0, 0.5);
-    love.graphics.rectangle("fill", 0, 0, w_width, w_height)
-    pixel_loading:draw(w_width / 2, w_height / 2, 2)
-    love.graphics.pop()
-  end
-  love.graphics.setColor(1, 1, 1);
-  love.graphics.pop()
-end
-
 local component = require "lib.gui.badr"
 local button    = require "lib.gui.button"
 local label     = require "lib.gui.label"
 local select    = require "lib.gui.select"
-local menu      = component:root { column = true, gap = 10 }
+local menu
 
 function main:load()
   pixel_loading:load()
@@ -259,13 +230,70 @@ function main:load()
   overlay = load_image("assets/preview.png")
   render_to_canvas()
 
-  local customComponent = component { row = true, gap = 10 }
-      + label { text = "Preview", icon = "file_image" }
+  menu = component:root { column = true, gap = 10 }
+
+  local canvasComponent = component {
+    overlay = true,
+    width = w_width / 2,
+    height = w_height / 2,
+    draw = function(self)
+      local cw, ch = canvas:getDimensions()
+      local scale = self.width / cw
+      love.graphics.push()
+      love.graphics.translate(self.x, self.y)
+      love.graphics.scale(scale)
+      if self.overlay and background then
+        love.graphics.draw(background, 0, 0, 0)
+      end
+      love.graphics.draw(canvas, 0, 0, 0);
+      if self.overlay and overlay then
+        love.graphics.draw(overlay, 0, 0, 0)
+      end
+      love.graphics.setColor(1, 1, 1, 0.5);
+      love.graphics.rectangle("line", 0, 0, cw, ch)
+      if state.loading then
+        love.graphics.setColor(0, 0, 0, 0.5);
+        love.graphics.rectangle("fill", 0, 0, cw, ch)
+        pixel_loading:draw(cw * scale, ch * scale, 2)
+      end
+      love.graphics.setColor(1, 1, 1);
+      love.graphics.pop()
+    end
+  }
+
+  local selectionComponent = component { column = true, gap = 10 }
+      + select {
+        width = w_width / 2 - 30,
+        options = templates,
+        startIndex = current_template,
+        onChange = on_artwork_change
+      }
+      + button {
+        text = "Start scraping",
+        width = w_width / 2 - 30,
+        onClick = scrape_platforms,
+      }
+
+  local infoComponent = component { column = true, gap = 10 }
+      + label { id = "platform", text = "Platform", icon = "controller" }
+      + label { id = "game", text = "Game", icon = "cd" }
+      + label { id = "progress", text = "Progress", icon = "info" }
+
+  local top_layout = component { row = true, gap = 10 }
+      + (component { column = true, gap = 10 }
+        + label { text = "Preview", icon = "file_image" }
+        + canvasComponent
+      )
+      + (component { column = true, gap = 10 }
+        + label { text = "Artwork", icon = "file_image" }
+        + selectionComponent
+        + infoComponent
+      )
 
   local bottom_buttons = component { column = true, gap = 10 }
       + button {
         text = "Settings",
-        width = 200,
+        width = 150,
         onClick = function()
           scenes:switch("settings")
         end,
@@ -273,30 +301,21 @@ function main:load()
       }
       + button {
         text = "Quit",
-        width = 200,
+        width = 150,
         onClick = function() love.event.quit() end,
         focusable = true,
       }
 
   menu = menu
-      + customComponent
-      + select {
-        width = 200,
-        options = templates,
-        startIndex = 1,
-        onChange = on_artwork_change
-      }
-      + button {
-        text = "Scrape platforms",
-        width = 200,
-        onClick = scrape_platforms,
-      }
+      + top_layout
       + bottom_buttons
 
+  -- menu:updatePosition(10, 10)
   menu:updatePosition(10, 10)
+  infoComponent:updatePosition(0, w_height / 2 - selectionComponent.height - infoComponent.height - 10)
   bottom_buttons:updatePosition(
-    love.graphics.getWidth() * 0.5 - bottom_buttons.width * 0.5,
-    love.graphics.getHeight() * 0.5 - bottom_buttons.height * 0.5
+    menu.width / 2 - bottom_buttons.width / 2 - 10,
+    w_height - top_layout.height - bottom_buttons.height - 30
   )
 end
 
@@ -309,45 +328,14 @@ function main:update(dt)
     render_to_canvas()
   end
 
-  -- Root layout
-  main_ui:layout(0, 0, w_width, w_height, 10, 10, "horizontal")
-
-  -- Left side layout
-  main_ui:layout(0, 0, w_width / 2 - 10, w_height, 0, 0)
-  main_ui:element({ 0, 0 }, ui.icon_label("Preview", "file_image"))
-  main_ui:end_layout()
-
-  -- Right side layout
-  main_ui:layout(0, 0, w_width / 2 - 10, w_height, 0, 10)
-  main_ui:element({ 0, 26 }, ui.icon_label("Platform: " .. (state.data.platform or "N/A"), "controller"))
-  main_ui:element({ 0, 0 }, ui.icon_label("Game: " .. state.data.title, "cd"))
-  main_ui:element({ 0, 0 },
-    ui.icon_label(string.format("Progress: %d / %d", state.total - #state.tasks, state.total), "info"))
-  main_ui:element({ 0, 0, w_width / 2 - ui_padding * 3, 20 }, ui.progress_bar((state.total - #state.tasks) / state.total))
-  main_ui:element({ 0, 36 }, ui.icon_label("Artwork", "folder_image"))
-  main_ui:element({ 0, 0, w_width / 2 - ui_padding * 3, 30 }, ui.select(templates, current_template, on_artwork_change))
-  main_ui:element({ 0, 0, w_width / 2 - ui_padding * 3, 30 }, ui.button("Start scraping", scrape_platforms, "play"))
-  main_ui:end_layout()
-
-  main_ui:end_layout() -- End root layout
-
-  -- Advanced section
-  main_ui:layout(0, w_height / 2 + 46, w_width, w_height / 2, 10, 10)
-  if state.error ~= nil and state.error ~= "" then
-    main_ui:element({ 0, 0 }, ui.icon_label("Error", "warn"))
-    main_ui:element({ 0, 0, w_width, 30 }, ui.multiline_text(state.error))
+  if menu.children then
+    local p, g = menu ^ "platform", menu ^ "game"
+    p.text = "Platform: " .. state.data.platform
+    g.text = "Game: " .. state.data.title
   end
-  main_ui:end_layout()
-
-  -- Quit button
-  main_ui:layout(w_width / 2 - w_width / 8, w_height - 80, w_width, w_height, 0, 5)
-  main_ui:element({ 0, 0, w_width / 4, 30 }, ui.button("Settings", function() scenes:push("settings") end))
-  main_ui:element({ 0, 0, w_width / 4, 30 }, ui.button("Quit", function() love.event.quit() end))
-  main_ui:end_layout()
 end
 
 function main:draw()
-  -- draw_preview(ui_padding, 36, 0.5, true)
   menu:draw()
 end
 
