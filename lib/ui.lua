@@ -31,7 +31,7 @@ local colors = {
   text = { 1, 1, 1 },
   background = { 0, 0, 0 },
   button = { 0.1, 0.1, 0.1 },
-  button_highlight = { 0.5, 0.5, 0.5 },
+  button_highlight = { 0.2, 0.2, 0.2 },
   focus = { 0.8, 0.8, 0.2 }
 }
 
@@ -57,6 +57,56 @@ function ui.new() -- Create a new UI instance
   return self
 end
 
+function ui.button(label, callback, left_icon, right_icon)
+  return {
+    type = "button",
+    label = label,
+    callback = callback,
+    left_icon = left_icon,
+    right_icon = right_icon
+  }
+end
+
+function ui.select(data, current, callback)
+  return {
+    type = "select",
+    data = data,
+    current = current,
+    callback = callback
+  }
+end
+
+function ui.icon_label(label, icon)
+  return {
+    type = "icon_label",
+    label = label,
+    icon = icon
+  }
+end
+
+function ui.progress_bar(progress)
+  return {
+    type = "progress_bar",
+    progress = progress
+  }
+end
+
+function ui.multiline_text(text)
+  return {
+    type = "multiline_text",
+    text = text
+  }
+end
+
+function ui.checkbox(label, checked, callback)
+  return {
+    type = "checkbox",
+    label = label,
+    checked = checked,
+    callback = callback
+  }
+end
+
 local function draw_icon(icon, x, y)
   icon = icons[icon] or icons["warn"]
   local iw, ih = icon:getWidth(), icon:getHeight()
@@ -75,10 +125,9 @@ local function draw_button(x, y, w, h, label, left_icon, right_icon, focused)
 
   love.graphics.push()
   love.graphics.setScissor(x, y, w, h)
-  love.graphics.setColor(focused and colors.focus or colors.background)
-  love.graphics.rectangle("fill", x, y, 10, h)
-  love.graphics.rectangle("fill", x + w - 10, y, 10, h)
-  love.graphics.setColor(colors.button)
+  love.graphics.setColor(focused and colors.focus or colors.button)
+  love.graphics.rectangle("fill", x, y, w, h)
+  love.graphics.setColor(focused and colors.button_highlight or colors.button)
   love.graphics.rectangle("fill", x + border, y + border, w - 2 * border, h - 2 * border)
   love.graphics.setColor(colors.text)
   if left_icon then
@@ -135,8 +184,7 @@ local function draw_checkbox(x, y, w, h, label, checked, focused)
   love.graphics.push()
   love.graphics.setScissor(x, y, w, h)
   love.graphics.setColor(focused and colors.focus or colors.background)
-  love.graphics.rectangle("fill", x, y, 10, h)
-  love.graphics.rectangle("fill", x + w - 10, y, 10, h)
+  love.graphics.rectangle("fill", x, y, w, h)
   love.graphics.setColor(colors.background)
   love.graphics.rectangle("fill", x + border, y + border, w - 2 * border, h - 2 * border)
   love.graphics.setColor(colors.text)
@@ -181,16 +229,6 @@ function ui.load()
 end
 
 function ui:draw()
-  -- love.graphics.push()
-  -- love.graphics.translate(w_width / 2, w_height / 2)
-  -- love.graphics.setColor(1, 1, 1, 1)
-  -- for i, element in ipairs(ui.elements) do
-  --   if element.type == "button" then
-  --     draw_button(element.label, element.x, element.y, element.w, element.h, "chevron_left", "chevron_right")
-  --   end
-  -- end
-  -- love.graphics.pop()
-
   love.graphics.push('all')
   for i = self.draw_queue.n, 1, -1 do
     self.draw_queue[i]()
@@ -265,10 +303,14 @@ function ui:end_layout()
   table.remove(self.layout_stack) -- Pop the last layout from the stack
 end
 
-function ui:element(type, pos, ...)
+function ui:element(pos, element_data)
   local x, y, w, h = unpack(pos)
+  local type = element_data.type
+
+  -- Adjust width and height for icon labels if not provided
   if type == "icon_label" then
-    w, h = font:getWidth(select(1, ...)) + icon_w + padding, icon_h
+    w = w or font:getWidth(element_data.label) + icon_w + padding
+    h = h or icon_h
   end
 
   -- Apply the current layout if the layout stack is not empty
@@ -279,44 +321,37 @@ function ui:element(type, pos, ...)
     y = current_layout.current_y + y
     current_layout.current_y = y + h + current_layout.spacing -- Update for vertical stacking
 
-    -- Apply scissor based on layout boundaries
+    -- Set scissor to clip elements within the layout's boundaries
     love.graphics.setScissor(current_layout.x, current_layout.y, current_layout.width, current_layout.height)
   end
 
+  -- Generate a unique ID for the element
   local id = generate_id(type, x, y)
 
-  if not self.registered_elements[id] then
+  -- Register focusable elements with callback
+  if element_data.callback and not self.registered_elements[id] then
     self.registered_elements[id] = true
-    if type == "button" or type == "select" or type == "checkbox" then
-      local callback = select(1, ...)
-      table.insert(self.focusable_elements, { id = id, type = type, pos = pos, callback = callback })
-      if not self.current_focus_id then
-        self:setFocusById(id)
-      end
+    table.insert(self.focusable_elements, { id = id, type = type, pos = pos, callback = element_data.callback })
+    if not self.current_focus_id then
+      self:setFocusById(id)
     end
   end
 
-  if type == "button" or type == "select" then
-    local label, left_icon, right_icon
-    if type == "button" then
-      _, label, left_icon, right_icon = unpack({ ... }, 1)
-    elseif type == "select" then
-      local _, data, current = unpack({ ... }, 1, 3)
-      label, left_icon, right_icon = data[current], "chevron_left", "chevron_right"
-    end
-    self:register(draw_button, x, y, w, h, label, left_icon, right_icon, self:isFocused(id))
+  -- Register drawing functions based on element type
+  if type == "button" then
+    self:register(draw_button, x, y, w, h, element_data.label, element_data.left_icon, element_data.right_icon,
+      self:isFocused(id))
+  elseif type == "select" then
+    local label = element_data.data[element_data.current]
+    self:register(draw_button, x, y, w, h, label, "chevron_left", "chevron_right", self:isFocused(id))
   elseif type == "icon_label" then
-    local label, icon = unpack({ ... }, 1, 2)
-    self:register(draw_icon_label, label, icon, x, y)
+    self:register(draw_icon_label, element_data.label, element_data.icon, x, y)
   elseif type == "progress_bar" then
-    local progress = unpack({ ... }, 1, 1)
-    self:register(draw_progress_bar, x, y, w, h, progress)
+    self:register(draw_progress_bar, x, y, w, h, element_data.progress)
   elseif type == "multiline_text" then
-    local text = unpack({ ... }, 1, 1)
-    self:register(draw_multiline_text, x, y, w, h, text)
+    self:register(draw_multiline_text, x, y, w, h, element_data.text)
   elseif type == "checkbox" then
-    local _, label, checked = unpack({ ... }, 1, 3)
-    self:register(draw_checkbox, x, y, w, h, label, checked, self:isFocused(id))
+    self:register(draw_checkbox, x, y, w, h, element_data.label, element_data.checked, self:isFocused(id))
   end
 end
 

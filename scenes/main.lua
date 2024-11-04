@@ -266,71 +266,35 @@ function main:update(dt)
 
   -- Left side
   main_ui:layout(w_width / 2 + 10, 0, w_width / 2, w_height, 10, 10)
-  main_ui:element("icon_label", { 0, 26 }, "Platform: " .. (state.data.platform or "N/A"),
-    "controller")
-  main_ui:element("icon_label", { 0, 0 }, "Game: " .. state.data.title, "cd")
-  main_ui:element("icon_label", { 0, 0 },
-    string.format("Progress: %d / %d", state.total - #state.tasks, state.total),
-    "info")
-  main_ui:element("progress_bar", { 0, 0, w_width / 2 - ui_padding * 3, 20 },
-    (state.total - #state.tasks) / state.total)
-  main_ui:element("icon_label", { 0, 36 }, "Artwork", "folder_image")
-  main_ui:element("select",
-    { 0, 0, w_width / 2 - ui_padding * 3, 30 },
-    on_artwork_change,
-    templates,
-    current_template
-  )
-  main_ui:element("button",
-    { 0, 0, w_width / 2 - ui_padding * 3, 30 },
-    scrape_platforms,
-    "Start scraping",
-    "play"
-  )
+  main_ui:element({ 0, 26 }, ui.icon_label("Platform: " .. (state.data.platform or "N/A"), "controller"))
+  main_ui:element({ 0, 0 }, ui.icon_label("Game: " .. state.data.title, "cd"))
+  main_ui:element({ 0, 0 },
+    ui.icon_label(string.format("Progress: %d / %d", state.total - #state.tasks, state.total), "info"))
+  main_ui:element({ 0, 0, w_width / 2 - ui_padding * 3, 20 }, ui.progress_bar((state.total - #state.tasks) / state.total))
+  main_ui:element({ 0, 36 }, ui.icon_label("Artwork", "folder_image"))
+  main_ui:element({ 0, 0, w_width / 2 - ui_padding * 3, 30 }, ui.select(templates, current_template, on_artwork_change))
+  main_ui:element({ 0, 0, w_width / 2 - ui_padding * 3, 30 }, ui.button("Start scraping", scrape_platforms, "play"))
   main_ui:end_layout()
 
   -- Right side
   main_ui:layout(0, 0, w_width / 2, w_height, 10, 10)
-  main_ui:element("icon_label", { 0, 0 }, "Preview", "file_image")
+  main_ui:element({ 0, 0 }, ui.icon_label("Preview", "file_image"))
   main_ui:end_layout()
 
-  -- Advanced
+  -- Advanced section
   main_ui:layout(0, w_height / 2 + 46, w_width, w_height / 2, 10, 10)
   if state.error ~= nil and state.error ~= "" then
-    main_ui:element("icon_label", { 0, 0 }, "Error", "warn")
-    main_ui:element("multiline_text", { 0, 0, w_width, 30 }, state.error, "warn")
+    main_ui:element({ 0, 0 }, ui.icon_label("Error", "warn"))
+    main_ui:element({ 0, 0, w_width, 30 }, ui.multiline_text(state.error))
   else
-    main_ui:element("icon_label", { 0, 0 }, "Advanced", "at")
-    main_ui:element("button",
-      { 0, 0, w_width / 2, 30 },
-      function()
-        scenes:push("settings")
-      end,
-      "Settings",
-      "gear"
-    )
+    main_ui:element({ 0, 0 }, ui.icon_label("Advanced", "at"))
+    main_ui:element({ 0, 0, w_width / 2, 30 }, ui.button("Settings", function() scenes:push("settings") end, "gear"))
   end
   main_ui:end_layout()
 
-  -- TODO
-  -- main_ui:layout(w_width / 2, w_height / 2 + 46, w_width / 2, 30, 10, 10)
-  -- main_ui:element(
-  --   "button",
-  --   { 0, 0, w_width / 2, 30 },
-  --   function() end,
-  --   "Clear cache",
-  --   "disk"
-  -- )
-  -- main_ui:end_layout()
-
+  -- Quit button
   main_ui:layout(w_width / 2 - w_width / 8, w_height - 40, w_width, w_height, 0, 0)
-  main_ui:element("button",
-    { 0, 0, w_width / 4, 30 },
-    function()
-      love.event.quit()
-    end,
-    "Quit"
-  )
+  main_ui:element({ 0, 0, w_width / 4, 30 }, ui.button("Quit", function() love.event.quit() end))
   main_ui:end_layout()
 end
 
