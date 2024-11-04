@@ -281,9 +281,26 @@ function ui:keypressed(key)
 end
 
 -- Start a layout with specified position, size, padding, and optional spacing between elements
-function ui:layout(x, y, width, height, padding, spacing)
+function ui:layout(x, y, width, height, padding, spacing, direction)
   padding = padding or 0
   spacing = spacing or 0
+  direction = direction or "vertical" -- Default to vertical stacking
+
+  local last_layout = self.layout_stack[#self.layout_stack]
+
+  -- Adjust position relative to the last layout if it exists
+  if last_layout then
+    x = last_layout.current_x + x
+    y = last_layout.current_y + y
+
+    -- Apply spacing if this layout is horizontal within the parent layout
+    if last_layout.direction == "horizontal" then
+      x = x + spacing
+    elseif last_layout.direction == "vertical" then
+      y = y + spacing
+    end
+  end
+
   local new_layout = {
     x = x + padding,
     y = y + padding,
@@ -291,16 +308,32 @@ function ui:layout(x, y, width, height, padding, spacing)
     height = height - 2 * padding,
     padding = padding,
     spacing = spacing,
-    current_x = x + padding,                  -- Track horizontal position for left-to-right layout
-    current_y = y + padding                   -- Track vertical position for top-to-bottom layout
+    direction = direction,
+    current_x = x + padding,
+    current_y = y + padding,
   }
-  table.insert(self.layout_stack, new_layout) -- Push new layout to the stack
+
+  table.insert(self.layout_stack, new_layout)
 end
 
 -- End the current layout and reset scissor
 function ui:end_layout()
-  love.graphics.setScissor()      -- Reset scissor to end layout clipping
-  table.remove(self.layout_stack) -- Pop the last layout from the stack
+  local layout = table.remove(self.layout_stack)
+  local parent_layout = self.layout_stack[#self.layout_stack]
+
+  -- Update the parent's current position based on layout direction
+  if parent_layout then
+    if parent_layout.direction == "horizontal" then
+      -- Move the parent's current x position to the right of the current layout, including spacing
+      parent_layout.current_x = parent_layout.current_x + layout.width + parent_layout.spacing
+    else
+      -- Move the parent's current y position below the current layout, including spacing
+      parent_layout.current_y = parent_layout.current_y + layout.height + parent_layout.spacing
+    end
+  end
+
+  -- Reset scissor when ending a layout
+  love.graphics.setScissor()
 end
 
 function ui:element(pos, element_data)

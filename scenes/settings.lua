@@ -26,22 +26,23 @@ function settings:load()
 end
 
 function settings:update(dt)
+  -- Root Layout
   main_ui:layout(0, 0, w_width, w_height, padding, padding)
-  main_ui:element({ 0, 0 }, ui.icon_label("Settings", "at"))
-  main_ui:element({ 0, 10 }, ui.icon_label("Platforms", "controller"))
-  main_ui:end_layout()
 
-  main_ui:layout(150, 30, w_width, w_height, padding, padding)
+  main_ui:layout(0, 0, w_width / 2, 30, 0, 5, "horizontal")
+  main_ui:element({ 0, 0 }, ui.icon_label("Platforms", "controller"))
   main_ui:element({ 0, 0, 150, 30 }, ui.button("Refresh", on_refresh_press, "redo"))
   main_ui:end_layout()
-  main_ui:layout(0, 70, w_width, w_height, 10, 0)
+
+  main_ui:layout(0, 20, w_width, w_height - 110, 0, 0)
   for platform, checked in pairs(user_config.values.selectedPlatforms or {}) do
     main_ui:element(
       { 0, 0, w_width / 2, 30 },
-      ui.checkbox(platform, tonumber(checked) == 1 and true or false, function() on_change_platform(platform) end)
+      ui.checkbox(platform, tonumber(checked) == 1, function() on_change_platform(platform) end)
     )
   end
   main_ui:end_layout()
+  main_ui:end_layout() -- End root layout
 end
 
 function settings:draw()

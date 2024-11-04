@@ -264,8 +264,16 @@ function main:update(dt)
     render_to_canvas()
   end
 
-  -- Left side
-  main_ui:layout(w_width / 2 + 10, 0, w_width / 2, w_height, 10, 10)
+  -- Root layout
+  main_ui:layout(0, 0, w_width, w_height, 10, 10, "horizontal")
+
+  -- Left side layout
+  main_ui:layout(0, 0, w_width / 2 - 10, w_height, 0, 0)
+  main_ui:element({ 0, 0 }, ui.icon_label("Preview", "file_image"))
+  main_ui:end_layout()
+
+  -- Right side layout
+  main_ui:layout(0, 0, w_width / 2 - 10, w_height, 0, 10)
   main_ui:element({ 0, 26 }, ui.icon_label("Platform: " .. (state.data.platform or "N/A"), "controller"))
   main_ui:element({ 0, 0 }, ui.icon_label("Game: " .. state.data.title, "cd"))
   main_ui:element({ 0, 0 },
@@ -276,24 +284,19 @@ function main:update(dt)
   main_ui:element({ 0, 0, w_width / 2 - ui_padding * 3, 30 }, ui.button("Start scraping", scrape_platforms, "play"))
   main_ui:end_layout()
 
-  -- Right side
-  main_ui:layout(0, 0, w_width / 2, w_height, 10, 10)
-  main_ui:element({ 0, 0 }, ui.icon_label("Preview", "file_image"))
-  main_ui:end_layout()
+  main_ui:end_layout() -- End root layout
 
   -- Advanced section
   main_ui:layout(0, w_height / 2 + 46, w_width, w_height / 2, 10, 10)
   if state.error ~= nil and state.error ~= "" then
     main_ui:element({ 0, 0 }, ui.icon_label("Error", "warn"))
     main_ui:element({ 0, 0, w_width, 30 }, ui.multiline_text(state.error))
-  else
-    main_ui:element({ 0, 0 }, ui.icon_label("Advanced", "at"))
-    main_ui:element({ 0, 0, w_width / 2, 30 }, ui.button("Settings", function() scenes:push("settings") end, "gear"))
   end
   main_ui:end_layout()
 
   -- Quit button
-  main_ui:layout(w_width / 2 - w_width / 8, w_height - 40, w_width, w_height, 0, 0)
+  main_ui:layout(w_width / 2 - w_width / 8, w_height - 80, w_width, w_height, 0, 5)
+  main_ui:element({ 0, 0, w_width / 4, 30 }, ui.button("Settings", function() scenes:push("settings") end))
   main_ui:element({ 0, 0, w_width / 4, 30 }, ui.button("Quit", function() love.event.quit() end))
   main_ui:end_layout()
 end
