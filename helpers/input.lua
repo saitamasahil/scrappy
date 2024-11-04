@@ -62,6 +62,9 @@ function input.update(dt)
     if joystick:isGamepadDown("a") then
       trigger(input.events.RETURN)
     end
+    if joystick:isGamepadDown("b") then
+      trigger(input.events.ESC)
+    end
   end
 end
 
