@@ -64,6 +64,10 @@ end
 function user_config:init()
   if self:load() then
     log.write("Loaded user config")
+    -- Reload platforms if not previously loaded
+    if not self.values.selectedPlatforms then
+      self:load_platforms()
+    end
   else
     if self:create_from("config.ini.example") then
       log.write("Created user config")
