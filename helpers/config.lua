@@ -130,11 +130,16 @@ function user_config:load_platforms()
     log.write("No platforms found")
     return
   end
+
+  ini.deleteSection(self.values, "platforms")
+  ini.deleteSection(self.values, "selectedPlatforms")
+
   -- Iterate through platforms
   for _, platform in ipairs(platforms) do
-    platform = platform:lower()
-    if muos.assign[platform] then
-      self:insert("platforms", platform, muos.assign[platform])
+    local lower_platform = platform:lower()
+    if muos.assign[lower_platform] then
+      self:insert("platforms", platform, muos.assign[lower_platform])
+      self:insert("selectedPlatforms", platform, 1)
       mapped_total = mapped_total + 1
     end
   end

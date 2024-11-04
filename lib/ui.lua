@@ -24,6 +24,7 @@ local icons = {
   play = love.graphics.newImage("assets/icons/Play.png"),
   at = love.graphics.newImage("assets/icons/Asperand-Sign.png"),
   left_arrow = love.graphics.newImage("assets/icons/Left-Arrow.png"),
+  cursor = love.graphics.newImage("assets/icons/Cursor-3.png")
 }
 
 local colors = {
@@ -74,8 +75,9 @@ local function draw_button(x, y, w, h, label, left_icon, right_icon, focused)
 
   love.graphics.push()
   love.graphics.setScissor(x, y, w, h)
-  love.graphics.setColor(focused and colors.focus or colors.button)
-  love.graphics.rectangle("fill", x, y, w, h)
+  love.graphics.setColor(focused and colors.focus or colors.background)
+  love.graphics.rectangle("fill", x, y, 10, h)
+  love.graphics.rectangle("fill", x + w - 10, y, 10, h)
   love.graphics.setColor(colors.button)
   love.graphics.rectangle("fill", x + border, y + border, w - 2 * border, h - 2 * border)
   love.graphics.setColor(colors.text)
@@ -121,6 +123,35 @@ local function draw_multiline_text(x, y, w, h, text)
   love.graphics.rectangle("fill", x, y, w - 20, #wrappedtext * h)
   love.graphics.setColor(colors.text)
   love.graphics.printf(wrappedtext, x + 10, y + 5, w - 10, "left")
+  love.graphics.pop()
+end
+
+local function draw_checkbox(x, y, w, h, label, checked, focused)
+  local t = love.graphics.newText(font, label)
+  local tw, th = t:getWidth(), t:getHeight()
+
+  local border = 2
+
+  love.graphics.push()
+  love.graphics.setScissor(x, y, w, h)
+  love.graphics.setColor(focused and colors.focus or colors.background)
+  love.graphics.rectangle("fill", x, y, 10, h)
+  love.graphics.rectangle("fill", x + w - 10, y, 10, h)
+  love.graphics.setColor(colors.background)
+  love.graphics.rectangle("fill", x + border, y + border, w - 2 * border, h - 2 * border)
+  love.graphics.setColor(colors.text)
+
+  -- Draw the checkbox
+  love.graphics.rectangle("fill", x + padding, y + icon_h / 2, icon_w, icon_h)
+  love.graphics.setColor(checked and colors.focus or colors.button)
+  love.graphics.rectangle("fill", x + padding + border, y + icon_h / 2 + border, icon_w - 2 * border, icon_h - 2 * border)
+  love.graphics.setColor(colors.text)
+
+  love.graphics.push()
+  love.graphics.translate(x + icon_w + 2 * padding, y + h / 2)
+  love.graphics.draw(t, 0, -th / 2 - line_height)
+  love.graphics.pop()
+  love.graphics.setScissor()
   love.graphics.pop()
 end
 
@@ -201,6 +232,12 @@ function ui:keypressed(key)
       if key == "return" and focused_element.callback then
         focused_element.callback() -- Call the onPress function
       end
+    elseif focused_element.type == "checkbox" then
+      if key == "return" then
+        if focused_element.callback then
+          focused_element.callback()
+        end
+      end
     end
   end
 end
@@ -250,7 +287,7 @@ function ui:element(type, pos, ...)
 
   if not self.registered_elements[id] then
     self.registered_elements[id] = true
-    if type == "button" or type == "select" then
+    if type == "button" or type == "select" or type == "checkbox" then
       local callback = select(1, ...)
       table.insert(self.focusable_elements, { id = id, type = type, pos = pos, callback = callback })
       if not self.current_focus_id then
@@ -277,6 +314,9 @@ function ui:element(type, pos, ...)
   elseif type == "multiline_text" then
     local text = unpack({ ... }, 1, 1)
     self:register(draw_multiline_text, x, y, w, h, text)
+  elseif type == "checkbox" then
+    local _, label, checked = unpack({ ... }, 1, 3)
+    self:register(draw_checkbox, x, y, w, h, label, checked, self:isFocused(id))
   end
 end
 

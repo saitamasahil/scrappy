@@ -2,3 +2,4 @@
 binary=bin/Skyscraper.aarch64
 sd=1
 [platforms]
+[selectedPlatforms]

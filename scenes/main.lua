@@ -67,11 +67,17 @@ local function scrape_platforms()
   log.write("Scraping artwork")
   -- Load platforms from config
   local platforms = user_config:get().platforms
+  local selected_platforms = user_config:get().selectedPlatforms
   local rom_path, _ = user_config:get_paths()
   -- Set state
   state.scraping = true
   -- For each source = destionation pair in config, fetch and update artwork
   for src, dest in pairs(platforms) do
+    if not selected_platforms[src] or selected_platforms[src] == "0" then
+      log.write("Skipping " .. src)
+      goto skip
+    end
+
     local platform_path = string.format("%s/%s", rom_path, src)
     -- Get list of roms
     local roms = nativefs.getDirectoryItems(platform_path)
@@ -92,6 +98,7 @@ local function scrape_platforms()
         file
       )
     end
+    ::skip::
   end
   state.total = #state.tasks
   log.write(string.format("Generated %d Skyscraper tasks", state.total))
@@ -167,11 +174,6 @@ local function on_artwork_change(key)
   elseif key == "right" then
     update_preview(1)
   end
-end
-
-local function on_refresh_press()
-  user_config:load_platforms()
-  user_config:save()
 end
 
 local function get_templates()
