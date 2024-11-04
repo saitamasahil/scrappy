@@ -179,24 +179,26 @@ function badr:getNextFocusable(direction)
 
   if not currentIndex then return nil end
 
-  -- Determine the next focusable sibling based on the direction
-  local nextIndex = nil
-  if direction == "previous" then
-    nextIndex = currentIndex > 1 and currentIndex - 1 or #siblings -- Wrap to the last sibling
-  elseif direction == "next" then
-    nextIndex = currentIndex < #siblings and currentIndex + 1 or 1 -- Wrap to the first sibling
-  end
+  -- Search for the next focusable element based on the direction
+  local nextIndex = currentIndex
+  repeat
+    if direction == "previous" then
+      nextIndex = nextIndex > 1 and nextIndex - 1 or #siblings -- Wrap to the last sibling
+    elseif direction == "next" then
+      nextIndex = nextIndex < #siblings and nextIndex + 1 or 1 -- Wrap to the first sibling
+    end
 
-  -- Ensure the next sibling is focusable
-  if nextIndex and siblings[nextIndex] and siblings[nextIndex].focusable then
-    return siblings[nextIndex]
-  end
+    -- Return the next sibling if it’s focusable
+    if siblings[nextIndex].focusable then
+      return siblings[nextIndex]
+    end
+  until nextIndex == currentIndex -- Stop if we loop back to the original element
 
-  return nil
+  return nil                      -- If no focusable element is found, return nil
 end
 
 -- Handles keyboard navigation
-function badr:handleKey(key)
+function badr:keypressed(key)
   if not badr.focusedElement then return end
 
   if badr.focusedElement.onKeyPress then
