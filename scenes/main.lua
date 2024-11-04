@@ -246,62 +246,58 @@ local function draw_preview(x, y, scale, show_overlay)
   love.graphics.pop()
 end
 
-local component = require 'lib.gui.badr'
-local button    = require 'lib.gui.button'
-local label     = require 'lib.gui.label'
-local menu
+local component = require "lib.gui.badr"
+local button    = require "lib.gui.button"
+local label     = require "lib.gui.label"
+local select    = require "lib.gui.select"
+local menu      = component:root { column = true, gap = 10 }
 
 function main:load()
   pixel_loading:load()
-
-  main_ui:load()
   get_templates()
   background = load_image("assets/muxsysinfo.png")
   overlay = load_image("assets/preview.png")
   render_to_canvas()
 
   local customComponent = component { row = true, gap = 10 }
-      + label 'Preview'
+      + label { text = "Preview", icon = "file_image" }
 
-  menu = component { column = true, gap = 10 }
-      + customComponent
-      + label 'Scrape platforms:'
+  local bottom_buttons = component { column = true, gap = 10 }
       + button {
-        text = 'Scrape',
+        text = "Settings",
         width = 200,
         onClick = function()
-          state.scraping = true
-          scrape_platforms()
+          scenes:switch("settings")
         end,
         focusable = true,
       }
       + button {
-        text = 'New game',
-        width = 200,
-        onClick = scrape_platforms,
-        focusable = true,
-      }
-      + button {
-        text = 'Settings',
-        width = 200,
-        onClick = function() print('Settings clicked') end,
-        focusable = true,
-      }
-      + button {
-        text = 'Quit',
+        text = "Quit",
         width = 200,
         onClick = function() love.event.quit() end,
         focusable = true,
       }
 
-  menu:updatePosition(
-    love.graphics.getWidth() * 0.5 - menu.width * 0.5,
-    love.graphics.getHeight() * 0.5 - menu.height * 0.5
-  )
+  menu = menu
+      + customComponent
+      + select {
+        width = 200,
+        options = templates,
+        startIndex = 1,
+        onChange = on_artwork_change
+      }
+      + button {
+        text = "Scrape platforms",
+        width = 200,
+        onClick = scrape_platforms,
+      }
+      + bottom_buttons
 
-  if menu.children[1].focusable then
-    menu:setFocus(menu.children[1])
-  end
+  menu:updatePosition(10, 10)
+  bottom_buttons:updatePosition(
+    love.graphics.getWidth() * 0.5 - bottom_buttons.width * 0.5,
+    love.graphics.getHeight() * 0.5 - bottom_buttons.height * 0.5
+  )
 end
 
 function main:update(dt)
@@ -352,23 +348,16 @@ end
 
 function main:draw()
   -- draw_preview(ui_padding, 36, 0.5, true)
-  -- main_ui:draw()
-  if menu then
-    menu:draw()
-  end
+  menu:draw()
 end
 
 function main:keypressed(key)
-  menu:handleKey(key)
-  -- if key == "return" and menu.focusedElement and menu.focusedElement.onClick then
-  --   menu.focusedElement:onClick() -- Activate the focused button's onClick function
-  -- end
   if key == "escape" then
     love.event.quit()
   end
-  -- if not state.scraping then
-  --   main_ui:keypressed(key)
-  -- end
+  if not state.scraping then
+    menu:keypressed(key)
+  end
 end
 
 return main

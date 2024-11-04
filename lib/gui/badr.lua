@@ -9,17 +9,6 @@
 local badr = {}
 badr.__index = badr
 
--- Focused element reference
-badr.focusedElement = nil
-
--- Key navigation mappings for directional movement
-local keyMappings = {
-  up = "up",
-  down = "down",
-  left = "left",
-  right = "right"
-}
-
 function badr:new(t)
   t = t or {}
   local _default = {
@@ -39,10 +28,17 @@ function badr:new(t)
   end
 
   local instance = setmetatable(_default, badr)
-  if instance.focusable and not badr.focusedElement then
-    badr:setFocus(instance) -- Set initial focus to the first focusable element
+  if instance.focusable and not (instance.root and instance.root.focusedElement) then
+    instance.root = self:getRoot() -- Ensure the root reference is set
+    instance.root:setFocus(instance)
   end
   return instance
+end
+
+function badr:createRoot(t)
+  t = t or {}
+  t.focusedElement = nil -- Initialize focusedElement specifically for root nodes
+  return self:new(t)     -- Use `self:new` to create the root instance
 end
 
 function badr.__add(self, component)
@@ -152,14 +148,23 @@ end
 -- Focus-related methods
 -- Added by gabrielfvale
 
+function badr:getRoot()
+  local node = self
+  while node.parent do
+    node = node.parent -- Traverse up to find the root
+  end
+  return node
+end
+
 -- Set focus on a specific element
 function badr:setFocus(element)
+  local root = self:getRoot() -- Get the root node of the element
   if element.focusable then
-    if badr.focusedElement then
-      badr.focusedElement.focused = false -- Unfocus the current element
+    if root.focusedElement then
+      root.focusedElement.focused = false -- Unfocus the current element
     end
     element.focused = true                -- Set the new element as focused
-    badr.focusedElement = element         -- Update the global reference
+    root.focusedElement = element         -- Update the root's focused element
   end
 end
 
@@ -179,21 +184,13 @@ local function gatherFocusableComponents(root)
   return focusableComponents
 end
 
-
-
 function badr:getNextFocusable(direction)
-  -- Get the root component and gather all focusable elements globally
-  local root = self
-  while root.parent do
-    root = root.parent -- Traverse to the root component
-  end
-
+  local root = self:getRoot() -- Focus within the current root context
   local focusableComponents = gatherFocusableComponents(root)
   local currentIndex = nil
 
-  -- Find the index of the currently focused element within the global focusable list
   for i, component in ipairs(focusableComponents) do
-    if component == self then
+    if component == root.focusedElement then
       currentIndex = i
       break
     end
@@ -201,39 +198,38 @@ function badr:getNextFocusable(direction)
 
   if not currentIndex then return nil end
 
-  -- Determine the next focusable component based on the direction, with wrapping
   local nextIndex
   if direction == "previous" then
-    nextIndex = currentIndex > 1 and currentIndex - 1 or #focusableComponents -- Wrap to the last element
+    nextIndex = currentIndex > 1 and currentIndex - 1 or #focusableComponents
   elseif direction == "next" then
-    nextIndex = currentIndex < #focusableComponents and currentIndex + 1 or 1 -- Wrap to the first element
+    nextIndex = currentIndex < #focusableComponents and currentIndex + 1 or 1
   end
 
-  -- Return the next focusable component from the global list
   return focusableComponents[nextIndex]
 end
 
 -- Handles keyboard navigation
 function badr:keypressed(key)
-  if not badr.focusedElement then return end
+  local root = self:getRoot()
+  if not root.focusedElement then return end
 
-  if badr.focusedElement.onKeyPress then
-    badr.focusedElement:onKeyPress(key)
+  if root.focusedElement.onKeyPress then
+    root.focusedElement:onKeyPress(key)
   end
 
   local nextElement
   if (self.column and key == "up") or (self.row and key == "left") then
-    nextElement = badr.focusedElement:getNextFocusable("previous")
+    nextElement = root.focusedElement:getNextFocusable("previous")
   elseif (self.column and key == "down") or (self.row and key == "right") then
-    nextElement = badr.focusedElement:getNextFocusable("next")
+    nextElement = root.focusedElement:getNextFocusable("next")
   end
 
   if nextElement then
-    badr:setFocus(nextElement) -- Set focus to the new element
+    root:setFocus(nextElement)
   end
 end
 
-return setmetatable({ new = badr.new }, {
+return setmetatable({ root = badr.createRoot, new = badr.new }, {
   __call = function(t, ...)
     return badr:new(...)
   end,

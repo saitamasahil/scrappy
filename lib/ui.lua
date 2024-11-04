@@ -309,8 +309,9 @@ function ui:layout(x, y, width, height, padding, spacing, direction)
     padding = padding,
     spacing = spacing,
     direction = direction,
-    current_x = x + padding,
-    current_y = y + padding,
+    current_x = x + padding, -- For horizontal layouts, this tracks the next x position
+    fixed_y = y + padding,   -- For horizontal layouts, this keeps y fixed for alignment
+    current_y = y + padding  -- For vertical layouts, this is updated for stacking
   }
 
   table.insert(self.layout_stack, new_layout)
@@ -346,13 +347,24 @@ function ui:element(pos, element_data)
     h = h or icon_h
   end
 
-  -- Apply the current layout if the layout stack is not empty
+  -- Get the current layout and determine if it’s horizontal
   local current_layout = self.layout_stack[#self.layout_stack]
   if current_layout then
-    -- Position element relative to the layout's current position with spacing
-    x = current_layout.current_x + x
-    y = current_layout.current_y + y
-    current_layout.current_y = y + h + current_layout.spacing -- Update for vertical stacking
+    if current_layout.direction == "horizontal" then
+      -- Position element horizontally, keeping a fixed y position
+      x = current_layout.current_x
+      y = current_layout.fixed_y
+
+      -- Update current_x for the next element, adding width and spacing
+      current_layout.current_x = x + w + current_layout.spacing
+    else
+      -- For vertical layouts, use the stacking current_y position
+      x = current_layout.current_x + x
+      y = current_layout.current_y + y
+
+      -- Update current_y for the next element, adding height and spacing
+      current_layout.current_y = y + h + current_layout.spacing
+    end
 
     -- Set scissor to clip elements within the layout's boundaries
     love.graphics.setScissor(current_layout.x, current_layout.y, current_layout.width, current_layout.height)
