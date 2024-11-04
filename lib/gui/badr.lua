@@ -159,12 +159,12 @@ function badr:animate(props)
   end
 end
 
-function badr:update()
+function badr:update(dt)
   if self.onUpdate then
-    self:onUpdate()
+    self:onUpdate(dt)
   end
   for _, child in ipairs(self.children) do
-    child:update()
+    child:update(dt)
   end
 end
 

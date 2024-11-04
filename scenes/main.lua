@@ -1,10 +1,18 @@
 local skyscraper = require("lib.skyscraper")
-local log = require("lib.log")
-local scenes = require("lib.scenes")
-local loading = require("lib.loading")
-local configs = require("helpers.config")
-local muos = require("helpers.muos")
-local utils = require("helpers.utils")
+local log        = require("lib.log")
+local scenes     = require("lib.scenes")
+local loading    = require("lib.loading")
+local configs    = require("helpers.config")
+local muos       = require("helpers.muos")
+local utils      = require("helpers.utils")
+
+local component  = require "lib.gui.badr"
+local button     = require "lib.gui.button"
+local label      = require "lib.gui.label"
+local select     = require "lib.gui.select"
+local progress   = require "lib.gui.progress"
+local menu
+
 
 local main = {}
 local pixel_loading = loading.new("pixel", 0.5)
@@ -157,6 +165,8 @@ local function update_state()
       end
       table.remove(state.tasks, pos)
       copy_game_artwork(state.data.platform, state.data.title)
+      local bar = menu ^ "progress_bar"
+      bar:setProgress((state.total - #state.tasks) / state.total)
       if state.scraping and #state.tasks == 0 then
         log.write("Finished scraping")
         state.scraping = false
@@ -217,12 +227,6 @@ local function render_to_canvas()
   end)
 end
 
-local component = require "lib.gui.badr"
-local button    = require "lib.gui.button"
-local label     = require "lib.gui.label"
-local select    = require "lib.gui.select"
-local menu
-
 function main:load()
   pixel_loading:load()
   get_templates()
@@ -278,6 +282,7 @@ function main:load()
       + label { id = "platform", text = "Platform", icon = "controller" }
       + label { id = "game", text = "Game", icon = "cd" }
       + label { id = "progress", text = "Progress", icon = "info" }
+      + progress { id = "progress_bar", width = w_width / 2 - 30 }
 
   local top_layout = component { row = true, gap = 10 }
       + (component { column = true, gap = 10 }
@@ -331,10 +336,11 @@ function main:update(dt)
   end
 
   if menu.children then
-    local platform, game, progress = menu ^ "platform", menu ^ "game", menu ^ "progress"
+    local platform, game, progress, bar = menu ^ "platform", menu ^ "game", menu ^ "progress", menu ^ "progress_bar"
     platform.text = "Platform: " .. state.data.platform
     game.text = "Game: " .. state.data.title
     progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
+    -- bar:setProgress(state.total > 0 and ((state.total - #state.tasks) / state.total) or 0)
   end
 end
 
