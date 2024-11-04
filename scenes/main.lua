@@ -164,9 +164,17 @@ local function update_state()
         end
       end
       table.remove(state.tasks, pos)
+      -- Copy game artwork
       copy_game_artwork(state.data.platform, state.data.title)
-      local bar = menu ^ "progress_bar"
-      bar:setProgress((state.total - #state.tasks) / state.total)
+      -- Update UI
+      if menu.children then
+        local platform, game, progress, bar = menu ^ "platform", menu ^ "game", menu ^ "progress", menu ^ "progress_bar"
+        platform.text = "Platform: " .. state.data.platform
+        game.text = "Game: " .. state.data.title
+        progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
+        bar:setProgress((state.total - #state.tasks) / state.total)
+      end
+      -- Check if finished
       if state.scraping and #state.tasks == 0 then
         log.write("Finished scraping")
         state.scraping = false
@@ -279,9 +287,9 @@ function main:load()
       }
 
   local infoComponent = component { column = true, gap = 10 }
-      + label { id = "platform", text = "Platform", icon = "controller" }
-      + label { id = "game", text = "Game", icon = "cd" }
-      + label { id = "progress", text = "Progress", icon = "info" }
+      + label { id = "platform", text = "Platform: N/A", icon = "controller" }
+      + label { id = "game", text = "Game: N/A", icon = "cd" }
+      + label { id = "progress", text = "Progress: 0 / 0", icon = "info" }
       + progress { id = "progress_bar", width = w_width / 2 - 30 }
 
   local top_layout = component { row = true, gap = 10 }
@@ -315,7 +323,6 @@ function main:load()
       + top_layout
       + bottom_buttons
 
-  -- menu:updatePosition(10, 10)
   menu:updatePosition(10, 10)
   infoComponent:updatePosition(0, w_height / 2 - selectionComponent.height - infoComponent.height - 10)
   bottom_buttons:updatePosition(
@@ -333,14 +340,6 @@ function main:update(dt)
   if state.reload_preview and not state.loading then
     state.reload_preview = false
     render_to_canvas()
-  end
-
-  if menu.children then
-    local platform, game, progress, bar = menu ^ "platform", menu ^ "game", menu ^ "progress", menu ^ "progress_bar"
-    platform.text = "Platform: " .. state.data.platform
-    game.text = "Game: " .. state.data.title
-    progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
-    -- bar:setProgress(state.total > 0 and ((state.total - #state.tasks) / state.total) or 0)
   end
 end
 
