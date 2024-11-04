@@ -105,6 +105,27 @@ function badr.__mod(self, id)
   end
 end
 
+-- Return any depth child with id
+function badr.__pow(self, id)
+  assert(type(id) == "string", 'Badr: Provided id must be a string.')
+  -- Helper function to perform recursive search
+  local function search(children)
+    for _, child in ipairs(children) do
+      if child.id == id then
+        return child
+      end
+      -- Recursive call to search in the child’s children
+      local found = search(child.children or {})
+      if found then
+        return found
+      end
+    end
+  end
+
+  -- Start the search from the current instance’s children
+  return search(self.children)
+end
+
 function badr:isMouseInside()
   local mouseX, mouseY = love.mouse.getPosition()
   return mouseX >= self.x and mouseX <= self.x + self.width and
