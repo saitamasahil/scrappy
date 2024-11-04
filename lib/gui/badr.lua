@@ -27,12 +27,12 @@ function badr:new(t)
     y = 0,
     height = 0,
     width = 0,
-    parent = { x = 0, y = 0, visible = true },
+    parent = t.parent or nil,
     id = tostring(love.timer.getTime()),
     visible = true,
     children = {},
-    focusable = false, -- Defines if an element is focusable
-    focused = false    -- Tracks if the element is currently focused
+    focusable = false,
+    focused = false
   }
   for key, value in pairs(t) do
     _default[key] = value
@@ -163,15 +163,37 @@ function badr:setFocus(element)
   end
 end
 
-function badr:getNextFocusable(direction)
-  if not self.parent then return nil end -- If there’s no parent, no siblings exist
+local function gatherFocusableComponents(root)
+  local focusableComponents = {}
 
-  local siblings = self.parent.children
+  local function gather(component)
+    if component.focusable then
+      table.insert(focusableComponents, component)
+    end
+    for _, child in ipairs(component.children or {}) do
+      gather(child) -- Recursively gather focusable components from all children
+    end
+  end
+
+  gather(root)
+  return focusableComponents
+end
+
+
+
+function badr:getNextFocusable(direction)
+  -- Get the root component and gather all focusable elements globally
+  local root = self
+  while root.parent do
+    root = root.parent -- Traverse to the root component
+  end
+
+  local focusableComponents = gatherFocusableComponents(root)
   local currentIndex = nil
 
-  -- Find the index of the currently focused element within its siblings
-  for i, sibling in ipairs(siblings) do
-    if sibling == self then
+  -- Find the index of the currently focused element within the global focusable list
+  for i, component in ipairs(focusableComponents) do
+    if component == self then
       currentIndex = i
       break
     end
@@ -179,22 +201,16 @@ function badr:getNextFocusable(direction)
 
   if not currentIndex then return nil end
 
-  -- Search for the next focusable element based on the direction
-  local nextIndex = currentIndex
-  repeat
-    if direction == "previous" then
-      nextIndex = nextIndex > 1 and nextIndex - 1 or #siblings -- Wrap to the last sibling
-    elseif direction == "next" then
-      nextIndex = nextIndex < #siblings and nextIndex + 1 or 1 -- Wrap to the first sibling
-    end
+  -- Determine the next focusable component based on the direction, with wrapping
+  local nextIndex
+  if direction == "previous" then
+    nextIndex = currentIndex > 1 and currentIndex - 1 or #focusableComponents -- Wrap to the last element
+  elseif direction == "next" then
+    nextIndex = currentIndex < #focusableComponents and currentIndex + 1 or 1 -- Wrap to the first element
+  end
 
-    -- Return the next sibling if it’s focusable
-    if siblings[nextIndex].focusable then
-      return siblings[nextIndex]
-    end
-  until nextIndex == currentIndex -- Stop if we loop back to the original element
-
-  return nil                      -- If no focusable element is found, return nil
+  -- Return the next focusable component from the global list
+  return focusableComponents[nextIndex]
 end
 
 -- Handles keyboard navigation
