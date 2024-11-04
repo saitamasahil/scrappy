@@ -246,6 +246,11 @@ local function draw_preview(x, y, scale, show_overlay)
   love.graphics.pop()
 end
 
+local component = require 'lib.gui.badr'
+local button    = require 'lib.gui.button'
+local label     = require 'lib.gui.label'
+local menu
+
 function main:load()
   pixel_loading:load()
 
@@ -254,10 +259,54 @@ function main:load()
   background = load_image("assets/muxsysinfo.png")
   overlay = load_image("assets/preview.png")
   render_to_canvas()
+
+  local customComponent = component { row = true, gap = 10 }
+      + label 'Preview'
+
+  menu = component { column = true, gap = 10 }
+      + customComponent
+      + label 'Scrape platforms:'
+      + button {
+        text = 'Scrape',
+        width = 200,
+        onClick = function()
+          state.scraping = true
+          scrape_platforms()
+        end,
+        focusable = true,
+      }
+      + button {
+        text = 'New game',
+        width = 200,
+        onClick = scrape_platforms,
+        focusable = true,
+      }
+      + button {
+        text = 'Settings',
+        width = 200,
+        onClick = function() print('Settings clicked') end,
+        focusable = true,
+      }
+      + button {
+        text = 'Quit',
+        width = 200,
+        onClick = function() love.event.quit() end,
+        focusable = true,
+      }
+
+  menu:updatePosition(
+    love.graphics.getWidth() * 0.5 - menu.width * 0.5,
+    love.graphics.getHeight() * 0.5 - menu.height * 0.5
+  )
+
+  if menu.children[1].focusable then
+    menu:setFocus(menu.children[1])
+  end
 end
 
 function main:update(dt)
   update_state()
+  menu:update(dt)
   pixel_loading:update(dt)
   if state.reload_preview and not state.loading then
     state.reload_preview = false
@@ -302,17 +351,24 @@ function main:update(dt)
 end
 
 function main:draw()
-  draw_preview(ui_padding, 36, 0.5, true)
-  main_ui:draw()
+  -- draw_preview(ui_padding, 36, 0.5, true)
+  -- main_ui:draw()
+  if menu then
+    menu:draw()
+  end
 end
 
 function main:keypressed(key)
+  menu:handleKey(key)
+  -- if key == "return" and menu.focusedElement and menu.focusedElement.onClick then
+  --   menu.focusedElement:onClick() -- Activate the focused button's onClick function
+  -- end
   if key == "escape" then
     love.event.quit()
   end
-  if not state.scraping then
-    main_ui:keypressed(key)
-  end
+  -- if not state.scraping then
+  --   main_ui:keypressed(key)
+  -- end
 end
 
 return main
