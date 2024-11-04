@@ -43,7 +43,7 @@ function config:insert(section, key, value)
   if self.values[section] == nil then
     self.values[section] = {}
   end
-  ini.addKey(self.values, section, key, value)
+  ini.addKey(self.values, section, key, tostring(value))
 end
 
 function config:get()
@@ -123,9 +123,9 @@ function user_config:get_paths()
 end
 
 function user_config:load_platforms()
-  log.write("Loading platforms")
-
   local rom_path, _ = self:get_paths()
+
+  log.write(string.format("Loading platforms from %s", rom_path))
 
   local platforms = nativefs.getDirectoryItems(rom_path)
   local mapped_total = 0
