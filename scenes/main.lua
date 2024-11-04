@@ -317,6 +317,8 @@ function main:load()
     menu.width / 2 - bottom_buttons.width / 2 - 10,
     w_height - top_layout.height - bottom_buttons.height - 30
   )
+
+  menu:focusFirstElement()
 end
 
 function main:update(dt)
@@ -329,9 +331,10 @@ function main:update(dt)
   end
 
   if menu.children then
-    local p, g = menu ^ "platform", menu ^ "game"
-    p.text = "Platform: " .. state.data.platform
-    g.text = "Game: " .. state.data.title
+    local platform, game, progress = menu ^ "platform", menu ^ "game", menu ^ "progress"
+    platform.text = "Platform: " .. state.data.platform
+    game.text = "Game: " .. state.data.title
+    progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
   end
 end
 

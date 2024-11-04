@@ -50,6 +50,7 @@ function settings:load()
   menu = menu + checkboxes
 
   menu:updatePosition(10, 10)
+  menu:focusFirstElement()
 end
 
 function settings:update(dt)

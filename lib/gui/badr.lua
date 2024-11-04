@@ -30,7 +30,9 @@ function badr:new(t)
   local instance = setmetatable(_default, badr)
   if instance.focusable and not (instance.root and instance.root.focusedElement) then
     instance.root = self:getRoot() -- Ensure the root reference is set
-    instance.root:setFocus(instance)
+    -- if not instance.root.focusedElement then
+    --   instance.root:setFocus(instance)
+    -- end
   end
   return instance
 end
@@ -227,6 +229,14 @@ function badr:getNextFocusable(direction)
   end
 
   return focusableComponents[nextIndex]
+end
+
+function badr:focusFirstElement()
+  local root = self:getRoot() -- Get the root context of this element
+  for _, child in ipairs(gatherFocusableComponents(root)) do
+    root:setFocus(child)      -- Set focus to the first focusable element
+    break
+  end
 end
 
 -- Handles keyboard navigation
