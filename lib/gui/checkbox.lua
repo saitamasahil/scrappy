@@ -48,7 +48,7 @@ return function(props)
 
       -- Background and focus styling
       love.graphics.setColor(self.focused and self.focusColor or self.backgroundColor)
-      love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+      love.graphics.rectangle("fill", self.x, self.y, self.parent.width or self.width, self.height)
 
       -- Inner box for the checkbox background
       love.graphics.setColor(self.hoverColor)

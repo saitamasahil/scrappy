@@ -321,7 +321,7 @@ function main:load()
         + canvasComponent
       )
       + (component { column = true, gap = 10 }
-        + label { text = "Artwork", icon = "file_image" }
+        + label { text = "Artwork", icon = "folder_image" }
         + selectionComponent
         + infoComponent
       )

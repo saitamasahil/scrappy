@@ -1,15 +1,17 @@
-local scenes      = require("lib.scenes")
-local configs     = require("helpers.config")
-local utils       = require("helpers.utils")
+local scenes            = require("lib.scenes")
+local configs           = require("helpers.config")
+local utils             = require("helpers.utils")
 
-local component   = require 'lib.gui.badr'
-local button      = require 'lib.gui.button'
-local label       = require 'lib.gui.label'
-local checkbox    = require 'lib.gui.checkbox'
+local component         = require 'lib.gui.badr'
+local button            = require 'lib.gui.button'
+local label             = require 'lib.gui.label'
+local checkbox          = require 'lib.gui.checkbox'
+local scroll_container  = require 'lib.gui.scroll_container'
 
-local user_config = configs.user_config
+local user_config       = configs.user_config
+local w_width, w_height = love.window.getMode()
 
-local settings    = {}
+local settings          = {}
 
 local menu, checkboxes
 
@@ -45,9 +47,13 @@ function settings:load()
   menu = menu
       + label { text = 'Platforms', icon = "file_image" }
       + button { text = 'Refresh', width = 200, onClick = on_refresh_press }
+      + (scroll_container {
+          width = w_width - 20,
+          height = 250,
+          scroll_speed = 20
+        }
+        + checkboxes)
   update_checkboxes()
-
-  menu = menu + checkboxes
 
   menu:updatePosition(10, 10)
   menu:focusFirstElement()
