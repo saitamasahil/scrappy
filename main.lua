@@ -11,11 +11,19 @@ local skyscraper = require("lib.skyscraper")
 local splash = require("lib.splash")
 local input = require("helpers.input")
 local configs = require("helpers.config")
+local utils = require("helpers.utils")
 
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 
 function love.load()
   splash.load()
+
+  local res = user_config:read("main", "resolution")
+  if res then
+    res = utils.split(res, "x")
+    love.window.setMode(tonumber(res[1]) or 640, tonumber(res[2]) or 480)
+  end
+
   scenes:load("main")
 
   skyscraper.init(

@@ -1,19 +1,40 @@
-local scenes            = require("lib.scenes")
-local configs           = require("helpers.config")
-local utils             = require("helpers.utils")
+local scenes             = require("lib.scenes")
+local configs            = require("helpers.config")
+local utils              = require("helpers.utils")
 
-local component         = require 'lib.gui.badr'
-local button            = require 'lib.gui.button'
-local label             = require 'lib.gui.label'
-local checkbox          = require 'lib.gui.checkbox'
-local scroll_container  = require 'lib.gui.scroll_container'
+local component          = require 'lib.gui.badr'
+local button             = require 'lib.gui.button'
+local label              = require 'lib.gui.label'
+local select             = require 'lib.gui.select'
+local checkbox           = require 'lib.gui.checkbox'
+local scroll_container   = require 'lib.gui.scroll_container'
 
-local user_config       = configs.user_config
-local w_width, w_height = love.window.getMode()
+local user_config        = configs.user_config
+local w_width, w_height  = love.window.getMode()
 
-local settings          = {}
+local settings           = {}
 
 local menu, checkboxes
+
+local resolutions        = { "640x480", "720x720" }
+local current_resolution = 1
+
+local function read_initial_resolution()
+  local res = user_config:read("main", "resolution")
+  if res then
+    for i = 1, #resolutions do
+      if res == resolutions[i] then
+        current_resolution = i
+        break
+      end
+    end
+  end
+end
+
+local function on_change_resolution(index)
+  user_config:insert("main", "resolution", resolutions[index])
+  user_config:save()
+end
 
 local function on_change_platform(platform)
   local selected_platforms = user_config.values.selectedPlatforms
@@ -42,14 +63,26 @@ local function on_refresh_press()
 end
 
 function settings:load()
+  read_initial_resolution()
+
   menu = component:root { column = true, gap = 10 }
   checkboxes = component { column = true, gap = 0 }
+
   menu = menu
+      + label { text = 'Resolution', icon = "file_image" }
+      + select {
+        width = 200,
+        options = resolutions,
+        startIndex = current_resolution,
+        onChange = function(_, index)
+          on_change_resolution(index)
+        end
+      }
       + label { text = 'Platforms', icon = "file_image" }
       + button { text = 'Refresh', width = 200, onClick = on_refresh_press }
       + (scroll_container {
           width = w_width - 20,
-          height = 250,
+          height = 280,
           scroll_speed = 20
         }
         + checkboxes)

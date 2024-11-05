@@ -16,9 +16,10 @@ local menu, error_window
 
 local background, overlay
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
+local pixel_loading = loading.new("pixel", 0.5)
+
 local w_width, w_height = love.window.getMode()
 local canvas = love.graphics.newCanvas(w_width, w_height)
-local pixel_loading = loading.new("pixel", 0.5)
 local default_cover_path = "sample/media/covers/fake-rom.png"
 local cover_preview_path = default_cover_path
 local cover_preview

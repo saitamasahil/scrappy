@@ -42,10 +42,10 @@ return function(props)
     onKeyPress = function(self, key)
       if key == "left" then
         self.currentIndex = self.currentIndex > 1 and self.currentIndex - 1 or #self.options
-        if props.onChange then props.onChange(key) end
+        if props.onChange then props.onChange(key, self.currentIndex) end
       elseif key == "right" then
         self.currentIndex = self.currentIndex < #self.options and self.currentIndex + 1 or 1
-        if props.onChange then props.onChange(key) end
+        if props.onChange then props.onChange(key, self.currentIndex) end
       end
     end,
     draw = function(self)
