@@ -11,20 +11,20 @@ local button     = require "lib.gui.button"
 local label      = require "lib.gui.label"
 local select     = require "lib.gui.select"
 local progress   = require "lib.gui.progress"
-local menu
+local menu, error_window
 
 
-local main = {}
-local pixel_loading = loading.new("pixel", 0.5)
-
+local background, overlay
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
-
 local w_width, w_height = love.window.getMode()
 local canvas = love.graphics.newCanvas(w_width, w_height)
-local background, overlay
+local pixel_loading = loading.new("pixel", 0.5)
 local default_cover_path = "sample/media/covers/fake-rom.png"
 local cover_preview_path = default_cover_path
 local cover_preview
+
+local main = {}
+
 local templates = {}
 local current_template = 0
 
@@ -142,6 +142,8 @@ local function update_state()
   if t then
     if t.error and t.error ~= "" then
       state.error = t.error
+      error_window.visible = true
+      (error_window ^ "error_text").text = state.error
     end
     if t.data and next(t.data) ~= nil then
       state.data = t.data
@@ -243,6 +245,25 @@ function main:load()
   render_to_canvas()
 
   menu = component:root { column = true, gap = 10 }
+  error_window = component { column = true, gap = 10, visible = false }
+      + label { text = "Error", icon = "warn" }
+      + component {
+        id = "error_text",
+        text = "",
+        width = w_width - 20,
+        height = 30,
+        _font = love.graphics.getFont(),
+        draw = function(self)
+          local _, wrappedtext = self._font:getWrap(self.text, self.width - 10)
+          love.graphics.push()
+          love.graphics.setColor(utils.hex '#2d3436')
+          love.graphics.rectangle("fill", self.x, self.y, self.width, #wrappedtext * self.height)
+          love.graphics.setColor(1, 1, 1)
+          love.graphics.rectangle("line", self.x, self.y, self.width, #wrappedtext * self.height)
+          love.graphics.printf(wrappedtext, self.x + 10, self.y + 5, self.width - 10, "left")
+          love.graphics.pop()
+        end
+      }
 
   local canvasComponent = component {
     overlay = true,
@@ -330,6 +351,11 @@ function main:load()
     w_height - top_layout.height - bottom_buttons.height - 30
   )
 
+  error_window:updatePosition(
+    w_width / 2 - error_window.width / 2,
+    w_height / 2 - error_window.height / 2
+  )
+
   menu:focusFirstElement()
 end
 
@@ -345,11 +371,17 @@ end
 
 function main:draw()
   menu:draw()
+  error_window:draw()
 end
 
 function main:keypressed(key)
   if key == "escape" then
-    love.event.quit()
+    if state.error and state.error ~= "" then
+      error_window.visible = false
+      state.error = ""
+    else
+      love.event.quit()
+    end
   end
   if not state.scraping then
     menu:keypressed(key)

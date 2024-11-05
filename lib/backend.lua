@@ -59,15 +59,9 @@ while true do
     goto continue
   end
 
-  if game == "fake-rom" then
-    output:close()
-    OUTPUT_CHANNEL:push({ loading = false })
-    goto continue
-  end
-
   for line in output:lines() do
     line = utils.strip_ansi_colors(line)
-    log.write(line, "skyscraper")
+    if game ~= "fake-rom" then log.write(line, "skyscraper") end
     local data, error = parser.parse(line)
     if next(data) ~= nil then
       OUTPUT_CHANNEL:push({
@@ -82,7 +76,7 @@ while true do
       })
     end
     if error ~= nil and error ~= "" then
-      print("ERROR: " .. error)
+      log.write("ERROR: " .. error, "skyscraper")
       OUTPUT_CHANNEL:push({ data = {}, error = error, loading = false })
       break
     end
