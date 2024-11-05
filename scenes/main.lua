@@ -232,7 +232,9 @@ local function render_to_canvas()
   canvas:renderTo(function()
     love.graphics.clear()
     if cover_preview then
-      love.graphics.draw(cover_preview, 0, 0, 0)
+      local cover_w, cover_h = cover_preview:getDimensions()
+      local canvas_w, canvas_h = canvas:getDimensions()
+      love.graphics.draw(cover_preview, canvas_w - cover_w, canvas_h / 2 - cover_h / 2, 0)
     end
   end)
 end
@@ -284,7 +286,7 @@ function main:load()
       end
       love.graphics.setColor(1, 1, 1, 0.5);
       love.graphics.rectangle("line", 0, 0, cw, ch)
-      if state.loading then
+      if state.loading or state.scraping then
         love.graphics.setColor(0, 0, 0, 0.5);
         love.graphics.rectangle("fill", 0, 0, cw, ch)
         pixel_loading:draw(cw * scale, ch * scale, 2)

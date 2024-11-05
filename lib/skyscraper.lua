@@ -76,7 +76,7 @@ function skyscraper.run(command, platform, op, game, ...)
   platform = platform or "none"
   op = op or "generate"
   game = game or "none"
-  local task_id = select(1, ...) or "none"
+  local task_id = select(1, ...) or nil
   push_command({
     command = skyscraper.base_command .. command,
     platform = platform,
