@@ -4,6 +4,9 @@ local parser = {}
 
 function parser.parse(line)
   local _, _, game_title = line:match("#(%d+)/(%d+).+Game%s+'(.-)'")
+  if line:find("No entries to scrape...") then
+    return { title = "", success = false }, nil
+  end
 
   local success = true
   if line:find("not found") then
