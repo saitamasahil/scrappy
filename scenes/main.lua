@@ -16,7 +16,7 @@ local menu, error_window
 
 local background, overlay
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
-local pixel_loading = loading.new("pixel", 0.5)
+local spinner = loading.new("spinner", 1.5)
 
 local w_width, w_height = love.window.getMode()
 local canvas = love.graphics.newCanvas(w_width, w_height)
@@ -241,7 +241,7 @@ local function render_to_canvas()
 end
 
 function main:load()
-  pixel_loading:load()
+  spinner:load()
   get_templates()
   background = load_image("assets/muxsysinfo.png")
   overlay = load_image("assets/preview.png")
@@ -290,7 +290,7 @@ function main:load()
       if state.loading or state.scraping then
         love.graphics.setColor(0, 0, 0, 0.5);
         love.graphics.rectangle("fill", 0, 0, cw, ch)
-        pixel_loading:draw(cw * scale, ch * scale, 2)
+        spinner:draw(cw * scale, ch * scale, 1.5)
       end
       love.graphics.setColor(1, 1, 1);
       love.graphics.pop()
@@ -365,7 +365,7 @@ end
 function main:update(dt)
   update_state()
   menu:update(dt)
-  pixel_loading:update(dt)
+  spinner:update(dt)
   if state.reload_preview and not state.loading then
     state.reload_preview = false
     render_to_canvas()
