@@ -13,5 +13,5 @@ _G.SKYSCRAPER_ERRORS = {
   "Couldn't read artwork xml file",
   "requested either on command line or with",
   "Couldn't create cache folders, please check folder permissions and try again...",
-
+  "ERROR: Couldn't read artwork xml file",
 }

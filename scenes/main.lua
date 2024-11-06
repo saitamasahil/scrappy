@@ -80,7 +80,7 @@ local function scrape_platforms()
   -- Set state
   state.scraping = true
   -- For each source = destionation pair in config, fetch and update artwork
-  for src, dest in pairs(platforms) do
+  for src, dest in utils.orderedPairs(platforms) do
     if not selected_platforms[src] or selected_platforms[src] == "0" then
       log.write("Skipping " .. src)
       goto skip

@@ -49,8 +49,6 @@ end
 --[[
 Ordered table iterator, allow to iterate on the natural order of the keys of a
 table.
-
-Example:
 ]]
 
 local function __genOrderedIndex(t)
@@ -68,14 +66,13 @@ local function orderedNext(t, state)
   -- table being iterated.
 
   local key = nil
-  --print("orderedNext: state = "..tostring(state) )
   if state == nil then
     -- the first time, generate the index
     t.__orderedIndex = __genOrderedIndex(t)
     key = t.__orderedIndex[1]
   else
     -- fetch the next value
-    for i = 1, table.getn(t.__orderedIndex) do
+    for i = 1, #t.__orderedIndex do
       if t.__orderedIndex[i] == state then
         key = t.__orderedIndex[i + 1]
       end
