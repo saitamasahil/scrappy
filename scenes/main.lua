@@ -11,7 +11,8 @@ local button     = require "lib.gui.button"
 local label      = require "lib.gui.label"
 local select     = require "lib.gui.select"
 local progress   = require "lib.gui.progress"
-local menu, error_window
+local popup      = require "lib.gui.popup"
+local menu, info_window
 
 
 local background, overlay
@@ -38,6 +39,7 @@ local state = {
   loading = nil,
   scraping = false,
   tasks = {},
+  failed_tasks = {},
   total = 0,
 }
 
@@ -138,27 +140,32 @@ local function copy_game_artwork(platform, game)
   end
 end
 
+local function show_info_window(title, content)
+  info_window.visible = true
+  info_window.title = title
+  info_window.content = content
+end
+
 local function update_state()
   local t = OUTPUT_CHANNEL:pop()
   if t then
     if t.error and t.error ~= "" then
       state.error = t.error
-      error_window.visible = true
-      (error_window ^ "error_text").text = state.error
-    end
-    if t.data and next(t.data) ~= nil then
-      state.data = t.data
-      if state.data.title ~= nil and state.data.title ~= "fake-rom" then
-        cover_preview_path = string.format("data/output/%s/media/covers/%s.png", state.data.platform, state.data
-          .title)
-        state.reload_preview = true
-      end
+      show_info_window("Error", t.error)
     end
     if t.loading ~= nil then
       state.loading = t.loading
     end
+    if t.data and next(t.data) ~= nil then
+      state.data = t.data
+      if t.data.title and t.data.title ~= "fake-rom" and t.success then
+        cover_preview_path = string.format("data/output/%s/media/covers/%s.png", t.data.platform, t.data
+          .title)
+        state.reload_preview = true
+      end
+    end
     if t.task_id then
-      log.write("Finished Skyscraper task: " .. t.task_id)
+      log.write(string.format("Finished Skyscraper task [%s]: %s", t.success and "success" or "fail", t.task_id))
       local pos = 0
       for i = 1, #state.tasks do
         if state.tasks[i] == t.task_id then
@@ -168,7 +175,11 @@ local function update_state()
       end
       table.remove(state.tasks, pos)
       -- Copy game artwork
-      copy_game_artwork(state.data.platform, state.data.title)
+      if t.success then
+        copy_game_artwork(state.data.platform, state.data.title)
+      else
+        table.insert(state.failed_tasks, t.task_id)
+      end
       -- Update UI
       if menu.children then
         local platform, game, progress, bar = menu ^ "platform", menu ^ "game", menu ^ "progress", menu ^ "progress_bar"
@@ -179,8 +190,13 @@ local function update_state()
       end
       -- Check if finished
       if state.scraping and #state.tasks == 0 then
-        log.write("Finished scraping")
+        log.write(string.format("Finished scraping %d games. %d failed or skipped", state.total, #state.failed_tasks))
         state.scraping = false
+        show_info_window(
+          "Finished scraping",
+          string.format("Scraped %d games, %d failed or skipped: %s", state.total,
+            #state.failed_tasks, table.concat(state.failed_tasks, ", "))
+        )
       end
     end
   end
@@ -248,25 +264,10 @@ function main:load()
   render_to_canvas()
 
   menu = component:root { column = true, gap = 10 }
-  error_window = component { column = true, gap = 10, visible = false }
-      + label { text = "Error", icon = "warn" }
-      + component {
-        id = "error_text",
-        text = "",
-        width = w_width - 20,
-        height = 30,
-        _font = love.graphics.getFont(),
-        draw = function(self)
-          local _, wrappedtext = self._font:getWrap(self.text, self.width - 10)
-          love.graphics.push()
-          love.graphics.setColor(utils.hex '#2d3436')
-          love.graphics.rectangle("fill", self.x, self.y, self.width, #wrappedtext * self.height)
-          love.graphics.setColor(1, 1, 1)
-          love.graphics.rectangle("line", self.x, self.y, self.width, #wrappedtext * self.height)
-          love.graphics.printf(wrappedtext, self.x + 10, self.y + 5, self.width - 10, "left")
-          love.graphics.pop()
-        end
-      }
+  info_window = popup {
+    id = "info_window",
+    visible = false,
+  }
 
   local canvasComponent = component {
     overlay = true,
@@ -354,11 +355,6 @@ function main:load()
     w_height - top_layout.height - bottom_buttons.height - 30
   )
 
-  error_window:updatePosition(
-    w_width / 2 - error_window.width / 2,
-    w_height / 2 - error_window.height / 2
-  )
-
   menu:focusFirstElement()
 end
 
@@ -374,19 +370,18 @@ end
 
 function main:draw()
   menu:draw()
-  error_window:draw()
+  info_window:draw()
 end
 
 function main:keypressed(key)
   if key == "escape" then
-    if state.error and state.error ~= "" then
-      error_window.visible = false
-      state.error = ""
+    if info_window.visible then
+      info_window.visible = false
     else
       love.event.quit()
     end
   end
-  if not state.scraping then
+  if not state.scraping and not info_window.visible then
     menu:keypressed(key)
   end
 end

@@ -2,26 +2,18 @@ require("globals")
 
 local parser = {}
 
-local games = {
-  total = 0,
-  current = 0,
-  titles = {}
-}
-
 function parser.parse(line)
-  local game_number, total_games, game_title = line:match("#(%d+)/(%d+).+Game%s+'(.-)'")
+  local _, _, game_title = line:match("#(%d+)/(%d+).+Game%s+'(.-)'")
 
-  if game_number and total_games and game_title then
-    -- print("Line matched: " .. line)
-    games.current = tonumber(game_number)
-    games.total = tonumber(total_games)
+  local success = true
+  if line:find("not found") then
+    success = false
+  end
 
-    table.insert(games.titles, game_title)
-
+  if game_title then
     return {
-      index = tonumber(game_number),
-      total = tonumber(total_games),
-      title = game_title
+      title = game_title,
+      success = success
     }, nil
   else
     -- print("Line did not match: " .. line)
@@ -31,32 +23,6 @@ function parser.parse(line)
       end
     end
     return {}, nil
-  end
-end
-
-function parser.string_to_table(game_string)
-  local game_number, total_games, game_title = game_string:match("(%d+)/(%d+)%s+%-%s+(.*)")
-
-  if game_number and total_games and game_title then
-    return {
-      index = tonumber(game_number),
-      total = tonumber(total_games),
-      title = game_title
-    }
-  else
-    return nil
-  end
-end
-
-function parser.get_games()
-  return games
-end
-
-function parser.print_games()
-  print(string.format("Total Games: %d, Current Game: %d", games.total, games.current))
-  print("Titles:")
-  for i, title in ipairs(games.titles) do
-    print("  " .. title)
   end
 end
 

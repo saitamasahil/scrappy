@@ -63,18 +63,19 @@ while true do
     line = utils.strip_ansi_colors(line)
     if game ~= "fake-rom" then log.write(line, "skyscraper") end
     local data, error = parser.parse(line)
-    if next(data) ~= nil then
+    if next(data) ~= nil and operation_type == "generate" then
       OUTPUT_CHANNEL:push({
         data = {
           title = game,
           platform = current_platform,
-          status = operation_type == "fetch" and "fetching" or "generating",
         },
         task_id = task_id,
+        success = data.success,
         error = error,
         loading = false
       })
     end
+
     if error ~= nil and error ~= "" then
       log.write("ERROR: " .. error, "skyscraper")
       OUTPUT_CHANNEL:push({ data = {}, error = error, loading = false })
