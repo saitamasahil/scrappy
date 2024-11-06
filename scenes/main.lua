@@ -263,11 +263,12 @@ function main:load()
   overlay = load_image("assets/preview.png")
   render_to_canvas()
 
+  local has_usercreds = false
+  local creds = skyscraper_config:read("screenscraper", "userCreds")
+  if creds then has_usercreds = creds:find("USER:PASS") == nil end
+
   menu = component:root { column = true, gap = 10 }
-  info_window = popup {
-    id = "info_window",
-    visible = false,
-  }
+  info_window = popup { visible = false }
 
   local canvasComponent = component {
     overlay = true,
@@ -300,14 +301,14 @@ function main:load()
 
   local selectionComponent = component { column = true, gap = 10 }
       + select {
-        width = w_width / 2 - 30,
+        width = w_width * 0.5 - 30,
         options = templates,
         startIndex = current_template,
         onChange = on_artwork_change
       }
       + button {
         text = "Start scraping",
-        width = w_width / 2 - 30,
+        width = w_width * 0.5 - 30,
         onClick = scrape_platforms,
       }
 
@@ -315,7 +316,7 @@ function main:load()
       + label { id = "platform", text = "Platform: N/A", icon = "controller" }
       + label { id = "game", text = "Game: N/A", icon = "cd" }
       + label { id = "progress", text = "Progress: 0 / 0", icon = "info" }
-      + progress { id = "progress_bar", width = w_width / 2 - 30 }
+      + progress { id = "progress_bar", width = w_width * 0.5 - 30 }
 
   local top_layout = component { row = true, gap = 10 }
       + (component { column = true, gap = 10 }
@@ -344,15 +345,18 @@ function main:load()
         focusable = true,
       }
 
+  local warn_text = label { text = "Credentials not set; scraping limited", icon = "warn", visible = not has_usercreds }
+
   menu = menu
       + top_layout
+      + warn_text
       + bottom_buttons
 
   menu:updatePosition(10, 10)
-  infoComponent:updatePosition(0, w_height / 2 - selectionComponent.height - infoComponent.height - 10)
+  infoComponent:updatePosition(0, w_height * 0.5 - selectionComponent.height - infoComponent.height - 10)
   bottom_buttons:updatePosition(
-    menu.width / 2 - bottom_buttons.width / 2 - 10,
-    w_height - top_layout.height - bottom_buttons.height - 30
+    w_width * 0.5 - bottom_buttons.width * 0.5 - 10,
+    w_height - menu.height - 20
   )
 
   menu:focusFirstElement()

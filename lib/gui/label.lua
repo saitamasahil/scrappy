@@ -16,7 +16,7 @@ local function label(props)
 
   return component {
     text = props.text or props,
-    visible = props.visible or true,
+    visible = props.visible,
     id = props.id,
     x = props.x or 0,
     y = props.y or 0,
