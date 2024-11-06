@@ -30,7 +30,7 @@ return function(props)
     hoverColor = props.hoverColor or utils.hex '#636e72',
     textColor = props.textColor or utils.hex '#dfe6e9',
     focusColor = props.focusColor or utils.hex '#2d3436',
-    checkColor = props.checkColor or utils.hex '#F7E318',
+    checkColor = props.checkColor or utils.hex '#ffffff',
     borderWidth = props.borderWidth or 2,
     -- Events
     onToggle = props.onToggle,

@@ -116,8 +116,7 @@ function user_config:get_paths()
   -- Get paths
   local sd = self:read("main", "sd")
   local rom_path = sd == "1" and string.format("%s/ROMS", muos.SD1_PATH) or string.format("%s/roms", muos.SD2_PATH)
-  local catalogue_path = sd == "1" and string.format("%s/%s", muos.SD1_PATH, muos.CATALOGUE) or
-      string.format("%s/%s", muos.SD2_PATH, muos.CATALOGUE)
+  local catalogue_path = muos.CATALOGUE
 
   return rom_path_override or rom_path, catalogue_path_override or catalogue_path
 end

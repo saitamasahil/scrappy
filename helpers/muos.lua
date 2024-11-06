@@ -1,7 +1,7 @@
 local muos = {
   SD1_PATH = "/mnt/mmc",
   SD2_PATH = "/mnt/sdcard",
-  CATALOGUE = "/MUOS/info/catalogue",
+  CATALOGUE = "/run/muos/storage/info/catalogue",
   platforms = {
     ["amstradcpc"] = "Amstrad",
     ["arcade"] = "Arcade",
