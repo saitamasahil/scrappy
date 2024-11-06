@@ -59,10 +59,12 @@ while true do
     goto continue
   end
 
+  local parsed = false
   for line in output:lines() do
     line = utils.strip_ansi_colors(line)
     if game ~= "fake-rom" then log.write(line, "skyscraper") end
     local data, error = parser.parse(line)
+    if data or error then parsed = true end
     if next(data) ~= nil and operation_type == "generate" then
       OUTPUT_CHANNEL:push({
         data = {
@@ -84,7 +86,11 @@ while true do
   end
 
   output:close()
-  OUTPUT_CHANNEL:push({ loading = false })
+
+  if not parsed then
+    log.write("Failed to parse Skyscraper output")
+    OUTPUT_CHANNEL:push({ data = {}, error = "Failed to parse Skyscraper output. Please check your log file.", loading = false })
+  end
 end
 
 function love.threaderror(thread, errorstr)
