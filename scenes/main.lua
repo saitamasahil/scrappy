@@ -90,21 +90,24 @@ local function scrape_platforms()
     -- Get list of roms
     local roms = nativefs.getDirectoryItems(platform_path)
     if not roms or #roms == 0 then
-      state.error = "No roms found in " .. platform_path
-      log.write(state.error)
+      log.write("No roms found in " .. platform_path)
       return
     end
     for i = 1, #roms do
       local file = roms[i]
-      table.insert(state.tasks, file)
-      -- Fetch and update artwork
-      skyscraper.fetch_and_update_artwork(
-        platform_path,
-        file,
-        dest,
-        templates[current_template],
-        file
-      )
+      -- Check if it's a file or directory
+      local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, file))
+      if file_info and file_info.type == "file" then
+        -- Fetch and update artwork
+        table.insert(state.tasks, file)
+        skyscraper.fetch_and_update_artwork(
+          platform_path,
+          file,
+          dest,
+          templates[current_template],
+          file
+        )
+      end
     end
     ::skip::
   end
