@@ -19,7 +19,7 @@ function config:load()
 end
 
 function config:save()
-  return ini.save(self.values, self.path)
+  return ini.save_ordered(self.values, self.path)
 end
 
 function config:create_from(example_file)
@@ -46,6 +46,10 @@ function config:insert(section, key, value)
   ini.addKey(self.values, section, key, tostring(value))
 end
 
+function config:section_exists(section)
+  return self.values[section] ~= nil
+end
+
 function config:get()
   return self.values
 end
@@ -64,10 +68,8 @@ end
 function user_config:init()
   if self:load() then
     log.write("Loaded user config")
-    -- Reload platforms if not previously loaded
-    if not self.values.selectedPlatforms then
-      self:load_platforms()
-    end
+    -- Fill defaults if missing
+    self:fill_defaults()
   else
     if self:create_from("config.ini.example") then
       log.write("Created user config")
@@ -78,6 +80,22 @@ function user_config:init()
       log.write("Failed to create user config")
     end
   end
+end
+
+function user_config:fill_defaults()
+  if not self:read("main", "sd") then
+    self:detect_sd()
+  end
+  if not self:section_exists("selectedPlatforms") then
+    self:load_platforms()
+  end
+  if not self:read("main", "parseCache") then
+    self:insert("main", "parseCache", 1)
+  end
+  if not self:read("main", "filterTemplates") then
+    self:insert("main", "filterTemplates", 1)
+  end
+  self:save()
 end
 
 function user_config:detect_sd()
@@ -164,18 +182,30 @@ end
 function skyscraper_config:init()
   if self:load() then
     log.write("Loaded skyscraper config")
+    local artwork_xml = self:read("main", "artworkXml")
+    if not artwork_xml or artwork_xml == "" then
+      self:insert("main", "artworkXml", string.format("\"%s/%s\"", WORK_DIR, "templates/box2d.xml"))
+    end
   else
     if self:create_from("skyscraper_config.ini.example") then
       log.write("Created skyscraper config")
-      -- skyscraper_config:insert("main", "inputFolder", string.format("\"%s\"", rom_path))
-      self:insert("main", "cacheFolder", string.format("\"%s/%s\"", WORK_DIR, "data/cache"))
-      self:insert("main", "gameListFolder", string.format("\"%s/%s\"", WORK_DIR, "data/output"))
-      self:insert("main", "artworkXml", string.format("\"%s/%s\"", WORK_DIR, "templates/box2d.xml"))
-      self:save()
+      self:reset()
     else
       log.write("Failed to create skyscraper config")
     end
   end
+end
+
+function skyscraper_config:reset()
+  self:insert("main", "cacheFolder", string.format("\"%s/%s\"", WORK_DIR, "data/cache"))
+  self:insert("main", "gameListFolder", string.format("\"%s/%s\"", WORK_DIR, "data/output"))
+  self:insert("main", "artworkXml", string.format("\"%s/%s\"", WORK_DIR, "templates/box2d.xml"))
+  self:save()
+end
+
+function skyscraper_config:has_credentials()
+  local creds = self:read("screenscraper", "userCreds")
+  return creds and creds:find("USER:PASS") == nil
 end
 
 function skyscraper_config:get_paths()

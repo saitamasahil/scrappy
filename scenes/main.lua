@@ -43,11 +43,11 @@ local state = {
   total = 0,
 }
 
-local game_ids = {}
-local cached_games = {}
+local cached_game_ids = {}
 
 local function process_cached_data()
   log.write("Processing cached data")
+  local cached_games = {}
   local cache_folder = skyscraper_config:read("main", "cacheFolder")
   if not cache_folder then return end
   cache_folder = utils.strip_quotes(cache_folder)
@@ -65,7 +65,7 @@ local function process_cached_data()
           if filepath then
             local filename = filepath:match("([^/]+)$")
             local id = line:match('id="([^"]+)"')
-            game_ids[filename] = id
+            cached_game_ids[filename] = id
           end
         end
       end
@@ -82,9 +82,9 @@ local function process_cached_data()
       end
     end
 
-    for filename, id in pairs(game_ids) do
+    for filename, id in pairs(cached_game_ids) do
       if not cached_games[id] then
-        game_ids[filename] = nil
+        cached_game_ids[filename] = nil
       end
     end
   end
@@ -154,7 +154,7 @@ local function scrape_platforms()
       if file_info and file_info.type == "file" then
         -- Check if already processed
         table.insert(state.tasks, file)
-        if game_ids[file] then
+        if cached_game_ids[file] then
           -- Game cached, update artwork
           skyscraper.update_artwork(platform_path, file, dest, templates[current_template], file)
         else
@@ -326,10 +326,6 @@ function main:load()
   overlay = load_image("assets/preview.png")
   render_to_canvas()
 
-  local has_usercreds = false
-  local creds = skyscraper_config:read("screenscraper", "userCreds")
-  if creds then has_usercreds = creds:find("USER:PASS") == nil end
-
   menu = component:root { column = true, gap = 10 }
   info_window = popup { visible = false }
 
@@ -408,7 +404,7 @@ function main:load()
         focusable = true,
       }
 
-  local warn_text = label { text = "Credentials not set; scraping limited", icon = "warn", visible = not has_usercreds }
+  local warn_text = label { text = "Credentials not set; scraping limited", icon = "warn", visible = not skyscraper_config:has_credentials() }
 
   menu = menu
       + top_layout

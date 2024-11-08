@@ -7,6 +7,7 @@
 ]] --
 
 local nativefs = require("lib.nativefs")
+local utils = require("helpers.utils")
 
 local ini = {}
 
@@ -44,6 +45,24 @@ function ini.save(iniTable, file)
     for sectionName, sectionValue in pairs(iniTable) do
       writeString = writeString .. "[" .. sectionName .. "]" .. "\r\n"
       for variableName, variableValue in pairs(sectionValue) do
+        writeString = writeString .. variableName .. " = " .. variableValue .. "\r\n"
+      end
+    end
+    local success, message = nativefs.write(file, writeString)
+    if not success then
+      return message
+    end
+    return 1
+  end
+  return nil
+end
+
+function ini.save_ordered(iniTable, file)
+  if iniTable then
+    local writeString = ""
+    for sectionName, sectionValue in utils.orderedPairs(iniTable) do
+      writeString = writeString .. "[" .. sectionName .. "]" .. "\r\n"
+      for variableName, variableValue in utils.orderedPairs(sectionValue) do
         writeString = writeString .. variableName .. " = " .. variableValue .. "\r\n"
       end
     end
