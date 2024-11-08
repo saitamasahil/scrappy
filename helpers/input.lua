@@ -99,12 +99,6 @@ function love.keypressed(key)
   if key == "return" then
     trigger(input.events.RETURN)
   end
-
-  if key == "space" then
-    -- local sample_artwork = WORK_DIR .. "/templates/" .. artworks[state.current_artwork] .. ".xml"
-    -- skyscraper.fetch_artwork("snes", sample_artwork)
-    -- skyscraper.update_artwork("snes", sample_artwork)
-  end
 end
 
 return input

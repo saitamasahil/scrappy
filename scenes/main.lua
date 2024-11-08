@@ -43,6 +43,55 @@ local state = {
   total = 0,
 }
 
+local game_ids = {}
+local cached_games = {}
+
+local function process_cached_data()
+  log.write("Processing cached data")
+  local cache_folder = skyscraper_config:read("main", "cacheFolder")
+  if not cache_folder then return end
+  cache_folder = utils.strip_quotes(cache_folder)
+  local items = nativefs.getDirectoryItems(cache_folder)
+  if not items then return end
+
+  for _, platform in ipairs(items) do
+    local quickid = nativefs.read(string.format("%s/%s/quickid.xml", cache_folder, platform))
+    local db = nativefs.read(string.format("%s/%s/db.xml", cache_folder, platform))
+    if quickid then
+      local lines = utils.split(quickid, "\n")
+      for _, line in ipairs(lines) do
+        if line:find("<quickid%s") then
+          local filepath = line:match('filepath="([^"]+)"')
+          if filepath then
+            local filename = filepath:match("([^/]+)$")
+            local id = line:match('id="([^"]+)"')
+            game_ids[filename] = id
+          end
+        end
+      end
+    end
+    if db then
+      local lines = utils.split(db, "\n")
+      for _, line in ipairs(lines) do
+        if line:find("<resource%s") then
+          local id = line:match('id="([^"]+)"')
+          if id then
+            cached_games[id] = true
+          end
+        end
+      end
+    end
+
+    for filename, id in pairs(game_ids) do
+      if not cached_games[id] then
+        game_ids[filename] = nil
+      end
+    end
+  end
+
+  log.write("Finished processing cached data")
+end
+
 local function load_image(filename)
   local file_data = nativefs.newFileData(filename)
   if file_data then
@@ -79,6 +128,11 @@ local function scrape_platforms()
   local rom_path, _ = user_config:get_paths()
   -- Set state
   state.scraping = true
+  -- Reset tasks
+  state.tasks = {}
+  state.failed_tasks = {}
+  -- Read game ids
+  process_cached_data()
   -- For each source = destionation pair in config, fetch and update artwork
   for src, dest in utils.orderedPairs(platforms) do
     if not selected_platforms[src] or selected_platforms[src] == "0" then
@@ -98,15 +152,21 @@ local function scrape_platforms()
       -- Check if it's a file or directory
       local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, file))
       if file_info and file_info.type == "file" then
-        -- Fetch and update artwork
+        -- Check if already processed
         table.insert(state.tasks, file)
-        skyscraper.fetch_and_update_artwork(
-          platform_path,
-          file,
-          dest,
-          templates[current_template],
-          file
-        )
+        if game_ids[file] then
+          -- Game cached, update artwork
+          skyscraper.update_artwork(platform_path, file, dest, templates[current_template], file)
+        else
+          -- Fetch and update artwork
+          skyscraper.fetch_and_update_artwork(
+            platform_path,
+            file,
+            dest,
+            templates[current_template],
+            file
+          )
+        end
       end
     end
     ::skip::

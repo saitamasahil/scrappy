@@ -123,13 +123,16 @@ function skyscraper.fetch_artwork(platform)
   skyscraper.run(command)
 end
 
-function skyscraper.update_artwork(platform, artwork)
+function skyscraper.update_artwork(rom_path, rom, platform, artwork, ...)
   local artwork = WORK_DIR .. "/templates/" .. artwork .. ".xml"
-  local command = generate_command({
+  local task_id = select(1, ...) or rom
+  local update_command = generate_command({
     platform = platform,
+    input = rom_path,
     artwork = artwork,
+    rom = rom,
   })
-  skyscraper.run(command)
+  skyscraper.run(update_command, platform, "generate", rom, task_id)
 end
 
 function skyscraper.fetch_and_update_artwork(rom_path, rom, platform, artwork, ...)
