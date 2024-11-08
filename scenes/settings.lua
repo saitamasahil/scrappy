@@ -18,6 +18,7 @@ local menu, checkboxes
 
 local resolutions        = { "640x480", "720x720" }
 local current_resolution = 1
+local all_check          = true
 
 local function read_initial_resolution()
   local res = user_config:read("main", "resolution")
@@ -37,7 +38,7 @@ local function on_change_resolution(index)
 end
 
 local function on_change_platform(platform)
-  local selected_platforms = user_config.values.selectedPlatforms
+  local selected_platforms = user_config:get().selectedPlatforms
   local checked = tonumber(selected_platforms[platform]) == 1
   user_config:insert("selectedPlatforms", platform, checked and "0" or "1")
   user_config:save()
@@ -45,7 +46,7 @@ end
 
 local function update_checkboxes()
   checkboxes.children = {}
-  local selected_platforms = user_config.values.selectedPlatforms
+  local selected_platforms = user_config:get().selectedPlatforms
   for platform, checked in utils.orderedPairs(selected_platforms or {}) do
     checkboxes = checkboxes + checkbox {
       text = platform,
@@ -58,6 +59,16 @@ end
 
 local function on_refresh_press()
   user_config:load_platforms()
+  user_config:save()
+  update_checkboxes()
+end
+
+local on_check_all_press = function()
+  local selected_platforms = user_config:get().selectedPlatforms
+  for platform, checked in pairs(selected_platforms) do
+    user_config:insert("selectedPlatforms", platform, all_check and "0" or "1")
+  end
+  all_check = not all_check
   user_config:save()
   update_checkboxes()
 end
@@ -79,7 +90,10 @@ function settings:load()
         end
       }
       + label { text = 'Platforms', icon = "file_image" }
-      + button { text = 'Refresh', width = 200, onClick = on_refresh_press }
+      + (component { row = true, gap = 10 }
+        + button { text = 'Refresh', width = 200, onClick = on_refresh_press }
+        + button { text = 'Un/check all', width = 200, onClick = on_check_all_press })
+
       + (scroll_container {
           width = w_width - 20,
           height = 280,
