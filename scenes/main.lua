@@ -29,7 +29,7 @@ local main = {}
 
 local resolution = "640x480"
 local templates = {}
-local current_template = 0
+local current_template = 1
 
 local state = {
   data = {
@@ -322,12 +322,14 @@ local function get_templates()
 
   -- Get the previously selected template
   local artwork_path = skyscraper_config:read("main", "artworkXml")
-  if not artwork_path then
-    return
+  if not artwork_path or artwork_path == "\"\"" then
+    artwork_path = string.format("\"%s/%s\"", WORK_DIR, "templates/box2d.xml")
+    skyscraper_config:insert("main", "artworkXml", artwork_path)
+    skyscraper_config:save()
   end
 
   -- Remove double quotes
-  artwork_path = artwork_path:gsub('"', '')
+  artwork_path       = artwork_path:gsub('"', '')
   local artwork_name = artwork_path:match("([^/]+)%.xml$") -- Extract the filename without path and extension
   -- Find the index of artwork_name in templates
   for i = 1, #templates do
