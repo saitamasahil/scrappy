@@ -216,7 +216,7 @@ local function update_state()
       state.error = t.error
       show_info_window("Error", t.error)
     end
-    if t.loading then state.loading = t.loading end
+    if t.loading ~= nil then state.loading = t.loading end
     if t.data and next(t.data) then
       state.data = t.data -- remove
       -- Update UI
