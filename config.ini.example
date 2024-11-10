@@ -5,4 +5,5 @@ parseCache=1
 resolution=640x480
 sd=1
 [platforms]
-[selectedPlatforms]
+[platformsCustom]
+[platformsSelected]

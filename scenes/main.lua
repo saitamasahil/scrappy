@@ -27,6 +27,7 @@ local cover_preview
 
 local main = {}
 
+local resolution = "640x480"
 local templates = {}
 local current_template = 0
 
@@ -280,6 +281,20 @@ local function on_artwork_change(key)
   end
 end
 
+local function get_template_resolution(xml_path)
+  local xml_content = nativefs.read(xml_path)
+  if not xml_content then
+    return nil
+  end
+
+  local width, height = xml_content:match('<output [^>]*width="(%d+)"[^>]*height="(%d+)"')
+
+  if width and height then
+    return width .. "x" .. height
+  end
+  return nil
+end
+
 local function get_templates()
   local items = nativefs.getDirectoryItems(WORK_DIR .. "/templates")
   if not items then
@@ -291,7 +306,17 @@ local function get_templates()
   for i = 1, #items do
     local file = items[i]
     if file:sub(-4) == ".xml" then
-      table.insert(templates, file:sub(1, -5))
+      local template_name = file:sub(1, -5)
+      local xml_path = WORK_DIR .. "/templates/" .. file
+      local template_resolution = get_template_resolution(xml_path)
+
+      -- 1. Include if the template resolutio is not defined;
+      -- 2. Include if the template resolution matches the user resolution;
+      -- 3. Include if the template resolution is not "640x480" or "720x720".
+      if not template_resolution or template_resolution == resolution or
+          (template_resolution ~= "640x480" and template_resolution ~= "720x720") then
+        table.insert(templates, template_name)
+      end
     end
   end
 
@@ -328,9 +353,12 @@ end
 
 function main:load()
   spinner:load()
+  resolution = user_config:read("main", "resolution") or resolution
+  local res_prefix = resolution:match("^(%d+)x") or "640"
+  background = load_image(string.format("assets/muxsysinfo_%s.png", res_prefix))
+  overlay = load_image(string.format("assets/preview_%s.png", res_prefix))
+
   get_templates()
-  background = load_image("assets/muxsysinfo.png")
-  overlay = load_image("assets/preview.png")
   render_to_canvas()
 
   menu = component:root { column = true, gap = 10 }
