@@ -150,7 +150,7 @@ local function scrape_platforms()
     local roms = nativefs.getDirectoryItems(platform_path)
     if not roms or #roms == 0 then
       log.write("No roms found in " .. platform_path)
-      return
+      goto skip
     end
     for i = 1, #roms do
       local file = roms[i]
@@ -264,7 +264,7 @@ local function update_state()
         state.scraping = false
         show_info_window(
           "Finished scraping",
-          string.format("Scraped %d games, %d failed or skipped: %s", state.total,
+          string.format("Scraped %d games, %d failed or skipped! %s", state.total,
             #state.failed_tasks, table.concat(state.failed_tasks, ", "))
         )
       end

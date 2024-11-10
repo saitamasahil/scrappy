@@ -2,6 +2,7 @@ local log = require("lib.log")
 local ini = require("lib.ini")
 local nativefs = require("lib.nativefs")
 local muos = require("helpers.muos")
+local utils = require("helpers.utils")
 
 local config = {}
 config.__index = config
@@ -83,11 +84,9 @@ function user_config:init()
 end
 
 function user_config:fill_defaults()
+  self:fill_selected_platforms()
   if not self:read("main", "sd") then
     self:detect_sd()
-  end
-  if not self:section_exists("platformsSelected") then
-    self:load_platforms()
   end
   if not self:read("main", "parseCache") then
     self:insert("main", "parseCache", 1)
@@ -171,6 +170,15 @@ function user_config:load_platforms()
     end
   end
   log.write(string.format("Found %d platforms, mapped %d", #platforms, mapped_total))
+end
+
+function user_config:fill_selected_platforms()
+  local platforms = utils.tableMerge(self:get().platforms, self:get().platformsCustom)
+  for platform in utils.orderedPairs(platforms or {}) do
+    if not self:read("platformsSelected", platform) then
+      self:insert("platformsSelected", platform, 0)
+    end
+  end
 end
 
 -- Skyscraper-specific config
