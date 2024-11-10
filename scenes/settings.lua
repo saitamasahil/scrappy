@@ -104,12 +104,16 @@ function settings:load()
         + button { text = 'Refresh', width = 200, onClick = on_refresh_press }
         + button { text = 'Un/check all', width = 200, onClick = on_check_all_press })
 
+  local menu_height = menu.height
+
+  menu = menu
       + (scroll_container {
           width = w_width - 20,
-          height = 280,
-          scroll_speed = 20
+          height = w_height - menu_height - 30,
+          scroll_speed = 30,
         }
         + checkboxes)
+
   update_checkboxes()
 
   menu:updatePosition(10, 10)
