@@ -45,6 +45,12 @@ local state = {
 
 local cached_game_ids = {}
 
+local function show_info_window(title, content)
+  info_window.visible = true
+  info_window.title = title
+  info_window.content = content
+end
+
 local function process_cached_data()
   log.write("Processing cached data")
   local cached_games = {}
@@ -127,15 +133,14 @@ local function scrape_platforms()
   -- Load selected platforms
   local selected_platforms = user_config:get().platformsSelected
   local rom_path, _ = user_config:get_paths()
-  -- Set state and reset tasks
-  state.scraping = true
+  -- Reset tasks
   state.tasks = {}
   state.failed_tasks = {}
   -- Process cached data from quickid and db
   process_cached_data()
   -- For each source = destionation pair in config, fetch and update artwork
   for src, dest in utils.orderedPairs(platforms) do
-    if not selected_platforms[src] or selected_platforms[src] == "0" then
+    if not selected_platforms[src] or selected_platforms[src] == "0" or dest == "unmapped" then
       log.write("Skipping " .. src)
       goto skip
     end
@@ -171,7 +176,13 @@ local function scrape_platforms()
     end
     ::skip::
   end
+
   state.total = #state.tasks
+  if state.total > 0 then
+    state.scraping = true
+  else
+    show_info_window("No platforms to scrape", "Please select platforms for scraping in settings.")
+  end
   log.write(string.format("Generated %d Skyscraper tasks", state.total))
 end
 
@@ -201,12 +212,6 @@ local function copy_game_artwork(platform, game)
   if err then
     log.write(err)
   end
-end
-
-local function show_info_window(title, content)
-  info_window.visible = true
-  info_window.title = title
-  info_window.content = content
 end
 
 local function update_state()
