@@ -40,6 +40,10 @@ while true do
   local game = utils.get_filename(input_data.game)
   local task_id = input_data.task_id
 
+  if game and current_platform then
+    OUTPUT_CHANNEL:push({ data = { title = game, platform = current_platform }, error = nil })
+  end
+
   local stderr_to_stdout = " 2>&1"
   local output = io.popen(command .. stderr_to_stdout)
 
@@ -47,8 +51,6 @@ while true do
     log_version(output)
     goto continue
   end
-
-  OUTPUT_CHANNEL:push({ data = {}, error = nil, loading = true })
 
   log.write(string.format("Running command: %s", command))
   log.write(string.format("Platform: %s | Game: %s\n", current_platform, game))

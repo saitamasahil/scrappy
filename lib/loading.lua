@@ -16,7 +16,7 @@ end
 
 function loading:load()
   spin = function()
-    loading_timer:tween(self.update_duration, rotation, { value = rotation.value + 1 }, 'in-out-quad', spin)
+    loading_timer:tween(self.update_duration, rotation, { value = rotation.value + 1 }, 'linear', spin)
   end
   if self.type == "spinner" then
     spin()

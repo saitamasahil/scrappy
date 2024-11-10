@@ -131,7 +131,7 @@ local function scrape_platforms()
   -- Reset tasks
   state.tasks = {}
   state.failed_tasks = {}
-  -- Read game ids
+  -- Process cached data from quickid and db
   process_cached_data()
   -- For each source = destionation pair in config, fetch and update artwork
   for src, dest in utils.orderedPairs(platforms) do
@@ -216,12 +216,16 @@ local function update_state()
       state.error = t.error
       show_info_window("Error", t.error)
     end
-    if t.loading ~= nil then
-      state.loading = t.loading
-    end
-    if t.data and next(t.data) ~= nil then
-      state.data = t.data
-      if t.data.title and t.data.title ~= "fake-rom" and t.success then
+    if t.loading then state.loading = t.loading end
+    if t.data and next(t.data) then
+      state.data = t.data -- remove
+      -- Update UI
+      if menu.children then
+        local platform, game = menu ^ "platform", menu ^ "game"
+        platform.text = "Platform: " .. t.data.platform
+        game.text = "Game: " .. t.data.title
+      end
+      if t.data.title ~= "fake-rom" and t.success then
         cover_preview_path = string.format("data/output/%s/media/covers/%s.png", t.data.platform, t.data
           .title)
         state.reload_preview = true
@@ -239,15 +243,13 @@ local function update_state()
       table.remove(state.tasks, pos)
       -- Copy game artwork
       if t.success then
-        copy_game_artwork(state.data.platform, state.data.title)
+        copy_game_artwork(t.data.platform, t.data.title)
       else
         table.insert(state.failed_tasks, t.task_id)
       end
       -- Update UI
       if menu.children then
-        local platform, game, progress, bar = menu ^ "platform", menu ^ "game", menu ^ "progress", menu ^ "progress_bar"
-        platform.text = "Platform: " .. state.data.platform
-        game.text = "Game: " .. state.data.title
+        local progress, bar = menu ^ "progress", menu ^ "progress_bar"
         progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
         bar:setProgress((state.total - #state.tasks) / state.total)
       end
