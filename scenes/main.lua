@@ -122,13 +122,13 @@ end
 
 local function scrape_platforms()
   log.write("Scraping artwork")
-  -- Load platforms from config
-  local platforms = user_config:get().platforms
-  local selected_platforms = user_config:get().selectedPlatforms
+  -- Load platforms from config, merging mapped and custom
+  local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
+  -- Load selected platforms
+  local selected_platforms = user_config:get().platformsSelected
   local rom_path, _ = user_config:get_paths()
-  -- Set state
+  -- Set state and reset tasks
   state.scraping = true
-  -- Reset tasks
   state.tasks = {}
   state.failed_tasks = {}
   -- Process cached data from quickid and db

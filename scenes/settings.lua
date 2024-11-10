@@ -38,21 +38,31 @@ local function on_change_resolution(index)
 end
 
 local function on_change_platform(platform)
-  local selected_platforms = user_config:get().selectedPlatforms
+  local selected_platforms = user_config:get().platformsSelected
   local checked = tonumber(selected_platforms[platform]) == 1
-  user_config:insert("selectedPlatforms", platform, checked and "0" or "1")
+  user_config:insert("platformsSelected", platform, checked and "0" or "1")
   user_config:save()
 end
 
 local function update_checkboxes()
   checkboxes.children = {}
-  local selected_platforms = user_config:get().selectedPlatforms
-  for platform, checked in utils.orderedPairs(selected_platforms or {}) do
+  local platforms = user_config:get().platforms
+  local custom_platforms = user_config:get().platformsCustom
+  local selected_platforms = user_config:get().platformsSelected
+  for platform in utils.orderedPairs(platforms or {}) do
     checkboxes = checkboxes + checkbox {
       text = platform,
       id = platform,
       onToggle = function() on_change_platform(platform) end,
-      checked = tonumber(checked) == 1
+      checked = selected_platforms[platform] == "1"
+    }
+  end
+  for custom in utils.orderedPairs(custom_platforms or {}) do
+    checkboxes = checkboxes + checkbox {
+      text = custom .. "*",
+      id = custom,
+      onToggle = function() on_change_platform(custom) end,
+      checked = selected_platforms[custom] == "1"
     }
   end
 end
@@ -64,9 +74,9 @@ local function on_refresh_press()
 end
 
 local on_check_all_press = function()
-  local selected_platforms = user_config:get().selectedPlatforms
+  local selected_platforms = user_config:get().platformsSelected
   for platform, checked in pairs(selected_platforms) do
-    user_config:insert("selectedPlatforms", platform, all_check and "0" or "1")
+    user_config:insert("platformsSelected", platform, all_check and "0" or "1")
   end
   all_check = not all_check
   user_config:save()

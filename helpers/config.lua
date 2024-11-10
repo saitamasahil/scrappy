@@ -86,7 +86,7 @@ function user_config:fill_defaults()
   if not self:read("main", "sd") then
     self:detect_sd()
   end
-  if not self:section_exists("selectedPlatforms") then
+  if not self:section_exists("platformsSelected") then
     self:load_platforms()
   end
   if not self:read("main", "parseCache") then
@@ -153,15 +153,21 @@ function user_config:load_platforms()
   end
 
   ini.deleteSection(self.values, "platforms")
-  ini.deleteSection(self.values, "selectedPlatforms")
+  -- ini.deleteSection(self.values, "selectedPlatforms")
 
   -- Iterate through platforms
   for _, platform in ipairs(platforms) do
     local lower_platform = platform:lower()
     if muos.assign[lower_platform] then
       self:insert("platforms", platform, muos.assign[lower_platform])
-      self:insert("selectedPlatforms", platform, 1)
+      self:insert("platformsSelected", platform, 1)
       mapped_total = mapped_total + 1
+    else
+      log.write(string.format("Unable to automatically map platform for %s", platform))
+      if not self:read("platformsCustom", platform) then
+        self:insert("platformsCustom", platform, "unmapped")
+        self:insert("platformsSelected", platform, 0)
+      end
     end
   end
   log.write(string.format("Found %d platforms, mapped %d", #platforms, mapped_total))
