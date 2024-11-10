@@ -101,7 +101,7 @@ function settings:load()
       }
       + label { text = 'Platforms', icon = "file_image" }
       + (component { row = true, gap = 10 }
-        + button { text = 'Refresh', width = 200, onClick = on_refresh_press }
+        + button { text = 'Remap', width = 200, onClick = on_refresh_press }
         + button { text = 'Un/check all', width = 200, onClick = on_check_all_press })
 
   local menu_height = menu.height

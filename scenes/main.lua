@@ -441,7 +441,7 @@ function main:load()
         focusable = true,
       }
 
-  local warn_text = label { text = "Credentials not set; scraping limited", icon = "warn", visible = not skyscraper_config:has_credentials() }
+  local warn_text = label { text = "Scraping limited - no credentials provided", icon = "warn", visible = not skyscraper_config:has_credentials() }
 
   menu = menu
       + top_layout
