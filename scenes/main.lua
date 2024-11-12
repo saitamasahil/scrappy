@@ -99,16 +99,6 @@ local function process_cached_data()
   log.write("Finished processing cached data")
 end
 
-local function load_image(filename)
-  local file_data = nativefs.newFileData(filename)
-  if file_data then
-    local image_data = love.image.newImageData(file_data)
-    if image_data then
-      return love.graphics.newImage(image_data)
-    end
-  end
-end
-
 local function update_preview(direction)
   cover_preview_path = default_cover_path
   local direction = direction or 1
@@ -342,7 +332,7 @@ end
 
 local function render_to_canvas()
   -- print("Rendering canvas")
-  cover_preview = load_image(cover_preview_path)
+  cover_preview = love.graphics.newImage(cover_preview_path)
   canvas:renderTo(function()
     love.graphics.clear()
     if cover_preview then
@@ -357,8 +347,8 @@ function main:load()
   spinner:load()
   resolution = user_config:read("main", "resolution") or resolution
   local res_prefix = resolution:match("^(%d+)x") or "640"
-  background = load_image(string.format("assets/muxsysinfo_%s.png", res_prefix))
-  overlay = load_image(string.format("assets/preview_%s.png", res_prefix))
+  background = love.graphics.newImage(string.format("assets/muxsysinfo_%s.png", res_prefix))
+  overlay = love.graphics.newImage(string.format("assets/preview_%s.png", res_prefix))
 
   get_templates()
   render_to_canvas()
