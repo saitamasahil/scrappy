@@ -107,7 +107,7 @@ function File:read(containerOrBytes, bytes)
 	bytes = bytes == 'all' and self:getSize() - self:tell() or math.min(self:getSize() - self:tell(), bytes)
 
 	if bytes <= 0 then
-		local data = container == 'string' and '' or love.data.newFileData('', self._name)
+		local data = container == 'string' and '' or love.filesystem.newFileData('', self._name)
 		return data, 0
 	end
 
