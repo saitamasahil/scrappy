@@ -197,8 +197,16 @@ function skyscraper_config:init()
   if self:load() then
     log.write("Loaded skyscraper config")
     local artwork_xml = self:read("main", "artworkXml")
-    if not artwork_xml or artwork_xml == "" then
+    if not artwork_xml or artwork_xml == "\"\"" then
       self:insert("main", "artworkXml", string.format("\"%s/%s\"", WORK_DIR, "templates/box2d.xml"))
+    end
+    local cache_path = self:read("main", "cacheFolder")
+    if not cache_path or cache_path == "\"\"" then
+      self:insert("main", "cacheFolder", string.format("\"%s/%s\"", WORK_DIR, "data/cache"))
+    end
+    local output_path = self:read("main", "gameListFolder")
+    if not output_path or output_path == "\"\"" then
+      self:insert("main", "cacheFolder", string.format("\"%s/%s\"", WORK_DIR, "data/output"))
     end
   else
     if self:create_from("skyscraper_config.ini.example") then
