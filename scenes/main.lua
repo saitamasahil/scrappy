@@ -331,8 +331,13 @@ local function get_templates()
 end
 
 local function render_to_canvas()
-  -- print("Rendering canvas")
-  cover_preview = love.graphics.newImage(cover_preview_path)
+  -- Attempt to load the image
+  local success, cover_preview = pcall(love.graphics.newImage, cover_preview_path)
+  if not success then
+    log.write("Failed to load cover preview image")
+    return
+  end
+
   canvas:renderTo(function()
     love.graphics.clear()
     if cover_preview then
