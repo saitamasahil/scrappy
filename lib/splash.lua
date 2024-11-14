@@ -5,7 +5,8 @@ local splash = {
 }
 
 local app_name = love.graphics.newText(love.graphics.getFont(), "Scrappy")
-local credits = love.graphics.newText(love.graphics.getFont(), "by gabrielfvale")
+local version = love.graphics.newText(love.graphics.getFont(), version)
+local credits = love.graphics.newText(love.graphics.getFont(), string.format("by gabrielfvale"))
 
 local logo
 local anim = { value = 0 }
@@ -31,29 +32,30 @@ function splash.draw()
   if splash.finished then return end
   local width, height = love.graphics.getDimensions()
   local logo_scale = 1
-  -- local logoWidth, half_height = logo:getWidth(), logo:getHeight()
-  local half_height = logo:getHeight() / 2
+  local half_logo_height = logo:getHeight() * 0.5
 
   love.graphics.clear(colors.background)
 
   love.graphics.push()
-  love.graphics.translate(width / 2, height / 2)
+  love.graphics.translate(width * 0.5, height * 0.5)
   love.graphics.setColor(colors.main)
-  love.graphics.draw(logo, 0, -anim.value * half_height, 0, logo_scale,
+  love.graphics.draw(logo, 0, -anim.value * half_logo_height, 0, logo_scale,
     logo_scale,
-    logo:getWidth() / 2,
-    half_height)
+    logo:getWidth() * 0.5,
+    half_logo_height)
   love.graphics.setColor(1, 1, 1, anim.value)
   love.graphics.push()
-  love.graphics.translate(0, half_height)
+  love.graphics.translate(0, half_logo_height)
   love.graphics.scale(1.5)
-  love.graphics.draw(app_name, -app_name:getWidth() / 2,
+  love.graphics.draw(app_name, -app_name:getWidth() * 0.5,
     -anim.value * app_name:getHeight())
   love.graphics.pop()
   love.graphics.push()
   love.graphics.setColor(1, 1, 1, 0.5)
-  love.graphics.scale(0.5)
-  love.graphics.draw(credits, -credits:getWidth() / 2, height - credits:getHeight() - 40)
+  love.graphics.translate(0, height * 0.5 - 20)
+  love.graphics.scale(0.75)
+  love.graphics.draw(credits, -credits:getWidth() * 0.5, -credits:getHeight() - 20)
+  love.graphics.draw(version, -version:getWidth() * 0.5, -version:getHeight())
   love.graphics.pop()
   love.graphics.setColor(colors.background)
   love.graphics.pop()
