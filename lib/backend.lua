@@ -50,6 +50,10 @@ while true do
     goto continue
   end
 
+  if game and current_platform then
+    OUTPUT_CHANNEL:push({ data = { title = game, platform = current_platform }, error = nil })
+  end
+
   local result = output:read("*a")
   output:close()
   local lines = utils.split(result, "\n")
@@ -57,10 +61,6 @@ while true do
   if input_data.version then -- Special command. Log version only
     log_version(lines)
     goto continue
-  end
-
-  if game and current_platform then
-    OUTPUT_CHANNEL:push({ data = { title = game, platform = current_platform }, error = nil })
   end
 
   local parsed = false
