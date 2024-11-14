@@ -19,7 +19,7 @@ local colors = {
 
 function splash.load(delay)
   delay = delay or 1
-  logo = love.graphics.newImage("assets/muos-logo.png")
+  logo = love.graphics.newImage("assets/scrappy_logo.png")
   splash_timer:tween(delay, anim, { value = 1 }, 'in-out-cubic')
   splash_timer:after(delay + 0.2, function()
     splash_timer:tween(0.5, anim, { value = 0 }, 'in-out-cubic', function()

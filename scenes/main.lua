@@ -17,7 +17,7 @@ local menu, info_window
 
 local background, overlay
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
-local spinner = loading.new("spinner", 1.5)
+local loader = loading.new("flash", 1)
 
 local w_width, w_height = love.window.getMode()
 local canvas = love.graphics.newCanvas(w_width, w_height)
@@ -332,7 +332,8 @@ end
 
 local function render_to_canvas()
   -- Attempt to load the image
-  local success, cover_preview = pcall(love.graphics.newImage, cover_preview_path)
+  local success
+  success, cover_preview = pcall(love.graphics.newImage, cover_preview_path)
   if not success then
     log.write("Failed to load cover preview image")
     return
@@ -349,7 +350,7 @@ local function render_to_canvas()
 end
 
 function main:load()
-  spinner:load()
+  loader:load()
   resolution = user_config:read("main", "resolution") or resolution
   local res_prefix = resolution:match("^(%d+)x") or "640"
   background = love.graphics.newImage(string.format("assets/muxsysinfo_%s.png", res_prefix))
@@ -383,7 +384,7 @@ function main:load()
       if state.loading or state.scraping then
         love.graphics.setColor(0, 0, 0, 0.5);
         love.graphics.rectangle("fill", 0, 0, cw, ch)
-        spinner:draw(cw * scale, ch * scale, 1.5)
+        loader:draw(cw * scale, ch * scale, 2)
       end
       love.graphics.setColor(1, 1, 1);
       love.graphics.pop()
@@ -456,7 +457,7 @@ end
 function main:update(dt)
   update_state()
   menu:update(dt)
-  spinner:update(dt)
+  loader:update(dt)
   if state.reload_preview and not state.loading then
     state.reload_preview = false
     render_to_canvas()
