@@ -9,7 +9,7 @@ local function log_version(output)
     return
   end
 
-  for line in output:lines() do
+  for _, line in ipairs(output) do
     -- Attempt to parse errors
     local _, err = parser.parse(line)
     if err then
@@ -24,8 +24,6 @@ local function log_version(output)
       break
     end
   end
-
-  output:close()
 end
 
 while true do
@@ -40,20 +38,11 @@ while true do
   local game = utils.get_filename(input_data.game)
   local task_id = input_data.task_id
 
-  if game and current_platform then
-    OUTPUT_CHANNEL:push({ data = { title = game, platform = current_platform }, error = nil })
-  end
-
   local stderr_to_stdout = " 2>&1"
   local output = io.popen(command .. stderr_to_stdout)
 
-  if input_data.version then -- Special command. Log version only
-    log_version(output)
-    goto continue
-  end
-
   log.write(string.format("Running command: %s", command))
-  log.write(string.format("Platform: %s | Game: %s\n", current_platform, game))
+  log.write(string.format("Platform: %s | Game: %s\n", current_platform or "none", game or "none"))
 
   if not output then
     log.write("Failed to run Skyscraper")
@@ -61,12 +50,25 @@ while true do
     goto continue
   end
 
+  local result = output:read("*a")
+  output:close()
+  local lines = utils.split(result, "\n")
+
+  if input_data.version then -- Special command. Log version only
+    log_version(lines)
+    goto continue
+  end
+
+  if game and current_platform then
+    OUTPUT_CHANNEL:push({ data = { title = game, platform = current_platform }, error = nil })
+  end
+
   local parsed = false
-  for line in output:lines() do
+  for _, line in ipairs(lines) do
     line = utils.strip_ansi_colors(line)
     if game ~= "fake-rom" then log.write(line, "skyscraper") end
     local data, error = parser.parse(line)
-    if data or error then parsed = true end
+    if next(data) ~= nil or error then parsed = true end
     if next(data) ~= nil and operation_type == "generate" then
       OUTPUT_CHANNEL:push({
         data = {
@@ -87,11 +89,13 @@ while true do
     end
   end
 
-  output:close()
-
   if not parsed then
-    log.write("Failed to parse Skyscraper output")
-    OUTPUT_CHANNEL:push({ data = {}, error = "Failed to parse Skyscraper output. Please check your log file.", loading = false })
+    log.write(string.format("Failed to parse Skyscraper output for %s", game))
+    OUTPUT_CHANNEL:push({
+      loading = false,
+      task_id = task_id,
+      success = false
+    })
   end
 end
 

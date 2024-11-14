@@ -28,7 +28,7 @@ function utils.get_extension(str)
 end
 
 function utils.get_filename(str)
-  if not str then return "" end
+  if not str then return nil end
   return str:gsub("%.%w+$", "")
 end
 
