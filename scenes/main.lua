@@ -457,7 +457,9 @@ end
 function main:update(dt)
   update_state()
   menu:update(dt)
-  loader:update(dt)
+  if state.loading or state.scraping then
+    loader:update(dt)
+  end
   if state.reload_preview and not state.loading then
     state.reload_preview = false
     render_to_canvas()
