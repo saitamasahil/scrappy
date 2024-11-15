@@ -39,7 +39,7 @@ function love.load()
 end
 
 function love.update(dt)
-  splash.update(dt)
+  timer.update(dt)
   input.update(dt)
   scenes:update(dt)
   input.onEvent(function(key)

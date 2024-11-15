@@ -1,10 +1,6 @@
 local component = require 'lib.gui.badr'
 local utils = require 'helpers.utils'
 
-local timer = require 'lib.timer'.new()
-
--- local progress = timer.new()
-
 return function(props)
   local width = props.width or 100
   local height = props.height or 20
@@ -48,11 +44,10 @@ return function(props)
     onUpdate = function(self, dt)
       -- Update progress, clamping between 0 and 1
       self.progress = math.max(0, math.min(self.progress, 1))
-      timer:update(dt)
     end,
     -- Set progress
     setProgress = function(self, newProgress)
-      timer:tween(0.2, self, { progress = newProgress }, 'linear')
+      timer.tween(0.2, self, { progress = newProgress }, 'linear')
       -- self.progress = math.max(0, math.min(newProgress, 1))
     end
   }

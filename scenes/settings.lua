@@ -121,7 +121,7 @@ function settings:load()
 end
 
 function settings:update(dt)
-  menu:update()
+  menu:update(dt)
 end
 
 function settings:draw()

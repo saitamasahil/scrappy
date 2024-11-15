@@ -17,7 +17,7 @@ local menu, info_window
 
 local background, overlay
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
-local loader = loading.new("flash", 1)
+local loader = loading.new("highlight", 1)
 
 local w_width, w_height = love.window.getMode()
 local canvas = love.graphics.newCanvas(w_width, w_height)
@@ -436,9 +436,6 @@ end
 function main:update(dt)
   update_state()
   menu:update(dt)
-  if state.loading or state.scraping then
-    loader:update(dt)
-  end
   if state.reload_preview and not state.loading then
     state.reload_preview = false
     render_to_canvas()

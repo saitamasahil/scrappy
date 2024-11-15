@@ -11,24 +11,22 @@ local opacity = { value = 1 }
 
 local highlight_position = { x = -logo:getWidth(), y = -logo:getHeight() } -- Start above and to the left of the logo
 
-local loading_timer = timer.new()
-
 function loading.new(type, update_duration)
   return setmetatable({ type = type or "spinner", update_duration = update_duration or 0.5 }, loading)
 end
 
 function loading:load()
   spin = function()
-    loading_timer:tween(self.update_duration, rotation, { value = rotation.value + 1 }, 'linear', spin)
+    timer.tween(self.update_duration, rotation, { value = rotation.value + 1 }, 'linear', spin)
   end
   flash_start = function()
-    loading_timer:tween(self.update_duration * 0.5, opacity, { value = 0.3 }, 'in-out-quad', flash_end)
+    timer.tween(self.update_duration * 0.5, opacity, { value = 0.3 }, 'in-out-quad', flash_end)
   end
   flash_end = function()
-    loading_timer:tween(self.update_duration * 0.5, opacity, { value = 1 }, 'in-out-quad', flash_start)
+    timer.tween(self.update_duration * 0.5, opacity, { value = 1 }, 'in-out-quad', flash_start)
   end
   highlight = function()
-    loading_timer:tween(
+    timer.tween(
       self.update_duration,
       highlight_position,
       { x = logo:getWidth(), y = logo:getHeight() },
@@ -50,10 +48,6 @@ function loading:load()
   else
     print("Unknown loading type: " .. self.type)
   end
-end
-
-function loading:update(dt)
-  loading_timer:update(dt)
 end
 
 local function moving_stencil()

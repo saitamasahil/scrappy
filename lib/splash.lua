@@ -1,8 +1,6 @@
 require("globals")
 
-local splash = {
-  finished = false
-}
+local splash = { finished = false }
 
 local app_name = love.graphics.newText(love.graphics.getFont(), "Scrappy")
 local version = love.graphics.newText(love.graphics.getFont(), version)
@@ -10,7 +8,6 @@ local credits = love.graphics.newText(love.graphics.getFont(), string.format("by
 
 local logo = love.graphics.newImage("assets/scrappy_logo.png")
 local anim = { value = 0 }
-local splash_timer = timer.new()
 
 local colors = {
   main = { 1, 1, 1 },
@@ -19,9 +16,9 @@ local colors = {
 
 function splash.load(delay)
   delay = delay or 1
-  splash_timer:tween(delay, anim, { value = 1 }, 'in-out-cubic')
-  splash_timer:after(delay + 0.2, function()
-    splash_timer:tween(0.5, anim, { value = 0 }, 'in-out-cubic', function()
+  timer.tween(delay, anim, { value = 1 }, 'in-out-cubic')
+  timer.after(delay + 0.2, function()
+    timer.tween(0.5, anim, { value = 0 }, 'in-out-cubic', function()
       splash.finished = true
     end)
   end)
@@ -58,10 +55,6 @@ function splash.draw()
   love.graphics.pop()
   love.graphics.setColor(colors.background)
   love.graphics.pop()
-end
-
-function splash.update(dt)
-  splash_timer:update(dt)
 end
 
 function splash.finish()
