@@ -1,4 +1,5 @@
 local component = require('lib.gui.badr')
+local icon = require('lib.gui.icon')
 local utils = require('helpers.utils')
 
 return function(props)
@@ -50,17 +51,28 @@ return function(props)
       love.graphics.setColor(self.focused and self.focusColor or self.backgroundColor)
       love.graphics.rectangle("fill", self.x, self.y, self.parent.width or self.width, self.height)
 
+      local bgIcon = icon {
+        name = "square",
+        x = self.x + padding.horizontal / 2,
+        y = self.y + padding.vertical / 2,
+        size = checkboxSize
+      }
+
+      local fgIcon = icon {
+        name = "suqare_check",
+        x = self.x + padding.horizontal / 2,
+        y = self.y + padding.vertical / 2,
+        size = checkboxSize
+      }
+
       -- Inner box for the checkbox background
       love.graphics.setColor(self.hoverColor)
-      love.graphics.rectangle("fill", self.x + padding.horizontal / 2, self.y + padding.vertical / 2,
-        checkboxSize, checkboxSize)
+      bgIcon:draw()
 
       -- Checkbox mark if checked
       if self.checked then
         love.graphics.setColor(self.checkColor)
-        love.graphics.rectangle("fill", self.x + padding.horizontal / 2 + self.borderWidth,
-          self.y + padding.vertical / 2 + self.borderWidth,
-          checkboxSize - 2 * self.borderWidth, checkboxSize - 2 * self.borderWidth)
+        fgIcon:draw()
       end
 
       -- Draw the label next to the checkbox

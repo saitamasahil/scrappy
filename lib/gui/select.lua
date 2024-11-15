@@ -63,22 +63,22 @@ return function(props)
       -- Draw background rectangle
       love.graphics.rectangle('fill', self.x, self.y, self.width, self.height)
 
-      -- Draw chevron icons using the icon component
+      -- Draw caret icons using the icon component
       local leftIcon = icon {
-        name = "chevron_left",
+        name = "caret_left",
         x = self.x + self.leftPadding,
         y = self.y + (self.height - iconSize) / 2,
         size = iconSize
       }
       local rightIcon = icon {
-        name = "chevron_right",
+        name = "caret_right",
         x = self.x + self.width - iconSize - self.rightPadding,
         y = self.y + (self.height - iconSize) / 2,
         size = iconSize
       }
 
-      leftIcon:draw()  -- Draw the left chevron
-      rightIcon:draw() -- Draw the right chevron
+      leftIcon:draw()  -- Draw the left caret
+      rightIcon:draw() -- Draw the right caret
 
       -- Draw the current option text, centered between the icons
       local currentOption = self.options[self.currentIndex] or ""

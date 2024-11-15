@@ -8,7 +8,7 @@ local app_name = love.graphics.newText(love.graphics.getFont(), "Scrappy")
 local version = love.graphics.newText(love.graphics.getFont(), version)
 local credits = love.graphics.newText(love.graphics.getFont(), string.format("by gabrielfvale"))
 
-local logo
+local logo = love.graphics.newImage("assets/scrappy_logo.png")
 local anim = { value = 0 }
 local splash_timer = timer.new()
 
@@ -19,7 +19,6 @@ local colors = {
 
 function splash.load(delay)
   delay = delay or 1
-  logo = love.graphics.newImage("assets/scrappy_logo.png")
   splash_timer:tween(delay, anim, { value = 1 }, 'in-out-cubic')
   splash_timer:after(delay + 0.2, function()
     splash_timer:tween(0.5, anim, { value = 0 }, 'in-out-cubic', function()

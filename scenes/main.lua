@@ -384,7 +384,7 @@ function main:load()
       if state.loading or state.scraping then
         love.graphics.setColor(0, 0, 0, 0.5);
         love.graphics.rectangle("fill", 0, 0, cw, ch)
-        loader:draw(cw * scale, ch * scale, 2)
+        loader:draw(cw * scale, ch * scale, 1)
       end
       love.graphics.setColor(1, 1, 1);
       love.graphics.pop()
@@ -412,44 +412,23 @@ function main:load()
 
   local top_layout = component { row = true, gap = 10 }
       + (component { column = true, gap = 10 }
-        + label { text = "Preview", icon = "file_image" }
+        + label { text = "Preview", icon = "image" }
         + canvasComponent
       )
       + (component { column = true, gap = 10 }
-        + label { text = "Artwork", icon = "folder_image" }
+        + label { text = "Artwork", icon = "canvas" }
         + selectionComponent
         + infoComponent
       )
-
-  local bottom_buttons = component { column = true, gap = 10 }
-      + button {
-        text = "Settings",
-        width = 150,
-        onClick = function()
-          scenes:switch("settings")
-        end,
-        focusable = true,
-      }
-      + button {
-        text = "Quit",
-        width = 150,
-        onClick = function() love.event.quit() end,
-        focusable = true,
-      }
 
   local warn_text = label { text = "Scraping limited - no credentials provided", icon = "warn", visible = not skyscraper_config:has_credentials() }
 
   menu = menu
       + top_layout
       + warn_text
-      + bottom_buttons
 
   menu:updatePosition(10, 10)
   infoComponent:updatePosition(0, w_height * 0.5 - selectionComponent.height - infoComponent.height - 10)
-  bottom_buttons:updatePosition(
-    w_width * 0.5 - bottom_buttons.width * 0.5 - 10,
-    w_height - menu.height - 20
-  )
 
   menu:focusFirstElement()
 end
@@ -481,6 +460,9 @@ function main:keypressed(key)
   end
   if not state.scraping and not info_window.visible then
     menu:keypressed(key)
+  end
+  if key == "lalt" then
+    scenes:switch("settings")
   end
 end
 

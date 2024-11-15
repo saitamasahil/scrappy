@@ -2,8 +2,7 @@ local log = require("lib.log")
 log.start()
 
 require("globals")
-local font = love.graphics.newFont("assets/monogram.ttf", 30)
-love.graphics.setDefaultFilter("nearest", "nearest")
+local font = love.graphics.newFont("assets/ChakraPetch-Regular.ttf", 20)
 love.graphics.setFont(font)
 
 local scenes = require("lib.scenes")
@@ -15,6 +14,10 @@ local utils = require("helpers.utils")
 
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 
+local footer = require("lib.gui.footer")()
+
+local w_width, w_height
+
 function love.load()
   splash.load()
 
@@ -22,6 +25,7 @@ function love.load()
   if res then
     res = utils.split(res, "x")
     love.window.setMode(tonumber(res[1]) or 640, tonumber(res[2]) or 480)
+    w_width, w_height = love.window.getMode()
   end
 
   scenes:load("main")
@@ -31,10 +35,7 @@ function love.load()
     user_config:read("main", "binary") or "bin/Skyscraper.aarch64")
   input.load()
 
-  -- local debug = user_config:read("main", "debug")
-  -- if not debug or debug == 0 then
-  --   function _G.print() end
-  -- end
+  footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - 20, w_height - footer.height - 10)
 end
 
 function love.update(dt)
@@ -52,5 +53,6 @@ function love.draw()
 
   if splash.finished then
     scenes:draw()
+    footer:draw()
   end
 end

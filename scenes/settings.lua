@@ -90,7 +90,7 @@ function settings:load()
   checkboxes = component { column = true, gap = 0 }
 
   menu = menu
-      + label { text = 'Resolution', icon = "file_image" }
+      + label { text = 'Resolution', icon = "display" }
       + select {
         width = 200,
         options = resolutions,
@@ -99,7 +99,7 @@ function settings:load()
           on_change_resolution(index)
         end
       }
-      + label { text = 'Platforms', icon = "file_image" }
+      + label { text = 'Platforms', icon = "folder" }
       + (component { row = true, gap = 10 }
         + button { text = 'Rescan folders', width = 200, onClick = on_refresh_press }
         + button { text = 'Un/check all', width = 200, onClick = on_check_all_press })
@@ -109,7 +109,7 @@ function settings:load()
   menu = menu
       + (scroll_container {
           width = w_width - 20,
-          height = w_height - menu_height - 30,
+          height = w_height - menu_height - 60,
           scroll_speed = 30,
         }
         + checkboxes)
@@ -131,7 +131,7 @@ end
 
 function settings:keypressed(key)
   menu:keypressed(key)
-  if key == "escape" then
+  if key == "escape" or key == "lalt" then
     scenes:switch("main")
   end
 end

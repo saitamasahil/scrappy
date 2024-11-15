@@ -2,23 +2,24 @@ local component = require 'lib.gui.badr'
 
 -- Icons table
 local icons = {
-  chevron_left = love.graphics.newImage("assets/icons/Chevron-Arrow-Left.png"),
-  chevron_right = love.graphics.newImage("assets/icons/Chevron-Arrow-Right.png"),
-  gear = love.graphics.newImage("assets/icons/Gear.png"),
-  folder = love.graphics.newImage("assets/icons/Folder.png"),
-  redo = love.graphics.newImage("assets/icons/Redo.png"),
-  disk = love.graphics.newImage("assets/icons/Disk.png"),
-  folder_image = love.graphics.newImage("assets/icons/Folder-Image.png"),
-  file_image = love.graphics.newImage("assets/icons/File-Image.png"),
-  controller = love.graphics.newImage("assets/icons/Game-Controller.png"),
-  clock = love.graphics.newImage("assets/icons/Clock.png"),
-  warn = love.graphics.newImage("assets/icons/Exclamation-Mark.png"),
-  info = love.graphics.newImage("assets/icons/Info.png"),
-  cd = love.graphics.newImage("assets/icons/CD.png"),
-  play = love.graphics.newImage("assets/icons/Play.png"),
-  at = love.graphics.newImage("assets/icons/Asperand-Sign.png"),
-  left_arrow = love.graphics.newImage("assets/icons/Left-Arrow.png"),
-  cursor = love.graphics.newImage("assets/icons/Cursor-3.png")
+  caret_left = love.graphics.newImage("assets/icons/caret-left-solid.png"),
+  caret_right = love.graphics.newImage("assets/icons/caret-right-solid.png"),
+  folder = love.graphics.newImage("assets/icons/folder-open-regular.png"),
+  display = love.graphics.newImage("assets/icons/display-solid.png"),
+  canvas = love.graphics.newImage("assets/icons/object-group-solid.png"),
+  image = love.graphics.newImage("assets/icons/image-regular.png"),
+  controller = love.graphics.newImage("assets/icons/gamepad-solid.png"),
+  warn = love.graphics.newImage("assets/icons/triangle-exclamation-solid.png"),
+  info = love.graphics.newImage("assets/icons/circle-info-solid.png"),
+  cd = love.graphics.newImage("assets/icons/compact-disc-solid.png"),
+  square = love.graphics.newImage("assets/icons/square-regular.png"),
+  suqare_check = love.graphics.newImage("assets/icons/square-check-solid.png"),
+  button_a = love.graphics.newImage("assets/inputs/switch_button_a.png"),
+  button_b = love.graphics.newImage("assets/inputs/switch_button_b.png"),
+  button_x = love.graphics.newImage("assets/inputs/switch_button_x.png"),
+  button_y = love.graphics.newImage("assets/inputs/switch_button_y.png"),
+  dpad = love.graphics.newImage("assets/inputs/switch_dpad_vertical_outline.png"),
+  select = love.graphics.newImage("assets/inputs/switch_button_sl.png"),
 }
 
 return function(props)
@@ -29,12 +30,13 @@ return function(props)
     icon = icons["warn"]
   end
 
-  local boxSize = props.size or 16 -- Default box size of 16x16
+  local boxSize = props.size or 24
   local iconWidth, iconHeight = icon:getWidth(), icon:getHeight()
+  local sx, sy = boxSize / iconWidth, boxSize / iconHeight
 
   -- Calculate the position to center the icon within the box
-  local offsetX = (boxSize - iconWidth) / 2
-  local offsetY = (boxSize - iconHeight) / 2
+  local offsetX = (boxSize - iconWidth * sx) / 2
+  local offsetY = (boxSize - iconHeight * sy) / 2
 
   return component {
     id = props.id or tostring(love.timer.getTime()),
@@ -52,7 +54,7 @@ return function(props)
 
       -- Draw the icon centered within the box
       love.graphics.setColor(1, 1, 1, 1) -- Reset color to opaque for the icon
-      love.graphics.draw(icon, self.x + offsetX, self.y + offsetY)
+      love.graphics.draw(icon, self.x + offsetX, self.y + offsetY, 0, sx, sy)
 
       love.graphics.pop()
     end,

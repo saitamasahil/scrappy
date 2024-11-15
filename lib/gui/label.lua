@@ -4,7 +4,7 @@ local icon      = require 'lib.gui.icon'
 local function label(props)
   local _font = props.font or love.graphics.getFont()
   local color = props.color or { 1, 1, 1 }
-  local iconSize = 16
+  local iconSize = 20
   local padding = props.iconPadding or 4
 
   local textWidth = _font:getWidth(props.text or props)

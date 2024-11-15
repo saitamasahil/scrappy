@@ -14,6 +14,7 @@ input.events = {
   DOWN = "down",
   ESC = "escape",
   RETURN = "return",
+  LALT = "lalt",
 }
 
 local cooldown_duration = 0.2
@@ -65,6 +66,9 @@ function input.update(dt)
     if joystick:isGamepadDown("b") then
       trigger(input.events.ESC)
     end
+    if joystick:isGamepadDown("select") then
+      trigger(input.events.LALT)
+    end
   end
 end
 
@@ -98,6 +102,10 @@ function love.keypressed(key)
 
   if key == "return" then
     trigger(input.events.RETURN)
+  end
+
+  if key == "lalt" then
+    trigger(input.events.LALT)
   end
 end
 
