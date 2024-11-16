@@ -22,8 +22,8 @@ export LD_LIBRARY_PATH="$BINDIR/libs.aarch64:$LD_LIBRARY_PATH"
 export QT_PLUGIN_PATH="$BINDIR/plugins"
 
 # Create Skyscraper folders
-mkdir -p $HOME/.skyscraper/resources/mask
-cp $LOVEDIR/templates/mask/* $HOME/.skyscraper/resources/mask
+mkdir -p $HOME/.skyscraper/resources
+cp -r $LOVEDIR/templates/resources/* $HOME/.skyscraper/resources
 
 # Launcher
 cd "$LOVEDIR" || exit
