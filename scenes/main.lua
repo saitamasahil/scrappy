@@ -205,12 +205,21 @@ local function copy_game_artwork(platform, game)
   end
 end
 
+local function halt_scraping()
+  INPUT_CHANNEL:clear()
+  state.scraping = false
+  state.failed_tasks = {}
+  state.tasks = {}
+  state.total = 0
+end
+
 local function update_state()
   local t = OUTPUT_CHANNEL:pop()
   if t then
     if t.error and t.error ~= "" then
       state.error = t.error
       show_info_window("Error", t.error)
+      halt_scraping()
     end
     if t.loading ~= nil then state.loading = t.loading end
     if t.data and next(t.data) then
