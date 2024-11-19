@@ -143,7 +143,41 @@ function user_config:load_platforms()
 
   log.write(string.format("Loading platforms from %s", rom_path))
 
-  local platforms = nativefs.getDirectoryItems(rom_path)
+  -- Recursive function to scan directories
+  local function scan_directories(base_path, relative_path)
+    local platforms = {}
+    local contains_files = false
+    local items = nativefs.getDirectoryItems(base_path)
+
+    for _, item in ipairs(items) do
+      local item_path = base_path .. "/" .. item
+      local file_info = nativefs.getInfo(item_path)
+
+      -- Ignore hidden folders and files
+      if file_info and file_info.type == "directory" and item:sub(1, 1) ~= "." then
+        -- Construct the relative path for the current directory
+        local current_relative_path = relative_path and (relative_path .. "/" .. item) or item
+
+        -- Recursively collect platforms from subdirectories
+        local sub_platforms = scan_directories(item_path, current_relative_path)
+        for _, sub_platform in ipairs(sub_platforms) do
+          table.insert(platforms, sub_platform)
+        end
+      elseif file_info and file_info.type == "file" then
+        contains_files = true
+      end
+    end
+
+    -- Add current folder to platforms if it contains files
+    if contains_files and relative_path then
+      table.insert(platforms, relative_path)
+    end
+
+    return platforms, contains_files
+  end
+
+  -- Scan the main ROM path for platforms
+  local platforms = scan_directories(rom_path, nil)
   local mapped_total = 0
 
   if not platforms or next(platforms) == nil then
@@ -152,11 +186,13 @@ function user_config:load_platforms()
   end
 
   ini.deleteSection(self.values, "platforms")
-  -- ini.deleteSection(self.values, "selectedPlatforms")
 
   -- Iterate through platforms
   for _, platform in ipairs(platforms) do
-    local lower_platform = platform:lower()
+    -- Extract the last folder name for mapping
+    local last_folder_name = platform:match("([^/]+)$")
+    local lower_platform = last_folder_name:lower()
+
     if muos.assign[lower_platform] then
       self:insert("platforms", platform, muos.assign[lower_platform])
       self:insert("platformsSelected", platform, 1)
