@@ -34,7 +34,7 @@ function config:create_from(example_file)
 end
 
 function config:read(section, key)
-  if self.values[section] == nil then
+  if not self:section_exists(section) then
     return nil
   end
   return ini.readKey(self.values, section, key)

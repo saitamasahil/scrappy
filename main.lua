@@ -32,7 +32,7 @@ function love.load()
 
   skyscraper.init(
     skyscraper_config.path,
-    user_config:read("main", "binary") or "bin/Skyscraper.aarch64")
+    user_config:read("overrides", "binary") or "bin/Skyscraper.aarch64")
   input.load()
 
   footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - 20, w_height - footer.height - 10)
