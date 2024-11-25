@@ -48,8 +48,10 @@ return function(props)
       love.graphics.setFont(font)
 
       -- Background and focus styling
-      love.graphics.setColor(self.focused and self.focusColor or self.backgroundColor)
-      love.graphics.rectangle("fill", self.x, self.y, self.parent.width or self.width, self.height)
+      if self.focused then
+        love.graphics.setColor(self.focused and self.focusColor or self.backgroundColor)
+        love.graphics.rectangle("fill", self.x, self.y, self.parent.width or self.width, self.height)
+      end
 
       local bgIcon = icon {
         name = "square",
@@ -59,7 +61,7 @@ return function(props)
       }
 
       local fgIcon = icon {
-        name = "suqare_check",
+        name = "square_check",
         x = self.x + padding.horizontal / 2,
         y = self.y + padding.vertical / 2,
         size = checkboxSize

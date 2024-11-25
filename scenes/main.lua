@@ -434,6 +434,7 @@ function main:load()
 
   menu = menu
       + top_layout
+      -- + button { text = "Advanced tools", width = w_width * 0.5, onClick = function() scenes:switch("tools") end }
       + warn_text
 
   menu:updatePosition(10, 10)
