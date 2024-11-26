@@ -67,16 +67,16 @@ while true do
   for _, line in ipairs(lines) do
     line = utils.strip_ansi_colors(line)
     if game ~= "fake-rom" then log.write(line, "skyscraper") end
-    local data, error = parser.parse(line)
-    if next(data) ~= nil or error then parsed = true end
-    if next(data) ~= nil and operation_type == "generate" then
+    local success, error = parser.parse(line, game)
+    if success ~= nil or error then parsed = true end
+    if success ~= nil then
       OUTPUT_CHANNEL:push({
         data = {
           title = game,
           platform = current_platform,
         },
         task_id = task_id,
-        success = data.success,
+        success = success,
         error = error,
         loading = false
       })
