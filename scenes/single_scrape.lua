@@ -56,7 +56,7 @@ local function on_return()
     local active_element = platform_list % last_selected_platform
     platform_list:setFocus(active_element)
   else
-    scenes:switch("main")
+    scenes:pop()
   end
 end
 
@@ -139,6 +139,7 @@ function single_scrape:update(dt)
 end
 
 function single_scrape:draw()
+  love.graphics.clear(0, 0, 0)
   menu:draw()
   info_window:draw()
 end
@@ -149,7 +150,7 @@ function single_scrape:keypressed(key)
     on_return()
   end
   if key == "lalt" then
-    scenes:switch("settings")
+    scenes:push("settings")
   end
 end
 

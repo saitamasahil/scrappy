@@ -132,7 +132,7 @@ end
 function settings:keypressed(key)
   menu:keypressed(key)
   if key == "escape" or key == "lalt" then
-    scenes:switch("main")
+    scenes:pop()
   end
 end
 

@@ -416,7 +416,7 @@ function main:load()
         text = "Scrape single ROM",
         width = w_width * 0.5 - 30,
         onClick = function()
-          scenes:switch("single_scrape")
+          scenes:push("single_scrape")
         end,
       }
 
@@ -476,7 +476,7 @@ function main:keypressed(key)
     menu:keypressed(key)
   end
   if key == "lalt" then
-    scenes:switch("settings")
+    scenes:push("settings")
   end
 end
 
