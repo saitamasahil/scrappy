@@ -412,6 +412,13 @@ function main:load()
         width = w_width * 0.5 - 30,
         onClick = scrape_platforms,
       }
+      + button {
+        text = "Scrape single ROM",
+        width = w_width * 0.5 - 30,
+        onClick = function()
+          scenes:switch("single_scrape")
+        end,
+      }
 
   local infoComponent = component { column = true, gap = 10 }
       + label { id = "platform", text = "Platform: N/A", icon = "controller" }

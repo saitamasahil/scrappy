@@ -28,6 +28,17 @@ return function(props)
       local focusedChild = self:getRoot().focusedElement
       if not focusedChild then return end
 
+      -- Check if the focused element is within the scope of this scroll container
+      local function isDescendantOf(component, parent)
+        while component do
+          if component == parent then return true end
+          component = component.parent
+        end
+        return false
+      end
+
+      if not isDescendantOf(focusedChild, self) then return end
+
       -- Determine the relative position of the focused child within the container
       local childY = focusedChild.y - self.y - scrollY -- Relative Y position accounting for scroll offset
       if childY < 0 then
@@ -51,10 +62,10 @@ return function(props)
     drawScrollbar = function(self)
       -- Calculate scroll bar height and position based on the scroll position
       local contentHeight = self:getContentHeight()
-      if contentHeight <= height then return end -- No scrollbar if content fits
+      if contentHeight <= self.height then return end -- No scrollbar if content fits
 
-      local scrollbarHeight = (height / contentHeight) * height
-      local scrollbarY = (scrollY / contentHeight) * height
+      local scrollbarHeight = (self.height / contentHeight) * self.height
+      local scrollbarY = (scrollY / contentHeight) * self.height
 
       -- Draw the scroll bar on the left of the container
       love.graphics.setColor(self.barColor) -- Set the scrollbar color (light gray)

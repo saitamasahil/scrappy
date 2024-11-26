@@ -195,7 +195,7 @@ local function gatherFocusableComponents(root)
   local focusableComponents = {}
 
   local function gather(component)
-    if component.focusable then
+    if component.focusable and not component.disabled then
       table.insert(focusableComponents, component)
     end
     for _, child in ipairs(component.children or {}) do
