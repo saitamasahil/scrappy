@@ -272,6 +272,14 @@ function skyscraper_config:get_paths()
   return cache_path, output_path
 end
 
+function skyscraper_config:get_artwork()
+  local artwork_xml = self:read("main", "artworkXml")
+  if not artwork_xml or artwork_xml == "\"\"" then return nil end
+  artwork_xml        = artwork_xml:gsub('"', '')          -- Remove double quotes
+  local artwork_name = artwork_xml:match("([^/]+)%.xml$") -- Extract the filename without path and extension
+  return artwork_name
+end
+
 -- Singleton instances
 local user_config_instance = user_config.create("config.ini")
 local skyscraper_config_instance = skyscraper_config.create("skyscraper_config.ini")

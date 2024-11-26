@@ -1,24 +1,20 @@
 local scenes            = require("lib.scenes")
-local pprint            = require("lib.pprint")
+local skyscraper        = require("lib.skyscraper")
 local configs           = require("helpers.config")
 local utils             = require("helpers.utils")
 
 local component         = require 'lib.gui.badr'
-local button            = require 'lib.gui.button'
 local label             = require 'lib.gui.label'
 local popup             = require 'lib.gui.popup'
 local listitem          = require 'lib.gui.listitem'
-local select            = require 'lib.gui.select'
-local checkbox          = require 'lib.gui.checkbox'
 local scroll_container  = require 'lib.gui.scroll_container'
 
-local user_config       = configs.user_config
 local w_width, w_height = love.window.getMode()
-
 local single_scrape     = {}
 
 
 local menu, info_window, platform_list, rom_list
+local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 local last_selected_platform = nil
 local active_column = 1 -- 1 for platforms, 2 for ROMs
 
@@ -43,7 +39,25 @@ local function on_select_platform(platform)
   rom_list:focusFirstElement()
 end
 
+local function on_rom_press(rom)
+  local rom_path, _ = user_config:get_paths()
+  local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
+
+  rom_path = string.format("%s/%s", rom_path, last_selected_platform)
+
+  local artwork = skyscraper_config:get_artwork()
+
+  local platform_dest = platforms[last_selected_platform]
+  dispatch_info(rom, "Scraping ROM, please wait...")
+  toggle_info()
+  skyscraper.fetch_and_update_artwork(rom_path, rom, platform_dest, artwork)
+end
+
 local function on_return()
+  if info_window.visible then
+    toggle_info()
+    return
+  end
   if active_column == 2 then
     active_column = 1
     for _, item in ipairs(platform_list.children) do
@@ -72,9 +86,8 @@ local function load_rom_buttons(platform)
       rom_list = rom_list + listitem {
         text = rom,
         width = 200,
-        onFocus = function() print("Focused ROM: " .. rom) end,
         onClick = function()
-          print("Selected ROM: " .. rom)
+          on_rom_press(rom)
         end,
         disabled = true,
       }
@@ -95,6 +108,18 @@ local function load_platform_buttons()
       onClick = function() on_select_platform(platform) end,
       disabled = false,
     }
+  end
+end
+
+local function update_scrape_state()
+  local t = OUTPUT_CHANNEL:pop()
+  if t then
+    if t.error and t.error ~= "" then
+      dispatch_info("Error", t.error)
+    end
+    if t.data and next(t.data) and t.task_id then
+      dispatch_info("Finished", t.success and "Scraping finished successfully" or "Scraping failed or skipped")
+    end
   end
 end
 
@@ -136,6 +161,7 @@ end
 
 function single_scrape:update(dt)
   menu:update(dt)
+  update_scrape_state()
 end
 
 function single_scrape:draw()
@@ -146,12 +172,8 @@ end
 
 function single_scrape:keypressed(key)
   menu:keypressed(key)
-  if key == "escape" then
-    on_return()
-  end
-  if key == "lalt" then
-    scenes:push("settings")
-  end
+  if key == "escape" then on_return() end
+  if key == "lalt" then scenes:push("settings") end
 end
 
 return single_scrape

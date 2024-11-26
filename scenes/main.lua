@@ -327,8 +327,7 @@ local function get_templates()
     skyscraper_config:save()
   end
 
-  -- Remove double quotes
-  artwork_path       = artwork_path:gsub('"', '')
+  artwork_path       = artwork_path:gsub('"', '')          -- Remove double quotes
   local artwork_name = artwork_path:match("([^/]+)%.xml$") -- Extract the filename without path and extension
   -- Find the index of artwork_name in templates
   for i = 1, #templates do
