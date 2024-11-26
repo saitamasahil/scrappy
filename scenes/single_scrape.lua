@@ -17,8 +17,10 @@ local w_width, w_height = love.window.getMode()
 
 local single_scrape     = {}
 
-local menu, info_window, platform_list, rom_list
 
+local menu, info_window, platform_list, rom_list
+local last_selected_platform = nil
+local active_column = 1 -- 1 for platforms, 2 for ROMs
 
 local function toggle_info()
   info_window.visible = not info_window.visible
@@ -28,19 +30,52 @@ local function dispatch_info(title, content)
   info_window.content = content
 end
 
+local function on_select_platform(platform)
+  last_selected_platform = platform
+  active_column = 2
+  for _, item in ipairs(platform_list.children) do
+    item.disabled = true
+    item.active = item.id == platform
+  end
+  for _, item in ipairs(rom_list.children) do
+    item.disabled = false
+  end
+  rom_list:focusFirstElement()
+end
+
+local function on_return()
+  if active_column == 2 then
+    active_column = 1
+    for _, item in ipairs(platform_list.children) do
+      item.disabled = false
+      item.active = false
+    end
+    for _, item in ipairs(rom_list.children) do
+      item.disabled = true
+    end
+    local active_element = platform_list % last_selected_platform
+    platform_list:setFocus(active_element)
+  else
+    scenes:switch("main")
+  end
+end
+
 local function load_rom_buttons(platform)
   local rom_path, _ = user_config:get_paths()
   local platform_path = string.format("%s/%s", rom_path, platform)
   local roms = nativefs.getDirectoryItems(platform_path)
 
-  rom_list.children = {}
+  rom_list.children = {} -- Clear existing ROM items
   for _, rom in ipairs(roms) do
     local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, rom))
     if file_info and file_info.type == "file" then
       rom_list = rom_list + listitem {
         text = rom,
         width = 200,
-        onFocus = function() print("focused " .. rom) end,
+        onFocus = function() print("Focused ROM: " .. rom) end,
+        onClick = function()
+          print("Selected ROM: " .. rom)
+        end,
         disabled = true,
       }
     end
@@ -48,25 +83,19 @@ local function load_rom_buttons(platform)
 end
 
 local function load_platform_buttons()
-  platform_list.children = {}
+  platform_list.children = {} -- Clear existing platforms
   local platforms = user_config:get().platforms
-  local custom_platforms = user_config:get().platformsCustom
+
   for platform in utils.orderedPairs(platforms or {}) do
     platform_list = platform_list + listitem {
       id = platform,
       text = platform,
       width = 200,
       onFocus = function() load_rom_buttons(platform) end,
+      onClick = function() on_select_platform(platform) end,
+      disabled = false,
     }
   end
-  pprint(platform_list.children)
-  -- for custom in utils.orderedPairs(custom_platforms or {}) do
-  --   platform_list = platform_list + listitem {
-  --     text = custom,
-  --     width = 200,
-  --     onFocus = function() print("focused " .. custom) end,
-  --   }
-  -- end
 end
 
 function single_scrape:load()
@@ -101,9 +130,6 @@ function single_scrape:load()
         + left_column
         + right_column)
 
-
-  local menu_height = menu.height
-
   menu:updatePosition(10, 10)
   menu:focusFirstElement()
 end
@@ -119,8 +145,11 @@ end
 
 function single_scrape:keypressed(key)
   menu:keypressed(key)
-  if key == "escape" or key == "lalt" then
-    scenes:switch("main")
+  if key == "escape" then
+    on_return()
+  end
+  if key == "lalt" then
+    scenes:switch("settings")
   end
 end
 

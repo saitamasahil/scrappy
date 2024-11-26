@@ -26,6 +26,7 @@ return function(props)
     height = height,
     focusable = props.focusable or true,
     disabled = props.disabled or false,
+    active = props.active or false,
     -- Colors and styles
     backgroundColor = props.backgroundColor or utils.hex '#000000',
     hoverColor = props.hoverColor or utils.hex '#636e72',
@@ -40,8 +41,7 @@ return function(props)
     onClick = props.onClick,
     -- Key press handling for toggling checkbox with Enter/Return key
     onKeyPress = function(self, key)
-      if key == "return" and self.focused then
-        self.checked = not self.checked
+      if key == "return" and self.focused and not self.disabled then
         if self.onClick then self:onClick() end
       end
     end,
@@ -57,9 +57,14 @@ return function(props)
       love.graphics.setFont(font)
 
       -- Background and focus styling
-      if self.focused then
-        love.graphics.setColor(self.focused and self.focusColor or self.backgroundColor)
+      if self.focused or self.active then
+        love.graphics.setColor(self.focusColor)
         love.graphics.rectangle("fill", self.x, self.y, self.parent.width or self.width, self.height)
+      end
+
+      if self.active then
+        love.graphics.setColor(self.textColor)
+        love.graphics.rectangle("fill", self.x, self.y, 4, self.height)
       end
 
       -- Inner box for the checkbox background
