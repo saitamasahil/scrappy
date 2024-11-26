@@ -2,6 +2,7 @@ local scenes            = require("lib.scenes")
 local skyscraper        = require("lib.skyscraper")
 local configs           = require("helpers.config")
 local utils             = require("helpers.utils")
+local artwork           = require("helpers.artwork")
 
 local component         = require 'lib.gui.badr'
 local label             = require 'lib.gui.label'
@@ -14,7 +15,7 @@ local single_scrape     = {}
 
 
 local menu, info_window, platform_list, rom_list
-local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
+local user_config = configs.user_config
 local last_selected_platform = nil
 local active_column = 1 -- 1 for platforms, 2 for ROMs
 
@@ -45,12 +46,16 @@ local function on_rom_press(rom)
 
   rom_path = string.format("%s/%s", rom_path, last_selected_platform)
 
-  local artwork = skyscraper_config:get_artwork()
+  local artwork_name = artwork.get_artwork_name()
 
-  local platform_dest = platforms[last_selected_platform]
-  dispatch_info(rom, "Scraping ROM, please wait...")
+  if artwork_name then
+    local platform_dest = platforms[last_selected_platform]
+    dispatch_info(rom, "Scraping ROM, please wait...")
+    skyscraper.fetch_and_update_artwork(rom_path, rom, platform_dest, artwork_name)
+  else
+    dispatch_info("Error", "Artwork XML not found")
+  end
   toggle_info()
-  skyscraper.fetch_and_update_artwork(rom_path, rom, platform_dest, artwork)
 end
 
 local function on_return()
@@ -75,11 +80,13 @@ local function on_return()
 end
 
 local function load_rom_buttons(platform)
+  rom_list.children = {} -- Clear existing ROM items
+  rom_list.height = 0
+
   local rom_path, _ = user_config:get_paths()
   local platform_path = string.format("%s/%s", rom_path, platform)
   local roms = nativefs.getDirectoryItems(platform_path)
 
-  rom_list.children = {} -- Clear existing ROM items
   for _, rom in ipairs(roms) do
     local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, rom))
     if file_info and file_info.type == "file" then
@@ -97,7 +104,9 @@ end
 
 local function load_platform_buttons()
   platform_list.children = {} -- Clear existing platforms
-  local platforms = user_config:get().platforms
+  platform_list.height = 0
+
+  local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
 
   for platform in utils.orderedPairs(platforms or {}) do
     platform_list = platform_list + listitem {
@@ -119,6 +128,7 @@ local function update_scrape_state()
     end
     if t.data and next(t.data) and t.task_id then
       dispatch_info("Finished", t.success and "Scraping finished successfully" or "Scraping failed or skipped")
+      artwork.copy_to_catalogue(t.data.platform, t.data.title)
     end
   end
 end

@@ -5,6 +5,7 @@ local loading    = require("lib.loading")
 local configs    = require("helpers.config")
 local muos       = require("helpers.muos")
 local utils      = require("helpers.utils")
+local artwork    = require("helpers.artwork")
 
 local component  = require "lib.gui.badr"
 local button     = require "lib.gui.button"
@@ -177,34 +178,6 @@ local function scrape_platforms()
   log.write(string.format("Generated %d Skyscraper tasks", state.total))
 end
 
-local function copy_game_artwork(platform, game)
-  log.write(string.format("Copying artwork for %s: %s", platform, game))
-  local _, output_path = skyscraper_config:get_paths()
-  local _, catalogue_path = user_config:get_paths()
-  if output_path == nil or catalogue_path == nil then
-    log.write("Missing paths from config")
-    return
-  end
-  local path = string.format("%s/%s/media/covers/%s.png", utils.strip_quotes(output_path), platform, game)
-  local destination_folder = muos.platforms[platform]
-  if not destination_folder then
-    log.write("Catalogue destination folder not found")
-    return
-  end
-
-  local scraped_art = nativefs.newFileData(path)
-  if not scraped_art then
-    log.write("Scraped artwork not found")
-    return
-  end
-
-  destination_folder = string.format("%s/%s/box", catalogue_path, destination_folder)
-  local _, err = nativefs.write(string.format("%s/%s.png", destination_folder, game), scraped_art)
-  if err then
-    log.write(err)
-  end
-end
-
 local function halt_scraping()
   INPUT_CHANNEL:clear()
   state.scraping = false
@@ -248,7 +221,7 @@ local function update_state()
       table.remove(state.tasks, pos)
       -- Copy game artwork
       if t.success then
-        copy_game_artwork(t.data.platform, t.data.title)
+        artwork.copy_to_catalogue(t.data.platform, t.data.title)
       else
         table.insert(state.failed_tasks, t.task_id)
       end
@@ -280,20 +253,6 @@ local function on_artwork_change(key)
   end
 end
 
-local function get_template_resolution(xml_path)
-  local xml_content = nativefs.read(xml_path)
-  if not xml_content then
-    return nil
-  end
-
-  local width, height = xml_content:match('<output [^>]*width="(%d+)"[^>]*height="(%d+)"')
-
-  if width and height then
-    return width .. "x" .. height
-  end
-  return nil
-end
-
 local function get_templates()
   local items = nativefs.getDirectoryItems(WORK_DIR .. "/templates")
   if not items then
@@ -307,7 +266,7 @@ local function get_templates()
     if file:sub(-4) == ".xml" then
       local template_name = file:sub(1, -5)
       local xml_path = WORK_DIR .. "/templates/" .. file
-      local template_resolution = get_template_resolution(xml_path)
+      local template_resolution = artwork.get_template_resolution(xml_path)
 
       -- 1. Include if the template resolutio is not defined;
       -- 2. Include if the template resolution matches the user resolution;
