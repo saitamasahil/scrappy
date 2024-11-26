@@ -370,13 +370,6 @@ function main:load()
         width = w_width * 0.5 - 30,
         onClick = scrape_platforms,
       }
-      + button {
-        text = "Scrape single ROM",
-        width = w_width * 0.5 - 30,
-        onClick = function()
-          scenes:push("single_scrape")
-        end,
-      }
 
   local infoComponent = component { column = true, gap = 10 }
       + label { id = "platform", text = "Platform: N/A", icon = "controller" }
@@ -395,12 +388,25 @@ function main:load()
         + infoComponent
       )
 
-  local warn_text = label { text = "Scraping limited - no credentials provided", icon = "warn", visible = not skyscraper_config:has_credentials() }
-
   menu = menu
       + top_layout
-      -- + button { text = "Advanced tools", width = w_width * 0.5, onClick = function() scenes:switch("tools") end }
-      + warn_text
+      + (component { row = true, gap = 10 }
+        + button {
+          text = "Scrape single ROM",
+          width = w_width * 0.5,
+          onClick = function() scenes:push("single_scrape") end,
+        }
+        + button {
+          text = "Advanced tools",
+          width = w_width * 0.5 - 30,
+          onClick = function() scenes:push("tools") end
+        }
+      )
+      + label {
+        text = "Scraping limited - no credentials provided",
+        icon = "warn",
+        visible = not skyscraper_config:has_credentials()
+      }
 
   menu:updatePosition(10, 10)
   infoComponent:updatePosition(0, w_height * 0.5 - selectionComponent.height - infoComponent.height - 10)
