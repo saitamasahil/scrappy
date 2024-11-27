@@ -96,6 +96,8 @@ while true do
       success = false
     })
   end
+
+  OUTPUT_CHANNEL:push({ command_finished = true })
 end
 
 function love.threaderror(thread, errorstr)

@@ -17,7 +17,7 @@ local tools             = {}
 local menu, info_window
 
 
-local finished_cache_tasks = 0
+local finished_tasks = 0
 
 local function dispatch_info(title, content)
   if title then info_window.title = title end
@@ -35,14 +35,14 @@ local function update_state()
       dispatch_info(string.format("Updating cache for %s, please wait...", t.data.platform))
     end
     if t.success ~= nil then
-      finished_cache_tasks = finished_cache_tasks + 1
-      dispatch_info(nil, string.format("Finished %d games", finished_cache_tasks))
+      finished_tasks = finished_tasks + 1
+      dispatch_info(nil, string.format("Finished %d games", finished_tasks))
     end
-  end
-  if finished_cache_tasks > 0 and INPUT_CHANNEL:getCount() == 0 then
-    dispatch_info("Updated cache", "Cache has been updated.")
-    finished_cache_tasks = 0
-    log.write("Cache updated successfully")
+    if t.command_finished then
+      dispatch_info("Updated cache", "Cache has been updated.")
+      finished_tasks = 0
+      log.write("Cache updated successfully")
+    end
   end
 end
 
@@ -57,12 +57,45 @@ local function on_update_press()
   local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
   local rom_path, _ = user_config:get_paths()
 
-  dispatch_info("Updating cache, please wait...", string.format("Finished %d games", finished_cache_tasks))
+  dispatch_info("Updating cache, please wait...", string.format("Finished %d games", finished_tasks))
 
   for src, dest in utils.orderedPairs(platforms or {}) do
     if dest ~= "unmapped" then
       local platform_path = string.format("%s/%s", rom_path, src)
       skyscraper.fetch_artwork(platform_path, dest, "update")
+    end
+  end
+end
+
+local function on_import_press()
+  log.write("Importing custom data")
+  local import_path = WORK_DIR .. "/static/.skyscraper/import"
+  local lookup_folders = {}
+
+  for _, item in ipairs(nativefs.getDirectoryItems(import_path) or {}) do
+    local file_info = nativefs.getInfo(string.format("%s/%s", import_path, item))
+    if file_info and file_info.type == "directory" then
+      print(item)
+      table.insert(lookup_folders, item)
+    end
+  end
+
+  if #lookup_folders == 0 then
+    log.write("No folders to import")
+    dispatch_info("Error", "No folders to import.")
+    return
+  end
+
+  local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
+  local rom_path, _ = user_config:get_paths()
+
+  for _, folder in ipairs(lookup_folders) do
+    for src, dest in utils.orderedPairs(platforms or {}) do
+      if folder == dest then
+        print("FOUND MATCH", folder, dest)
+        local platform_path = string.format("%s/%s", rom_path, src)
+        skyscraper.custom_import(platform_path, dest)
+      end
     end
   end
 end
@@ -80,7 +113,7 @@ function tools:load()
         + button { text = 'Update cache', width = 200, onClick = on_update_press })
       + (component { column = true, gap = 0 }
         + label { text = 'Imports custom data to cache. Read Wiki for more info.', icon = "file_import" }
-        + button { text = 'Run custom import', width = 200, onClick = function() end })
+        + button { text = 'Run custom import', width = 200, onClick = on_import_press })
       + (component { column = true, gap = 0 }
         + label { text = 'Resets user and Skyscraper configs. Can\'t be undone.', icon = "refresh" }
         + button { text = 'Reset configs', width = 200, onClick = function() end })

@@ -42,13 +42,16 @@ local function generate_command(config)
   if config.use_config == nil then
     config.use_config = true
   end
+  if config.module == nil then
+    config.module = skyscraper.module
+  end
 
   local command = ""
   if config.platform then
     command = string.format('%s -p %s', command, config.platform)
   end
   if config.fetch then
-    command = string.format('%s -s %s', command, skyscraper.module)
+    command = string.format('%s -s %s', command, config.module)
   end
   if config.use_config then
     command = string.format('%s -c "%s"', command, skyscraper.config_path)
@@ -155,6 +158,16 @@ function skyscraper.fetch_and_update_artwork(rom_path, rom, platform, artwork, .
   })
   skyscraper.run(fetch_command, platform, "fetch", rom)
   skyscraper.run(update_command, platform, "generate", rom, task_id)
+end
+
+function skyscraper.custom_import(rom_path, platform)
+  local command = generate_command({
+    platform = platform,
+    input = rom_path,
+    module = "import",
+    fetch = true,
+  })
+  skyscraper.run(command, platform, "import")
 end
 
 return skyscraper
