@@ -83,6 +83,9 @@ local function load_rom_buttons(platform)
   rom_list.children = {} -- Clear existing ROM items
   rom_list.height = 0
 
+  -- Set label
+  (menu ^ "roms_label").text = platform
+
   local rom_path, _ = user_config:get_paths()
   local platform_path = string.format("%s/%s", rom_path, platform)
   local roms = nativefs.getDirectoryItems(platform_path)
@@ -152,7 +155,7 @@ function single_scrape:load()
         + platform_list)
 
   local right_column = component { column = true, gap = 10 }
-      + label { text = 'ROMs', icon = "cd" }
+      + label { id = "roms_label", text = 'ROMs', icon = "cd" }
       + (scroll_container {
           width = (w_width / 3) * 2,
           height = w_height - 90,
