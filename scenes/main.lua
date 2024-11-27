@@ -129,7 +129,9 @@ local function scrape_platforms()
   state.tasks = {}
   state.failed_tasks = {}
   -- Process cached data from quickid and db
-  process_cached_data()
+  if user_config:read("main", "parseCache") == "1" then
+    process_cached_data()
+  end
   -- For each source = destionation pair in config, fetch and update artwork
   for src, dest in utils.orderedPairs(platforms) do
     if not selected_platforms[src] or selected_platforms[src] == "0" or dest == "unmapped" then
