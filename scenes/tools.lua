@@ -1,22 +1,22 @@
-local log               = require("lib.log")
-local scenes            = require("lib.scenes")
-local skyscraper        = require("lib.skyscraper")
-local configs           = require("helpers.config")
-local utils             = require("helpers.utils")
+local log          = require("lib.log")
+local scenes       = require("lib.scenes")
+local skyscraper   = require("lib.skyscraper")
+local configs      = require("helpers.config")
+local utils        = require("helpers.utils")
 
-local component         = require 'lib.gui.badr'
-local button            = require 'lib.gui.button'
-local label             = require 'lib.gui.label'
-local popup             = require 'lib.gui.popup'
+local component    = require 'lib.gui.badr'
+local button       = require 'lib.gui.button'
+local label        = require 'lib.gui.label'
+local popup        = require 'lib.gui.popup'
+local select       = require 'lib.gui.select'
 
-local user_config       = configs.user_config
-local w_width, w_height = love.window.getMode()
-
-local tools             = {}
+local tools        = {}
+local scraper_opts = { "screenscraper", "thegamesdb" }
 
 local menu, info_window
 
 
+local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 local finished_tasks = 0
 
 local function dispatch_info(title, content)
@@ -100,6 +100,16 @@ local function on_import_press()
   end
 end
 
+local function on_change_scraper(index)
+  skyscraper.module = scraper_opts[index]
+end
+
+local function on_reset_configs()
+  user_config:start_fresh()
+  skyscraper_config:start_fresh()
+  dispatch_info("Configs reset", "Configs have been reset.")
+end
+
 function tools:load()
   menu = component:root { column = true, gap = 15 }
   info_window = popup { visible = false }
@@ -115,13 +125,16 @@ function tools:load()
         + label { text = 'Imports custom data to cache. Read Wiki for more info.', icon = "file_import" }
         + button { text = 'Run custom import', width = 200, onClick = on_import_press })
       + (component { column = true, gap = 0 }
-        + label { text = 'Resets user and Skyscraper configs. Can\'t be undone.', icon = "refresh" }
-        + button { text = 'Reset configs', width = 200, onClick = function() end })
+        + label { text = 'Temporarily changes Skyscraper module. Useful for ROM hacks.', icon = "download" }
+        + select {
+          width = 200,
+          options = scraper_opts,
+          startIndex = 1,
+          onChange = function(_, index) on_change_scraper(index) end
+        })
       + (component { column = true, gap = 0 }
-        + label { text = 'Completely cleans resource cache. Can\'t be undone.', icon = "warn" }
-        + button { text = 'Purge cache', width = 200, onClick = function() end })
-
-  local menu_height = menu.height
+        + label { text = 'Resets user and Skyscraper configs. Can\'t be undone.', icon = "refresh" }
+        + button { text = 'Reset configs', width = 200, onClick = on_reset_configs })
 
   menu:updatePosition(10, 10)
   menu:focusFirstElement()

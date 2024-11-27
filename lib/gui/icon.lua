@@ -17,6 +17,7 @@ local icons = {
   sd_card = love.graphics.newImage("assets/icons/sd-card-solid.png"),
   file_import = love.graphics.newImage("assets/icons/file-import-solid.png"),
   refresh = love.graphics.newImage("assets/icons/rotate-right-solid.png"),
+  download = love.graphics.newImage("assets/icons/download-solid.png"),
   button_a = love.graphics.newImage("assets/inputs/switch_button_a.png"),
   button_b = love.graphics.newImage("assets/inputs/switch_button_b.png"),
   button_x = love.graphics.newImage("assets/inputs/switch_button_x.png"),

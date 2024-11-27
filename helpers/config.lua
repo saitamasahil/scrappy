@@ -66,20 +66,24 @@ function user_config.create(config_path)
   return self
 end
 
+function user_config:start_fresh()
+  if self:create_from("config.ini.example") then
+    log.write("Created user config")
+    self:detect_sd()
+    self:load_platforms()
+    self:save()
+  else
+    log.write("Failed to create user config")
+  end
+end
+
 function user_config:init()
   if self:load() then
     log.write("Loaded user config")
     -- Fill defaults if missing
     self:fill_defaults()
   else
-    if self:create_from("config.ini.example") then
-      log.write("Created user config")
-      self:detect_sd()
-      self:load_platforms()
-      self:save()
-    else
-      log.write("Failed to create user config")
-    end
+    self:start_fresh()
   end
 end
 
@@ -229,6 +233,15 @@ function skyscraper_config.create(config_path)
   return self
 end
 
+function skyscraper_config:start_fresh()
+  if self:create_from("skyscraper_config.ini.example") then
+    log.write("Created skyscraper config")
+    self:reset()
+  else
+    log.write("Failed to create skyscraper config")
+  end
+end
+
 function skyscraper_config:init()
   if self:load() then
     log.write("Loaded skyscraper config")
@@ -245,12 +258,7 @@ function skyscraper_config:init()
       self:insert("main", "cacheFolder", string.format("\"%s/%s\"", WORK_DIR, "data/output"))
     end
   else
-    if self:create_from("skyscraper_config.ini.example") then
-      log.write("Created skyscraper config")
-      self:reset()
-    else
-      log.write("Failed to create skyscraper config")
-    end
+    self:start_fresh()
   end
 end
 
