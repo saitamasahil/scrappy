@@ -125,7 +125,7 @@ function settings:update(dt)
 end
 
 function settings:draw()
-  love.graphics.clear(0, 0, 0, 1)
+  love.graphics.clear()
   menu:draw()
 end
 

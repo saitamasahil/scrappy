@@ -115,12 +115,14 @@ function skyscraper.custom_update_artwork(platform, cache, input, artwork)
   skyscraper.run(command)
 end
 
-function skyscraper.fetch_artwork(platform)
+function skyscraper.fetch_artwork(rom_path, platform, ...)
   local command = generate_command({
     platform = platform,
+    input = rom_path,
     fetch = true,
+    flags = { "unattend", "onlymissing" },
   })
-  skyscraper.run(command)
+  skyscraper.run(command, platform, "update")
 end
 
 function skyscraper.update_artwork(rom_path, rom, platform, artwork, ...)

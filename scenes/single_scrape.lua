@@ -175,7 +175,7 @@ function single_scrape:update(dt)
 end
 
 function single_scrape:draw()
-  love.graphics.clear(0, 0, 0)
+  love.graphics.clear()
   menu:draw()
   info_window:draw()
 end

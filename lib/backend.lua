@@ -54,17 +54,16 @@ while true do
     OUTPUT_CHANNEL:push({ data = { title = game, platform = current_platform }, error = nil })
   end
 
-  local result = output:read("*a")
-  output:close()
-  local lines = utils.split(result, "\n")
-
   if input_data.version then -- Special command. Log version only
+    local result = output:read("*a")
+    output:close()
+    local lines = utils.split(result, "\n")
     log_version(lines)
     goto continue
   end
 
   local parsed = false
-  for _, line in ipairs(lines) do
+  for line in output:lines() do
     line = utils.strip_ansi_colors(line)
     if game ~= "fake-rom" then log.write(line, "skyscraper") end
     local success, error = parser.parse(line, game)
