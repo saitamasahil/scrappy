@@ -36,6 +36,43 @@ function utils.match_extension(str, ext)
   return str:match('.+' .. ext .. '$')
 end
 
+function utils.get_filename_from_path(str)
+  if not str then return nil end
+  return str:match("([^/]+)%.%w+$")
+end
+
+function utils.escape_html(input)
+  local entities = {
+    ["&"] = "&amp;",
+    ["<"] = "&lt;",
+    [">"] = "&gt;",
+    ["\""] = "&quot;",
+    ["'"] = "&apos;"
+  }
+
+  local escapedString = input:gsub("[&<>'\"]", function(c)
+    return entities[c] or c
+  end)
+
+  return escapedString
+end
+
+function utils.unescape_html(input)
+  local entities = {
+    ["&amp;"] = "&",
+    ["&lt;"] = "<",
+    ["&gt;"] = ">",
+    ["&quot;"] = "\"",
+    ["&apos;"] = "'"
+  }
+
+  local unescapedString = input:gsub("(&[%w#]+;)", function(entity)
+    return entities[entity] or entity
+  end)
+
+  return unescapedString
+end
+
 -- https://github.com/s-walrus/hex2color/blob/master/hex2color.lua
 function utils.hex(hex, value)
   return {

@@ -1,9 +1,10 @@
-local log     = require("lib.log")
-local config  = require("helpers.config")
-local utils   = require("helpers.utils")
-local muos    = require("helpers.muos")
+local log      = require("lib.log")
+local gamelist = require("lib.gamelist")
+local config   = require("helpers.config")
+local utils    = require("helpers.utils")
+local muos     = require("helpers.muos")
 
-local artwork = {}
+local artwork  = {}
 
 
 local user_config, skyscraper_config = config.user_config, config.skyscraper_config
@@ -44,7 +45,8 @@ function artwork.copy_to_catalogue(platform, game)
     log.write("Missing paths from config")
     return
   end
-  local path = string.format("%s/%s/media/covers/%s.png", utils.strip_quotes(output_path), platform, game)
+  output_path = utils.strip_quotes(output_path)
+  local path = string.format("%s/%s/media/covers/%s.png", output_path, platform, game)
   local destination_folder = muos.platforms[platform]
   if not destination_folder then
     log.write("Catalogue destination folder not found")
@@ -57,10 +59,27 @@ function artwork.copy_to_catalogue(platform, game)
     return
   end
 
-  destination_folder = string.format("%s/%s/box", catalogue_path, destination_folder)
-  local _, err = nativefs.write(string.format("%s/%s.png", destination_folder, game), scraped_art)
+  local box_folder = string.format("%s/%s/box", catalogue_path, destination_folder)
+  local _, err = nativefs.write(string.format("%s/%s.png", box_folder, game), scraped_art)
   if err then
     log.write(err)
+  end
+
+  local xml = nativefs.read(string.format("%s/%s/gamelist.xml", output_path, platform))
+  if xml then
+    local list = gamelist.parse(xml)
+    if list then
+      for _, entry in ipairs(list) do
+        if utils.get_filename_from_path(entry.path) == utils.escape_html(game) then
+          local text_folder = string.format("%s/%s/text", catalogue_path, destination_folder)
+          local _, err = nativefs.write(string.format("%s/%s.txt", text_folder, game), utils.unescape_html(entry.desc))
+          if err then log.write(err) end
+          break
+        end
+      end
+    end
+  else
+    log.write("Failed to load gamelist.xml for " .. platform)
   end
 end
 

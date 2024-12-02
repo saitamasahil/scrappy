@@ -3,7 +3,6 @@ local log        = require("lib.log")
 local scenes     = require("lib.scenes")
 local loading    = require("lib.loading")
 local configs    = require("helpers.config")
-local muos       = require("helpers.muos")
 local utils      = require("helpers.utils")
 local artwork    = require("helpers.artwork")
 
