@@ -1,18 +1,19 @@
-local log          = require("lib.log")
-local scenes       = require("lib.scenes")
-local skyscraper   = require("lib.skyscraper")
-local configs      = require("helpers.config")
-local artwork      = require("helpers.artwork")
-local utils        = require("helpers.utils")
+local log           = require("lib.log")
+local scenes        = require("lib.scenes")
+local skyscraper    = require("lib.skyscraper")
+local configs       = require("helpers.config")
+local artwork       = require("helpers.artwork")
+local utils         = require("helpers.utils")
 
-local component    = require 'lib.gui.badr'
-local button       = require 'lib.gui.button'
-local label        = require 'lib.gui.label'
-local popup        = require 'lib.gui.popup'
-local select       = require 'lib.gui.select'
+local component     = require 'lib.gui.badr'
+local button        = require 'lib.gui.button'
+local label         = require 'lib.gui.label'
+local popup         = require 'lib.gui.popup'
+local select        = require 'lib.gui.select'
 
-local tools        = {}
-local scraper_opts = { "screenscraper", "thegamesdb" }
+local tools         = {}
+local scraper_opts  = { "screenscraper", "thegamesdb" }
+local scraper_index = 1
 
 local menu, info_window
 
@@ -104,6 +105,7 @@ end
 
 local function on_change_scraper(index)
   skyscraper.module = scraper_opts[index]
+  scraper_index = index
 end
 
 local function on_reset_configs()
@@ -131,7 +133,7 @@ function tools:load()
         + select {
           width = 200,
           options = scraper_opts,
-          startIndex = 1,
+          startIndex = scraper_index,
           onChange = function(_, index) on_change_scraper(index) end
         })
       + (component { column = true, gap = 0 }
