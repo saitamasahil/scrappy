@@ -18,6 +18,10 @@ local menu, info_window, platform_list, rom_list
 local user_config = configs.user_config
 local last_selected_platform = nil
 local active_column = 1 -- 1 for platforms, 2 for ROMs
+local indicators = {
+  red = utils.hex "#e74c3c",
+  green = utils.hex "#2ecc71"
+}
 
 local function toggle_info()
   info_window.visible = not info_window.visible
@@ -100,6 +104,8 @@ local function load_rom_buttons(platform)
           on_rom_press(rom)
         end,
         disabled = true,
+        active = true,
+        indicatorColor = artwork.cached_game_ids[rom] and indicators.green or indicators.red
       }
     end
   end
@@ -132,11 +138,18 @@ local function update_scrape_state()
     if t.data and next(t.data) and t.task_id then
       dispatch_info("Finished", t.success and "Scraping finished successfully" or "Scraping failed or skipped")
       artwork.copy_to_catalogue(t.data.platform, t.data.title)
+      artwork.process_cached_data()
+      load_rom_buttons(last_selected_platform)
+      rom_list:focusFirstElement()
     end
   end
 end
 
 function single_scrape:load()
+  if #artwork.cached_game_ids == 0 then
+    artwork.process_cached_data()
+  end
+
   menu = component:root { column = true, gap = 0 }
 
   info_window = popup { visible = false }

@@ -44,59 +44,10 @@ local state = {
   total = 0,
 }
 
-local cached_game_ids = {}
-
 local function show_info_window(title, content)
   info_window.visible = true
   info_window.title = title
   info_window.content = content
-end
-
-local function process_cached_data()
-  log.write("Processing cached data")
-  local cached_games = {}
-  local cache_folder = skyscraper_config:read("main", "cacheFolder")
-  if not cache_folder then return end
-  cache_folder = utils.strip_quotes(cache_folder)
-  local items = nativefs.getDirectoryItems(cache_folder)
-  if not items then return end
-
-  for _, platform in ipairs(items) do
-    local quickid = nativefs.read(string.format("%s/%s/quickid.xml", cache_folder, platform))
-    local db = nativefs.read(string.format("%s/%s/db.xml", cache_folder, platform))
-    if quickid then
-      local lines = utils.split(quickid, "\n")
-      for _, line in ipairs(lines) do
-        if line:find("<quickid%s") then
-          local filepath = line:match('filepath="([^"]+)"')
-          if filepath then
-            local filename = filepath:match("([^/]+)$")
-            local id = line:match('id="([^"]+)"')
-            cached_game_ids[filename] = id
-          end
-        end
-      end
-    end
-    if db then
-      local lines = utils.split(db, "\n")
-      for _, line in ipairs(lines) do
-        if line:find("<resource%s") then
-          local id = line:match('id="([^"]+)"')
-          if id then
-            cached_games[id] = true
-          end
-        end
-      end
-    end
-
-    for filename, id in pairs(cached_game_ids) do
-      if not cached_games[id] then
-        cached_game_ids[filename] = nil
-      end
-    end
-  end
-
-  log.write("Finished processing cached data")
 end
 
 local function update_preview(direction)
@@ -129,7 +80,7 @@ local function scrape_platforms()
   state.failed_tasks = {}
   -- Process cached data from quickid and db
   if user_config:read("main", "parseCache") == "1" then
-    process_cached_data()
+    artwork.process_cached_data()
   end
   -- For each source = destionation pair in config, fetch and update artwork
   for src, dest in utils.orderedPairs(platforms) do
@@ -152,7 +103,7 @@ local function scrape_platforms()
       if file_info and file_info.type == "file" then
         -- Check if already processed
         table.insert(state.tasks, file)
-        if cached_game_ids[file] then
+        if artwork.cached_game_ids[file] then
           -- Game cached, update artwork
           skyscraper.update_artwork(platform_path, file, dest, templates[current_template], file)
         else

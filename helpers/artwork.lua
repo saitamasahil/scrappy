@@ -4,7 +4,9 @@ local config   = require("helpers.config")
 local utils    = require("helpers.utils")
 local muos     = require("helpers.muos")
 
-local artwork  = {}
+local artwork  = {
+  cached_game_ids = {},
+}
 
 
 local user_config, skyscraper_config = config.user_config, config.skyscraper_config
@@ -81,6 +83,53 @@ function artwork.copy_to_catalogue(platform, game)
   else
     log.write("Failed to load gamelist.xml for " .. platform)
   end
+end
+
+function artwork.process_cached_data()
+  log.write("Processing cached data")
+  local cached_games = {}
+  local cache_folder = skyscraper_config:read("main", "cacheFolder")
+  if not cache_folder then return end
+  cache_folder = utils.strip_quotes(cache_folder)
+  local items = nativefs.getDirectoryItems(cache_folder)
+  if not items then return end
+
+  for _, platform in ipairs(items) do
+    local quickid = nativefs.read(string.format("%s/%s/quickid.xml", cache_folder, platform))
+    local db = nativefs.read(string.format("%s/%s/db.xml", cache_folder, platform))
+    if quickid then
+      local lines = utils.split(quickid, "\n")
+      for _, line in ipairs(lines) do
+        if line:find("<quickid%s") then
+          local filepath = line:match('filepath="([^"]+)"')
+          if filepath then
+            local filename = filepath:match("([^/]+)$")
+            local id = line:match('id="([^"]+)"')
+            artwork.cached_game_ids[filename] = id
+          end
+        end
+      end
+    end
+    if db then
+      local lines = utils.split(db, "\n")
+      for _, line in ipairs(lines) do
+        if line:find("<resource%s") then
+          local id = line:match('id="([^"]+)"')
+          if id then
+            cached_games[id] = true
+          end
+        end
+      end
+    end
+
+    for filename, id in pairs(artwork.cached_game_ids) do
+      if not cached_games[id] then
+        artwork.cached_game_ids[filename] = nil
+      end
+    end
+  end
+
+  log.write("Finished processing cached data")
 end
 
 return artwork

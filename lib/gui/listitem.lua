@@ -32,7 +32,7 @@ return function(props)
     hoverColor = props.hoverColor or utils.hex '#636e72',
     textColor = props.textColor or utils.hex '#dfe6e9',
     focusColor = props.focusColor or utils.hex '#2d3436',
-    checkColor = props.checkColor or utils.hex '#ffffff',
+    indicatorColor = props.indicatorColor or utils.hex '#ffffff',
     borderWidth = props.borderWidth or 2,
     -- Focus state
     last_focused = false,
@@ -57,27 +57,19 @@ return function(props)
       love.graphics.setFont(font)
 
       -- Background and focus styling
-      if self.focused or self.active then
+      if self.focused then
         love.graphics.setColor(self.focusColor)
         love.graphics.rectangle("fill", self.x, self.y, self.parent.width or self.width, self.height)
       end
 
       if self.active then
-        love.graphics.setColor(self.textColor)
-        love.graphics.rectangle("fill", self.x, self.y, 4, self.height)
-      end
-
-      -- Inner box for the checkbox background
-      love.graphics.setColor(self.hoverColor)
-
-      -- Checkbox mark if checked
-      if self.checked then
-        love.graphics.setColor(self.checkColor)
+        love.graphics.setColor(self.indicatorColor)
+        love.graphics.rectangle("fill", self.x, self.y + self.height * 0.25, 4, self.height * 0.5)
       end
 
       -- Draw the label next to the checkbox
       love.graphics.setColor(self.textColor)
-      love.graphics.draw(t, self.x + padding.horizontal, self.y + height / 2 - labelHeight / 2)
+      love.graphics.draw(t, self.x + padding.horizontal, self.y + height * 0.5 - labelHeight * 0.5)
 
       love.graphics.pop()
     end

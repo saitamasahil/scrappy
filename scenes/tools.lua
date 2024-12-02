@@ -2,6 +2,7 @@ local log          = require("lib.log")
 local scenes       = require("lib.scenes")
 local skyscraper   = require("lib.skyscraper")
 local configs      = require("helpers.config")
+local artwork      = require("helpers.artwork")
 local utils        = require("helpers.utils")
 
 local component    = require 'lib.gui.badr'
@@ -42,6 +43,7 @@ local function update_state()
       dispatch_info("Updated cache", "Cache has been updated.")
       finished_tasks = 0
       log.write("Cache updated successfully")
+      artwork.process_cached_data()
     end
   end
 end
