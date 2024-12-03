@@ -1,10 +1,11 @@
-local log = require("lib.log")
-local ini = require("lib.ini")
+local log      = require("lib.log")
+local ini      = require("lib.ini")
 local nativefs = require("lib.nativefs")
-local muos = require("helpers.muos")
-local utils = require("helpers.utils")
+local pprint   = require("lib.pprint")
+local muos     = require("helpers.muos")
+local utils    = require("helpers.utils")
 
-local config = {}
+local config   = {}
 config.__index = config
 
 function config.new(type, path)
@@ -280,11 +281,42 @@ function skyscraper_config:get_paths()
   return cache_path, output_path
 end
 
+-- Theme specific
+local theme   = setmetatable({}, { __index = config })
+theme.__index = theme
+
+function theme.create()
+  local self = config.new("theme", "theme.txt")
+  setmetatable(self, theme)
+  self:init()
+  return self
+end
+
+function theme:init()
+  if self:load() then
+    pprint(self)
+    -- log.write("Loaded user config")
+  else
+  end
+end
+
+function theme:read_color(section, key)
+  local color = self:read(section, key)
+  return utils.hex_v(color)
+end
+
+function theme:read_number(section, key)
+  local number = self:read(section, key)
+  return number and tonumber(number) or nil
+end
+
 -- Singleton instances
 local user_config_instance = user_config.create("config.ini")
 local skyscraper_config_instance = skyscraper_config.create("skyscraper_config.ini")
+local theme_instance = theme.create()
 
 return {
   user_config = user_config_instance,
-  skyscraper_config = skyscraper_config_instance
+  skyscraper_config = skyscraper_config_instance,
+  theme = theme_instance
 }

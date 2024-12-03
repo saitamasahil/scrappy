@@ -1,5 +1,5 @@
-local component = require 'lib.gui.badr'
-local utils = require 'helpers.utils'
+local component = require("lib.gui.badr")
+local theme     = require("helpers.config").theme
 
 return function(props)
   local font = props.font or love.graphics.getFont()
@@ -22,9 +22,9 @@ return function(props)
     font = font,
     focusable = props.focusable or true,
     -- styles
-    backgroundColor = props.backgroundColor or utils.hex '#2d3436',
-    hoverColor = props.hoverColor or utils.hex '#636e72',
-    textColor = props.textColor or utils.hex '#dfe6e9',
+    backgroundColor = props.backgroundColor or theme:read_color("button", "BUTTON_BACKGROUND"),
+    hoverColor = props.hoverColor or theme:read_color("button", "BUTTON_HOVER"),
+    textColor = props.textColor or theme:read_color("button", "BUTTON_TEXT"),
     leftPadding = props.leftPadding or 4,
     rightPadding = props.rightPadding or 4,
     topPadding = props.topPadding or 4,

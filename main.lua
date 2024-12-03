@@ -1,18 +1,23 @@
 local log = require("lib.log")
 log.start()
 
+local configs = require("helpers.config")
+local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
+local theme = configs.theme
+
 require("globals")
-local font = love.graphics.newFont("assets/ChakraPetch-Regular.ttf", 20)
+
+local font = love.graphics.newFont(
+  theme:read("main", "FONT") or "assets/ChakraPetch-Regular.ttf",
+  theme:read_number("main", "FONT_SIZE") or 20)
+
 love.graphics.setFont(font)
 
 local scenes = require("lib.scenes")
 local skyscraper = require("lib.skyscraper")
 local splash = require("lib.splash")
 local input = require("helpers.input")
-local configs = require("helpers.config")
 local utils = require("helpers.utils")
-
-local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 
 local footer = require("lib.gui.footer")()
 
@@ -48,7 +53,6 @@ function love.update(dt)
 end
 
 function love.draw()
-  love.graphics.setBackgroundColor(0, 0, 0, 1)
   splash.draw()
 
   if splash.finished then

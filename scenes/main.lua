@@ -17,6 +17,7 @@ local menu, info_window
 
 local background, overlay
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
+local theme = configs.theme
 local loader = loading.new("highlight", 1)
 
 local w_width, w_height = love.window.getMode()
@@ -376,6 +377,7 @@ function main:update(dt)
 end
 
 function main:draw()
+  love.graphics.clear(utils.hex_v(theme:read("main", "BACKGROUND")))
   menu:draw()
   info_window:draw()
 end

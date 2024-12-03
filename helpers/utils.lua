@@ -82,6 +82,16 @@ function utils.hex(hex, value)
     value or 1 }
 end
 
+-- https://github.com/s-walrus/hex2color/blob/master/hex2color.lua
+function utils.hex_v(hex, value)
+  if not hex then return { 0, 0, 0, 1 } end
+  return {
+    tonumber(string.sub(hex, 1, 2), 16) / 256,
+    tonumber(string.sub(hex, 3, 4), 16) / 256,
+    tonumber(string.sub(hex, 5, 6), 16) / 256,
+    value or 1 }
+end
+
 -- http://lua-users.org/wiki/SortedIteration
 --[[
 Ordered table iterator, allow to iterate on the natural order of the keys of a
