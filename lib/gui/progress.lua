@@ -1,5 +1,5 @@
-local component = require 'lib.gui.badr'
-local utils = require 'helpers.utils'
+local component = require("lib.gui.badr")
+local theme     = require("helpers.config").theme
 
 return function(props)
   local width = props.width or 100
@@ -14,9 +14,9 @@ return function(props)
     height = height,
     progress = progress,
     -- colors
-    backgroundColor = props.backgroundColor or utils.hex '#2d3436',
-    barColor = props.barColor or utils.hex '#ffffff',
-    borderColor = props.borderColor or utils.hex '#636e72',
+    backgroundColor = props.backgroundColor or theme:read_color("progress", "BAR_BACKGROUND"),
+    barColor = props.barColor or theme:read_color("progress", "BAR_COLOR"),
+    borderColor = props.borderColor or theme:read_color("progress", "BAR_BORDER"),
     borderWidth = props.borderWidth or 2,
     -- draw function
     draw = function(self)

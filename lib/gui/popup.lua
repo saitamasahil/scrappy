@@ -1,9 +1,13 @@
-local component = require 'lib.gui.badr'
-local label     = require 'lib.gui.label'
-local utils     = require 'helpers.utils'
+local component = require("lib.gui.badr")
+local label     = require("lib.gui.label")
+local theme     = require("helpers.config").theme
 
 local function popup(props)
-  local opacity = props.opacity or 0.75
+  local backgroundColor = props.backgroundColor or theme:read_color("popup", "POPUP_BACKGROUND")
+  local opacity = props.opacity or theme:read_number("popup", "POPUP_OPACITY")
+  backgroundColor[4] = opacity
+  local boxColor = props.boxColor or theme:read_color("popup", "POPUP_BOX")
+
   local screenWidth = love.graphics.getWidth()
   local screenHeight = love.graphics.getHeight()
   return component {
@@ -43,7 +47,7 @@ local function popup(props)
           local _, wrappedtext = self.font:getWrap(self.text, self.width - 10)
           love.graphics.push()
           love.graphics.translate(center_width, center_height)
-          love.graphics.setColor(utils.hex '#2d3436')
+          love.graphics.setColor(boxColor)
           love.graphics.rectangle("fill", self.x, self.y, self.width, #wrappedtext * self.height + 10)
           love.graphics.setColor(1, 1, 1)
           love.graphics.printf(wrappedtext, self.x + 10, self.y + 5, self.width - 10, "left")
@@ -53,7 +57,7 @@ local function popup(props)
 
       -- Background
       love.graphics.push()
-      love.graphics.setColor(0, 0, 0, opacity)
+      love.graphics.setColor(backgroundColor)
       love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
       love.graphics.pop()
 

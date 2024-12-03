@@ -1,6 +1,6 @@
 local component = require('lib.gui.badr')
-local icon = require('lib.gui.icon')
-local utils = require('helpers.utils')
+local icon      = require('lib.gui.icon')
+local theme     = require('helpers.config').theme
 
 return function(props)
   local font = props.font or love.graphics.getFont()
@@ -27,11 +27,11 @@ return function(props)
     height = height,
     focusable = props.focusable or true,
     -- Colors and styles
-    backgroundColor = props.backgroundColor or utils.hex '#000000',
-    hoverColor = props.hoverColor or utils.hex '#636e72',
-    textColor = props.textColor or utils.hex '#dfe6e9',
-    focusColor = props.focusColor or utils.hex '#2d3436',
-    checkColor = props.checkColor or utils.hex '#ffffff',
+    backgroundColor = props.backgroundColor or theme:read_color("checkbox", "CHECKBOX_BACKGROUND"),
+    focusColor = props.focusColor or theme:read_color("checkbox", "CHECKBOX_FOCUS"),
+    hoverColor = props.hoverColor or theme:read_color("checkbox", "CHECKBOX_HOVER"),
+    checkColor = props.checkColor or theme:read_color("checkbox", "CHECKBOX_INDICATOR"),
+    textColor = props.textColor or theme:read_color("checkbox", "CHECKBOX_TEXT"),
     borderWidth = props.borderWidth or 2,
     -- Events
     onToggle = props.onToggle,

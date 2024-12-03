@@ -1,5 +1,5 @@
 local component = require('lib.gui.badr')
-local utils = require('helpers.utils')
+local theme = require('helpers.config').theme
 
 return function(props)
   local font = props.font or love.graphics.getFont()
@@ -11,7 +11,7 @@ return function(props)
   local t = love.graphics.newText(font, text)
   local labelWidth, labelHeight = t:getWidth(), t:getHeight()
 
-  local itemHeight = props.itemHeight or 16
+  local itemHeight = props.itemHeight or theme:read_number("listitem", "ITEM_HEIGHT") or 16
   local width = math.max(props.width or 0, padding.horizontal + labelWidth)
   local height = math.max(props.height or 0, itemHeight + padding.vertical)
 
@@ -28,11 +28,11 @@ return function(props)
     disabled = props.disabled or false,
     active = props.active or false,
     -- Colors and styles
-    backgroundColor = props.backgroundColor or utils.hex '#000000',
-    hoverColor = props.hoverColor or utils.hex '#636e72',
-    textColor = props.textColor or utils.hex '#dfe6e9',
-    focusColor = props.focusColor or utils.hex '#2d3436',
-    indicatorColor = props.indicatorColor or utils.hex '#ffffff',
+    backgroundColor = props.backgroundColor or theme:read_color("listitem", "ITEM_BACKGROUND"),
+    hoverColor = props.hoverColor or theme:read_color("listitem", "ITEM_HOVER"),
+    focusColor = props.focusColor or theme:read_color("listitem", "ITEM_FOCUS"),
+    indicatorColor = props.indicatorColor or theme:read_color("listitem", "ITEM_INDICATOR"),
+    textColor = props.textColor or theme:read_color("listitem", "ITEM_TEXT"),
     borderWidth = props.borderWidth or 2,
     -- Focus state
     last_focused = false,

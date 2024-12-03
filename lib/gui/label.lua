@@ -1,9 +1,10 @@
-local component = require 'lib.gui.badr'
-local icon      = require 'lib.gui.icon'
+local component = require("lib.gui.badr")
+local icon      = require("lib.gui.icon")
+local theme     = require("helpers.config").theme
 
 local function label(props)
   local _font = props.font or love.graphics.getFont()
-  local color = props.color or { 1, 1, 1 }
+  local color = props.color or theme:read_color("label", "LABEL_TEXT")
   local iconSize = 20
   local padding = props.iconPadding or 4
 
