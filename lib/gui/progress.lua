@@ -14,9 +14,9 @@ return function(props)
     height = height,
     progress = progress,
     -- colors
-    backgroundColor = props.backgroundColor or theme:read_color("progress", "BAR_BACKGROUND"),
-    barColor = props.barColor or theme:read_color("progress", "BAR_COLOR"),
-    borderColor = props.borderColor or theme:read_color("progress", "BAR_BORDER"),
+    backgroundColor = theme:read_color("progress", "BAR_BACKGROUND", "#2d3436"),
+    barColor = theme:read_color("progress", "BAR_COLOR", "#ffffff"),
+    borderColor = theme:read_color("progress", "BAR_BORDER", "#636e72"),
     borderWidth = props.borderWidth or 2,
     -- draw function
     draw = function(self)

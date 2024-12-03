@@ -18,10 +18,6 @@ local menu, info_window, platform_list, rom_list
 local user_config = configs.user_config
 local last_selected_platform = nil
 local active_column = 1 -- 1 for platforms, 2 for ROMs
-local indicators = {
-  red = utils.hex "#e74c3c",
-  green = utils.hex "#2ecc71"
-}
 
 local function toggle_info()
   info_window.visible = not info_window.visible
@@ -105,7 +101,7 @@ local function load_rom_buttons(platform)
         end,
         disabled = true,
         active = true,
-        indicatorColor = artwork.cached_game_ids[rom] and indicators.green or indicators.red
+        indicator = artwork.cached_game_ids[rom] and 2 or 3
       }
     end
   end

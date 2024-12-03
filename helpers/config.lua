@@ -300,14 +300,15 @@ function theme:init()
   end
 end
 
-function theme:read_color(section, key)
+function theme:read_color(section, key, fallback)
   local color = self:read(section, key)
+  if not color then return utils.hex(fallback) end
   return utils.hex_v(color)
 end
 
-function theme:read_number(section, key)
+function theme:read_number(section, key, fallback)
   local number = self:read(section, key)
-  return number and tonumber(number) or nil
+  return number and tonumber(number) or fallback
 end
 
 -- Singleton instances

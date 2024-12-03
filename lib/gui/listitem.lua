@@ -11,9 +11,15 @@ return function(props)
   local t = love.graphics.newText(font, text)
   local labelWidth, labelHeight = t:getWidth(), t:getHeight()
 
-  local itemHeight = props.itemHeight or theme:read_number("listitem", "ITEM_HEIGHT") or 16
+  local itemHeight = theme:read_number("listitem", "ITEM_HEIGHT", 16)
   local width = math.max(props.width or 0, padding.horizontal + labelWidth)
   local height = math.max(props.height or 0, itemHeight + padding.vertical)
+
+  local indicators = {
+    theme:read_color("listitem", "ITEM_INDICATOR_DEFAULT", "#dfe6e9"),
+    theme:read_color("listitem", "ITEM_INDICATOR_SUCCESS", "#2ecc71"),
+    theme:read_color("listitem", "ITEM_INDICATOR_ERROR", "#e74c3c"),
+  }
 
   return component {
     text = text,
@@ -28,12 +34,11 @@ return function(props)
     disabled = props.disabled or false,
     active = props.active or false,
     -- Colors and styles
-    backgroundColor = props.backgroundColor or theme:read_color("listitem", "ITEM_BACKGROUND"),
-    hoverColor = props.hoverColor or theme:read_color("listitem", "ITEM_HOVER"),
-    focusColor = props.focusColor or theme:read_color("listitem", "ITEM_FOCUS"),
-    indicatorColor = props.indicatorColor or theme:read_color("listitem", "ITEM_INDICATOR"),
-    textColor = props.textColor or theme:read_color("listitem", "ITEM_TEXT"),
-    borderWidth = props.borderWidth or 2,
+    backgroundColor = theme:read_color("listitem", "ITEM_BACKGROUND", "#000000"),
+    hoverColor = theme:read_color("listitem", "ITEM_HOVER", "#636e72"),
+    focusColor = theme:read_color("listitem", "ITEM_FOCUS", "#2d3436"),
+    indicatorColor = indicators[props.indicator or 1],
+    textColor = theme:read_color("listitem", "ITEM_TEXT", "#dfe6e9"),
     -- Focus state
     last_focused = false,
     -- Events

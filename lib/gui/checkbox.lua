@@ -27,11 +27,11 @@ return function(props)
     height = height,
     focusable = props.focusable or true,
     -- Colors and styles
-    backgroundColor = props.backgroundColor or theme:read_color("checkbox", "CHECKBOX_BACKGROUND"),
-    focusColor = props.focusColor or theme:read_color("checkbox", "CHECKBOX_FOCUS"),
-    hoverColor = props.hoverColor or theme:read_color("checkbox", "CHECKBOX_HOVER"),
-    checkColor = props.checkColor or theme:read_color("checkbox", "CHECKBOX_INDICATOR"),
-    textColor = props.textColor or theme:read_color("checkbox", "CHECKBOX_TEXT"),
+    backgroundColor = theme:read_color("checkbox", "CHECKBOX_BACKGROUND", "#000000"),
+    focusColor = theme:read_color("checkbox", "CHECKBOX_FOCUS", "#2d3436"),
+    hoverColor = theme:read_color("checkbox", "CHECKBOX_HOVER", "#636e72"),
+    checkColor = theme:read_color("checkbox", "CHECKBOX_INDICATOR", "#dfe6e9"),
+    textColor = theme:read_color("checkbox", "CHECKBOX_TEXT", "#dfe6e9"),
     borderWidth = props.borderWidth or 2,
     -- Events
     onToggle = props.onToggle,

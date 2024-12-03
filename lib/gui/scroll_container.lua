@@ -3,10 +3,10 @@ local theme     = require('helpers.config').theme
 
 return function(props)
   local height = props.height or
-      200                                                                    -- Height of the scroll container viewport
+      200                                                                  -- Height of the scroll container viewport
   local width = props.width or 200
-  local scrollY = 0                                                          -- Initialize scroll position
-  local scrollbarWidth = theme:read_number("scroll", "SCROLLBAR_WIDTH") or 6 -- Width of the scroll bar
+  local scrollY = 0                                                        -- Initialize scroll position
+  local scrollbarWidth = theme:read_number("scroll", "SCROLLBAR_WIDTH", 6) -- Width of the scroll bar
 
   return component {
     x = props.x or 0,
@@ -16,7 +16,7 @@ return function(props)
     children = props.children or {},
     focusable = false,
 
-    barColor = props.barColor or theme:read_color("scroll", "SCROLLBAR_COLOR"),
+    barColor = theme:read_color("scroll", "SCROLLBAR_COLOR", "#636e72"),
 
     -- Scroll control methods
     scrollTo = function(self, position)

@@ -3,10 +3,10 @@ local label     = require("lib.gui.label")
 local theme     = require("helpers.config").theme
 
 local function popup(props)
-  local backgroundColor = props.backgroundColor or theme:read_color("popup", "POPUP_BACKGROUND")
-  local opacity = props.opacity or theme:read_number("popup", "POPUP_OPACITY")
+  local backgroundColor = theme:read_color("popup", "POPUP_BACKGROUND", "#000000")
+  local opacity = theme:read_number("popup", "POPUP_OPACITY", 0.75)
+  local boxColor = theme:read_color("popup", "POPUP_BOX", "#2d3436")
   backgroundColor[4] = opacity
-  local boxColor = props.boxColor or theme:read_color("popup", "POPUP_BOX")
 
   local screenWidth = love.graphics.getWidth()
   local screenHeight = love.graphics.getHeight()
