@@ -29,8 +29,8 @@ return function(props)
     -- Colors and styles
     backgroundColor = theme:read_color("checkbox", "CHECKBOX_BACKGROUND", "#000000"),
     focusColor = theme:read_color("checkbox", "CHECKBOX_FOCUS", "#2d3436"),
-    hoverColor = theme:read_color("checkbox", "CHECKBOX_HOVER", "#636e72"),
     checkColor = theme:read_color("checkbox", "CHECKBOX_INDICATOR", "#dfe6e9"),
+    checkBg = theme:read_color("checkbox", "CHECKBOX_INDICATOR_BG", "#636e72"),
     textColor = theme:read_color("checkbox", "CHECKBOX_TEXT", "#dfe6e9"),
     borderWidth = props.borderWidth or 2,
     -- Events
@@ -68,7 +68,7 @@ return function(props)
       }
 
       -- Inner box for the checkbox background
-      love.graphics.setColor(self.hoverColor)
+      love.graphics.setColor(self.checkBg)
       bgIcon:draw()
 
       -- Checkbox mark if checked

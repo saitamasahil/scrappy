@@ -35,7 +35,6 @@ return function(props)
     active = props.active or false,
     -- Colors and styles
     backgroundColor = theme:read_color("listitem", "ITEM_BACKGROUND", "#000000"),
-    hoverColor = theme:read_color("listitem", "ITEM_HOVER", "#636e72"),
     focusColor = theme:read_color("listitem", "ITEM_FOCUS", "#2d3436"),
     indicatorColor = indicators[props.indicator or 1],
     textColor = theme:read_color("listitem", "ITEM_TEXT", "#dfe6e9"),

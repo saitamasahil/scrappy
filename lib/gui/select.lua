@@ -32,7 +32,7 @@ return function(props)
     focusable = props.focusable or true,
     -- styles
     backgroundColor = theme:read_color("select", "SELECT_BACKGROUND", "#2d3436"),
-    hoverColor = theme:read_color("select", "SELECT_HOVER", "#636e72"),
+    focusColor = theme:read_color("select", "SELECT_FOCUS", "#636e72"),
     textColor = theme:read_color("select", "SELECT_TEXT", "#dfe6e9"),
     leftPadding = props.leftPadding or 4,
     rightPadding = props.rightPadding or 4,
@@ -55,7 +55,7 @@ return function(props)
 
       -- Set color based on focus
       if self.focused then
-        love.graphics.setColor(self.hoverColor)
+        love.graphics.setColor(self.focusColor)
       else
         love.graphics.setColor(self.backgroundColor)
       end
