@@ -16,6 +16,8 @@ local single_scrape     = {}
 
 local menu, info_window, platform_list, rom_list
 local user_config = configs.user_config
+local theme = configs.theme
+
 local last_selected_platform = nil
 local active_column = 1 -- 1 for platforms, 2 for ROMs
 
@@ -187,7 +189,7 @@ function single_scrape:update(dt)
 end
 
 function single_scrape:draw()
-  love.graphics.clear()
+  love.graphics.clear(theme:read_color("main", "BACKGROUND", "#000000"))
   menu:draw()
   info_window:draw()
 end

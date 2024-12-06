@@ -12,6 +12,7 @@ local popup         = require 'lib.gui.popup'
 local select        = require 'lib.gui.select'
 
 local tools         = {}
+local theme         = configs.theme
 local scraper_opts  = { "screenscraper", "thegamesdb" }
 local scraper_index = 1
 
@@ -150,7 +151,7 @@ function tools:update(dt)
 end
 
 function tools:draw()
-  love.graphics.clear()
+  love.graphics.clear(theme:read_color("main", "BACKGROUND", "#000000"))
   menu:draw()
   info_window:draw()
 end

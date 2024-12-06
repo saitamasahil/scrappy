@@ -294,9 +294,9 @@ end
 
 function theme:init()
   if self:load() then
-    pprint(self)
-    -- log.write("Loaded user config")
+    log.write("Loaded theme config")
   else
+    log.write("Failed to load theme config")
   end
 end
 

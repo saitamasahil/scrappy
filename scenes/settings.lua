@@ -10,6 +10,7 @@ local checkbox           = require 'lib.gui.checkbox'
 local scroll_container   = require 'lib.gui.scroll_container'
 
 local user_config        = configs.user_config
+local theme              = configs.theme
 local w_width, w_height  = love.window.getMode()
 
 local settings           = {}
@@ -125,7 +126,7 @@ function settings:update(dt)
 end
 
 function settings:draw()
-  love.graphics.clear()
+  love.graphics.clear(theme:read_color("main", "BACKGROUND", "#000000"))
   menu:draw()
 end
 
