@@ -53,7 +53,7 @@ local function on_rom_press(rom)
   if artwork_name then
     local platform_dest = platforms[last_selected_platform]
     dispatch_info(rom, "Scraping ROM, please wait...")
-    skyscraper.fetch_and_update_artwork(rom_path, rom, platform_dest, artwork_name)
+    skyscraper.fetch_and_update_artwork(rom_path, rom, platform_dest, artwork_name, rom, { "unattend" })
   else
     dispatch_info("Error", "Artwork XML not found")
   end

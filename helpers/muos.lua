@@ -404,6 +404,7 @@ local muos = {
     ["nintendo - nintendo entertainment system"] = "nes",
     ["nintendo_NES"] = "nes",
     ["nintendo"] = "nes",
+    ["nintendo nes"] = "nes",
     ["nin"] = "nes",
     ["nes cd"] = "nes",
     ["nescd"] = "nes",

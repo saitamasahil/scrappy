@@ -143,12 +143,13 @@ end
 function skyscraper.fetch_and_update_artwork(rom_path, rom, platform, artwork, ...)
   local artwork = WORK_DIR .. "/templates/" .. artwork .. ".xml"
   local task_id = select(1, ...) or rom
+  local flags = select(2, ...) or { "unattend", "onlymissing" }
   local fetch_command = generate_command({
     platform = platform,
     input = rom_path,
     fetch = true,
     rom = rom,
-    flags = { "unattend", "onlymissing" },
+    flags = flags,
   })
   local update_command = generate_command({
     platform = platform,
