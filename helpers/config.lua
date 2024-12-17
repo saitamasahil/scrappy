@@ -137,7 +137,14 @@ function user_config:get_paths()
 
   -- Get paths
   local sd = self:read("main", "sd")
-  local rom_path = sd == "1" and string.format("%s/ROMS", muos.SD1_PATH) or string.format("%s/roms", muos.SD2_PATH)
+  local rom_path = sd == "1" and muos.SD1_PATH or muos.SD2_PATH
+  for _, item in ipairs(nativefs.getDirectoryItems(rom_path) or {}) do
+    if item:lower() == "roms" then
+      rom_path = string.format("%s/%s", rom_path, item)
+      break
+    end
+  end
+
   local catalogue_path = muos.CATALOGUE
 
   return rom_path_override or rom_path, catalogue_path_override or catalogue_path
