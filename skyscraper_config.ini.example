@@ -7,6 +7,7 @@ videos="false"
 verbosity="0"
 hints="false"
 unattend="true"
+regionPrios="us,eu,wor,jp"
 
 [screenscraper]
 userCreds="USER:PASS"
