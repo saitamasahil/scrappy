@@ -15,6 +15,8 @@ local tools         = {}
 local theme         = configs.theme
 local scraper_opts  = { "screenscraper", "thegamesdb" }
 local scraper_index = 1
+local output_opts   = { "box", "splash" }
+local output_index  = 1
 
 local menu, info_window
 
@@ -109,6 +111,11 @@ local function on_change_scraper(index)
   scraper_index = index
 end
 
+local function on_change_output(index)
+  artwork.output_type = output_opts[index]
+  output_index = index
+end
+
 local function on_reset_configs()
   user_config:start_fresh()
   skyscraper_config:start_fresh()
@@ -116,7 +123,7 @@ local function on_reset_configs()
 end
 
 function tools:load()
-  menu = component:root { column = true, gap = 15 }
+  menu = component:root { column = true, gap = 12 }
   info_window = popup { visible = false }
 
   menu = menu
@@ -136,6 +143,14 @@ function tools:load()
           options = scraper_opts,
           startIndex = scraper_index,
           onChange = function(_, index) on_change_scraper(index) end
+        })
+      + (component { column = true, gap = 0 }
+        + label { text = 'Artwork output type', icon = "canvas" }
+        + select {
+          width = 200,
+          options = output_opts,
+          startIndex = output_index,
+          onChange = function(_, index) on_change_output(index) end
         })
       + (component { column = true, gap = 0 }
         + label { text = 'Resets user and Skyscraper configs. Can\'t be undone.', icon = "refresh" }

@@ -6,6 +6,7 @@ local muos     = require("helpers.muos")
 
 local artwork  = {
   cached_game_ids = {},
+  output_type = "box",
 }
 
 
@@ -61,8 +62,8 @@ function artwork.copy_to_catalogue(platform, game)
     return
   end
 
-  local box_folder = string.format("%s/%s/box", catalogue_path, destination_folder)
-  local _, err = nativefs.write(string.format("%s/%s.png", box_folder, game), scraped_art)
+  local output_folder = string.format("%s/%s/%s", catalogue_path, destination_folder, artwork.output_type)
+  local _, err = nativefs.write(string.format("%s/%s.png", output_folder, game), scraped_art)
   if err then
     log.write(err)
   end
