@@ -1,4 +1,6 @@
 #!/bin/bash
+# HELP: Scrappy
+# ICON: scrappy
 
 . /opt/muos/script/var/func.sh
 
