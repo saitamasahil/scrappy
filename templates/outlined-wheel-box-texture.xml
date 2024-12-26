@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+    <output type="cover" width="640" height="480">
+        <layer resource="screenshot" mpixels="0.7" width="640" align="center" valign="middle" opacity="70">
+        </layer>
+        <mask width="640" height="480" file="mask/BlackGradientShadow_bordered.png" />
+		<layer resource="wheel" mpixels="0.008" width="220" align="center" valign="top" x="193" y="80">
+			<stroke width="2" red="0" green="0" blue="0"/>
+			<shadow distance="8" softness="5" opacity="50"/>
+		</layer>
+		<layer resource="cover" width="220" mpixels="0.025" x="193" y="-60" align="center" valign="bottom">
+			<rounded radius="7"/>
+			<stroke width="2" red="0" green="0" blue="0"/>
+			<shadow distance="8" softness="5" opacity="50"/>
+		</layer>
+		<layer resource="texture" mpixels="0.003122" x="270" y="-60" align="center" valign="bottom">
+		<stroke width="2" red="0" green="0" blue="0"/>
+		<shadow distance="8" softness="5" opacity="50"/>
+		</layer>
+    </output>
+</artwork>
