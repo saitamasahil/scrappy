@@ -52,6 +52,7 @@ local muos = {
     ["gba"] = "Nintendo Game Boy Advance",
     ["gbc"] = "Nintendo Game Boy Color",
     ["n64"] = "Nintendo N64",
+    ["fds"] = "Nintendo NES-Famicom",
     ["nes"] = "Nintendo NES-Famicom",
     ["pokemini"] = "Nintendo Pokemon Mini",
     ["snes"] = "Nintendo SNES-SFC",
