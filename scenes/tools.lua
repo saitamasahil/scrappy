@@ -10,6 +10,7 @@ local button        = require 'lib.gui.button'
 local label         = require 'lib.gui.label'
 local popup         = require 'lib.gui.popup'
 local select        = require 'lib.gui.select'
+local scroll_container  = require 'lib.gui.scroll_container'
 
 local tools         = {}
 local theme         = configs.theme
@@ -17,6 +18,10 @@ local scraper_opts  = { "screenscraper", "thegamesdb" }
 local scraper_index = 1
 local output_opts   = { "box", "splash" }
 local output_index  = 1
+
+local w_width, w_height = love.window.getMode()
+
+local cache_backup_channel = love.thread.getChannel("cache_backup")
 
 local menu, info_window
 
@@ -48,6 +53,20 @@ local function update_state()
       finished_tasks = 0
       log.write("Cache updated successfully")
       artwork.process_cached_data()
+    end
+  end
+end
+
+local function update_cache_backup_state()
+  local t = cache_backup_channel:pop()
+  if t then
+    if t.error and t.error ~= "" then
+      dispatch_info("Error", t.error)
+    end
+    if t.command_finished then
+      dispatch_info("Backed up cache", "Cache has been backed up to SD2/ARCHIVE. You can restore it using the muOS Archive Manager")
+      finished_tasks = 0
+      log.write("Cache backed up successfully")
     end
   end
 end
@@ -122,40 +141,54 @@ local function on_reset_configs()
   dispatch_info("Configs reset", "Configs have been reset.")
 end
 
+local thread
+
+local function on_backup_cache()
+  log.write("Backing up cache to ARCHIVE folder")
+  dispatch_info("Backing up cache to SD2/ARCHIVE folder", "Please wait...")
+  thread = love.thread.newThread("lib/backup_cache_backend.lua")
+  thread:start()
+ -- os.execute([[7zr a /mnt/sdcard/ARCHIVE/scrappy_cache-$(date +"%Y-%m-%d-%H-%M-%S").zip /mnt/mmc/MUOS/application/.scrappy/data/cache/]])
+end
+
 function tools:load()
-  menu = component:root { column = true, gap = 12 }
+  menu = component:root { column = true, gap = 8 }
   info_window = popup { visible = false }
 
-  menu = menu
-      + (component { column = true, gap = 0 }
+  menu = menu 
+  + (scroll_container {
+      width = w_width,
+      height = w_height - 60,
+      scroll_speed = 30,
+    }
+    + (component { column = true, gap = 12 }
         + label { text = 'Scans ROMs folders, mapping platforms if found.', icon = "folder" }
-        + button { text = 'Rescan folders', width = 200, onClick = on_refresh_press })
-      + (component { column = true, gap = 0 }
+        + button { text = 'Rescan folders', width = 200, onClick = on_refresh_press }
         + label { text = 'Updates cache, not generating artwork.', icon = "sd_card" }
-        + button { text = 'Update cache', width = 200, onClick = on_update_press })
-      + (component { column = true, gap = 0 }
+        + button { text = 'Update cache', width = 200, onClick = on_update_press }
         + label { text = 'Imports custom data to cache. Read Wiki for more info.', icon = "file_import" }
-        + button { text = 'Run custom import', width = 200, onClick = on_import_press })
-      + (component { column = true, gap = 0 }
+        + button { text = 'Run custom import', width = 200, onClick = on_import_press }
         + label { text = 'Temporarily changes Skyscraper module. Useful for ROM hacks.', icon = "download" }
         + select {
           width = 200,
           options = scraper_opts,
           startIndex = scraper_index,
           onChange = function(_, index) on_change_scraper(index) end
-        })
-      + (component { column = true, gap = 0 }
+        }
         + label { text = 'Artwork output type', icon = "canvas" }
         + select {
           width = 200,
           options = output_opts,
           startIndex = output_index,
           onChange = function(_, index) on_change_output(index) end
-        })
-      + (component { column = true, gap = 0 }
+        }
         + label { text = 'Resets user and Skyscraper configs. Can\'t be undone.', icon = "refresh" }
-        + button { text = 'Reset configs', width = 200, onClick = on_reset_configs })
-
+        + button { text = 'Reset configs', width = 200, onClick = on_reset_configs }
+        + label { text = 'Backup Scrappy cache to MUOS SD2/ARCHIVE folder', icon = "sd_card" }
+        + button { text = 'Backup cache', width = 200, onClick = on_backup_cache }
+      )
+    )
+ 
   menu:updatePosition(10, 10)
   menu:focusFirstElement()
 end
@@ -163,6 +196,7 @@ end
 function tools:update(dt)
   menu:update(dt)
   update_state()
+  update_cache_backup_state()
 end
 
 function tools:draw()
