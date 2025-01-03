@@ -1,7 +1,7 @@
+require("globals")
 local log      = require("lib.log")
 local ini      = require("lib.ini")
 local nativefs = require("lib.nativefs")
-local pprint   = require("lib.pprint")
 local muos     = require("helpers.muos")
 local utils    = require("helpers.utils")
 
