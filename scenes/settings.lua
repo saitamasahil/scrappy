@@ -17,7 +17,7 @@ local settings           = {}
 
 local menu, checkboxes
 
-local resolutions        = { "640x480", "720x720" }
+local resolutions        = { "640x480", "720x720", "720x480" }
 local current_resolution = 1
 local all_check          = true
 

@@ -272,9 +272,8 @@ end
 function main:load()
   loader:load()
   resolution = user_config:read("main", "resolution") or resolution
-  local res_prefix = resolution:match("^(%d+)x") or "640"
-  background = love.graphics.newImage(string.format("assets/muxsysinfo_%s.png", res_prefix))
-  overlay = love.graphics.newImage(string.format("assets/preview_%s.png", res_prefix))
+  background = love.graphics.newImage(string.format("assets/muxsysinfo_%s.png", resolution))
+  overlay = love.graphics.newImage(string.format("assets/preview_%s.png", resolution))
 
   get_templates()
   render_to_canvas()
