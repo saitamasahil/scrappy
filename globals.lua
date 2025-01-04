@@ -5,7 +5,7 @@ _G.WORK_DIR = nativefs.getWorkingDirectory()
 _G.INPUT_CHANNEL = love.thread.getChannel("skyscraper-command")
 _G.OUTPUT_CHANNEL = love.thread.getChannel("skyscraper-output")
 
-_G.version = "v1.2.1"
+_G.version = "v1.2.2"
 
 _G.SKYSCRAPER_ERRORS = {
   "doesn't exist or can't be accessed by current user. Please check path and permissions.",
