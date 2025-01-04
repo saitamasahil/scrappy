@@ -1,5 +1,6 @@
 local component = require('lib.gui.badr')
-local theme = require('helpers.config').theme
+local icon      = require("lib.gui.icon")
+local theme     = require('helpers.config').theme
 
 return function(props)
   local font = props.font or love.graphics.getFont()
@@ -7,6 +8,7 @@ return function(props)
     horizontal = (props.leftPadding or 4) + (props.rightPadding or 4),
     vertical = (props.topPadding or 8) + (props.bottomPadding or 8)
   }
+  local iconSize = props.iconSize or 16
   local text = props.text or ""
   local t = love.graphics.newText(font, text)
   local labelWidth, labelHeight = t:getWidth(), t:getHeight()
@@ -23,6 +25,7 @@ return function(props)
 
   return component {
     text = text,
+    lastText = text,
     checked = props.checked or false,
     id = props.id,
     -- Positioning and layout properties
@@ -54,6 +57,14 @@ return function(props)
         if self.onFocus then self:onFocus() end
       end
       self.last_focused = self.focused
+      if self.text ~= self.lastText then
+        t = love.graphics.newText(font, self.text)
+        labelWidth, labelHeight = t:getWidth(), t:getHeight()
+
+        itemHeight = theme:read_number("listitem", "ITEM_HEIGHT", 16)
+        self.width = math.max(props.width or 0, padding.horizontal + labelWidth)
+        self.lastText = self.text
+      end
     end,
     draw = function(self)
       if not self.visible then return end
@@ -71,9 +82,24 @@ return function(props)
         love.graphics.rectangle("fill", self.x, self.y + self.height * 0.25, 4, self.height * 0.5)
       end
 
+      if props.icon then
+        local leftIcon = icon {
+          name = props.icon,
+          x = self.x + (props.leftPadding or 4),
+          y = self.y + (self.height - iconSize) / 2,
+          size = iconSize
+        }
+        leftIcon:draw()
+      end
+
+      local textX = self.x + padding.horizontal
+      if props.icon then
+        textX = textX + iconSize
+      end
+
       -- Draw the label next to the checkbox
       love.graphics.setColor(self.textColor)
-      love.graphics.draw(t, self.x + padding.horizontal, self.y + height * 0.5 - labelHeight * 0.5)
+      love.graphics.draw(t, textX, self.y + height * 0.5 - labelHeight * 0.5)
 
       love.graphics.pop()
     end
