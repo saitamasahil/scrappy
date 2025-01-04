@@ -20,7 +20,10 @@ while running do
   for line in output:lines() do
     if line:find("adding") then
       cache_backup_channel:push({ command_finished = true })
-      running = false
+    elseif line:find("error") then
+      cache_backup_channel:push({ data = {}, error = line, loading = false })
     end
   end
+
+  running = false
 end
