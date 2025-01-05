@@ -5,49 +5,43 @@ local task_input_channel  = love.thread.getChannel("task_input")
 local task_output_channel = love.thread.getChannel("task_output")
 local running             = true
 
-local function migrate_cache()
-  log.write("Migrating cache to SD2")
-  local stderr_to_stdout = " 2>&1"
-  local command =
-  'cp -r /mnt/mmc/MUOS/application/.scrappy/data/cache/ /mnt/sdcard/scrappy_cache/; echo $?'
-  -- 'echo $?' returns 0 if successful
-  local output = io.popen(command .. stderr_to_stdout)
+local function base_task_command(id, command)
+  local stdout_null = " > /dev/null 2>&1"
+  local read_output = "; echo $?" -- 'echo $?' returns 0 if successful
+  local handle = io.popen(command .. stdout_null .. read_output)
 
-  if not output then
-    log.write("Failed to run migrate cache")
-    task_output_channel:push({ data = {}, error = "Failed to migrate cache" })
+  if not handle then
+    log.write(string.format("Failed to run %s - '%s'", id, command))
+    task_output_channel:push({ data = {}, error = string.format("Failed to run %s", id) })
     return
   end
 
-  for line in output:lines() do
-    if line:find("0") then
-      task_output_channel:push({ command_finished = true, command = "migrate" })
-    elseif line:find("cannot stat") then
-      task_output_channel:push({ data = {}, error = line })
-    end
+  local output = handle:read("*a")
+  output = output:gsub("\n", "")
+  handle:close()
+
+  if output == "0" then
+    task_output_channel:push({ command_finished = true, command = id })
+  else
+    task_output_channel:push({ data = {}, error = string.format("Failed to run %s", id) })
+    log.write(string.format("Failed to run %s - '%s'", id, command, output))
   end
+end
+
+local function migrate_cache()
+  log.write("Migrating cache to SD2")
+  base_task_command(
+    "migrate",
+    "cp -r /mnt/mmc/MUOS/application/.scrappy/data/cache/ /mnt/sdcard/scrappy_cache/"
+  )
 end
 
 local function backup_cache()
   log.write("Starting Zip to compress and move cache folder")
-  local stderr_to_stdout = " 2>&1"
-  local command =
-  'zip -r /mnt/sdcard/ARCHIVE/scrappy_cache-$(date +"%Y-%m-%d-%H-%M-%S").zip /mnt/mmc/MUOS/application/.scrappy/data/cache/'
-  local output = io.popen(command .. stderr_to_stdout)
-
-  if not output then
-    log.write("Failed to run Zip")
-    task_output_channel:push({ data = {}, error = "Failed to run Zip" })
-    return
-  end
-
-  for line in output:lines() do
-    if line:find("adding") then
-      task_output_channel:push({ command_finished = true, command = "backup" })
-    elseif line:find("error") then
-      task_output_channel:push({ data = {}, error = line })
-    end
-  end
+  base_task_command(
+    "backup",
+    'zip -r /mnt/sdcard/ARCHIVE/scrappy_cache-$(date +"%Y-%m-%d-%H-%M-%S").zip /mnt/mmc/MUOS/application/.scrappy/data/cache/'
+  )
 end
 
 while running do
