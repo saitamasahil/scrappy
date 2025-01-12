@@ -14,7 +14,7 @@ local tools               = {}
 local theme               = configs.theme
 local scraper_opts        = { "screenscraper", "thegamesdb" }
 local scraper_index       = 1
-local output_opts         = { "box", "splash" }
+local output_opts         = { "box", "splash", "preview" }
 local output_index        = 1
 
 local w_width, w_height   = love.window.getMode()
