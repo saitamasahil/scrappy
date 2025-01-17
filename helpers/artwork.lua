@@ -3,7 +3,7 @@ local gamelist = require("lib.gamelist")
 local config   = require("helpers.config")
 local utils    = require("helpers.utils")
 local muos     = require("helpers.muos")
--- local pprint   = require("lib.pprint")
+local pprint   = require("lib.pprint")
 
 local artwork  = {
   cached_game_ids = {},
@@ -104,7 +104,8 @@ function artwork.process_cached_by_platform(platform, cache_folder)
   local db = nativefs.read(string.format("%s/%s/db.xml", cache_folder, platform))
 
   if not quickid or not db then
-    return nil, "Missing quickid.xml or db.xml for " .. platform
+    log.write("Missing quickid.xml or db.xml for " .. platform)
+    return
   end
 
   -- Parse quickid for ROM identifiers
@@ -138,7 +139,10 @@ function artwork.process_cached_by_platform(platform, cache_folder)
     end
   end
 
-  return quick_id_entries, nil
+  -- pprint(quick_id_entries)
+
+  -- Save entries globally
+  artwork.cached_game_ids[platform] = quick_id_entries
 end
 
 function artwork.process_cached_data()
@@ -150,14 +154,10 @@ function artwork.process_cached_data()
   if not items then return end
 
   for _, platform in ipairs(items) do
-    local entries, err = artwork.process_cached_by_platform(platform)
-    if not err then
-      -- pprint(entries)
-      artwork.cached_game_ids[platform] = entries
-    end
+    artwork.process_cached_by_platform(platform)
   end
 
-  -- pprint(artwork.cached_game_ids)
+  pprint(artwork.cached_game_ids)
 
   log.write("Finished processing cached data")
 end

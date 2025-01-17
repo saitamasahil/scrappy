@@ -1,26 +1,26 @@
-local log = require("lib.log")
+require("globals")
+local log        = require("lib.log")
+local pprint     = require("lib.pprint")
+
+local scenes     = require("lib.scenes")
+local skyscraper = require("lib.skyscraper")
+local splash     = require("lib.splash")
+
+local configs    = require("helpers.config")
+local input      = require("helpers.input")
+local utils      = require("helpers.utils")
+
 log.start()
 
-local configs = require("helpers.config")
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 local theme = configs.theme
-
-require("globals")
 
 local font = love.graphics.newFont(
   theme:read("main", "FONT") or "assets/ChakraPetch-Regular.ttf",
   theme:read_number("main", "FONT_SIZE") or 20)
-
 love.graphics.setFont(font)
 
-local scenes = require("lib.scenes")
-local skyscraper = require("lib.skyscraper")
-local splash = require("lib.splash")
-local input = require("helpers.input")
-local utils = require("helpers.utils")
-
 local footer = require("lib.gui.footer")()
-
 local w_width, w_height
 
 function love.load()
@@ -31,6 +31,13 @@ function love.load()
     res = utils.split(res, "x")
     love.window.setMode(tonumber(res[1]) or 640, tonumber(res[2]) or 480)
     w_width, w_height = love.window.getMode()
+  end
+
+  -- Debug mode
+  local debug = user_config:read("main", "debug")
+  if debug ~= "1" then
+    _G.print = function() end
+    setmetatable(pprint, { __call = function() end })
   end
 
   scenes:load("main")
