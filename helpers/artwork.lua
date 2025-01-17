@@ -3,6 +3,7 @@ local gamelist = require("lib.gamelist")
 local config   = require("helpers.config")
 local utils    = require("helpers.utils")
 local muos     = require("helpers.muos")
+-- local pprint   = require("lib.pprint")
 
 local artwork  = {
   cached_game_ids = {},
@@ -86,9 +87,62 @@ function artwork.copy_to_catalogue(platform, game)
   end
 end
 
+function artwork.process_cached_by_platform(platform, cache_folder)
+  local quick_id_entries = {}
+  local cached_games = {}
+
+  if not cache_folder then
+    cache_folder = skyscraper_config:read("main", "cacheFolder")
+    if not cache_folder or cache_folder == "\"\"" then
+      return
+    end
+    cache_folder = utils.strip_quotes(cache_folder)
+  end
+
+  -- Read quickid and db files
+  local quickid = nativefs.read(string.format("%s/%s/quickid.xml", cache_folder, platform))
+  local db = nativefs.read(string.format("%s/%s/db.xml", cache_folder, platform))
+
+  if not quickid or not db then
+    return nil, "Missing quickid.xml or db.xml for " .. platform
+  end
+
+  -- Parse quickid for ROM identifiers
+  local lines = utils.split(quickid, "\n")
+  for _, line in ipairs(lines) do
+    if line:find("<quickid%s") then
+      local filepath = line:match('filepath="([^"]+)"')
+      if filepath then
+        local filename = filepath:match("([^/]+)$")
+        local id = line:match('id="([^"]+)"')
+        quick_id_entries[filename] = id
+      end
+    end
+  end
+
+  -- Parse db for resource matching
+  local lines = utils.split(db, "\n")
+  for _, line in ipairs(lines) do
+    if line:find("<resource%s") then
+      local id = line:match('id="([^"]+)"')
+      if id then
+        cached_games[id] = true
+      end
+    end
+  end
+
+  -- Remove entries without matching resources
+  for filename, id in pairs(quick_id_entries) do
+    if not cached_games[id] then
+      quick_id_entries[filename] = nil
+    end
+  end
+
+  return quick_id_entries, nil
+end
+
 function artwork.process_cached_data()
   log.write("Processing cached data")
-  local cached_games = {}
   local cache_folder = skyscraper_config:read("main", "cacheFolder")
   if not cache_folder then return end
   cache_folder = utils.strip_quotes(cache_folder)
@@ -96,39 +150,14 @@ function artwork.process_cached_data()
   if not items then return end
 
   for _, platform in ipairs(items) do
-    local quickid = nativefs.read(string.format("%s/%s/quickid.xml", cache_folder, platform))
-    local db = nativefs.read(string.format("%s/%s/db.xml", cache_folder, platform))
-    if quickid then
-      local lines = utils.split(quickid, "\n")
-      for _, line in ipairs(lines) do
-        if line:find("<quickid%s") then
-          local filepath = line:match('filepath="([^"]+)"')
-          if filepath then
-            local filename = filepath:match("([^/]+)$")
-            local id = line:match('id="([^"]+)"')
-            artwork.cached_game_ids[filename] = id
-          end
-        end
-      end
-    end
-    if db then
-      local lines = utils.split(db, "\n")
-      for _, line in ipairs(lines) do
-        if line:find("<resource%s") then
-          local id = line:match('id="([^"]+)"')
-          if id then
-            cached_games[id] = true
-          end
-        end
-      end
-    end
-
-    for filename, id in pairs(artwork.cached_game_ids) do
-      if not cached_games[id] then
-        artwork.cached_game_ids[filename] = nil
-      end
+    local entries, err = artwork.process_cached_by_platform(platform)
+    if not err then
+      -- pprint(entries)
+      artwork.cached_game_ids[platform] = entries
     end
   end
+
+  -- pprint(artwork.cached_game_ids)
 
   log.write("Finished processing cached data")
 end
