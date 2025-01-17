@@ -1,9 +1,10 @@
 local scenes            = require("lib.scenes")
 local skyscraper        = require("lib.skyscraper")
+local pprint            = require("lib.pprint")
+local channels          = require("lib.backend.channels")
 local configs           = require("helpers.config")
 local utils             = require("helpers.utils")
 local artwork           = require("helpers.artwork")
-local pprint            = require("lib.pprint")
 
 local component         = require 'lib.gui.badr'
 local label             = require 'lib.gui.label'
@@ -132,7 +133,7 @@ local function load_platform_buttons()
 end
 
 local function update_scrape_state()
-  local t = OUTPUT_CHANNEL:pop()
+  local t = channels.SKYSCRAPER_OUTPUT:pop()
   if t then
     if t.error and t.error ~= "" then
       dispatch_info("Error", t.error)
@@ -140,7 +141,7 @@ local function update_scrape_state()
     if t.data and next(t.data) and t.task_id then
       dispatch_info("Finished", t.success and "Scraping finished successfully" or "Scraping failed or skipped")
       artwork.copy_to_catalogue(t.data.platform, t.data.title)
-      artwork.process_cached_data()
+      artwork.process_cached_by_platform(t.data.platform)
       load_rom_buttons(last_selected_platform)
       rom_list:focusFirstElement()
     end

@@ -2,9 +2,6 @@ _G.nativefs = require("lib.nativefs")
 _G.timer = require("lib.timer")
 _G.WORK_DIR = nativefs.getWorkingDirectory()
 
-_G.INPUT_CHANNEL = love.thread.getChannel("skyscraper-command")
-_G.OUTPUT_CHANNEL = love.thread.getChannel("skyscraper-output")
-
 _G.version = "v1.2.2"
 
 _G.SKYSCRAPER_ERRORS = {

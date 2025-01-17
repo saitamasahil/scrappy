@@ -1,6 +1,7 @@
 local log                 = require("lib.log")
 local scenes              = require("lib.scenes")
 local skyscraper          = require("lib.skyscraper")
+local channels            = require("lib.backend.channels")
 local configs             = require("helpers.config")
 local artwork             = require("helpers.artwork")
 local utils               = require("helpers.utils")
@@ -35,7 +36,7 @@ local function dispatch_info(title, content)
 end
 
 local function update_state()
-  local t = OUTPUT_CHANNEL:pop()
+  local t = channels.SKYSCRAPER_OUTPUT:pop()
   if t then
     if t.error and t.error ~= "" then
       dispatch_info("Error", t.error)

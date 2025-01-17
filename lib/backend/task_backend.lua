@@ -1,9 +1,8 @@
 require("globals")
-local log                 = require("lib.log")
+local log      = require("lib.log")
+local channels = require("lib.backend.channels")
 
-local task_input_channel  = love.thread.getChannel("task_input")
-local task_output_channel = love.thread.getChannel("task_output")
-local running             = true
+local running  = true
 
 local function base_task_command(id, command)
   local stdout_null = " > /dev/null 2>&1"
@@ -12,7 +11,7 @@ local function base_task_command(id, command)
 
   if not handle then
     log.write(string.format("Failed to run %s - '%s'", id, command))
-    task_output_channel:push({ data = {}, error = string.format("Failed to run %s", id) })
+    channels.TASK_OUTPUT:push({ data = {}, error = string.format("Failed to run %s", id) })
     return
   end
 
@@ -21,9 +20,9 @@ local function base_task_command(id, command)
   handle:close()
 
   if output == "0" then
-    task_output_channel:push({ command_finished = true, command = id })
+    channels.TASK_OUTPUT:push({ command_finished = true, command = id })
   else
-    task_output_channel:push({ data = {}, error = string.format("Failed to run %s", id) })
+    channels.TASK_OUTPUT:push({ data = {}, error = string.format("Failed to run %s", id) })
     log.write(string.format("Failed to run %s - '%s'", id, command, output))
   end
 end
@@ -45,7 +44,7 @@ local function backup_cache()
 end
 
 while running do
-  local input = task_input_channel:demand()
+  local input = channels.TASK_INPUT:demand()
 
   if input.command == "backup" then
     backup_cache()

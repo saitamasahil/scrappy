@@ -2,6 +2,7 @@ local skyscraper = require("lib.skyscraper")
 local log        = require("lib.log")
 local scenes     = require("lib.scenes")
 local loading    = require("lib.loading")
+local channels   = require("lib.backend.channels")
 local configs    = require("helpers.config")
 local utils      = require("helpers.utils")
 local artwork    = require("helpers.artwork")
@@ -132,7 +133,7 @@ local function scrape_platforms()
 end
 
 local function halt_scraping()
-  INPUT_CHANNEL:clear()
+  channels.SKYSCRAPER_INPUT:clear()
   state.scraping = false
   state.failed_tasks = {}
   state.tasks = {}
@@ -140,7 +141,7 @@ local function halt_scraping()
 end
 
 local function update_state()
-  local t = OUTPUT_CHANNEL:pop()
+  local t = channels.SKYSCRAPER_OUTPUT:pop()
   if t then
     if t.error and t.error ~= "" then
       state.error = t.error
