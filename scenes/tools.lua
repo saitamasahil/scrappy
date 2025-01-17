@@ -1,27 +1,24 @@
-local log                 = require("lib.log")
-local scenes              = require("lib.scenes")
-local skyscraper          = require("lib.skyscraper")
-local channels            = require("lib.backend.channels")
-local configs             = require("helpers.config")
-local artwork             = require("helpers.artwork")
-local utils               = require("helpers.utils")
+local log               = require("lib.log")
+local scenes            = require("lib.scenes")
+local skyscraper        = require("lib.skyscraper")
+local channels          = require("lib.backend.channels")
+local configs           = require("helpers.config")
+local artwork           = require("helpers.artwork")
+local utils             = require("helpers.utils")
 
-local component           = require 'lib.gui.badr'
-local popup               = require 'lib.gui.popup'
-local listitem            = require 'lib.gui.listitem'
-local scroll_container    = require 'lib.gui.scroll_container'
+local component         = require 'lib.gui.badr'
+local popup             = require 'lib.gui.popup'
+local listitem          = require 'lib.gui.listitem'
+local scroll_container  = require 'lib.gui.scroll_container'
 
-local tools               = {}
-local theme               = configs.theme
-local scraper_opts        = { "screenscraper", "thegamesdb" }
-local scraper_index       = 1
-local output_opts         = { "box", "splash", "preview" }
-local output_index        = 1
+local tools             = {}
+local theme             = configs.theme
+local scraper_opts      = { "screenscraper", "thegamesdb" }
+local scraper_index     = 1
+local output_opts       = { "box", "splash", "preview" }
+local output_index      = 1
 
-local w_width, w_height   = love.window.getMode()
-
-local task_input_channel  = love.thread.getChannel("task_input")
-local task_output_channel = love.thread.getChannel("task_output")
+local w_width, w_height = love.window.getMode()
 
 local menu, info_window
 
@@ -58,7 +55,7 @@ local function update_state()
 end
 
 local function update_task_state()
-  local t = task_output_channel:pop()
+  local t = channels.TASK_OUTPUT:pop()
   if t then
     if t.error and t.error ~= "" then
       dispatch_info("Error", t.error)
@@ -161,17 +158,15 @@ end
 local function on_backup_cache()
   log.write("Backing up cache to ARCHIVE folder")
   dispatch_info("Backing up cache to SD2/ARCHIVE folder", "Please wait...")
-  task_input_channel:push({ command = "backup" })
   local thread = love.thread.newThread("lib/backend/task_backend.lua")
-  thread:start()
+  thread:start("backup")
 end
 
 local function on_migrate_cache()
   log.write("Migrating cache to SD2")
   dispatch_info("Migrating cache to SD2", "Please wait...")
-  task_input_channel:push({ command = "migrate" })
   local thread = love.thread.newThread("lib/backend/task_backend.lua")
-  thread:start()
+  thread:start("migrate")
 end
 
 function tools:load()
