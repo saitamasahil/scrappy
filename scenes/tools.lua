@@ -161,7 +161,7 @@ local function on_backup_cache()
   log.write("Backing up cache to ARCHIVE folder")
   dispatch_info("Backing up cache to SD2/ARCHIVE folder", "Please wait...")
   task_input_channel:push({ command = "backup" })
-  local thread = love.thread.newThread("lib/task_backend.lua")
+  local thread = love.thread.newThread("lib/backend/task_backend.lua")
   thread:start()
 end
 
@@ -169,7 +169,7 @@ local function on_migrate_cache()
   log.write("Migrating cache to SD2")
   dispatch_info("Migrating cache to SD2", "Please wait...")
   task_input_channel:push({ command = "migrate" })
-  local thread = love.thread.newThread("lib/task_backend.lua")
+  local thread = love.thread.newThread("lib/backend/task_backend.lua")
   thread:start()
 end
 

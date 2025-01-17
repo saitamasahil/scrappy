@@ -30,7 +30,7 @@ function skyscraper.init(config_path, binary)
     nativefs.write("sample/quickid.xml", quick_id)
   end
 
-  thread = love.thread.newThread("lib/backend.lua")
+  thread = love.thread.newThread("lib/backend/skyscraper_backend.lua")
   thread:start()
   push_command({ command = string.format("%s -v", skyscraper.base_command), version = 1 })
 end

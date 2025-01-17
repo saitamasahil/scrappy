@@ -3,7 +3,7 @@ local log = {}
 local nativefs = require("lib.nativefs")
 local socket = require("socket")
 
-local log_backend = love.thread.newThread("lib/log_backend.lua")
+local log_backend = love.thread.newThread("lib/backend/log_backend.lua")
 local log_channel = love.thread.getChannel("log")
 local max_logs = 10
 
