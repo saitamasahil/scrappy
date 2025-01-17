@@ -2,6 +2,7 @@ require("globals")
 local log      = require("lib.log")
 local channels = require("lib.backend.channels")
 
+local command  = ...
 local running  = true
 
 local function base_task_command(id, command)
@@ -44,13 +45,11 @@ local function backup_cache()
 end
 
 while running do
-  local input = channels.TASK_INPUT:demand()
-
-  if input.command == "backup" then
+  if command == "backup" then
     backup_cache()
   end
 
-  if input.command == "migrate" then
+  if command == "migrate" then
     migrate_cache()
   end
 
