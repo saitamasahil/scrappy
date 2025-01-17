@@ -1,9 +1,10 @@
 require("globals")
 
-local log = require("lib.log")
+local log               = require("lib.log")
+local channels          = require("lib.backend.channels")
 local skyscraper_config = require("helpers.config").skyscraper_config
 
-local skyscraper = {
+local skyscraper        = {
   base_command = "./Skyscraper",
   module = "screenscraper",
   config_path = "",
@@ -12,8 +13,8 @@ local skyscraper = {
 local thread
 
 local function push_command(command)
-  if INPUT_CHANNEL then
-    INPUT_CHANNEL:push(command)
+  if channels.SKYSCRAPER_INPUT then
+    channels.SKYSCRAPER_INPUT:push(command)
   end
 end
 

@@ -1,7 +1,8 @@
 require("globals")
-local parser = require("lib.parser")
-local log = require("lib.log")
-local utils = require("helpers.utils")
+local parser   = require("lib.parser")
+local log      = require("lib.log")
+local channels = require("lib.backend.channels")
+local utils    = require("helpers.utils")
 
 local function log_version(output)
   if not output then
@@ -28,8 +29,8 @@ end
 
 while true do
   ::continue::
-  -- Demand a table with command, platform, type, and game from INPUT_CHANNEL
-  local input_data = INPUT_CHANNEL:demand()
+  -- Demand a table with command, platform, type, and game from SKYSCRAPER_INPUT
+  local input_data = channels.SKYSCRAPER_INPUT:demand()
 
   -- Extract the command, platform, type, and game
   local command = input_data.command
@@ -46,12 +47,12 @@ while true do
 
   if not output then
     log.write("Failed to run Skyscraper")
-    OUTPUT_CHANNEL:push({ data = {}, error = "Failed to run Skyscraper", loading = false })
+    channels.SKYSCRAPER_OUTPUT:push({ data = {}, error = "Failed to run Skyscraper", loading = false })
     goto continue
   end
 
   if game and current_platform then
-    OUTPUT_CHANNEL:push({ data = { title = game, platform = current_platform }, error = nil })
+    channels.SKYSCRAPER_OUTPUT:push({ data = { title = game, platform = current_platform }, error = nil })
   end
 
   if input_data.version then -- Special command. Log version only
@@ -69,7 +70,7 @@ while true do
     local success, error = parser.parse(line, game)
     if success ~= nil or error then parsed = true end
     if success ~= nil then
-      OUTPUT_CHANNEL:push({
+      channels.SKYSCRAPER_OUTPUT:push({
         data = {
           title = game,
           platform = current_platform,
@@ -83,25 +84,25 @@ while true do
 
     if error ~= nil and error ~= "" then
       log.write("ERROR: " .. error, "skyscraper")
-      OUTPUT_CHANNEL:push({ data = {}, error = error, loading = false })
+      channels.SKYSCRAPER_OUTPUT:push({ data = {}, error = error, loading = false })
       break
     end
   end
 
   if not parsed then
     log.write(string.format("Failed to parse Skyscraper output for %s", game))
-    OUTPUT_CHANNEL:push({
+    channels.SKYSCRAPER_OUTPUT:push({
       loading = false,
       task_id = task_id,
       success = false
     })
   end
 
-  OUTPUT_CHANNEL:push({ command_finished = true })
+  channels.SKYSCRAPER_OUTPUT:push({ command_finished = true })
 end
 
 function love.threaderror(thread, errorstr)
   print(errorstr)
-  OUTPUT_CHANNEL:push({ data = {}, error = errorstr, loading = false })
+  channels.SKYSCRAPER_OUTPUT:push({ data = {}, error = errorstr, loading = false })
   log.write(errorstr)
 end

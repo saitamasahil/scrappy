@@ -1,11 +1,11 @@
-local log = {}
+local log         = {}
 
-local nativefs = require("lib.nativefs")
-local socket = require("socket")
+local socket      = require("socket")
+local nativefs    = require("lib.nativefs")
+local log_channel = require("lib.backend.channels").LOG_INPUT
 
 local log_backend = love.thread.newThread("lib/backend/log_backend.lua")
-local log_channel = love.thread.getChannel("log")
-local max_logs = 10
+local max_logs    = 10
 
 local start_time
 

@@ -1,7 +1,7 @@
-local start_time = ...
+local start_time  = ...
 
-local nativefs = require("lib.nativefs")
-local log_channel = love.thread.getChannel("log")
+local nativefs    = require("lib.nativefs")
+local log_channel = require("lib.backend.channels").LOG_INPUT
 
 local function log_filename()
   return string.format("logs/scrappy-%s.log", os.date("%Y-%m-%d-%H-%M", start_time))
