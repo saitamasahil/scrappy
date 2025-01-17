@@ -104,7 +104,7 @@ local function scrape_platforms()
       if file_info and file_info.type == "file" then
         -- Check if already processed
         table.insert(state.tasks, file)
-        if artwork.cached_game_ids[file] then
+        if artwork.cached_game_ids[src] and artwork.cached_game_ids[src][file] then
           -- Game cached, update artwork
           skyscraper.update_artwork(platform_path, file, dest, templates[current_template], file)
         else

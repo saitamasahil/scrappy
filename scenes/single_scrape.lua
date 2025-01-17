@@ -3,6 +3,7 @@ local skyscraper        = require("lib.skyscraper")
 local configs           = require("helpers.config")
 local utils             = require("helpers.utils")
 local artwork           = require("helpers.artwork")
+local pprint            = require("lib.pprint")
 
 local component         = require 'lib.gui.badr'
 local label             = require 'lib.gui.label'
@@ -81,20 +82,23 @@ local function on_return()
   end
 end
 
-local function load_rom_buttons(platform)
+local function load_rom_buttons(src_platform, dest_platform)
   rom_list.children = {} -- Clear existing ROM items
   rom_list.height = 0
 
   -- Set label
-  (menu ^ "roms_label").text = platform
+  (menu ^ "roms_label").text = string.format("%s (%s)", src_platform, dest_platform)
 
   local rom_path, _ = user_config:get_paths()
-  local platform_path = string.format("%s/%s", rom_path, platform)
+  local platform_path = string.format("%s/%s", rom_path, src_platform)
   local roms = nativefs.getDirectoryItems(platform_path)
+
+  pprint(dest_platform, artwork.cached_game_ids[dest_platform])
 
   for _, rom in ipairs(roms) do
     local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, rom))
     if file_info and file_info.type == "file" then
+      local is_cached = artwork.cached_game_ids[dest_platform] and artwork.cached_game_ids[dest_platform][rom]
       rom_list = rom_list + listitem {
         text = rom,
         width = 200,
@@ -103,7 +107,7 @@ local function load_rom_buttons(platform)
         end,
         disabled = true,
         active = true,
-        indicator = artwork.cached_game_ids[rom] and 2 or 3
+        indicator = is_cached and 2 or 3
       }
     end
   end
@@ -115,13 +119,13 @@ local function load_platform_buttons()
 
   local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
 
-  for platform in utils.orderedPairs(platforms or {}) do
+  for src, dest in utils.orderedPairs(platforms or {}) do
     platform_list = platform_list + listitem {
-      id = platform,
-      text = platform,
+      id = src,
+      text = src,
       width = 200,
-      onFocus = function() load_rom_buttons(platform) end,
-      onClick = function() on_select_platform(platform) end,
+      onFocus = function() load_rom_buttons(src, dest) end,
+      onClick = function() on_select_platform(src) end,
       disabled = false,
     }
   end
