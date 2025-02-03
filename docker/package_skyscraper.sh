@@ -13,6 +13,7 @@ Skyscraper -v
 
 # Create a directory to store the binary and libraries
 mkdir -p /skysource/output
+mkdir -p /output
 
 # Copy the Skyscraper binary
 cp $(which Skyscraper) /skysource/output/
@@ -24,6 +25,6 @@ cp /usr/lib/aarch64-linux-gnu/libcrypto.so.1 /skysource/output/
 
 # Package the binary and libraries into a .zip file
 cd /skysource/output
-zip -r /skysource/output/skyscraper_package.zip .
+7z a /output/skyscraper_package.zip .
 
-echo "Packaging complete. Zip file located at /skysource/skyscraper_package.zip"
+echo "Packaging complete. Zip file located at /output/skyscraper_package.zip"

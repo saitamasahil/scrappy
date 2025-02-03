@@ -43,8 +43,8 @@ ENV PATH="$QT_HOME/bin:$PATH"
 COPY libs /usr/local/libs
 
 # Update the library cache to include /usr/local/libs
-RUN echo "/usr/local/libs" > /etc/ld.so.conf.d/custom-libs.conf && \
-  ldconfig
+# RUN echo "/usr/local/libs" > /etc/ld.so.conf.d/custom-libs.conf && \
+#   ldconfig
 
 # Create the skysource directory
 RUN mkdir /skysource
