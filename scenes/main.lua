@@ -2,6 +2,7 @@ local skyscraper = require("lib.skyscraper")
 local log        = require("lib.log")
 local scenes     = require("lib.scenes")
 local loading    = require("lib.loading")
+local watcher    = require("lib.watcher")
 local channels   = require("lib.backend.channels")
 local configs    = require("helpers.config")
 local utils      = require("helpers.utils")
@@ -45,6 +46,8 @@ local state = {
   failed_tasks = {},
   total = 0,
 }
+
+local db_watcher = watcher.new(WORK_DIR .. "/data/cache/gba/db.xml")
 
 local function show_info_window(title, content)
   info_window.visible = true
@@ -279,6 +282,8 @@ function main:load()
   get_templates()
   render_to_canvas()
 
+  db_watcher:init()
+
   menu = component:root { column = true, gap = 10 }
   info_window = popup { visible = false }
 
@@ -374,6 +379,10 @@ function main:update(dt)
     state.reload_preview = false
     render_to_canvas()
   end
+
+  db_watcher:update(function(modtime)
+    print("File modified: " .. modtime)
+  end)
 end
 
 function main:draw()
