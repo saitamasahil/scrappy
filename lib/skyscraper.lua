@@ -10,11 +10,16 @@ local skyscraper        = {
   config_path = "",
 }
 
-local thread
+local cache_thread, gen_thread
 
-local function push_command(command)
+local function push_cache_command(command)
   if channels.SKYSCRAPER_INPUT then
     channels.SKYSCRAPER_INPUT:push(command)
+  end
+end
+local function push_command(command)
+  if channels.SKYSCRAPER_GEN_INPUT then
+    channels.SKYSCRAPER_GEN_INPUT:push(command)
   end
 end
 
@@ -31,9 +36,13 @@ function skyscraper.init(config_path, binary)
     nativefs.write("sample/quickid.xml", quick_id)
   end
 
-  thread = love.thread.newThread("lib/backend/skyscraper_backend.lua")
-  thread:start()
-  push_command({ command = string.format("%s -v", skyscraper.base_command), version = 1 })
+  -- Create threads for cache and generate commands
+  cache_thread = love.thread.newThread("lib/backend/skyscraper_backend.lua")
+  gen_thread = love.thread.newThread("lib/backend/skyscraper_generate_backend.lua")
+
+  cache_thread:start()
+  gen_thread:start()
+  push_cache_command({ command = string.format("%s -v", skyscraper.base_command), version = 1 })
 end
 
 local function generate_command(config)
@@ -72,6 +81,9 @@ local function generate_command(config)
   if config.flags and next(config.flags) then
     command = string.format('%s --flags %s', command, table.concat(config.flags, ","))
   end
+
+  -- Force maximum number of threads
+  command = string.format('%s -t 8', command)
   return command
 end
 
@@ -81,13 +93,23 @@ function skyscraper.run(command, platform, op, game, ...)
   op = op or "generate"
   game = game or "none"
   local task_id = select(1, ...) or nil
-  push_command({
-    command = skyscraper.base_command .. command,
-    platform = platform,
-    op = op,
-    game = game,
-    task_id = task_id,
-  })
+  if op == "generate" then
+    push_command({
+      command = skyscraper.base_command .. command,
+      platform = platform,
+      op = op,
+      game = game,
+      task_id = task_id,
+    })
+  else
+    push_cache_command({
+      command = skyscraper.base_command .. command,
+      platform = platform,
+      op = op,
+      game = game,
+      task_id = task_id,
+    })
+  end
 end
 
 function skyscraper.change_artwork(artworkXml)
