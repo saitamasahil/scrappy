@@ -151,4 +151,14 @@ function utils.tableMerge(...)
   return result
 end
 
+function utils.load_image(path)
+  local file_data = nativefs.newFileData(path)
+  if not file_data then return nil end
+
+  local image_data = love.image.newImageData(file_data)
+  if not image_data then return nil end
+
+  return love.graphics.newImage(image_data)
+end
+
 return utils

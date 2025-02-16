@@ -3,6 +3,7 @@ local log        = require("lib.log")
 local scenes     = require("lib.scenes")
 local loading    = require("lib.loading")
 local watcher    = require("lib.watcher")
+local pprint     = require("lib.pprint")
 local channels   = require("lib.backend.channels")
 local configs    = require("helpers.config")
 local utils      = require("helpers.utils")
@@ -34,6 +35,7 @@ local resolution = "640x480"
 local templates = {}
 local current_template = 1
 
+-- TODO: Refactor
 local state = {
   data = {
     title = "N/A",
@@ -47,7 +49,15 @@ local state = {
   total = 0,
 }
 
-local db_watcher = watcher.new(WORK_DIR .. "/data/cache/gba/db.xml")
+--[[
+  Format:
+  {
+    "platform": {
+      "game title": "game file"
+    }
+  }
+--]]
+local game_file_map = {}
 
 local function show_info_window(title, content)
   info_window.visible = true
@@ -95,6 +105,7 @@ local function scrape_platforms()
     end
 
     local platform_path = string.format("%s/%s", rom_path, src)
+    skyscraper.fetch_artwork(platform_path, dest)
     -- Get list of roms
     local roms = nativefs.getDirectoryItems(platform_path)
     if not roms or #roms == 0 then
@@ -106,33 +117,44 @@ local function scrape_platforms()
       -- Check if it's a file or directory
       local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, file))
       if file_info and file_info.type == "file" then
-        -- Check if already processed
-        table.insert(state.tasks, file)
-        if artwork.cached_game_ids[src] and artwork.cached_game_ids[src][file] then
-          -- Game cached, update artwork
-          skyscraper.update_artwork(platform_path, file, dest, templates[current_template], file)
-        else
-          -- Fetch and update artwork
-          skyscraper.fetch_and_update_artwork(
-            platform_path,
-            file,
-            dest,
-            templates[current_template],
-            file
-          )
+        -- Get the title without extension
+        local game_title = utils.get_filename(file)
+        if game_file_map[dest] == nil then
+          game_file_map[dest] = {}
         end
+        if game_title then
+          game_file_map[dest][game_title] = file
+        end
+        -- -- Check if already processed
+        -- table.insert(state.tasks, file)
+        -- if artwork.cached_game_ids[src] and artwork.cached_game_ids[src][file] then
+        --   -- Game cached, update artwork
+        --   skyscraper.update_artwork(platform_path, file, dest, templates[current_template], file)
+        -- else
+        --   -- Fetch and update artwork
+        --   skyscraper.fetch_and_update_artwork(
+        --     platform_path,
+        --     file,
+        --     dest,
+        --     templates[current_template],
+        --     file
+        --   )
+        -- end
       end
     end
     ::skip::
   end
 
-  state.total = #state.tasks
-  if state.total > 0 then
-    state.scraping = true
-  else
-    show_info_window("No platforms to scrape", "Please select platforms for scraping in settings.")
-  end
-  log.write(string.format("Generated %d Skyscraper tasks", state.total))
+  --
+  -- TODO: Refactor user feedback
+  --
+  -- state.total = #state.tasks
+  -- if state.total > 0 then
+  --   state.scraping = true
+  -- else
+  --   show_info_window("No platforms to scrape", "Please select platforms for scraping in settings.")
+  -- end
+  -- log.write(string.format("Generated %d Skyscraper tasks", state.total))
 end
 
 local function halt_scraping()
@@ -256,12 +278,13 @@ end
 
 local function render_to_canvas()
   -- Attempt to load the image
-  local success
-  success, cover_preview = pcall(love.graphics.newImage, cover_preview_path)
-  if not success then
+  local img = utils.load_image(cover_preview_path)
+  if not img then
     log.write("Failed to load cover preview image")
     return
   end
+
+  cover_preview = img
 
   canvas:renderTo(function()
     love.graphics.clear()
@@ -281,8 +304,6 @@ function main:load()
 
   get_templates()
   render_to_canvas()
-
-  db_watcher:init()
 
   menu = component:root { column = true, gap = 10 }
   info_window = popup { visible = false }
@@ -380,9 +401,16 @@ function main:update(dt)
     render_to_canvas()
   end
 
-  db_watcher:update(function(modtime)
-    print("File modified: " .. modtime)
-  end)
+  -- Wait for a ready signal from the Skyscraper backend
+  local ready = channels.SKYSCRAPER_GAME_QUEUE:pop()
+  if ready then
+    local rom_path, _ = user_config:get_paths()
+    local game_file = game_file_map[ready.platform][ready.game]
+    if game_file then
+      skyscraper.update_artwork("/home/gabrielfvale/Projects/love2d-scraper/roms/Nintendo/N64", game_file, ready
+        .platform, templates[current_template])
+    end
+  end
 end
 
 function main:draw()

@@ -1,12 +1,41 @@
 require("globals")
 
 local parser = {}
+local line_patterns = {
+  "found!",
+  "Skipping game",
+  "not found",
+  "No entries to scrape..."
+}
+local game_title_patterns = {
+  FOUND = "Game '(.-)' found!",
+  NOT_FOUND = "Game '(.-)' not found",
+  SKIPPED = "Skipping game '(.-)' since"
+}
+local log_patterns = {
+  "Running Skyscraper v",
+  "Fetching limits for user",
+  "Starting scraping run",
+  "Resource gathering run"
+}
 
-function parser.parse(line, game)
-  local patterns = { "found!", "Skipping game", "not found", "No entries to scrape..." }
+--[[
+  Parse a line of Skyscraper output, returning:
+  - A line to be logged, or a game title if found
+  - An error message if the line is an error
+  - A boolean indicating whether the line is a log line
+--]]
+function parser.parse(line)
+  local game_pattern = "'([^']*'.-)'"
   local line_match = nil
 
-  for _, pattern in ipairs(patterns) do
+  for _, pattern in ipairs(log_patterns) do
+    if line:find(pattern) then
+      return line, nil, true
+    end
+  end
+
+  for _, pattern in ipairs(line_patterns) do
     if line:find(pattern) then
       line_match = pattern
       break
@@ -15,15 +44,25 @@ function parser.parse(line, game)
 
   if line_match then
     -- print("Line matched: " .. line)
-    return line_match == patterns[1] or line_match == patterns[2], nil
+    -- Extract game title
+    if line_match == line_patterns[1] then -- Found
+      local game_title = string.match(line, game_title_patterns.FOUND)
+      print("Game title: " .. game_title)
+      return game_title, nil, false
+    elseif line_match == line_patterns[2] then -- Skipped
+      local game_title = string.match(line, game_title_patterns.SKIPPED)
+      print("Game title: " .. game_title)
+      return game_title, nil, false
+    end
+    return nil, nil
   else
     -- print("Line did not match: " .. line)
     for _, error in ipairs(SKYSCRAPER_ERRORS) do
       if line:find(error) then
-        return false, line
+        return nil, line, true
       end
     end
-    return nil, nil
+    return nil, nil, nil
   end
 end
 
