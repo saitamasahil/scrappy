@@ -15,8 +15,6 @@ local tools             = {}
 local theme             = configs.theme
 local scraper_opts      = { "screenscraper", "thegamesdb" }
 local scraper_index     = 1
-local output_opts       = { "box", "splash", "preview" }
-local output_index      = 1
 
 local w_width, w_height = love.window.getMode()
 
@@ -139,16 +137,6 @@ local function on_change_scraper()
   item.text = "Change Skyscraper module (current: " .. scraper_opts[scraper_index] .. ")"
 end
 
-local function on_change_output()
-  local index = output_index + 1
-  if index > #output_opts then index = 1 end
-  local item = menu ^ "artwork_output"
-
-  artwork.output_type = output_opts[index]
-  output_index = index
-  item.text = "Change artwork output (current: " .. output_opts[output_index] .. ")"
-end
-
 local function on_reset_configs()
   user_config:start_fresh()
   skyscraper_config:start_fresh()
@@ -205,13 +193,6 @@ function tools:load()
             width = item_width,
             onClick = on_change_scraper,
             icon = "download"
-          }
-          + listitem {
-            id = "artwork_output",
-            text = "Change artwork output (current: " .. output_opts[output_index] .. ")",
-            width = item_width,
-            onClick = on_change_output,
-            icon = "canvas"
           }
           + listitem {
             text = "Reset configs (can't be undone!)",

@@ -7,10 +7,19 @@ local pprint   = require("lib.pprint")
 
 local artwork  = {
   cached_game_ids = {},
-  output_type = "box",
-  output_type_preview = "preview",  
 }
 
+
+local output_types = {
+  BOX = "box",
+  PREVIEW = "preview",
+  SPLASH = "splash",
+}
+local output_map = {
+  [output_types.BOX] = "covers",
+  [output_types.PREVIEW] = "screenshots",
+  [output_types.SPLASH] = "wheels",
+}
 
 local user_config, skyscraper_config = config.user_config, config.skyscraper_config
 
@@ -42,6 +51,30 @@ function artwork.get_template_resolution(xml_path)
   return nil
 end
 
+function artwork.copy_artwork_type(platform, game, media_path, copy_path, output_type)
+  --[[
+    platform -> nes | gb | gba | ...
+    game -> "Super Mario World"
+    media_path -> "data/output/{platform}/media"
+    copy_path -> "/mnt/mmc/MUOS/info/catalogue/Platform Title/{type}"
+    output_type -> box | preview | splash
+  --]]
+
+  -- Find scraped artwork in output folder
+  local scraped_art_path = string.format("%s/%s/%s.png", media_path, output_map[output_type], game)
+  local scraped_art = nativefs.newFileData(scraped_art_path)
+  if not scraped_art then
+    log.write(string.format("Scraped artwork not found for output '%s'", output_map[output_type]))
+    return
+  end
+
+  -- Copy to catalogue
+  local _, err = nativefs.write(string.format("%s/%s/%s.png", copy_path, output_type, game), scraped_art)
+  if err then
+    log.write(err)
+  end
+end
+
 function artwork.copy_to_catalogue(platform, game)
   log.write(string.format("Copying artwork for %s: %s", platform, game))
   local _, output_path = skyscraper_config:get_paths()
@@ -51,42 +84,21 @@ function artwork.copy_to_catalogue(platform, game)
     return
   end
   output_path = utils.strip_quotes(output_path)
-  local destination_folder = muos.platforms[platform]
-  if not destination_folder then
+  local platform_str = muos.platforms[platform]
+  if not platform_str then
     log.write("Catalogue destination folder not found")
     return
   end
 
-  -----------------------------
-  -- Copy box/cover artwork
-  -----------------------------
-  local path = string.format("%s/%s/media/covers/%s.png", output_path, platform, game) 
-  local scraped_art = nativefs.newFileData(path)
-  if not scraped_art then
-    log.write("Scraped artwork not found")
-    return
-  end
+  local media_path = string.format("%s/%s/media", output_path, platform)
+  local copy_path = string.format("%s/%s", catalogue_path, platform_str)
 
-  local output_folder = string.format("%s/%s/%s", catalogue_path, destination_folder, artwork.output_type)
-  local _, err = nativefs.write(string.format("%s/%s.png", output_folder, game), scraped_art)
-  if err then
-    log.write(err)
-  end
-  
-  -----------------------------
-  -- Copy screenshot/preview artwork
-  -----------------------------
-  path = string.format("%s/%s/media/screenshots/%s.png", output_path, platform, game)
-  scraped_art = nativefs.newFileData(path)
-  if not scraped_art then
-    log.write("Scraped screenshot artwork not found")
-  else
-    output_folder = string.format("%s/%s/%s", catalogue_path, destination_folder, artwork.output_type_preview)
-    local _, err = nativefs.write(string.format("%s/%s.png", output_folder, game), scraped_art)
-    if err then
-      log.write(err)
-    end
-  end
+  -- Copy box/cover artwork
+  artwork.copy_artwork_type(platform, game, media_path, copy_path, output_types.BOX)
+  -- Copy preview artwork
+  artwork.copy_artwork_type(platform, game, media_path, copy_path, output_types.PREVIEW)
+  -- Copy splash artwork
+  artwork.copy_artwork_type(platform, game, media_path, copy_path, output_types.PREVIEW)
 
   -----------------------------
   -- Create text file
@@ -97,8 +109,7 @@ function artwork.copy_to_catalogue(platform, game)
     if list then
       for _, entry in ipairs(list) do
         if utils.get_filename_from_path(entry.path) == utils.escape_html(game) then
-          local text_folder = string.format("%s/%s/text", catalogue_path, destination_folder)
-          local _, err = nativefs.write(string.format("%s/%s.txt", text_folder, game), utils.unescape_html(entry.desc))
+          local _, err = nativefs.write(string.format("%s/text/%s.txt", copy_path, game), utils.unescape_html(entry.desc))
           if err then log.write(err) end
           break
         end
