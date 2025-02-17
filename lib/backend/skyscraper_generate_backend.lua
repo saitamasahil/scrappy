@@ -1,24 +1,23 @@
 require("globals")
-local socket     = require("socket")
-local parser     = require("lib.parser")
-local log        = require("lib.log")
-local channels   = require("lib.backend.channels")
-local utils      = require("helpers.utils")
-local pprint     = require("lib.pprint")
+local socket   = require("socket")
+local parser   = require("lib.parser")
+local log      = require("lib.log")
+local channels = require("lib.backend.channels")
+local utils    = require("helpers.utils")
+local pprint   = require("lib.pprint")
 
-local input_data = ...
-local running    = true
+-- local input_data = ...
+-- local running  = true
 
-while running do
+while true do
   ::continue::
   -- Demand a table with command, platform, type, and game from SKYSCRAPER_INPUT
-  -- local input_data = channels.SKYSCRAPER_GEN_INPUT:demand()
+  local input_data = channels.SKYSCRAPER_GEN_INPUT:demand()
 
   -- Extract the command, platform, type, and game
   local command = input_data.command
   local current_platform = input_data.platform
   local game = utils.get_filename(input_data.game)
-  local task_id = input_data.task_id
 
   local stderr_to_stdout = " 2>&1"
   local output = io.popen(command .. stderr_to_stdout)
@@ -27,11 +26,11 @@ while running do
   log.write(string.format("Platform: %s | Game: %s\n", current_platform or "none", game or "none"))
 
   print(string.format("Running generate command: %s", command))
-  print(string.format("Platform: %s | Game: %s\n", current_platform or "none", game or "none"))
+  -- print(string.format("Platform: %s | Game: %s\n", current_platform or "none", game or "none"))
 
   if not output then
     log.write("Failed to run Skyscraper")
-    channels.SKYSCRAPER_OUTPUT:push({ data = {}, error = "Failed to run Skyscraper", loading = false })
+    channels.SKYSCRAPER_OUTPUT:push({ error = "Failed to run Skyscraper" })
     goto continue
   end
 
@@ -42,36 +41,27 @@ while running do
   local parsed = false
   for line in output:lines() do
     line = utils.strip_ansi_colors(line)
-    -- print(line)
     if game ~= "fake-rom" then log.write(line, "skyscraper") end
-    local res, error, _ = parser.parse(line)
+    local res, error, skipped = parser.parse(line)
     if res ~= nil or error then parsed = true end
     if res ~= nil then
-      -- pprint({
-      --   data = {
-      --     title = game,
-      --     platform = current_platform,
-      --   },
-      --   task_id = task_id,
-      --   success = success ~= nil,
-      --   error = error,
-      --   loading = false
-      -- })
-      channels.SKYSCRAPER_OUTPUT:push({
-        data = {
-          title = res,
-          platform = current_platform,
-        },
-        task_id = task_id,
-        success = true,
+      pprint({
+        title = res,
+        platform = current_platform,
+        success = not skipped,
         error = error,
-        loading = false
+      })
+      channels.SKYSCRAPER_OUTPUT:push({
+        title = res,
+        platform = current_platform,
+        success = not skipped,
+        error = error,
       })
     end
 
     if error ~= nil and error ~= "" then
       log.write("ERROR: " .. error, "skyscraper")
-      channels.SKYSCRAPER_OUTPUT:push({ data = {}, error = error, loading = false })
+      channels.SKYSCRAPER_OUTPUT:push({ error = error })
       break
     end
   end
@@ -79,21 +69,21 @@ while running do
   if not parsed then
     log.write(string.format("Failed to parse Skyscraper output for %s", game))
     channels.SKYSCRAPER_OUTPUT:push({
-      loading = false,
-      task_id = task_id,
+      title = game,
+      platform = current_platform,
+      error = "Failed to parse Skyscraper output",
       success = false
     })
   end
 
-  channels.SKYSCRAPER_OUTPUT:push({ command_finished = true })
+  -- channels.SKYSCRAPER_OUTPUT:push({ command_finished = true })
 
-  channels.SKYSCRAPER_GEN_INPUT:push({ finished = true })
-
-  running = false
+  -- socket.sleep(0.2)
+  channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true })
 end
 
 function love.threaderror(thread, errorstr)
   print(errorstr)
-  channels.SKYSCRAPER_OUTPUT:push({ data = {}, error = errorstr, loading = false })
+  channels.SKYSCRAPER_OUTPUT:push({ error = errorstr })
   log.write(errorstr)
 end
