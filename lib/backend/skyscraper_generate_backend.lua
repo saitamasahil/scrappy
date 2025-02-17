@@ -42,9 +42,9 @@ while true do
   for line in output:lines() do
     line = utils.strip_ansi_colors(line)
     if game ~= "fake-rom" then log.write(line, "skyscraper") end
-    local res, error, skipped = parser.parse(line)
+    local res, error, skipped, rtype = parser.parse(line)
     if res ~= nil or error then parsed = true end
-    if res ~= nil then
+    if res ~= nil and rtype == "game" then
       pprint({
         title = res,
         platform = current_platform,
