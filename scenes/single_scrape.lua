@@ -94,7 +94,7 @@ local function load_rom_buttons(src_platform, dest_platform)
   local platform_path = string.format("%s/%s", rom_path, src_platform)
   local roms = nativefs.getDirectoryItems(platform_path)
 
-  pprint(dest_platform, artwork.cached_game_ids[dest_platform])
+  -- pprint(dest_platform, artwork.cached_game_ids[dest_platform])
 
   for _, rom in ipairs(roms) do
     local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, rom))

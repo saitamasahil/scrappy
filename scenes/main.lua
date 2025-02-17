@@ -36,10 +36,6 @@ local current_template = 1
 
 -- TODO: Refactor
 local state = {
-  data = {
-    title = "N/A",
-    platform = "N/A",
-  },
   error = "",
   loading = nil,
   scraping = false,
@@ -153,6 +149,8 @@ local function scrape_platforms()
   state.total = #state.tasks
   if state.total > 0 then
     state.scraping = true
+    local ui_progress = menu ^ "progress"
+    ui_progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
   else
     show_info_window("No platforms to scrape", "Please select platforms for scraping in settings.")
   end
@@ -167,51 +165,52 @@ local function halt_scraping()
   state.total = 0
 end
 
-local function update_state()
-  local t = channels.SKYSCRAPER_OUTPUT:pop()
-  if t then
-    if t.error and t.error ~= "" then
-      state.error = t.error
-      show_info_window("Error", t.error)
-      halt_scraping()
+local function update_state(t)
+  state.loading = false
+  if t.error and t.error ~= "" then
+    state.error = t.error
+    show_info_window("Error", t.error)
+    halt_scraping()
+  end
+  if t.title then
+    -- Menu UI elements
+    local ui_platform, ui_game = menu ^ "platform", menu ^ "game"
+    local ui_progress, ui_bar = menu ^ "progress", menu ^ "progress_bar"
+    -- Update UI
+    if menu.children then
+      ui_platform.text = "Platform: " .. t.platform
+      ui_game.text = "Game: " .. t.title
     end
-    if t.loading ~= nil then state.loading = t.loading end
-    if t.data and next(t.data) then
-      state.data = t.data -- remove
-      -- Update UI
-      if menu.children then
-        local platform, game = menu ^ "platform", menu ^ "game"
-        platform.text = "Platform: " .. t.data.platform
-        game.text = "Game: " .. t.data.title
-      end
-      if t.data.title ~= "fake-rom" and t.success then
-        cover_preview_path = string.format("data/output/%s/media/covers/%s.png", t.data.platform, t.data
-          .title)
-        state.reload_preview = true
-      end
-    end
-    if t.task_id then
-      log.write(string.format("Finished Skyscraper task [%s]: %s", t.success and "success" or "fail", t.task_id))
+    if t.title ~= "fake-rom" then
+      log.write(string.format("[%s] Finished Skyscraper task \"%s\"", t.success and "SUCCESS" or "FAILURE", t
+        .title))
+
+      -- Remove task from tasks list
       local pos = 0
       for i = 1, #state.tasks do
-        if state.tasks[i] == t.task_id then
+        if state.tasks[i] == game_file_map[t.platform][t.title] then
           pos = i
           break
         end
       end
       table.remove(state.tasks, pos)
-      -- Copy game artwork
+
       if t.success then
-        artwork.copy_to_catalogue(t.data.platform, t.data.title)
+        -- Reload preview
+        cover_preview_path = string.format("data/output/%s/media/covers/%s.png", t.platform, t.title)
+        state.reload_preview = true
+        -- Copy game artwork
+        artwork.copy_to_catalogue(t.platform, t.title)
       else
-        table.insert(state.failed_tasks, t.task_id)
+        state.failed_tasks[#state.failed_tasks + 1] = t.title
       end
+
       -- Update UI
       if menu.children then
-        local progress, bar = menu ^ "progress", menu ^ "progress_bar"
-        progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
-        bar:setProgress((state.total - #state.tasks) / state.total)
+        ui_progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
+        ui_bar:setProgress((state.total - #state.tasks) / state.total)
       end
+
       -- Check if finished
       if state.scraping and #state.tasks == 0 then
         log.write(string.format("Finished scraping %d games. %d failed or skipped", state.total, #state.failed_tasks))
@@ -399,11 +398,11 @@ local function process_game_queue()
   -- If there's already a task in progress, wait for the finished signal
   if task_in_progress then
     -- Wait for the task to finish
-    local finished_signal = channels.SKYSCRAPER_GEN_INPUT:pop()
+    local finished_signal = channels.SKYSCRAPER_GEN_OUTPUT:pop()
     if finished_signal and finished_signal.finished then
       -- Mark task as finished
+      print(string.format("Finished task \"%s\"", task_in_progress))
       task_in_progress = nil
-      print("Previous task finished, ready for next task.")
     end
     return -- Don't process anything further until the current task is done
   end
@@ -412,8 +411,13 @@ local function process_game_queue()
   local ready = channels.SKYSCRAPER_GAME_QUEUE:pop()
   if ready then
     local game, platform, skipped = ready.game, ready.platform, ready.skipped
-    print("Received a ready signal, queuing update_artwork for " .. game)
+    print("\nReceived a ready signal, queuing update_artwork for " .. game)
     if skipped then
+      update_state({
+        title = game,
+        platform = platform,
+        success = false,
+      })
       print("Skipping game " .. game)
       return
     end
@@ -421,17 +425,21 @@ local function process_game_queue()
     local game_file = game_file_map[platform][game]
     if game_file then
       task_in_progress = game_file
-      skyscraper.update_artwork("", game_file,
+      skyscraper.update_artwork(rom_path .. "/Nintendo/N64", game_file,
         platform, templates[current_template])
     end
   end
 end
 
 function main:update(dt)
-  update_state()
+  local t = channels.SKYSCRAPER_OUTPUT:pop()
+  if t then
+    update_state(t) -- TODO: Refactor
+  end
   menu:update(dt)
   if state.reload_preview and not state.loading then
     state.reload_preview = false
+    print("Reloading preview " .. cover_preview_path)
     render_to_canvas()
   end
 
