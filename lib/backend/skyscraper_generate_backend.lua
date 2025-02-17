@@ -1,14 +1,18 @@
 require("globals")
-local parser   = require("lib.parser")
-local log      = require("lib.log")
-local channels = require("lib.backend.channels")
-local utils    = require("helpers.utils")
-local pprint   = require("lib.pprint")
+local socket     = require("socket")
+local parser     = require("lib.parser")
+local log        = require("lib.log")
+local channels   = require("lib.backend.channels")
+local utils      = require("helpers.utils")
+local pprint     = require("lib.pprint")
 
-while true do
+local input_data = ...
+local running    = true
+
+while running do
   ::continue::
   -- Demand a table with command, platform, type, and game from SKYSCRAPER_INPUT
-  local input_data = channels.SKYSCRAPER_GEN_INPUT:demand()
+  -- local input_data = channels.SKYSCRAPER_GEN_INPUT:demand()
 
   -- Extract the command, platform, type, and game
   local command = input_data.command
@@ -21,6 +25,9 @@ while true do
 
   log.write(string.format("Running generate command: %s", command))
   log.write(string.format("Platform: %s | Game: %s\n", current_platform or "none", game or "none"))
+
+  print(string.format("Running generate command: %s", command))
+  print(string.format("Platform: %s | Game: %s\n", current_platform or "none", game or "none"))
 
   if not output then
     log.write("Failed to run Skyscraper")
@@ -35,10 +42,11 @@ while true do
   local parsed = false
   for line in output:lines() do
     line = utils.strip_ansi_colors(line)
+    -- print(line)
     if game ~= "fake-rom" then log.write(line, "skyscraper") end
-    local res, error, is_log = parser.parse(line)
+    local res, error, _ = parser.parse(line)
     if res ~= nil or error then parsed = true end
-    if res ~= nil and not is_log then
+    if res ~= nil then
       -- pprint({
       --   data = {
       --     title = game,
@@ -78,6 +86,10 @@ while true do
   end
 
   channels.SKYSCRAPER_OUTPUT:push({ command_finished = true })
+
+  channels.SKYSCRAPER_GEN_INPUT:push({ finished = true })
+
+  running = false
 end
 
 function love.threaderror(thread, errorstr)

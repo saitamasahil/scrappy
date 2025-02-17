@@ -48,6 +48,8 @@ local state = {
   total = 0,
 }
 
+local task_in_progress = nil
+
 --[[
   Format:
   {
@@ -124,6 +126,7 @@ local function scrape_platforms()
         if game_title then
           game_file_map[dest][game_title] = file
         end
+        table.insert(state.tasks, file)
         -- -- Check if already processed
         -- table.insert(state.tasks, file)
         -- if artwork.cached_game_ids[src] and artwork.cached_game_ids[src][file] then
@@ -147,12 +150,12 @@ local function scrape_platforms()
   --
   -- TODO: Refactor user feedback
   --
-  -- state.total = #state.tasks
-  -- if state.total > 0 then
-  --   state.scraping = true
-  -- else
-  --   show_info_window("No platforms to scrape", "Please select platforms for scraping in settings.")
-  -- end
+  state.total = #state.tasks
+  if state.total > 0 then
+    state.scraping = true
+  else
+    show_info_window("No platforms to scrape", "Please select platforms for scraping in settings.")
+  end
   -- log.write(string.format("Generated %d Skyscraper tasks", state.total))
 end
 
@@ -392,6 +395,38 @@ function main:load()
   menu:focusFirstElement()
 end
 
+local function process_game_queue()
+  -- If there's already a task in progress, wait for the finished signal
+  if task_in_progress then
+    -- Wait for the task to finish
+    local finished_signal = channels.SKYSCRAPER_GEN_INPUT:pop()
+    if finished_signal and finished_signal.finished then
+      -- Mark task as finished
+      task_in_progress = nil
+      print("Previous task finished, ready for next task.")
+    end
+    return -- Don't process anything further until the current task is done
+  end
+
+  -- Wait for a ready signal from the Skyscraper backend
+  local ready = channels.SKYSCRAPER_GAME_QUEUE:pop()
+  if ready then
+    local game, platform, skipped = ready.game, ready.platform, ready.skipped
+    print("Received a ready signal, queuing update_artwork for " .. game)
+    if skipped then
+      print("Skipping game " .. game)
+      return
+    end
+    local rom_path, _ = user_config:get_paths()
+    local game_file = game_file_map[platform][game]
+    if game_file then
+      task_in_progress = game_file
+      skyscraper.update_artwork("", game_file,
+        platform, templates[current_template])
+    end
+  end
+end
+
 function main:update(dt)
   update_state()
   menu:update(dt)
@@ -400,16 +435,7 @@ function main:update(dt)
     render_to_canvas()
   end
 
-  -- Wait for a ready signal from the Skyscraper backend
-  local ready = channels.SKYSCRAPER_GAME_QUEUE:pop()
-  if ready then
-    local rom_path, _ = user_config:get_paths()
-    local game_file = game_file_map[ready.platform][ready.game]
-    if game_file then
-      skyscraper.update_artwork("/home/gabrielfvale/Projects/love2d-scraper/roms/Nintendo/N64", game_file, ready
-        .platform, templates[current_template])
-    end
-  end
+  process_game_queue()
 end
 
 function main:draw()
