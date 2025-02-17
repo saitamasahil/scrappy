@@ -74,10 +74,13 @@ while true do
     line = utils.strip_ansi_colors(line)
     -- print(line)
     -- if game ~= "fake-rom" then log.write(line, "skyscraper") end
-    local res, error, skipped = parser.parse(line)
+    local res, error, skipped, rtype = parser.parse(line)
     if res ~= nil or error then parsed = true end
     if res ~= nil then
-      emit_ready(res, current_platform, skipped)
+      log.write(string.format("[gathering] %s", line), "skyscraper")
+      if rtype == "game" then
+        emit_ready(res, current_platform, skipped)
+      end
     end
     -- if game ~= nil then
     --   emit_ready(game, current_platform)
