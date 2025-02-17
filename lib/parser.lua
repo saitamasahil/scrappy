@@ -29,11 +29,11 @@ function parser.parse(line)
   local game_pattern = "'([^']*'.-)'"
   local line_match = nil
 
-  for _, pattern in ipairs(log_patterns) do
-    if line:find(pattern) then
-      return line, nil, true
-    end
-  end
+  -- for _, pattern in ipairs(log_patterns) do
+  --   if line:find(pattern) then
+  --     return line, nil, true
+  --   end
+  -- end
 
   for _, pattern in ipairs(line_patterns) do
     if line:find(pattern) then
@@ -47,14 +47,15 @@ function parser.parse(line)
     -- Extract game title
     if line_match == line_patterns[1] then -- Found
       local game_title = string.match(line, game_title_patterns.FOUND)
-      print("Game title: " .. game_title)
       return game_title, nil, false
     elseif line_match == line_patterns[2] then -- Skipped
       local game_title = string.match(line, game_title_patterns.SKIPPED)
-      print("Game title: " .. game_title)
       return game_title, nil, false
+    elseif line_match == line_patterns[3] then -- Not found
+      local game_title = string.match(line, game_title_patterns.NOT_FOUND)
+      return game_title, nil, true
     end
-    return nil, nil
+    return "N/A", nil, true
   else
     -- print("Line did not match: " .. line)
     for _, error in ipairs(SKYSCRAPER_ERRORS) do

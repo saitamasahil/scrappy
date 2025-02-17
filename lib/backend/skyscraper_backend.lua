@@ -28,8 +28,9 @@ local function log_version(output)
   end
 end
 
-local function emit_ready(game, platform)
-  channels.SKYSCRAPER_GAME_QUEUE:push({ game = game, platform = platform })
+local function emit_ready(game, platform, skipped)
+  print(string.format("Game queued: \"%s\"", game))
+  channels.SKYSCRAPER_GAME_QUEUE:push({ game = game, platform = platform, skipped = skipped })
 end
 
 while true do
@@ -43,6 +44,7 @@ while true do
   -- local game = utils.get_filename(input_data.game)
   -- local task_id = input_data.task_id
 
+  print("log: Starting Skyscraper, please wait...")
   local stderr_to_stdout = " 2>&1"
   local output = io.popen(command .. stderr_to_stdout)
 
@@ -72,15 +74,10 @@ while true do
     line = utils.strip_ansi_colors(line)
     -- print(line)
     -- if game ~= "fake-rom" then log.write(line, "skyscraper") end
-    local res, error, is_log = parser.parse(line)
+    local res, error, skipped = parser.parse(line)
     if res ~= nil or error then parsed = true end
     if res ~= nil then
-      if is_log then
-        print(res)
-      else
-        print(string.format("Game queued: \"%s\"", res))
-        emit_ready(res, current_platform)
-      end
+      emit_ready(res, current_platform, skipped)
     end
     -- if game ~= nil then
     --   emit_ready(game, current_platform)

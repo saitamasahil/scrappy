@@ -18,8 +18,11 @@ local function push_cache_command(command)
   end
 end
 local function push_command(command)
-  if channels.SKYSCRAPER_GEN_INPUT then
-    channels.SKYSCRAPER_GEN_INPUT:push(command)
+  -- if channels.SKYSCRAPER_GEN_INPUT then
+  --   channels.SKYSCRAPER_GEN_INPUT:push(command)
+  -- end
+  if gen_thread then
+    gen_thread:start(command)
   end
 end
 
@@ -41,7 +44,7 @@ function skyscraper.init(config_path, binary)
   gen_thread = love.thread.newThread("lib/backend/skyscraper_generate_backend.lua")
 
   cache_thread:start()
-  gen_thread:start()
+  -- gen_thread:start()
   push_cache_command({ command = string.format("%s -v", skyscraper.base_command), version = 1 })
 end
 
@@ -84,6 +87,8 @@ local function generate_command(config)
 
   -- Force maximum number of threads
   command = string.format('%s -t 8', command)
+  -- Use 'pegasus' frontend for simpler gamelist generation
+  command = string.format('%s -f pegasus', command)
   return command
 end
 
