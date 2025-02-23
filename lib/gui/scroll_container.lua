@@ -88,7 +88,9 @@ return function(props)
       love.graphics.setScissor()
 
       -- Draw the scroll bar
+      love.graphics.push()
       self:drawScrollbar()
+      love.graphics.pop()
     end,
 
     update = function(self, dt)
