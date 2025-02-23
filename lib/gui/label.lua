@@ -26,6 +26,8 @@ local function label(props)
     font = _font,
     draw = function(self)
       if not self.visible then return end
+
+      love.graphics.push()
       love.graphics.setFont(self.font)
 
       -- Draw the icon on the left if icon is provided
@@ -49,6 +51,7 @@ local function label(props)
       love.graphics.setColor(color)
       love.graphics.print(self.text, textX, self.y)
       love.graphics.setColor({ 1, 1, 1 }) -- Reset color to white
+      love.graphics.pop()
     end,
   }
 end

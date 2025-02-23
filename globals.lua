@@ -12,5 +12,7 @@ _G.SKYSCRAPER_ERRORS = {
   "Couldn't read artwork xml file",
   "requested either on command line or with",
   "Couldn't create cache folders, please check folder permissions and try again...",
-  "Please set a valid platform with"
+  "Please set a valid platform with",
+  "No files to process in cache",
+  "Skyscraper came to an untimely end."
 }

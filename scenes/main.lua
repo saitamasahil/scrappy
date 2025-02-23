@@ -14,7 +14,7 @@ local label      = require "lib.gui.label"
 local select     = require "lib.gui.select"
 local progress   = require "lib.gui.progress"
 local popup      = require "lib.gui.popup"
-local menu, info_window
+local menu, info_window, scraping_window
 
 
 local background, overlay
@@ -23,6 +23,7 @@ local theme = configs.theme
 local loader = loading.new("highlight", 1)
 
 local w_width, w_height = love.window.getMode()
+local padding = 10
 local canvas = love.graphics.newCanvas(w_width, w_height)
 local default_cover_path = "sample/media/covers/fake-rom.png"
 local cover_preview_path = default_cover_path
@@ -42,9 +43,9 @@ local state = {
   tasks = {},
   failed_tasks = {},
   total = 0,
+  task_in_progress = nil,
+  log = ""
 }
-
-local task_in_progress = nil
 
 --[[
   Format:
@@ -149,8 +150,11 @@ local function scrape_platforms()
   state.total = #state.tasks
   if state.total > 0 then
     state.scraping = true
-    local ui_progress = menu ^ "progress"
-    ui_progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
+    if scraping_window then
+      local ui_progress = scraping_window ^ "progress"
+      ui_progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
+      scraping_window.visible = true
+    end
   else
     show_info_window("No platforms to scrape", "Please select platforms for scraping in settings.")
   end
@@ -172,12 +176,18 @@ local function update_state(t)
     show_info_window("Error", t.error)
     halt_scraping()
   end
+  if t.log then
+    state.log = state.log .. t.log .. "\n"
+    -- local scraping_log = scraping_window ^ "scraping_log"
+    -- print("GOT LOG " .. t.log)
+    -- scraping_log.text = t.log
+  end
   if t.title then
     -- Menu UI elements
-    local ui_platform, ui_game = menu ^ "platform", menu ^ "game"
-    local ui_progress, ui_bar = menu ^ "progress", menu ^ "progress_bar"
+    local ui_platform, ui_game = scraping_window ^ "platform", scraping_window ^ "game"
+    local ui_progress, ui_bar = scraping_window ^ "progress", scraping_window ^ "progress_bar"
     -- Update UI
-    if menu.children then
+    if scraping_window.children then
       ui_platform.text = "Platform: " .. t.platform
       ui_game.text = "Game: " .. t.title
     end
@@ -206,7 +216,7 @@ local function update_state(t)
       end
 
       -- Update UI
-      if menu.children then
+      if scraping_window.children then
         ui_progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
         ui_bar:setProgress((state.total - #state.tasks) / state.total)
       end
@@ -215,6 +225,7 @@ local function update_state(t)
       if state.scraping and #state.tasks == 0 then
         log.write(string.format("Finished scraping %d games. %d failed or skipped", state.total, #state.failed_tasks))
         state.scraping = false
+        scraping_window.visible = false
         show_info_window(
           "Finished scraping",
           string.format("Scraped %d games, %d failed or skipped! %s", state.total,
@@ -288,11 +299,11 @@ local function render_to_canvas()
   cover_preview = img
 
   canvas:renderTo(function()
-    love.graphics.clear()
+    love.graphics.clear(0, 0, 0, 0)
     if cover_preview then
       local cover_w, cover_h = cover_preview:getDimensions()
       local canvas_w, canvas_h = canvas:getDimensions()
-      love.graphics.draw(cover_preview, canvas_w - cover_w, canvas_h / 2 - cover_h / 2, 0)
+      love.graphics.draw(cover_preview, canvas_w - cover_w, canvas_h * 0.5 - cover_h * 0.5, 0)
     end
   end)
 end
@@ -308,11 +319,12 @@ function main:load()
 
   menu = component:root { column = true, gap = 10 }
   info_window = popup { visible = false }
+  scraping_window = popup { visible = false, title = "Scraping in progress" }
 
   local canvasComponent = component {
     overlay = true,
-    width = w_width / 2,
-    height = w_height / 2,
+    width = w_width * 0.5,
+    height = w_height * 0.5,
     draw = function(self)
       local cw, ch = canvas:getDimensions()
       local scale = self.width / cw
@@ -320,14 +332,40 @@ function main:load()
       love.graphics.translate(self.x, self.y)
       love.graphics.scale(scale)
       if self.overlay and background then
-        love.graphics.draw(background, 0, 0, 0)
+        love.graphics.draw(background, 0, 0)
       end
-      love.graphics.draw(canvas, 0, 0, 0);
+      love.graphics.draw(canvas, 0, 0);
       if self.overlay and overlay then
-        love.graphics.draw(overlay, 0, 0, 0)
+        love.graphics.draw(overlay, 0, 0)
       end
       love.graphics.setColor(1, 1, 1, 0.5);
       love.graphics.rectangle("line", 0, 0, cw, ch)
+      if state.loading or state.scraping then
+        love.graphics.setColor(0, 0, 0, 0.5);
+        love.graphics.rectangle("fill", 0, 0, cw, ch)
+        loader:draw(cw * scale, ch * scale, 1)
+      end
+      love.graphics.setColor(1, 1, 1);
+      love.graphics.pop()
+    end
+  }
+
+  local canvasComponent2 = component {
+    overlay = true,
+    width = w_width * 0.5 - 2 * padding,
+    height = w_height * 0.5 - 2 * padding,
+    draw = function(self)
+      local cw, ch = canvas:getDimensions()
+      local scale = self.width / cw
+      love.graphics.push()
+      love.graphics.translate(self.x, self.y)
+      love.graphics.scale(scale)
+      if background then
+        love.graphics.draw(background, 0, 0)
+      end
+      love.graphics.draw(canvas, 0, 0);
+      -- love.graphics.setColor(1, 1, 1, 0.5);
+      -- love.graphics.rectangle("line", 0, 0, cw, ch)
       if state.loading or state.scraping then
         love.graphics.setColor(0, 0, 0, 0.5);
         love.graphics.rectangle("fill", 0, 0, cw, ch)
@@ -365,7 +403,7 @@ function main:load()
       + (component { column = true, gap = 10 }
         + label { text = "Artwork", icon = "canvas" }
         + selectionComponent
-        + infoComponent
+      -- + infoComponent
       )
 
   menu = menu
@@ -388,21 +426,68 @@ function main:load()
         visible = not skyscraper_config:has_credentials()
       }
 
+  scraping_window = scraping_window
+      + (   -- Column
+        component { column = true, gap = 15 }
+        + ( -- Row: Preview + Info
+          component { row = true, gap = 10 }
+          + canvasComponent2
+          + infoComponent
+        )
+        + component {
+          id = "scraping_log",
+          width = scraping_window.width - 4 * padding,
+          height = 100,
+          font = love.graphics.getFont(),
+          text = "",
+          draw = function(self)
+            love.graphics.push()
+            love.graphics.setColor(0, 0, 0, 0.5)
+            love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.stencil(function()
+              love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+            end, "replace", 1)
+            love.graphics.setStencilTest("greater", 0)
+
+            -- Split the text into lines
+            local lines = {}
+            for s in self.text:gmatch("[^\r\n]+") do
+              table.insert(lines, s)
+            end
+
+            -- Calculate the total height of all the lines
+            local totalTextHeight = #lines * self.font:getHeight()
+
+            -- Draw text from bottom-up
+            local offset = self.height - totalTextHeight
+            for i = 1, #lines do
+              love.graphics.printf(lines[i], self.x + 10, self.y + offset, self.width - 10, "left")
+              offset = offset + self.font:getHeight()
+            end
+
+            love.graphics.setStencilTest()
+            love.graphics.pop()
+          end
+        }
+      )
   menu:updatePosition(10, 10)
-  infoComponent:updatePosition(0, w_height * 0.5 - selectionComponent.height - infoComponent.height - 10)
+  -- infoComponent:updatePosition(0, w_height * 0.5 - selectionComponent.height - infoComponent.height - 10)
 
   menu:focusFirstElement()
+
+  -- show_info_window("Scraping in progress", "Please wait for the select platforms for scraping in settings.")
 end
 
 local function process_game_queue()
   -- If there's already a task in progress, wait for the finished signal
-  if task_in_progress then
+  if state.task_in_progress then
     -- Wait for the task to finish
     local finished_signal = channels.SKYSCRAPER_GEN_OUTPUT:pop()
     if finished_signal and finished_signal.finished then
       -- Mark task as finished
-      print(string.format("Finished task \"%s\"", task_in_progress))
-      task_in_progress = nil
+      print(string.format("Finished task \"%s\"", state.task_in_progress))
+      state.task_in_progress = nil
     end
     return -- Don't process anything further until the current task is done
   end
@@ -422,10 +507,23 @@ local function process_game_queue()
       return
     end
     local rom_path, _ = user_config:get_paths()
+    local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
+    local platform_path = ""
+    for src, dest in utils.orderedPairs(platforms) do
+      if dest == platform then
+        platform_path = string.format("%s/%s", rom_path, src)
+        break
+      end
+    end
+    if not platform_path then
+      log.write("No valid platform found")
+      return
+    end
     local game_file = game_file_map[platform][game]
     if game_file then
-      task_in_progress = game_file
-      skyscraper.update_artwork(rom_path .. "/Nintendo/N64", game_file,
+      state.task_in_progress = game_file
+      print(string.format("Task in progress: %s", game_file))
+      skyscraper.update_artwork(platform_path, game_file,
         platform, templates[current_template])
     end
   end
@@ -437,7 +535,7 @@ function main:update(dt)
     update_state(t) -- TODO: Refactor
   end
   menu:update(dt)
-  if state.reload_preview and not state.loading then
+  if state.reload_preview then
     state.reload_preview = false
     print("Reloading preview " .. cover_preview_path)
     render_to_canvas()
@@ -450,6 +548,7 @@ function main:draw()
   love.graphics.clear(utils.hex_v(theme:read("main", "BACKGROUND")))
   menu:draw()
   info_window:draw()
+  scraping_window:draw()
 end
 
 function main:keypressed(key)

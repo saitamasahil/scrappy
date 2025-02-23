@@ -19,13 +19,21 @@ local function popup(props)
     y = props.y or 0,
     width = screenWidth,
     height = screenHeight,
+    padding = props.padding or 10,
     _font = props.font or love.graphics.getFont(),
     draw = function(self)
       if not self.visible then return end
 
-      local content_width = self.width - 150
-      local _, wrappedText = self._font:getWrap(self.content, content_width)
-      local content_height = self._font:getHeight() * #wrappedText
+      local content_width, content_height, wrappedText
+
+      if #self.children > 0 then
+        content_width = math.min(self.children[1].width + self.padding * 2, self.width)
+        content_height = math.min(self.children[1].height + self.padding * 2, self.width)
+      else
+        content_width = self.width - 150
+        _, wrappedText = self._font:getWrap(self.content, content_width)
+        content_height = self._font:getHeight() * #wrappedText
+      end
 
       local center_width, center_height = screenWidth * 0.5 - content_width * 0.5,
           screenHeight * 0.5 - content_height * 0.5
@@ -62,7 +70,21 @@ local function popup(props)
       love.graphics.pop()
 
       overlayLabel:draw()
-      infoTextComponent:draw()
+      -- If the popup has a child, draw it
+      if #self.children > 0 then
+        local child = self.children[1]
+
+        love.graphics.push()
+        love.graphics.translate(center_width, center_height)
+        love.graphics.setColor(boxColor)
+        love.graphics.rectangle("fill", self.x, self.y, content_width, content_height)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.translate(self.padding, self.padding)
+        child:draw()
+        love.graphics.pop()
+      else
+        infoTextComponent:draw()
+      end
     end,
   }
 end
