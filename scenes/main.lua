@@ -1,3 +1,4 @@
+require("globals")
 local skyscraper = require("lib.skyscraper")
 local log        = require("lib.log")
 local scenes     = require("lib.scenes")
@@ -32,7 +33,6 @@ local cover_preview
 
 local main = {}
 
-local resolution = "640x480"
 local templates = {}
 local current_template = 1
 
@@ -253,13 +253,15 @@ local function get_templates()
     if file:sub(-4) == ".xml" then
       local template_name = file:sub(1, -5)
       local xml_path = WORK_DIR .. "/templates/" .. file
-      local template_resolution = artwork.get_template_resolution(xml_path)
-
-      -- 1. Include if the template resolutio is not defined;
-      -- 2. Include if the template resolution matches the user resolution;
-      -- 3. Include if the template resolution is not "640x480" or "720x720".
-      if not template_resolution or template_resolution == resolution or
-          (template_resolution ~= "640x480" and template_resolution ~= "720x720") then
+      if user_config:read("main", "filterTemplates") == "1" then
+        local template_resolution = artwork.get_template_resolution(xml_path)
+        -- 1. Include if the template resolutio is not defined;
+        -- 2. Include if the template resolution matches the user resolution;
+        if not template_resolution or template_resolution == _G.resolution then
+          table.insert(templates, template_name)
+        end
+      else
+        -- Include all templates
         table.insert(templates, template_name)
       end
     end
@@ -306,9 +308,21 @@ end
 
 function main:load()
   loader:load()
-  resolution = user_config:read("main", "resolution") or resolution
-  background = love.graphics.newImage(string.format("assets/muxsysinfo_%s.png", resolution))
-  overlay = love.graphics.newImage(string.format("assets/preview_%s.png", resolution))
+  local resulution_supported = false
+  local asset_resolution = "640x480"
+  for i = 1, #_G.supported_resolutions do
+    if _G.supported_resolutions[i] == _G.resolution then
+      resulution_supported = true
+      asset_resolution = _G.resolution
+      break
+    end
+  end
+  if not resulution_supported then
+    log.write(string.format("Resolution %s is not supported, using fallback assets", _G.resolution))
+  end
+
+  background = love.graphics.newImage(string.format("assets/muxsysinfo_%s.png", asset_resolution))
+  overlay = love.graphics.newImage(string.format("assets/preview_%s.png", asset_resolution))
 
   get_templates()
   render_to_canvas()
