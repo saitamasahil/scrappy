@@ -65,6 +65,7 @@ local function show_info_window(title, content)
 end
 
 local function update_preview(direction)
+  state.loading = true
   cover_preview_path = default_cover_path
   local direction = direction or 1
   current_template = current_template + direction
@@ -77,9 +78,6 @@ local function update_preview(direction)
   local sample_artwork = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
   skyscraper.change_artwork(sample_artwork)
   skyscraper.update_sample(sample_artwork)
-  state.loading = true
-  state.reload_preview = true
-  state.total = 0
 end
 
 local function scrape_platforms()
@@ -228,6 +226,8 @@ local function update_state(t)
             #state.failed_tasks, table.concat(state.failed_tasks, ", "))
         )
       end
+    else
+      state.reload_preview = true
     end
   end
 end
@@ -348,9 +348,12 @@ function main:load()
       if self.overlay and overlay then
         love.graphics.draw(overlay, 0, 0)
       end
-      love.graphics.setColor(1, 1, 1, 0.5);
-      love.graphics.rectangle("line", 0, 0, cw, ch)
-      love.graphics.setColor(1, 1, 1);
+      if state.loading then
+        love.graphics.setColor(0, 0, 0, 0.5);
+        love.graphics.rectangle("fill", 0, 0, cw, ch)
+        loader:draw(cw * scale, ch * scale, 1)
+        love.graphics.setColor(1, 1, 1);
+      end
       love.graphics.pop()
     end
   }
