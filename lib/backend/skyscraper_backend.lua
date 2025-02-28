@@ -29,7 +29,7 @@ local function log_version(output)
 end
 
 local function emit_ready(game, platform, skipped)
-  -- print(string.format("Game queued: \"%s\"", game))
+  print(string.format("Game queued: \"%s\"", game))
   channels.SKYSCRAPER_GAME_QUEUE:push({ game = game, platform = platform, skipped = skipped })
   channels.SKYSCRAPER_OUTPUT:push({ log = string.format("Game queued: \"%s\"", game) })
 end
@@ -77,8 +77,8 @@ while true do
 
   local parsed = false
   for line in output:lines() do
-    line = utils.strip_ansi_colors(line)
     -- print(line)
+    line = utils.strip_ansi_colors(line)
     -- if game ~= "fake-rom" then log.write(line, "skyscraper") end
     local res, error, skipped, rtype = parser.parse(line)
     if res ~= nil or error then parsed = true end
