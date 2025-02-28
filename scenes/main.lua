@@ -2,17 +2,18 @@ local skyscraper = require("lib.skyscraper")
 local log        = require("lib.log")
 local scenes     = require("lib.scenes")
 local loading    = require("lib.loading")
-local pprint     = require("lib.pprint")
+-- local pprint     = require("lib.pprint")
 local channels   = require("lib.backend.channels")
 local configs    = require("helpers.config")
 local utils      = require("helpers.utils")
 local artwork    = require("helpers.artwork")
+local muos       = require("helpers.muos")
 
 local component  = require "lib.gui.badr"
 local button     = require "lib.gui.button"
 local label      = require "lib.gui.label"
 local select     = require "lib.gui.select"
-local progress   = require "lib.gui.progress"
+-- local progress   = require "lib.gui.progress"
 local popup      = require "lib.gui.popup"
 local menu, info_window, scraping_window
 
@@ -89,7 +90,7 @@ local function scrape_platforms()
   local selected_platforms = user_config:get().platformsSelected
   local rom_path, _ = user_config:get_paths()
   -- Reset tasks
-  state.tasks = {}
+  state.tasks = 0
   state.failed_tasks = {}
   -- Process cached data from quickid and db
   if user_config:read("main", "parseCache") == "1" then
@@ -103,7 +104,11 @@ local function scrape_platforms()
     end
 
     local platform_path = string.format("%s/%s", rom_path, src)
-    skyscraper.fetch_artwork(platform_path, dest)
+
+    -- Identify games not in cache
+    local uncached_games = false
+    local game_list = {}
+
     -- Get list of roms
     local roms = nativefs.getDirectoryItems(platform_path)
     if not roms or #roms == 0 then
@@ -115,30 +120,29 @@ local function scrape_platforms()
       -- Check if it's a file or directory
       local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, file))
       if file_info and file_info.type == "file" then
+        local is_cached = artwork.cached_game_ids[dest] and artwork.cached_game_ids[dest][file]
+        uncached_games = not is_cached
+
         -- Get the title without extension
         local game_title = utils.get_filename(file)
-        if game_file_map[dest] == nil then
-          game_file_map[dest] = {}
-        end
-        if game_title then
-          game_file_map[dest][game_title] = file
-        end
-        table.insert(state.tasks, file)
-        -- -- Check if already processed
-        -- table.insert(state.tasks, file)
-        -- if artwork.cached_game_ids[src] and artwork.cached_game_ids[src][file] then
-        --   -- Game cached, update artwork
-        --   skyscraper.update_artwork(platform_path, file, dest, templates[current_template], file)
-        -- else
-        --   -- Fetch and update artwork
-        --   skyscraper.fetch_and_update_artwork(
-        --     platform_path,
-        --     file,
-        --     dest,
-        --     templates[current_template],
-        --     file
-        --   )
-        -- end
+
+        -- Save in reference map
+        if game_file_map[dest] == nil then game_file_map[dest] = {} end
+        if game_title then game_file_map[dest][game_title] = file end
+        state.tasks = state.tasks + 1
+        table.insert(game_list, game_title)
+      end
+    end
+
+    if uncached_games then
+      skyscraper.fetch_artwork(platform_path, dest)
+    else
+      print("ALL GAMES ARE CACHED FOR " .. dest)
+      for i = 1, #game_list do
+        channels.SKYSCRAPER_GAME_QUEUE:push({
+          game = game_list[i],
+          platform = dest,
+        })
       end
     end
     ::skip::
@@ -147,18 +151,18 @@ local function scrape_platforms()
   --
   -- TODO: Refactor user feedback
   --
-  state.total = #state.tasks
+  state.total = state.tasks
   if state.total > 0 then
     state.scraping = true
     if scraping_window then
       local ui_progress = scraping_window ^ "progress"
-      ui_progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
+      ui_progress.text = string.format("Game %d of %d", (state.total - state.tasks), state.total)
       scraping_window.visible = true
     end
   else
     show_info_window("No platforms to scrape", "Please select platforms for scraping in settings.")
   end
-  -- log.write(string.format("Generated %d Skyscraper tasks", state.total))
+  log.write(string.format("Generated %d Skyscraper tasks", state.total))
 end
 
 local function halt_scraping()
@@ -188,23 +192,15 @@ local function update_state(t)
     local ui_progress, ui_bar = scraping_window ^ "progress", scraping_window ^ "progress_bar"
     -- Update UI
     if scraping_window.children then
-      ui_platform.text = "Platform: " .. t.platform
-      ui_game.text = "Game: " .. t.title
+      ui_platform.text = muos["platforms"][t.platform]
+      ui_game.text = t.title
     end
     if t.title ~= "fake-rom" then
       log.write(string.format("[%s] Finished Skyscraper task \"%s\"", t.success and "SUCCESS" or "FAILURE", t
         .title))
 
       -- Remove task from tasks list
-      local pos = 0
-      for i = 1, #state.tasks do
-        if state.tasks[i] == game_file_map[t.platform][t.title] then
-          pos = i
-          break
-        end
-      end
-      table.remove(state.tasks, pos)
-
+      state.tasks = state.tasks - 1
       if t.success then
         -- Reload preview
         cover_preview_path = string.format("data/output/%s/media/covers/%s.png", t.platform, t.title)
@@ -217,12 +213,12 @@ local function update_state(t)
 
       -- Update UI
       if scraping_window.children then
-        ui_progress.text = string.format("Progress: %d / %d", (state.total - #state.tasks), state.total)
-        ui_bar:setProgress((state.total - #state.tasks) / state.total)
+        ui_progress.text = string.format("Game %d of %d", (state.total - state.tasks), state.total)
+        -- ui_bar:setProgress((state.total - state.tasks) / state.total)
       end
 
       -- Check if finished
-      if state.scraping and #state.tasks == 0 then
+      if state.scraping and state.tasks == 0 then
         log.write(string.format("Finished scraping %d games. %d failed or skipped", state.total, #state.failed_tasks))
         state.scraping = false
         scraping_window.visible = false
@@ -340,11 +336,6 @@ function main:load()
       end
       love.graphics.setColor(1, 1, 1, 0.5);
       love.graphics.rectangle("line", 0, 0, cw, ch)
-      if state.loading or state.scraping then
-        love.graphics.setColor(0, 0, 0, 0.5);
-        love.graphics.rectangle("fill", 0, 0, cw, ch)
-        loader:draw(cw * scale, ch * scale, 1)
-      end
       love.graphics.setColor(1, 1, 1);
       love.graphics.pop()
     end
@@ -364,13 +355,9 @@ function main:load()
         love.graphics.draw(background, 0, 0)
       end
       love.graphics.draw(canvas, 0, 0);
-      -- love.graphics.setColor(1, 1, 1, 0.5);
-      -- love.graphics.rectangle("line", 0, 0, cw, ch)
-      if state.loading or state.scraping then
-        love.graphics.setColor(0, 0, 0, 0.5);
-        love.graphics.rectangle("fill", 0, 0, cw, ch)
-        loader:draw(cw * scale, ch * scale, 1)
-      end
+      love.graphics.setColor(0, 0, 0, 0.5);
+      love.graphics.rectangle("fill", 0, 0, cw, ch)
+      loader:draw(cw * scale, ch * scale, 1)
       love.graphics.setColor(1, 1, 1);
       love.graphics.pop()
     end
@@ -393,7 +380,7 @@ function main:load()
       + label { id = "platform", text = "Platform: N/A", icon = "controller" }
       + label { id = "game", text = "Game: N/A", icon = "cd" }
       + label { id = "progress", text = "Progress: 0 / 0", icon = "info" }
-      + progress { id = "progress_bar", width = w_width * 0.5 - 30 }
+  -- + progress { id = "progress_bar", width = w_width * 0.5 - 30 }
 
   local top_layout = component { row = true, gap = 10 }
       + (component { column = true, gap = 10 }
@@ -475,7 +462,6 @@ function main:load()
   -- infoComponent:updatePosition(0, w_height * 0.5 - selectionComponent.height - infoComponent.height - 10)
 
   menu:focusFirstElement()
-
   -- show_info_window("Scraping in progress", "Please wait for the select platforms for scraping in settings.")
 end
 

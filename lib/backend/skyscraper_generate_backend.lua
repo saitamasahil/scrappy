@@ -14,6 +14,10 @@ while true do
   -- Demand a table with command, platform, type, and game from SKYSCRAPER_INPUT
   local input_data = channels.SKYSCRAPER_GEN_INPUT:demand()
 
+  print("\nSkyscraper received input data:")
+  pprint(input_data)
+  print("\n")
+
   -- Extract the command, platform, type, and game
   local command = input_data.command
   local current_platform = input_data.platform
@@ -78,7 +82,7 @@ while true do
 
   -- channels.SKYSCRAPER_OUTPUT:push({ command_finished = true })
 
-  -- socket.sleep(0.2)
+  pprint("Generate command finished")
   channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true })
 end
 
