@@ -21,17 +21,21 @@ local font = love.graphics.newFont(
 love.graphics.setFont(font)
 
 local footer = require("lib.gui.footer")()
-local w_width, w_height
+local w_width, w_height = love.window.getMode()
 
-function love.load()
+function love.load(args)
   splash.load()
 
-  local res = user_config:read("main", "resolution")
-  if res then
-    res = utils.split(res, "x")
-    love.window.setMode(tonumber(res[1]) or 640, tonumber(res[2]) or 480)
-    w_width, w_height = love.window.getMode()
+  if #args > 0 then
+    local res = args[1]
+    if res then
+      _G.resolution = res
+      res = utils.split(res, "x")
+      love.window.setMode(tonumber(res[1]) or 640, tonumber(res[2]) or 480)
+      w_width, w_height = love.window.getMode()
+    end
   end
+
 
   -- Debug mode
   local debug = user_config:read("main", "debug")

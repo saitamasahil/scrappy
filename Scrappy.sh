@@ -4,6 +4,11 @@
 
 . /opt/muos/script/var/func.sh
 
+# Define global variables
+SCREEN_WIDTH=$(GET_VAR device mux/width)
+SCREEN_HEIGHT=$(GET_VAR device mux/height)
+SCREEN_RESOLUTION="${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
+
 if pgrep -f "playbgm.sh" >/dev/null; then
 	killall -q "playbgm.sh" "mpg123"
 fi
@@ -33,5 +38,6 @@ SET_VAR "system" "foreground_process" "love"
 
 # Run Application
 $GPTOKEYB "love" &
-./bin/love .
+./bin/love . "${SCREEN_RESOLUTION}"
+
 kill -9 "$(pidof gptokeyb2.armhf)"

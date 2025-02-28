@@ -1,40 +1,27 @@
-local scenes             = require("lib.scenes")
-local configs            = require("helpers.config")
-local utils              = require("helpers.utils")
+local scenes            = require("lib.scenes")
+local configs           = require("helpers.config")
+local utils             = require("helpers.utils")
 
-local component          = require 'lib.gui.badr'
-local button             = require 'lib.gui.button'
-local label              = require 'lib.gui.label'
-local select             = require 'lib.gui.select'
-local checkbox           = require 'lib.gui.checkbox'
-local scroll_container   = require 'lib.gui.scroll_container'
+local component         = require 'lib.gui.badr'
+local button            = require 'lib.gui.button'
+local label             = require 'lib.gui.label'
+local checkbox          = require 'lib.gui.checkbox'
+local scroll_container  = require 'lib.gui.scroll_container'
 
-local user_config        = configs.user_config
-local theme              = configs.theme
-local w_width, w_height  = love.window.getMode()
+local user_config       = configs.user_config
+local theme             = configs.theme
+local w_width, w_height = love.window.getMode()
 
-local settings           = {}
+local settings          = {}
 
 local menu, checkboxes
 
-local resolutions        = { "640x480", "720x720", "720x480" }
-local current_resolution = 1
-local all_check          = true
+local all_check         = true
 
-local function read_initial_resolution()
-  local res = user_config:read("main", "resolution")
-  if res then
-    for i = 1, #resolutions do
-      if res == resolutions[i] then
-        current_resolution = i
-        break
-      end
-    end
-  end
-end
 
-local function on_change_resolution(index)
-  user_config:insert("main", "resolution", resolutions[index])
+local function on_filter_resolution(index)
+  local filtering = user_config:read("main", "filterTemplates") == "1"
+  user_config:insert("main", "filterTemplates", filtering and "0" or "1")
   user_config:save()
 end
 
@@ -85,20 +72,15 @@ local on_check_all_press = function()
 end
 
 function settings:load()
-  read_initial_resolution()
-
   menu = component:root { column = true, gap = 10 }
   checkboxes = component { column = true, gap = 0 }
 
   menu = menu
       + label { text = 'Resolution', icon = "display" }
-      + select {
-        width = 200,
-        options = resolutions,
-        startIndex = current_resolution,
-        onChange = function(_, index)
-          on_change_resolution(index)
-        end
+      + checkbox {
+        text = 'Filter templates for my resolution',
+        onToggle = on_filter_resolution,
+        checked = user_config:read("main", "filterTemplates") == "1"
       }
       + label { text = 'Platforms', icon = "folder" }
       + (component { row = true, gap = 10 }
