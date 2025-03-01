@@ -35,7 +35,7 @@ end
 local function update_checkboxes()
   checkboxes.children = {}
   local platforms = user_config:get().platforms
-  local custom_platforms = user_config:get().platformsCustom
+  -- local custom_platforms = user_config:get().platformsCustom
   local selected_platforms = user_config:get().platformsSelected
   for platform in utils.orderedPairs(platforms or {}) do
     checkboxes = checkboxes + checkbox {
@@ -45,14 +45,14 @@ local function update_checkboxes()
       checked = selected_platforms[platform] == "1"
     }
   end
-  for custom in utils.orderedPairs(custom_platforms or {}) do
-    checkboxes = checkboxes + checkbox {
-      text = custom .. "*",
-      id = custom,
-      onToggle = function() on_change_platform(custom) end,
-      checked = selected_platforms[custom] == "1"
-    }
-  end
+  -- for custom in utils.orderedPairs(custom_platforms or {}) do
+  --   checkboxes = checkboxes + checkbox {
+  --     text = custom .. "*",
+  --     id = custom,
+  --     onToggle = function() on_change_platform(custom) end,
+  --     checked = selected_platforms[custom] == "1"
+  --   }
+  -- end
 end
 
 local function on_refresh_press()
