@@ -150,7 +150,8 @@ function user_config:get_paths()
   return rom_path_override or rom_path, catalogue_path_override or catalogue_path
 end
 
-function user_config:load_platforms()
+-- TODO: Remove deprecated
+function user_config:_load_platforms()
   local rom_path, _ = self:get_paths()
 
   log.write(string.format("Loading platforms from %s", rom_path))
@@ -211,13 +212,66 @@ function user_config:load_platforms()
       mapped_total = mapped_total + 1
     else
       log.write(string.format("Unable to automatically map platform for %s", platform))
-      if not self:read("platformsCustom", platform) then
-        self:insert("platformsCustom", platform, "unmapped")
-        self:insert("platformsSelected", platform, 0)
-      end
+      -- if not self:read("platformsCustom", platform) then
+      --   self:insert("platformsCustom", platform, "unmapped")
+      --   self:insert("platformsSelected", platform, 0)
+      -- end
     end
   end
   log.write(string.format("Found %d platforms, mapped %d", #platforms, mapped_total))
+end
+
+function user_config:load_platforms()
+  local function parse_dir(cfg_file)
+    local lines = {}
+    for line in cfg_file:gmatch("[^\r\n]+") do
+      table.insert(lines, line)
+    end
+    if #lines < 3 then
+      return nil, "Error parsing cfg file"
+    end
+    return lines[2], nil
+  end
+
+  local rom_path, _ = self:get_paths()
+
+  log.write(string.format("Loading platforms from %s", rom_path))
+
+  local dir_items = nativefs.getDirectoryItems(rom_path)
+  if not dir_items then
+    log.write("No platforms found")
+    return
+  end
+
+  ini.deleteSection(self.values, "platforms")
+
+  for _, item in ipairs(nativefs.getDirectoryItems(rom_path) or {}) do
+    local item_path = rom_path .. "/" .. item
+    local dir_info = nativefs.getInfo(item_path)
+
+    -- Ignore hidden folders and files
+    if dir_info and dir_info.type == "directory" and item:sub(1, 1) ~= "." then
+      local item_lower = item:lower()
+      local muos_core_cfg = nativefs.getInfo(muos.CORE_DIR .. "/" .. item_lower .. "/core.cfg")
+
+      if muos_core_cfg then
+        print(string.format("Found core.cfg for %s", item_lower))
+        local file = nativefs.read(muos.CORE_DIR .. "/" .. item_lower .. "/core.cfg")
+        if file then
+          local folder_name, err = parse_dir(file)
+          if err then
+            log.write(err)
+            return
+          end
+          self:insert("platforms", folder_name, muos.assignment[folder_name])
+          self:insert("platformsSelected", folder_name, 1)
+          -- print(folder_name .. " -> " .. muos.assignment[folder_name])
+        end
+      else
+        log.write(string.format("Unable to find platform for %s", item))
+      end
+    end
+  end
 end
 
 function user_config:fill_selected_platforms()
@@ -297,7 +351,7 @@ local theme   = setmetatable({}, { __index = config })
 theme.__index = theme
 
 function theme.create()
-  local self = config.new("theme", "theme.txt")
+  local self = config.new("theme", "theme.ini")
   setmetatable(self, theme)
   self:init()
   return self

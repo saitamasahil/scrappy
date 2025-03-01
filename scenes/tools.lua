@@ -81,7 +81,7 @@ end
 
 local function on_update_press()
   log.write("Updating cache")
-  local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
+  local platforms = user_config:get().platforms
   local rom_path, _ = user_config:get_paths()
 
   dispatch_info("Updating cache, please wait...", string.format("Finished %d games", finished_tasks))
@@ -113,7 +113,7 @@ local function on_import_press()
     return
   end
 
-  local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
+  local platforms = user_config:get().platforms
   local rom_path, _ = user_config:get_paths()
 
   for _, folder in ipairs(lookup_folders) do

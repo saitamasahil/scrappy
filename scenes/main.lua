@@ -83,7 +83,7 @@ end
 local function scrape_platforms()
   log.write("Scraping artwork")
   -- Load platforms from config, merging mapped and custom
-  local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
+  local platforms = user_config:get().platforms
   -- Load selected platforms
   local selected_platforms = user_config:get().platformsSelected
   local rom_path, _ = user_config:get_paths()
@@ -510,7 +510,7 @@ local function process_game_queue()
       return
     end
     local rom_path, _ = user_config:get_paths()
-    local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
+    local platforms = user_config:get().platforms
     local platform_path = ""
     for src, dest in utils.orderedPairs(platforms) do
       if dest == platform then

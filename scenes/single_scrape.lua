@@ -46,7 +46,7 @@ end
 
 local function on_rom_press(rom)
   local rom_path, _ = user_config:get_paths()
-  local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
+  local platforms = user_config:get().platforms
 
   rom_path = string.format("%s/%s", rom_path, last_selected_platform)
 
@@ -118,7 +118,7 @@ local function load_platform_buttons()
   platform_list.children = {} -- Clear existing platforms
   platform_list.height = 0
 
-  local platforms = utils.tableMerge(user_config:get().platforms, user_config:get().platformsCustom)
+  local platforms = user_config:get().platforms
 
   for src, dest in utils.orderedPairs(platforms or {}) do
     platform_list = platform_list + listitem {
