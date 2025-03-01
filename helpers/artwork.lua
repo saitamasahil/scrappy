@@ -98,7 +98,7 @@ function artwork.copy_to_catalogue(platform, game)
   -- Copy preview artwork
   artwork.copy_artwork_type(platform, game, media_path, copy_path, output_types.PREVIEW)
   -- Copy splash artwork
-  artwork.copy_artwork_type(platform, game, media_path, copy_path, output_types.PREVIEW)
+  artwork.copy_artwork_type(platform, game, media_path, copy_path, output_types.SPLASH)
 
   -----------------------------
   -- Create text file
