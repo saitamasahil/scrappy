@@ -166,9 +166,11 @@ end
 local function halt_scraping()
   channels.SKYSCRAPER_INPUT:clear()
   state.scraping = false
+  state.loading = false
   state.failed_tasks = {}
   state.tasks = {}
   state.total = 0
+  if scraping_window then scraping_window.visible = false end
 end
 
 local function update_state(t)

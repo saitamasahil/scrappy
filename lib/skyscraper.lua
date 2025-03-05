@@ -165,10 +165,8 @@ function skyscraper.update_artwork(rom_path, rom, platform, artwork, ...)
   skyscraper.run(update_command, platform, "generate", rom, task_id)
 end
 
-function skyscraper.fetch_and_update_artwork(rom_path, rom, platform, artwork, ...)
-  local artwork = WORK_DIR .. "/templates/" .. artwork .. ".xml"
-  local task_id = select(1, ...) or rom
-  local flags = select(2, ...) or { "unattend", "onlymissing" }
+function skyscraper.fetch_single(rom_path, rom, platform, ...)
+  local flags = select(1, ...) or { "unattend" }
   local fetch_command = generate_command({
     platform = platform,
     input = rom_path,
@@ -176,14 +174,7 @@ function skyscraper.fetch_and_update_artwork(rom_path, rom, platform, artwork, .
     rom = rom,
     flags = flags,
   })
-  local update_command = generate_command({
-    platform = platform,
-    input = rom_path,
-    artwork = artwork,
-    rom = rom,
-  })
   skyscraper.run(fetch_command, platform, "fetch", rom)
-  skyscraper.run(update_command, platform, "generate", rom, task_id)
 end
 
 function skyscraper.custom_import(rom_path, platform)

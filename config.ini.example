@@ -1,7 +1,6 @@
 [main]
 filterTemplates=1
 parseCache=1
-resolution=640x480
 sd=1
 [overrides]
 [platforms]

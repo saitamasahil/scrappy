@@ -21,6 +21,7 @@ local user_config = configs.user_config
 local theme = configs.theme
 
 local last_selected_platform = nil
+local last_selected_rom = nil
 local active_column = 1 -- 1 for platforms, 2 for ROMs
 
 local function toggle_info()
@@ -45,6 +46,7 @@ local function on_select_platform(platform)
 end
 
 local function on_rom_press(rom)
+  last_selected_rom = rom
   local rom_path, _ = user_config:get_paths()
   local platforms = user_config:get().platforms
 
@@ -55,7 +57,7 @@ local function on_rom_press(rom)
   if artwork_name then
     local platform_dest = platforms[last_selected_platform]
     dispatch_info(rom, "Scraping ROM, please wait...")
-    skyscraper.fetch_and_update_artwork(rom_path, rom, platform_dest, artwork_name, rom, { "unattend" })
+    skyscraper.fetch_single(rom_path, rom, platform_dest)
   else
     dispatch_info("Error", "Artwork XML not found")
   end
@@ -132,16 +134,31 @@ local function load_platform_buttons()
   end
 end
 
+local function process_fetched_game()
+  local t = channels.SKYSCRAPER_GAME_QUEUE:pop()
+  if t then
+    if t.skipped then
+      dispatch_info("Error", "Unable to generate artwork for selected game [skipped]")
+      return
+    end
+    dispatch_info("Fetched", "Game fetched. Generating artwork...")
+    local rom_path, _ = user_config:get_paths()
+    rom_path = string.format("%s/%s", rom_path, last_selected_platform)
+    local artwork_name = artwork.get_artwork_name()
+    skyscraper.update_artwork(rom_path, last_selected_rom, t.platform, artwork_name)
+  end
+end
+
 local function update_scrape_state()
   local t = channels.SKYSCRAPER_OUTPUT:pop()
   if t then
     if t.error and t.error ~= "" then
       dispatch_info("Error", t.error)
     end
-    if t.data and next(t.data) and t.task_id then
+    if t.title then
       dispatch_info("Finished", t.success and "Scraping finished successfully" or "Scraping failed or skipped")
-      artwork.copy_to_catalogue(t.data.platform, t.data.title)
-      artwork.process_cached_by_platform(t.data.platform)
+      artwork.copy_to_catalogue(t.platform, t.title)
+      artwork.process_cached_by_platform(t.platform)
       load_rom_buttons(last_selected_platform)
       rom_list:focusFirstElement()
     end
@@ -191,6 +208,7 @@ end
 function single_scrape:update(dt)
   menu:update(dt)
   update_scrape_state()
+  process_fetched_game()
 end
 
 function single_scrape:draw()
