@@ -113,11 +113,11 @@ while true do
     -- })
     -- end
 
-    -- if error ~= nil and error ~= "" then
-    --   log.write("ERROR: " .. error, "skyscraper")
-    --   channels.SKYSCRAPER_OUTPUT:push({ data = {}, error = error, loading = false })
-    --   break
-    -- end
+    if error ~= nil and error ~= "" then
+      log.write("ERROR: " .. error, "skyscraper")
+      channels.SKYSCRAPER_OUTPUT:push({ data = {}, error = error, loading = false })
+      break
+    end
   end
 
   -- if not parsed then
