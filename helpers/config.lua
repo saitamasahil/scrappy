@@ -150,11 +150,22 @@ function user_config:get_paths()
   return rom_path_override or rom_path, catalogue_path_override or catalogue_path
 end
 
--- TODO: Remove deprecated
-function user_config:_load_platforms()
+function user_config:load_platforms()
   local rom_path, _ = self:get_paths()
 
   log.write(string.format("Loading platforms from %s", rom_path))
+
+  -- Function to parse core.cfg files
+  local function parse_dir(cfg_file)
+    local lines = {}
+    for line in cfg_file:gmatch("[^\r\n]+") do
+      table.insert(lines, line)
+    end
+    if #lines < 3 then
+      return nil, "Error parsing cfg file"
+    end
+    return lines[2], nil
+  end
 
   -- Recursive function to scan directories
   local function scan_directories(base_path, relative_path)
@@ -191,85 +202,32 @@ function user_config:_load_platforms()
 
   -- Scan the main ROM path for platforms
   local platforms = scan_directories(rom_path, nil)
-  local mapped_total = 0
-
   if not platforms or next(platforms) == nil then
     log.write("No platforms found")
     return
   end
 
   ini.deleteSection(self.values, "platforms")
+  ini.deleteSection(self.values, "platformsSelected")
 
-  -- Iterate through platforms
-  for _, platform in ipairs(platforms) do
-    -- Extract the last folder name for mapping
-    local last_folder_name = platform:match("([^/]+)$")
-    local lower_platform = last_folder_name:lower()
+  for _, item in ipairs(platforms) do
+    -- Find muos core info
+    local core_path = muos.CORE_DIR .. "/" .. item:lower() .. "/core.cfg"
+    local muos_core_info = nativefs.getInfo(core_path)
 
-    if muos.assign[lower_platform] then
-      self:insert("platforms", platform, muos.assign[lower_platform])
-      self:insert("platformsSelected", platform, 1)
-      mapped_total = mapped_total + 1
-    else
-      log.write(string.format("Unable to automatically map platform for %s", platform))
-      -- if not self:read("platformsCustom", platform) then
-      --   self:insert("platformsCustom", platform, "unmapped")
-      --   self:insert("platformsSelected", platform, 0)
-      -- end
-    end
-  end
-  log.write(string.format("Found %d platforms, mapped %d", #platforms, mapped_total))
-end
-
-function user_config:load_platforms()
-  local function parse_dir(cfg_file)
-    local lines = {}
-    for line in cfg_file:gmatch("[^\r\n]+") do
-      table.insert(lines, line)
-    end
-    if #lines < 3 then
-      return nil, "Error parsing cfg file"
-    end
-    return lines[2], nil
-  end
-
-  local rom_path, _ = self:get_paths()
-
-  log.write(string.format("Loading platforms from %s", rom_path))
-
-  local dir_items = nativefs.getDirectoryItems(rom_path)
-  if not dir_items then
-    log.write("No platforms found")
-    return
-  end
-
-  ini.deleteSection(self.values, "platforms")
-
-  for _, item in ipairs(nativefs.getDirectoryItems(rom_path) or {}) do
-    local item_path = rom_path .. "/" .. item
-    local dir_info = nativefs.getInfo(item_path)
-
-    -- Ignore hidden folders and files
-    if dir_info and dir_info.type == "directory" and item:sub(1, 1) ~= "." then
-      local item_lower = item:lower()
-      local muos_core_cfg = nativefs.getInfo(muos.CORE_DIR .. "/" .. item_lower .. "/core.cfg")
-
-      if muos_core_cfg then
-        print(string.format("Found core.cfg for %s", item_lower))
-        local file = nativefs.read(muos.CORE_DIR .. "/" .. item_lower .. "/core.cfg")
-        if file then
-          local folder_name, err = parse_dir(file)
-          if err then
-            log.write(err)
-            return
-          end
-          self:insert("platforms", folder_name, muos.assignment[folder_name])
-          self:insert("platformsSelected", folder_name, 1)
-          -- print(folder_name .. " -> " .. muos.assignment[folder_name])
+    if muos_core_info then
+      local file = nativefs.read(core_path)
+      if file then
+        local folder_name, err = parse_dir(file)
+        if err then
+          log.write(err)
+          return
         end
-      else
-        log.write(string.format("Unable to find platform for %s", item))
+        self:insert("platforms", item, muos.assignment[folder_name])
+        self:insert("platformsSelected", item, 1)
       end
+    else
+      log.write(string.format("Unable to find platform for %s", item))
     end
   end
 end
