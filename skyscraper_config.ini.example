@@ -7,7 +7,7 @@ videos="false"
 verbosity="0"
 hints="false"
 unattend="true"
-regionPrios="us,eu,wor,jp"
+regionPrios="us, wor, eu, jp, ss, uk, au, ame, de, cus, cn, kr, asi, br, sp, fr, gr, it, no, dk, nz, nl, pl, ru, se, tw, ca"
 
 [screenscraper]
 userCreds="USER:PASS"

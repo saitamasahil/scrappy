@@ -3,7 +3,6 @@ local skyscraper = require("lib.skyscraper")
 local log        = require("lib.log")
 local scenes     = require("lib.scenes")
 local loading    = require("lib.loading")
--- local pprint     = require("lib.pprint")
 local channels   = require("lib.backend.channels")
 local configs    = require("helpers.config")
 local utils      = require("helpers.utils")
@@ -14,7 +13,6 @@ local component  = require "lib.gui.badr"
 local button     = require "lib.gui.button"
 local label      = require "lib.gui.label"
 local select     = require "lib.gui.select"
--- local progress   = require "lib.gui.progress"
 local popup      = require "lib.gui.popup"
 local menu, info_window, scraping_window
 
