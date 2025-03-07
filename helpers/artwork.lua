@@ -1,5 +1,5 @@
 local log      = require("lib.log")
-local gamelist = require("lib.gamelist")
+local metadata = require("lib.metadata")
 local config   = require("helpers.config")
 local utils    = require("helpers.utils")
 local muos     = require("helpers.muos")
@@ -101,22 +101,24 @@ function artwork.copy_to_catalogue(platform, game)
   artwork.copy_artwork_type(platform, game, media_path, copy_path, output_types.SPLASH)
 
   -----------------------------
-  -- Create text file
+  -- Read Pegasus-formatted metadata
   -----------------------------
-  local xml = nativefs.read(string.format("%s/%s/gamelist.xml", output_path, platform))
-  if xml then
-    local list = gamelist.parse(xml)
-    if list then
-      for _, entry in ipairs(list) do
-        if utils.get_filename_from_path(entry.path) == utils.escape_html(game) then
-          local _, err = nativefs.write(string.format("%s/text/%s.txt", copy_path, game), utils.unescape_html(entry.desc))
+  local file = nativefs.read(string.format("%s/%s/metadata.pegasus.txt", output_path, platform))
+  if file then
+    local games = metadata.parse(file)
+    if games then
+      for _, entry in ipairs(games) do
+        if entry.filename == game then
+          print(string.format("Writing desc for %s", game))
+          local _, err = nativefs.write(string.format("%s/text/%s.txt", copy_path, game),
+            string.format("%s\nGenre: %s", entry.description, entry.genre))
           if err then log.write(err) end
           break
         end
       end
     end
   else
-    log.write("Failed to load gamelist.xml for " .. platform)
+    log.write("Failed to load metadata.pegasus.txt for " .. platform)
   end
 end
 
