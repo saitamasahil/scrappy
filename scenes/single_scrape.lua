@@ -104,7 +104,7 @@ local function load_rom_buttons(src_platform, dest_platform)
       local is_cached = artwork.cached_game_ids[dest_platform] and artwork.cached_game_ids[dest_platform][rom]
       rom_list = rom_list + listitem {
         text = rom,
-        width = 200,
+        width = ((w_width - 30) / 3) * 2,
         onClick = function()
           on_rom_press(rom)
         end,
@@ -126,7 +126,7 @@ local function load_platform_buttons()
     platform_list = platform_list + listitem {
       id = src,
       text = src,
-      width = 200,
+      width = ((w_width - 30) / 3),
       onFocus = function() load_rom_buttons(src, dest) end,
       onClick = function() on_select_platform(src) end,
       disabled = false,
@@ -181,7 +181,7 @@ function single_scrape:load()
   local left_column = component { column = true, gap = 10 }
       + label { text = 'Platforms', icon = "folder" }
       + (scroll_container {
-          width = w_width / 3,
+          width = (w_width - 30) / 3,
           height = w_height - 90,
           scroll_speed = 30,
         }
@@ -190,7 +190,7 @@ function single_scrape:load()
   local right_column = component { column = true, gap = 10 }
       + label { id = "roms_label", text = 'ROMs', icon = "cd" }
       + (scroll_container {
-          width = (w_width / 3) * 2,
+          width = ((w_width - 30) / 3) * 2,
           height = w_height - 90,
           scroll_speed = 30,
         }

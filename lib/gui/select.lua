@@ -21,6 +21,13 @@ return function(props)
   local width = props.width or 0
   local height = math.max(props.height or 0, font:getHeight() + padding.vertical)
 
+  -- Scroll-related variables
+  local contentWidth = width - 2 * iconSize - padding.horizontal
+  local scrollOffset = 0
+  local scrollSpeed = 50 -- Pixels per second
+  local spacer = " • " -- Spacer between wrapped text
+  local spacerWidth = font:getWidth(spacer) -- Width of the spacer
+
   return component {
     options = options,
     currentIndex = currentIndex,
@@ -46,6 +53,20 @@ return function(props)
       elseif key == "right" then
         self.currentIndex = self.currentIndex < #self.options and self.currentIndex + 1 or 1
         if props.onChange then props.onChange(key, self.currentIndex) end
+      end
+    end,
+    onUpdate = function(self, dt)
+      -- Update scroll offset if text is wider than the button
+      local textWidth = font:getWidth(self.options[self.currentIndex] or "")
+      -- Only scroll if the button is focused and the text is longer than the button width
+      if self.focused and textWidth > contentWidth then
+        scrollOffset = scrollOffset + scrollSpeed * dt
+        -- Wrap the scroll offset when it exceeds the text width
+        if scrollOffset > textWidth + spacerWidth then
+          scrollOffset = 0 -- Reset to the beginning
+        end
+      else
+        scrollOffset = 0 -- Reset scroll offset when not focused
       end
     end,
     draw = function(self)
@@ -80,14 +101,33 @@ return function(props)
       leftIcon:draw()  -- Draw the left caret
       rightIcon:draw() -- Draw the right caret
 
+
+      local contentX = self.x + iconSize + self.leftPadding * 0.5
+      love.graphics.setScissor(contentX, self.y, contentWidth, self.height) -- Clip text to button bounds
+
       -- Draw the current option text, centered between the icons
       local currentOption = self.options[self.currentIndex] or ""
-      local textX = self.x + iconSize + self.leftPadding
       local textY = self.y + self.height * 0.5 - font:getHeight() * 0.5
 
       love.graphics.setColor(self.textColor)
-      love.graphics.printf(currentOption, textX, textY, self.width - 2 * (iconSize + self.leftPadding), 'center')
 
+      local textWidth = font:getWidth(currentOption)
+
+      if textWidth <= contentWidth then
+        -- Center the text if it fits within the button
+        love.graphics.printf(currentOption, contentX, textY, contentWidth, 'center')
+      else
+        -- Scroll the text if it's longer than the button width
+        local textX = contentX - scrollOffset
+        love.graphics.print(currentOption, textX, self.y + self.topPadding)
+
+        -- Draw the wrapped text with a spacer to the right of the first text
+        if scrollOffset > textWidth - (contentWidth) then
+          love.graphics.print(spacer .. currentOption, textX + textWidth, self.y + self.topPadding)
+        end
+      end
+
+      love.graphics.setScissor()
       love.graphics.pop()
     end
   }

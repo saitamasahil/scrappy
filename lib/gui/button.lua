@@ -11,6 +11,12 @@ return function(props)
   local width = props.width or 0
   local height = math.max(props.height or 0, font:getHeight() + padding.vertical)
 
+  -- Scroll-related variables
+  local scrollOffset = 0
+  local scrollSpeed = 50 -- Pixels per second
+  local spacer = " • " -- Spacer between wrapped text
+  local spacerWidth = font:getWidth(spacer) -- Width of the spacer
+
   return component {
     text = props.text,
     icon = props.icon or nil,
@@ -38,13 +44,26 @@ return function(props)
         props.onClick()
       end
     end,
-    onUpdate = function(self)
+    onUpdate = function(self, dt)
+      -- Update scroll offset if text is wider than the button
+      local textWidth = font:getWidth(self.text)
+      -- Only scroll if the button is focused and the text is longer than the button width
+      if self.focused and textWidth > self.width - padding.horizontal then
+        scrollOffset = scrollOffset + scrollSpeed * dt
+        -- Wrap the scroll offset when it exceeds the text width
+        if scrollOffset > textWidth + spacerWidth then
+          scrollOffset = 0 -- Reset to the beginning
+        end
+      else
+        scrollOffset = 0 -- Reset scroll offset when not focused
+      end
     end,
     --
     draw = function(self)
       if not self.visible then return end
       love.graphics.push()
       love.graphics.setFont(font)
+
       -- Set color based on focus
       if self.focused then
         love.graphics.setColor(self.focusColor)
@@ -57,11 +76,25 @@ return function(props)
 
       -- Draw button text
       love.graphics.setColor(self.textColor)
-      love.graphics.printf(self.text, self.x + self.leftPadding, self.y + self.topPadding,
-        self.width - padding.horizontal, 'center')
+      love.graphics.setScissor(self.x, self.y, self.width, self.height) -- Clip text to button bounds
 
-      -- Reset color
-      love.graphics.setColor({ 1, 1, 1 })
+      local textWidth = font:getWidth(self.text)
+
+      if textWidth <= self.width - padding.horizontal then
+        -- Center the text if it fits within the button
+        love.graphics.printf(self.text, self.x, self.y + self.topPadding, self.width, 'center')
+      else
+        -- Scroll the text if it's longer than the button width
+        local textX = self.x + self.leftPadding - scrollOffset
+        love.graphics.print(self.text, textX, self.y + self.topPadding)
+
+        -- Draw the wrapped text with a spacer to the right of the first text
+        if scrollOffset > textWidth - (self.width - padding.horizontal) then
+          love.graphics.print(spacer .. self.text, textX + textWidth, self.y + self.topPadding)
+        end
+      end
+
+      love.graphics.setScissor() -- Reset scissor
       love.graphics.pop()
     end
   }
