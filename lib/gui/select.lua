@@ -18,7 +18,7 @@ return function(props)
   end
 
   local iconSize = 16 -- Define the size of the icons
-  local width = math.max(props.width or 0, maxTextWidth + padding.horizontal + 2 * iconSize)
+  local width = props.width or 0
   local height = math.max(props.height or 0, font:getHeight() + padding.vertical)
 
   return component {
