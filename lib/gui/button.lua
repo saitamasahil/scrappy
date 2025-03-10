@@ -7,7 +7,8 @@ return function(props)
     horizontal = (props.leftPadding or 4) + (props.rightPadding or 4),
     vertical = (props.topPadding or 4) + (props.bottomPadding or 4)
   }
-  local width = math.max(props.width or 0, font:getWidth(props.text) + padding.horizontal)
+  -- local width = math.max(props.width or 0, font:getWidth(props.text) + padding.horizontal)
+  local width = props.width or 0
   local height = math.max(props.height or 0, font:getHeight() + padding.vertical)
 
   return component {
