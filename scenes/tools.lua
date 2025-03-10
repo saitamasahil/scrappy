@@ -169,11 +169,31 @@ function tools:load()
           scroll_speed = 30,
         }
         + (component { column = true, gap = 10 }
+          -- TODO: Implement auto update
+          -- + listitem {
+          --   text = "Update Scrappy",
+          --   width = item_width,
+          --   onClick = on_app_update,
+          --   icon = "download"
+          -- }
           + listitem {
-            text = "Rescan ROMs folders (overwrites [platforms] config)",
+            text = "Migrate cache to SD2",
             width = item_width,
-            onClick = on_refresh_press,
-            icon = "folder"
+            onClick = on_migrate_cache,
+            icon = "sd_card"
+          }
+          + listitem {
+            text = "Backup cache to SD2/ARCHIVE folder",
+            width = item_width,
+            onClick = on_backup_cache,
+            icon = "sd_card"
+          }
+          + listitem {
+            id = "scraper_module",
+            text = "Change Skyscraper module (current: " .. scraper_opts[scraper_index] .. ")",
+            width = item_width,
+            onClick = on_change_scraper,
+            icon = "canvas"
           }
           + listitem {
             text = "Update cache (uses threads, doesn't generate artwork)",
@@ -188,29 +208,16 @@ function tools:load()
             icon = "file_import"
           }
           + listitem {
-            id = "scraper_module",
-            text = "Change Skyscraper module (current: " .. scraper_opts[scraper_index] .. ")",
+            text = "Rescan ROMs folders (overwrites [platforms] config)",
             width = item_width,
-            onClick = on_change_scraper,
-            icon = "download"
+            onClick = on_refresh_press,
+            icon = "folder"
           }
           + listitem {
             text = "Reset configs (can't be undone!)",
             width = item_width,
             onClick = on_reset_configs,
             icon = "refresh"
-          }
-          + listitem {
-            text = "Backup cache to SD2/ARCHIVE folder",
-            width = item_width,
-            onClick = on_backup_cache,
-            icon = "sd_card"
-          }
-          + listitem {
-            text = "Migrate cache to SD2",
-            width = item_width,
-            onClick = on_migrate_cache,
-            icon = "sd_card"
           }
         )
       )

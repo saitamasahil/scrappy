@@ -29,9 +29,8 @@ local function log_version(output)
 end
 
 local function emit_ready(game, platform, skipped)
-  print(string.format("Game queued: \"%s\"", game))
+  -- print(string.format("Game queued: \"%s\"", game))
   channels.SKYSCRAPER_GAME_QUEUE:push({ game = game, platform = platform, skipped = skipped })
-  channels.SKYSCRAPER_OUTPUT:push({ log = string.format("Game queued: \"%s\"", game) })
 end
 
 while true do
@@ -48,7 +47,10 @@ while true do
   log.write("Starting Skyscraper, please wait...")
 
   if current_platform then
-    channels.SKYSCRAPER_OUTPUT:push({ log = "Starting Skyscraper for \"" .. current_platform .. "\", please wait..." })
+    channels.SKYSCRAPER_OUTPUT:push({
+      log = "[fetch] Starting Skyscraper for \"" ..
+          current_platform .. "\", please wait..."
+    })
   end
 
   local stderr_to_stdout = " 2>&1"
@@ -77,41 +79,17 @@ while true do
 
   local parsed = false
   for line in output:lines() do
-    -- print(line)
     line = utils.strip_ansi_colors(line)
     -- if game ~= "fake-rom" then log.write(line, "skyscraper") end
     local res, error, skipped, rtype = parser.parse(line)
     if res ~= nil or error then parsed = true end
     if res ~= nil then
-      log.write(string.format("[gathering] %s", line), "skyscraper")
-      -- channels.SKYSCRAPER_OUTPUT:push({ log = string.format("[gathering] %s", line) })
+      log.write(string.format("[fetch] %s", line), "skyscraper")
+      channels.SKYSCRAPER_OUTPUT:push({ log = string.format("[fetch] %s", line) })
       if rtype == "game" then
         emit_ready(res, current_platform, skipped)
       end
     end
-    -- if game ~= nil then
-    --   emit_ready(game, current_platform)
-    --   pprint({
-    --     data = {
-    --       -- title = game,
-    --       platform = current_platform,
-    --     },
-    --     -- task_id = task_id,
-    --     success = game ~= nil,
-    --     error = error,
-    --     loading = false
-    --   })
-    -- channels.SKYSCRAPER_OUTPUT:push({
-    --   data = {
-    --     title = success,
-    --     platform = current_platform,
-    --   },
-    --   task_id = task_id,
-    --   success = success,
-    --   error = error,
-    --   loading = false
-    -- })
-    -- end
 
     if error ~= nil and error ~= "" then
       log.write("ERROR: " .. error, "skyscraper")
@@ -119,21 +97,9 @@ while true do
       break
     end
   end
-
-  -- if not parsed then
-  --   log.write(string.format("Failed to parse Skyscraper output for %s", game))
-  --   channels.SKYSCRAPER_OUTPUT:push({
-  --     loading = false,
-  --     task_id = task_id,
-  --     success = false
-  --   })
-  -- end
-
-  -- channels.SKYSCRAPER_OUTPUT:push({ command_finished = true })
 end
 
 function love.threaderror(thread, errorstr)
   print(errorstr)
-  -- channels.SKYSCRAPER_OUTPUT:push({ data = {}, error = errorstr, loading = false })
   log.write(errorstr)
 end

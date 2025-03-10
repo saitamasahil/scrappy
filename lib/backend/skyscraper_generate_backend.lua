@@ -23,6 +23,8 @@ while true do
   local current_platform = input_data.platform
   local game = utils.get_filename(input_data.game)
 
+  channels.SKYSCRAPER_OUTPUT:push({ log = string.format("[gen] Queued \"%s\"", game) })
+
   local stderr_to_stdout = " 2>&1"
   local output = io.popen(command .. stderr_to_stdout)
 
@@ -82,7 +84,7 @@ while true do
 
   -- channels.SKYSCRAPER_OUTPUT:push({ command_finished = true })
 
-  pprint("Generate command finished")
+  channels.SKYSCRAPER_OUTPUT:push({ log = string.format("[gen] Finished \"%s\"", game) })
   channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true })
 end
 
