@@ -166,7 +166,7 @@ local function halt_scraping()
   state.scraping = false
   state.loading = false
   state.failed_tasks = {}
-  state.tasks = {}
+  state.tasks = 0
   state.total = 0
   if scraping_window then scraping_window.visible = false end
 end
@@ -180,9 +180,8 @@ local function update_state(t)
   end
   if t.log then
     state.log = state.log .. t.log .. "\n"
-    -- local scraping_log = scraping_window ^ "scraping_log"
-    -- print("GOT LOG " .. t.log)
-    -- scraping_log.text = t.log
+    local scraping_log = scraping_window ^ "scraping_log"
+    scraping_log.text = state.log
   end
   if t.title then
     -- Menu UI elements
@@ -220,6 +219,7 @@ local function update_state(t)
         log.write(string.format("Finished scraping %d games. %d failed or skipped", state.total, #state.failed_tasks))
         state.scraping = false
         scraping_window.visible = false
+        state.log = ""
         show_info_window(
           "Finished scraping",
           string.format("Scraped %d games, %d failed or skipped! %s", state.total,
@@ -466,7 +466,7 @@ function main:load()
             -- Draw text from bottom-up
             local offset = self.height - totalTextHeight
             for i = 1, #lines do
-              love.graphics.printf(lines[i], self.x + 10, self.y + offset, self.width - 10, "left")
+              love.graphics.print(lines[i], self.x + 10, self.y + offset)
               offset = offset + self.font:getHeight()
             end
 
@@ -540,7 +540,6 @@ function main:update(dt)
   menu:update(dt)
   if state.reload_preview then
     state.reload_preview = false
-    print("Reloading preview " .. cover_preview_path)
     render_to_canvas()
   end
 
