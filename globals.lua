@@ -2,15 +2,15 @@ _G.nativefs = require("lib.nativefs")
 _G.timer = require("lib.timer")
 _G.WORK_DIR = nativefs.getWorkingDirectory()
 
-_G.version = "v1.3.0"
+_G.version = "v2.0.0"
 _G.resolution = "640x480"
 
 _G.supported_resolutions = {
   "640x480",
   "720x480",
   "720x720",
-  "1024x768",
-  "1280x720",
+  -- "1024x768",
+  -- "1280x720",
 }
 
 _G.SKYSCRAPER_ERRORS = {
