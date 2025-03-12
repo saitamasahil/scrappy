@@ -189,7 +189,7 @@ local function update_state(t)
     local ui_progress, ui_bar = scraping_window ^ "progress", scraping_window ^ "progress_bar"
     -- Update UI
     if scraping_window.children then
-      ui_platform.text = muos["platforms"][t.platform]
+      ui_platform.text = muos.platforms[t.platform]
       ui_game.text = t.title
     end
     if t.title ~= "fake-rom" then
@@ -522,8 +522,8 @@ local function process_game_queue()
       log.write("No valid platform found")
       return
     end
-    local game_file = game_file_map[platform][game]
-    if game_file then
+    if game_file_map[platform] and game_file_map[platform][game] then
+      local game_file = game_file_map[platform][game]
       state.task_in_progress = game_file
       print(string.format("Task in progress: %s", game_file))
       skyscraper.update_artwork(platform_path, game_file,
