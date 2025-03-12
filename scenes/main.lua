@@ -39,7 +39,7 @@ local state = {
   error = "",
   loading = nil,
   scraping = false,
-  tasks = {},
+  tasks = 0,
   failed_tasks = {},
   total = 0,
   task_in_progress = nil,
@@ -211,7 +211,6 @@ local function update_state(t)
       -- Update UI
       if scraping_window.children then
         ui_progress.text = string.format("Game %d of %d", (state.total - state.tasks), state.total)
-        -- ui_bar:setProgress((state.total - state.tasks) / state.total)
       end
 
       -- Check if finished
