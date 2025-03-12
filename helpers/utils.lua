@@ -155,8 +155,12 @@ function utils.load_image(path)
   local file_data = nativefs.newFileData(path)
   if not file_data then return nil end
 
-  local image_data = love.image.newImageData(file_data)
-  if not image_data then return nil end
+  -- Use pcall to handle any errors that might occur when loading image data
+  local success, image_data = pcall(function()
+    return love.image.newImageData(file_data)
+  end)
+
+  if not success then return nil end
 
   return love.graphics.newImage(image_data)
 end
