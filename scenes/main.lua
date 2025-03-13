@@ -172,7 +172,6 @@ local function halt_scraping()
 end
 
 local function update_state(t)
-  state.loading = false
   if t.error and t.error ~= "" then
     state.error = t.error
     show_info_window("Error", t.error)
@@ -184,6 +183,7 @@ local function update_state(t)
     scraping_log.text = state.log
   end
   if t.title then
+    state.loading = false
     -- Menu UI elements
     local ui_platform, ui_game = scraping_window ^ "platform", scraping_window ^ "game"
     local ui_progress, ui_bar = scraping_window ^ "progress", scraping_window ^ "progress_bar"
