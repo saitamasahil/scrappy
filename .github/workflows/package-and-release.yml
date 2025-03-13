@@ -1,0 +1,87 @@
+name: Package and Release (on tag)
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Create directory structure
+        run: |
+          mkdir -p /mnt/mmc/MUOS/application/Scrappy/.scrappy
+
+      - name: Get the tag name
+        id: get_tag
+        run: echo "TAG_NAME=$(echo ${GITHUB_REF} | sed 's/refs\/tags\///')" >> $GITHUB_ENV
+
+      - name: Package full install and update zips
+        run: |
+          ZIP_NAME="Scrappy_${TAG_NAME}.muxzip"
+          UPDATE_ZIP_NAME="Scrappy_${TAG_NAME}_update.muxzip"
+
+          mkdir -p temp_package
+
+          # Only copy necessary files and directories for an update
+          cp mux_launch.sh /mnt/mmc/MUOS/application/Scrappy/
+          cp -r assets helpers lib scenes templates /mnt/mmc/MUOS/application/Scrappy/.scrappy/
+          cp conf.lua globals.lua main.lua config.ini.example skyscraper_config.ini.example theme.ini /mnt/mmc/MUOS/application/Scrappy/.scrappy/
+
+          # Create update zip
+          zip -r $UPDATE_ZIP_NAME /mnt/mmc/MUOS/application/Scrappy
+
+          # Create full install zip
+          cp -r bin data log sample static /mnt/mmc/MUOS/application/Scrappy/.scrappy/
+          zip -r $ZIP_NAME /mnt/mmc/MUOS/application/Scrappy
+
+      - name: Upload packaged zip files as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: scrappy_package
+          path: |
+            Scrappy_${TAG_NAME}.muxzip
+            Scrappy_${TAG_NAME}_update.muxzip
+
+  release:
+    runs-on: ubuntu-latest
+    needs: package
+
+    steps:
+      - name: Get commit messages for the release
+        id: get_commits
+        run: |
+          # Get the previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${GITHUB_SHA}^)
+
+          # Get commits between the previous tag and the current commit (from PREVIOUS_TAG to GITHUB_SHA)
+          COMMITS=$(git log ${PREVIOUS_TAG}..${GITHUB_SHA} --oneline --no-merges)
+
+          # Separate commits by type
+          CHANGED=$(echo "$COMMITS" | grep -iE "^.*(chore:|refact:)" || echo "None")
+          ADDED=$(echo "$COMMITS" | grep -iE "^.*(feat:)" || echo "None")
+          FIXED=$(echo "$COMMITS" | grep -iE "^.*(fix:)" || echo "None")
+
+          # Format the output
+          RELEASE_NOTES="## Scrappy ${TAG_NAME}\n\n"
+          RELEASE_NOTES+="### 🛠️ Changed\n$CHANGED\n\n"
+          RELEASE_NOTES+="### ✨ Added\n$ADDED\n\n"
+          RELEASE_NOTES+="### 🐛 Fixed\n$FIXED\n"
+
+          # Save the release notes for later use
+          echo "$RELEASE_NOTES" >> $GITHUB_ENV
+
+      - name: Create GitHub release with commit notes
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            Scrappy_${{ needs.package.outputs.TAG_NAME }}.muxzip
+            Scrappy_${{ needs.package.outputs.TAG_NAME }}_update.muxzip
+          body: ${{ env.RELEASE_NOTES }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
