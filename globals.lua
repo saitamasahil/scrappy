@@ -2,15 +2,29 @@ _G.nativefs = require("lib.nativefs")
 _G.timer = require("lib.timer")
 _G.WORK_DIR = nativefs.getWorkingDirectory()
 
-_G.version = "v2.0.0"
+local sem_ver = {
+  major = 2,
+  minor = 0,
+  patch = 1,
+  extra = "beta"
+}
+
+_G.version = (function()
+  local version = string.format("v%d.%d.%d", sem_ver.major, sem_ver.minor, sem_ver.patch)
+  if sem_ver.extra ~= "" then
+    version = version .. "-" .. sem_ver.extra
+  end
+  return version
+end)()
+
 _G.resolution = "640x480"
 
-_G.supported_resolutions = {
+_G.device_resolutions = {
   "640x480",
   "720x480",
   "720x720",
-  -- "1024x768",
-  -- "1280x720",
+  "1024x768",
+  "1280x720",
 }
 
 _G.SKYSCRAPER_ERRORS = {

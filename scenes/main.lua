@@ -17,7 +17,6 @@ local popup      = require "lib.gui.popup"
 local menu, info_window, scraping_window
 
 
-local background, overlay
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 local theme = configs.theme
 local loader = loading.new("highlight", 1)
@@ -254,10 +253,26 @@ local function get_templates()
       local xml_path = WORK_DIR .. "/templates/" .. file
       if user_config:read("main", "filterTemplates") == "1" then
         local template_resolution = artwork.get_template_resolution(xml_path)
-        -- 1. Include if the template resolutio is not defined;
-        -- 2. Include if the template resolution matches the user resolution;
-        if not template_resolution or template_resolution == _G.resolution then
+        -- 1. Include if the template resolution is not defined;
+        if not template_resolution then
           table.insert(templates, template_name)
+        else
+          -- 2. Include if the template resolution matches the user resolution;
+          if template_resolution == _G.resolution then
+            table.insert(templates, template_name)
+          else
+            -- 3. Include if the template resolution is not matched to a device resolution
+            local match_any = false
+            for _, resolution in ipairs(_G.device_resolutions) do
+              if template_resolution == resolution then
+                match_any = true
+                break
+              end
+            end
+            if not match_any then
+              table.insert(templates, template_name)
+            end
+          end
         end
       else
         -- Include all templates
@@ -307,21 +322,6 @@ end
 
 function main:load()
   loader:load()
-  local resulution_supported = false
-  local asset_resolution = "640x480"
-  for i = 1, #_G.supported_resolutions do
-    if _G.supported_resolutions[i] == _G.resolution then
-      resulution_supported = true
-      asset_resolution = _G.resolution
-      break
-    end
-  end
-  if not resulution_supported then
-    log.write(string.format("Resolution %s is not supported, using fallback assets", _G.resolution))
-  end
-
-  background = love.graphics.newImage(string.format("assets/muxsysinfo_%s.png", asset_resolution))
-  overlay = love.graphics.newImage(string.format("assets/preview_%s.png", asset_resolution))
 
   get_templates()
   render_to_canvas()
@@ -340,19 +340,15 @@ function main:load()
       love.graphics.push()
       love.graphics.translate(self.x, self.y)
       love.graphics.scale(scale)
-      if self.overlay and background then
-        love.graphics.draw(background, 0, 0)
-      end
       love.graphics.draw(canvas, 0, 0);
-      if self.overlay and overlay then
-        love.graphics.draw(overlay, 0, 0)
-      end
       if state.loading then
         love.graphics.setColor(0, 0, 0, 0.5);
         love.graphics.rectangle("fill", 0, 0, cw, ch)
         loader:draw(cw * scale, ch * scale, 1)
         love.graphics.setColor(1, 1, 1);
       end
+      love.graphics.setColor(utils.hex("#EDD113"))
+      love.graphics.rectangle("line", 0, 0, cw, ch)
       love.graphics.pop()
     end
   }
@@ -367,14 +363,12 @@ function main:load()
       love.graphics.push()
       love.graphics.translate(self.x, self.y)
       love.graphics.scale(scale)
-      if background then
-        love.graphics.draw(background, 0, 0)
-      end
       love.graphics.draw(canvas, 0, 0);
       love.graphics.setColor(0, 0, 0, 0.5);
       love.graphics.rectangle("fill", 0, 0, cw, ch)
       loader:draw(cw * scale, ch * scale, 1)
-      love.graphics.setColor(1, 1, 1);
+      love.graphics.setColor(utils.hex("#EDD113"))
+      love.graphics.rectangle("line", 0, 0, cw, ch)
       love.graphics.pop()
     end
   }
