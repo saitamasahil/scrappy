@@ -68,6 +68,8 @@ local function update_task_state()
         skyscraper_config:insert("main", "cacheFolder", "\"/mnt/sdcard/scrappy_cache/\"")
         skyscraper_config:save()
         log.write("Cache migrated successfully")
+      elseif t.command == "update_app" then
+        dispatch_info("Updated Scrappy", "Scrappy has been updated. Please restart the app to apply the changes.")
       end
     end
   end
@@ -157,6 +159,13 @@ local function on_migrate_cache()
   thread:start("migrate")
 end
 
+local function on_app_update()
+  log.write("Updating Scrappy")
+  dispatch_info("Updating Scrappy", "Please wait...")
+  local thread = love.thread.newThread("lib/backend/task_backend.lua")
+  thread:start("update_app")
+end
+
 function tools:load()
   menu = component:root { column = true, gap = 10 }
   info_window = popup { visible = false }
@@ -170,12 +179,12 @@ function tools:load()
         }
         + (component { column = true, gap = 10 }
           -- TODO: Implement auto update
-          -- + listitem {
-          --   text = "Update Scrappy",
-          --   width = item_width,
-          --   onClick = on_app_update,
-          --   icon = "download"
-          -- }
+          + listitem {
+            text = "Update Scrappy",
+            width = item_width,
+            onClick = on_app_update,
+            icon = "download"
+          }
           + listitem {
             text = "Migrate cache to SD2",
             width = item_width,

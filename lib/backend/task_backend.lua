@@ -1,4 +1,5 @@
 require("globals")
+-- local pprint   = require("lib.pprint")
 local log      = require("lib.log")
 local channels = require("lib.backend.channels")
 
@@ -44,6 +45,14 @@ local function backup_cache()
   )
 end
 
+local function update_app()
+  log.write("Updating app")
+  base_task_command(
+    "update_app",
+    "sh scripts/update.sh"
+  )
+end
+
 while running do
   if task == "backup" then
     backup_cache()
@@ -51,6 +60,10 @@ while running do
 
   if task == "migrate" then
     migrate_cache()
+  end
+
+  if task == "update_app" then
+    update_app()
   end
 
   running = false
