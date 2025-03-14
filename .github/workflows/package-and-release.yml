@@ -6,12 +6,17 @@ on:
       - "v*.*.*"
 
 jobs:
-  package:
+  build:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Create directory structure
         run: |
@@ -20,10 +25,6 @@ jobs:
       - name: Get the tag name
         id: get_tag
         run: echo "TAG_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
-
-      - name: Set tag name as output
-        id: set_tag_output
-        run: echo "tag_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
 
       - name: Package full install and update zips
         run: |
@@ -50,31 +51,6 @@ jobs:
           # List files to verify they were created
           ls -l
 
-      - name: Upload full install zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: Scrappy_${{ env.TAG_NAME }}.muxapp
-          path: Scrappy_${{ env.TAG_NAME }}.muxapp
-
-      - name: Upload update zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: Scrappy_${{ env.TAG_NAME }}_update.muxapp
-          path: Scrappy_${{ env.TAG_NAME }}_update.muxapp
-
-  release:
-    runs-on: ubuntu-latest
-    needs: package
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Fetch the entire history to find previous tags
-
-      - name: Use tag name from package job
-        run: echo "TAG_NAME=${{ needs.package.outputs.tag_name }}" >> $GITHUB_ENV
-
       - name: Get commit messages for the release
         id: get_commits
         run: |
@@ -90,15 +66,21 @@ jobs:
           COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --oneline --no-merges)
 
           # Separate commits by type
-          CHANGED=$(echo "$COMMITS" | grep -iE "^.*(chore:|refact:)" || echo "None")
-          ADDED=$(echo "$COMMITS" | grep -iE "^.*(feat:)" || echo "None")
-          FIXED=$(echo "$COMMITS" | grep -iE "^.*(fix:)" || echo "None")
+          CHANGED=$(echo "$COMMITS" | grep -iE "^[a-f0-9]+ (chore:|refact:|refactor:)" || echo "None")
+          ADDED=$(echo "$COMMITS" | grep -iE "^[a-f0-9]+ (feat:|wip:)" || echo "None")
+          FIXED=$(echo "$COMMITS" | grep -iE "^[a-f0-9]+ (fix:)" || echo "None")
 
-          # Format the output
-          RELEASE_NOTES="## Scrappy ${TAG_NAME}\n\n"
-          RELEASE_NOTES+="### 🛠️ Changed\n$CHANGED\n\n"
-          RELEASE_NOTES+="### ✨ Added\n$ADDED\n\n"
-          RELEASE_NOTES+="### 🐛 Fixed\n$FIXED\n"
+          # Format the output with actual newlines
+          RELEASE_NOTES="## Scrappy ${TAG_NAME}
+
+          ### 🛠️ Changed
+          ${CHANGED}
+
+          ### ✨ Added
+          ${ADDED}
+
+          ### 🐛 Fixed
+          ${FIXED}"
 
           # Save the release notes for later use
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
