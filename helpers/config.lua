@@ -104,18 +104,23 @@ end
 
 function user_config:detect_sd()
   log.write("Detecting SD storage preference")
-  local sd1 = muos.SD1_PATH
-  local sd2 = muos.SD2_PATH
-  if #nativefs.getDirectoryItems(sd2) > 0 then
+
+  -- Detect SD2 ROMs
+  local rom_folder = ""
+  for _, item in ipairs(nativefs.getDirectoryItems(muos.SD2_PATH) or {}) do
+    if item:lower() == "roms" then
+      rom_folder = item
+      break
+    end
+  end
+  if rom_folder ~= "" and #nativefs.getDirectoryItems(string.format("%s/%s", muos.SD2_PATH, rom_folder)) > 0 then
     self:insert("main", "sd", 2)
     log.write("Found SD2")
-  elseif #nativefs.getDirectoryItems(sd1) > 0 then
-    self:insert("main", "sd", 1)
-    log.write("Found SD1")
-  else
-    log.write("No SD found")
     return
   end
+
+  log.write("No SD2 found. Defaulting to SD1")
+  self:insert("main", "sd", 1)
 end
 
 function user_config:get_paths()
