@@ -35,7 +35,6 @@ end
 local function update_checkboxes()
   checkboxes.children = {}
   local platforms = user_config:get().platforms
-  -- local custom_platforms = user_config:get().platformsCustom
   local selected_platforms = user_config:get().platformsSelected
   for platform in utils.orderedPairs(platforms or {}) do
     checkboxes = checkboxes + checkbox {
@@ -45,14 +44,6 @@ local function update_checkboxes()
       checked = selected_platforms[platform] == "1"
     }
   end
-  -- for custom in utils.orderedPairs(custom_platforms or {}) do
-  --   checkboxes = checkboxes + checkbox {
-  --     text = custom .. "*",
-  --     id = custom,
-  --     onToggle = function() on_change_platform(custom) end,
-  --     checked = selected_platforms[custom] == "1"
-  --   }
-  -- end
 end
 
 local function on_refresh_press()
@@ -63,7 +54,7 @@ end
 
 local on_check_all_press = function()
   local selected_platforms = user_config:get().platformsSelected
-  for platform, checked in pairs(selected_platforms) do
+  for platform, _ in pairs(selected_platforms) do
     user_config:insert("platformsSelected", platform, all_check and "0" or "1")
   end
   all_check = not all_check
@@ -89,18 +80,27 @@ function settings:load()
 
   local menu_height = menu.height
 
-  menu = menu
-      + (scroll_container {
-          width = w_width - 20,
-          height = w_height - menu_height - 60,
-          scroll_speed = 30,
-        }
-        + checkboxes)
+
 
   update_checkboxes()
 
   menu:updatePosition(10, 10)
   menu:focusFirstElement()
+
+  if not user_config:has_platforms() then
+    menu = menu + label {
+      text = "No platforms found; your paths might not have cores assigned",
+      icon = "warn",
+    }
+  else
+    menu = menu
+        + (scroll_container {
+            width = w_width - 20,
+            height = w_height - menu_height - 60,
+            scroll_speed = 30,
+          }
+          + checkboxes)
+  end
 end
 
 function settings:update(dt)
