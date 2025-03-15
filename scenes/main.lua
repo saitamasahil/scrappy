@@ -1,4 +1,5 @@
 require("globals")
+local pprint     = require("lib.pprint")
 local skyscraper = require("lib.skyscraper")
 local log        = require("lib.log")
 local scenes     = require("lib.scenes")
@@ -77,6 +78,21 @@ local function update_preview(direction)
   local sample_artwork = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
   skyscraper.change_artwork(sample_artwork)
   skyscraper.update_sample(sample_artwork)
+end
+
+local function update_output_types()
+  local sample_artwork = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
+  local keys = { "box", "preview", "splash" }
+  local outputs = artwork.get_output_types(sample_artwork)
+  for _, key in ipairs(keys) do
+    if outputs and outputs[key] then
+      local output_label = menu ^ ("output_" .. key)
+      output_label.icon = "square_check"
+    else
+      local output_label = menu ^ ("output_" .. key)
+      output_label.icon = "square"
+    end
+  end
 end
 
 local function scrape_platforms()
@@ -238,6 +254,7 @@ local function on_artwork_change(key)
   elseif key == "right" then
     update_preview(1)
   end
+  update_output_types()
 end
 
 local function get_templates()
@@ -387,6 +404,24 @@ function main:load()
         width = w_width * 0.5 - 30,
         onClick = scrape_platforms,
       }
+      + label {
+        text = "This template outputs:",
+      }
+      + label {
+        id = "output_box",
+        text = "Boxart",
+        icon = "square"
+      }
+      + label {
+        id = "output_preview",
+        text = "Preview",
+        icon = "square"
+      }
+      + label {
+        id = "output_splash",
+        text = "Splash",
+        icon = "square"
+      }
 
   local infoComponent = component { column = true, gap = 10 }
       + label { id = "platform", text = "Platform: N/A", icon = "controller" }
@@ -449,6 +484,8 @@ function main:load()
       icon = "warn",
     }
   end
+
+  update_output_types()
 end
 
 local function process_game_queue()

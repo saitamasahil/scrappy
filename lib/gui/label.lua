@@ -24,6 +24,7 @@ local function label(props)
     width = totalWidth,
     height = textHeight,
     font = _font,
+    icon = props.icon,
     draw = function(self)
       if not self.visible then return end
 
@@ -31,9 +32,9 @@ local function label(props)
       love.graphics.setFont(self.font)
 
       -- Draw the icon on the left if icon is provided
-      if props.icon then
+      if self.icon then
         local leftIcon = icon {
-          name = props.icon,
+          name = self.icon,
           x = self.x,
           y = self.y + (self.height - iconSize) / 2,
           size = iconSize
@@ -43,7 +44,7 @@ local function label(props)
 
       -- Calculate the position of the text based on the presence of an icon
       local textX = self.x
-      if props.icon then
+      if self.icon then
         textX = textX + iconSize + padding
       end
 
