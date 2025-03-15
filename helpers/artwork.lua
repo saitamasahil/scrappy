@@ -51,6 +51,31 @@ function artwork.get_template_resolution(xml_path)
   return nil
 end
 
+function artwork.get_output_types(xml_path)
+  local xml_content = nativefs.read(xml_path)
+  if not xml_content then
+    return nil
+  end
+
+  local result = {
+    box = false,
+    preview = false,
+    splash = false
+  }
+
+  if xml_content:find('<output [^>]*type="cover"') then
+    result.box = true
+  end
+  if xml_content:find('<output [^>]*type="screenshot"') then
+    result.preview = true
+  end
+  if xml_content:find('<output [^>]*type="wheel"') then
+    result.splash = true
+  end
+
+  return result
+end
+
 function artwork.copy_artwork_type(platform, game, media_path, copy_path, output_type)
   --[[
     platform -> nes | gb | gba | ...
