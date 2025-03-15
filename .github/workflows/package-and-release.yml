@@ -42,6 +42,8 @@ jobs:
           # Create the update zip
           zip -r $UPDATE_ZIP_NAME ./Scrappy
 
+          # Copy files for the full install package
+          cp -r bin data logs sample static ./Scrappy/.scrappy/
           # Create the full install directory structure
           mkdir -p ./mnt/mmc/MUOS/application
           cp -r ./Scrappy ./mnt/mmc/MUOS/application/
