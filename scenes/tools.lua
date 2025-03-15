@@ -10,6 +10,7 @@ local component         = require 'lib.gui.badr'
 local popup             = require 'lib.gui.popup'
 local listitem          = require 'lib.gui.listitem'
 local scroll_container  = require 'lib.gui.scroll_container'
+local output_log        = require 'lib.gui.output_log'
 
 local tools             = {}
 local theme             = configs.theme
@@ -23,19 +24,20 @@ local menu, info_window
 
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 local finished_tasks = 0
+local command_output = ""
 
 local function dispatch_info(title, content)
   if title then info_window.title = title end
-  if content then info_window.content = content end
+  -- if content then info_window.content = content end
   info_window.visible = true
 end
 
 local function update_state()
   local t = channels.SKYSCRAPER_OUTPUT:pop()
   if t then
-    if t.error and t.error ~= "" then
-      dispatch_info("Error", t.error)
-    end
+    -- if t.error and t.error ~= "" then
+    --   dispatch_info("Error", t.error)
+    -- end
     if t.data and next(t.data) then
       dispatch_info(string.format("Updating cache for %s, please wait...", t.data.platform))
     end
@@ -57,6 +59,11 @@ local function update_task_state()
   if t then
     if t.error and t.error ~= "" then
       dispatch_info("Error", t.error)
+    end
+    if t.output and t.output ~= "" then
+      command_output = command_output .. t.output .. "\n"
+      local scraping_log = info_window ^ "scraping_log"
+      scraping_log.text = command_output
     end
     if t.command_finished then
       if t.command == "backup" then
@@ -231,6 +238,16 @@ function tools:load()
         )
       )
 
+  info_window = info_window
+      + (
+        component { column = true, gap = 15 }
+        + output_log {
+          id = "scraping_log",
+          width = info_window.width,
+          height = w_height * 0.50,
+        }
+      )
+
   menu:updatePosition(10, 10)
   menu:focusFirstElement()
 end
@@ -252,6 +269,7 @@ function tools:keypressed(key)
   if key == "escape" then
     if info_window.visible then
       info_window.visible = false
+      command_output = ""
     else
       scenes:pop()
     end

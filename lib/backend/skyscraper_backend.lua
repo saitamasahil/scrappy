@@ -43,6 +43,7 @@ while true do
   local current_platform = input_data.platform
   -- local game = utils.get_filename(input_data.game)
   -- local task_id = input_data.task_id
+  local op = input_data.op
 
   log.write("Starting Skyscraper, please wait...")
 
@@ -79,8 +80,12 @@ while true do
 
   local parsed = false
   for line in output:lines() do
-    line = utils.strip_ansi_colors(line)
     -- if game ~= "fake-rom" then log.write(line, "skyscraper") end
+    line = utils.strip_ansi_colors(line)
+    -- RUNNING TASK; PUSH OUTPUT
+    if op == "update" then
+      channels.TASK_OUTPUT:push({ output = line, error = nil })
+    end
     local res, error, skipped, rtype = parser.parse(line)
     if res ~= nil or error then parsed = true end
     if res ~= nil then
