@@ -28,7 +28,7 @@ jobs:
 
       - name: Package full install and update zips
         run: |
-          ZIP_NAME="Scrappy_${TAG_NAME}.muxapp"
+          ZIP_NAME="Scrappy_${TAG_NAME}.muxzip"
           UPDATE_ZIP_NAME="Scrappy_${TAG_NAME}_update.muxapp"
 
           # Create the Scrappy directory structure
@@ -42,11 +42,16 @@ jobs:
           # Create the update zip
           zip -r $UPDATE_ZIP_NAME ./Scrappy
 
-          # Copy additional files for the full install package
-          cp -r bin data logs sample static ./Scrappy/.scrappy/
+          # Create the full install directory structure
+          mkdir -p ./mnt/mmc/MUOS/application
+          cp -r ./Scrappy ./mnt/mmc/MUOS/application/
+
+          # Include assets/scrappy.png in /opt/muos/default/MUOS/theme/active/glyph/muxapp/
+          mkdir -p ./opt/muos/default/MUOS/theme/active/glyph/muxapp/
+          cp assets/scrappy.png ./opt/muos/default/MUOS/theme/active/glyph/muxapp/
 
           # Create the full install zip
-          zip -r $ZIP_NAME ./Scrappy
+          zip -r $ZIP_NAME ./mnt/mmc/MUOS/application/Scrappy ./opt/muos/default/MUOS/theme/active/glyph/muxapp/scrappy.png
 
           # List files to verify they were created
           ls -l
@@ -92,7 +97,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            Scrappy_${{ env.TAG_NAME }}.muxapp
+            Scrappy_${{ env.TAG_NAME }}.muxzip
             Scrappy_${{ env.TAG_NAME }}_update.muxapp
           body: ${{ env.RELEASE_NOTES }}
         env:
