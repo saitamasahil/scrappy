@@ -23,7 +23,7 @@ fi
 # Find the asset URL for "Scrappy_{tag}_update.muxapp"
 ASSET_URL=$(echo "$RELEASE_DATA" | grep -oP '"browser_download_url": "\K[^"]+Scrappy_'${TAG}'_update\.muxapp')
 if [ -z "$ASSET_URL" ]; then
-    # If "Scrappy_{tag}_update.muxapp" is not found, look for any "Scrappy_{tag}*.zip"
+    # If "Scrappy_{tag}_update.muxapp" is not found, look for any "Scrappy_{tag}*.muxapp"
     ASSET_URL=$(echo "$RELEASE_DATA" | grep -oP '"browser_download_url": "\K[^"]+Scrappy_'${TAG}'[^"]*\.muxapp')
     if [ -z "$ASSET_URL" ]; then
         echo "Error: No matching asset found for tag $TAG."
