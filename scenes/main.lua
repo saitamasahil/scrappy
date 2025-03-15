@@ -417,11 +417,6 @@ function main:load()
           onClick = function() scenes:push("tools") end
         }
       )
-      + label {
-        text = "Scraping limited - no credentials provided",
-        icon = "warn",
-        visible = not skyscraper_config:has_credentials()
-      }
 
   scraping_window = scraping_window
       + (   -- Column
@@ -469,10 +464,20 @@ function main:load()
         }
       )
   menu:updatePosition(10, 10)
-  -- infoComponent:updatePosition(0, w_height * 0.5 - selectionComponent.height - infoComponent.height - 10)
 
   menu:focusFirstElement()
-  -- show_info_window("Scraping in progress", "Please wait for the select platforms for scraping in settings.")
+  if not skyscraper_config:has_credentials() then
+    menu = menu + label {
+      text = "No credentials provided in skyscraper_config.ini",
+      icon = "warn",
+    }
+  end
+  if not user_config:has_platforms() then
+    menu = menu + label {
+      text = "No platforms found; your paths might not have cores assigned",
+      icon = "warn",
+    }
+  end
 end
 
 local function process_game_queue()

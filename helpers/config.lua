@@ -240,12 +240,24 @@ function user_config:load_platforms()
 end
 
 function user_config:fill_selected_platforms()
-  local platforms = utils.tableMerge(self:get().platforms, self:get().platformsCustom)
-  for platform in utils.orderedPairs(platforms or {}) do
+  for platform in utils.orderedPairs(self:get().platforms or {}) do
     if not self:read("platformsSelected", platform) then
       self:insert("platformsSelected", platform, 0)
     end
   end
+end
+
+function user_config:has_platforms()
+  local platforms = self:get().platforms
+
+  if not platforms then return false end
+
+  local count = 0
+  for _ in pairs(platforms) do
+    count = count + 1
+  end
+
+  return count > 0
 end
 
 -- Skyscraper-specific config
