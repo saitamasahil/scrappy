@@ -14,6 +14,8 @@ local button     = require "lib.gui.button"
 local label      = require "lib.gui.label"
 local select     = require "lib.gui.select"
 local popup      = require "lib.gui.popup"
+local output_log = require "lib.gui.output_log"
+
 local menu, info_window, scraping_window
 
 
@@ -185,7 +187,7 @@ local function update_state(t)
     state.loading = false
     -- Menu UI elements
     local ui_platform, ui_game = scraping_window ^ "platform", scraping_window ^ "game"
-    local ui_progress, ui_bar = scraping_window ^ "progress", scraping_window ^ "progress_bar"
+    local ui_progress = scraping_window ^ "progress"
     -- Update UI
     if scraping_window.children then
       ui_platform.text = muos.platforms[t.platform]
@@ -426,41 +428,10 @@ function main:load()
           + canvasComponent2
           + infoComponent
         )
-        + component {
+        + output_log {
           id = "scraping_log",
-          width = scraping_window.width - 4 * padding,
+          width = scraping_window.width,
           height = 100,
-          font = love.graphics.getFont(),
-          text = "",
-          draw = function(self)
-            love.graphics.push()
-            love.graphics.setColor(0, 0, 0, 0.5)
-            love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.stencil(function()
-              love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-            end, "replace", 1)
-            love.graphics.setStencilTest("greater", 0)
-
-            -- Split the text into lines
-            local lines = {}
-            for s in self.text:gmatch("[^\r\n]+") do
-              table.insert(lines, s)
-            end
-
-            -- Calculate the total height of all the lines
-            local totalTextHeight = #lines * self.font:getHeight()
-
-            -- Draw text from bottom-up
-            local offset = self.height - totalTextHeight
-            for i = 1, #lines do
-              love.graphics.print(lines[i], self.x + 10, self.y + offset)
-              offset = offset + self.font:getHeight()
-            end
-
-            love.graphics.setStencilTest()
-            love.graphics.pop()
-          end
         }
       )
   menu:updatePosition(10, 10)

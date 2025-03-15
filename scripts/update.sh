@@ -52,4 +52,5 @@ fi
 rm -rf "$TEMP_DIR"
 
 echo "Success: Scrappy updated to version $TAG."
+echo "Please restart the app to apply the update."
 exit 0

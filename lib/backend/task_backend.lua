@@ -7,26 +7,23 @@ local task     = ...
 local running  = true
 
 local function base_task_command(id, command)
-  local stdout_null = " > /dev/null 2>&1"
-  local read_output = "; echo $?" -- 'echo $?' returns 0 if successful
-  local handle = io.popen(command .. stdout_null .. read_output)
+  local stderr_to_stdout = " 2>&1"
+  -- local stdout_null = " > /dev/null 2>&1"
+  -- local read_output = "; echo $?" -- 'echo $?' returns 0 if successful
+  local handle = io.popen(command .. stderr_to_stdout)
 
   if not handle then
     log.write(string.format("Failed to run %s - '%s'", id, command))
-    channels.TASK_OUTPUT:push({ data = {}, error = string.format("Failed to run %s", id) })
+    channels.TASK_OUTPUT:push({ output = "Command failed", error = string.format("Failed to run %s", id) })
     return
   end
 
-  local output = handle:read("*a")
-  output = output:gsub("\n", "")
-  handle:close()
-
-  if output == "0" then
-    channels.TASK_OUTPUT:push({ command_finished = true, command = id })
-  else
-    channels.TASK_OUTPUT:push({ data = {}, error = string.format("Failed to run %s", id) })
-    log.write(string.format("Failed to run %s - '%s'", id, command, output))
+  for line in handle:lines() do
+    channels.TASK_OUTPUT:push({ output = line, error = nil })
   end
+
+  channels.TASK_OUTPUT:push({ command_finished = true, command = id })
+  log.write(string.format("Finished command %s", id, command))
 end
 
 local function migrate_cache()
