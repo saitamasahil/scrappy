@@ -30,7 +30,7 @@ local function migrate_cache()
   log.write("Migrating cache to SD2")
   base_task_command(
     "migrate",
-    "cp -r /mnt/mmc/MUOS/application/.scrappy/data/cache/ /mnt/sdcard/scrappy_cache/"
+    "cp -r /mnt/mmc/MUOS/application/Scrappy/.scrappy/data/cache/ /mnt/sdcard/scrappy_cache/"
   )
 end
 
@@ -38,7 +38,7 @@ local function backup_cache()
   log.write("Starting Zip to compress and move cache folder")
   base_task_command(
     "backup",
-    'zip -r /mnt/sdcard/ARCHIVE/scrappy_cache-$(date +"%Y-%m-%d-%H-%M-%S").zip /mnt/mmc/MUOS/application/.scrappy/data/cache/'
+    'zip -r /mnt/sdcard/ARCHIVE/scrappy_cache-$(date +"%Y-%m-%d-%H-%M-%S").zip /mnt/mmc/MUOS/application/Scrappy/.scrappy/data/cache/'
   )
 end
 
