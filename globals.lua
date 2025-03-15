@@ -5,8 +5,8 @@ _G.WORK_DIR = nativefs.getWorkingDirectory()
 local sem_ver = {
   major = 2,
   minor = 0,
-  patch = 1,
-  extra = "beta"
+  patch = 2,
+  extra = ""
 }
 
 _G.version = (function()

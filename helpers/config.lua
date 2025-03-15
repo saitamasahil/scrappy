@@ -223,8 +223,15 @@ function user_config:load_platforms()
           log.write(err)
           return
         end
-        self:insert("platforms", item, muos.assignment[folder_name])
-        self:insert("platformsSelected", item, 1)
+        local assignment = muos.assignment[folder_name]
+        if assignment then
+          self:insert("platforms", item, assignment)
+          self:insert("platformsSelected", item, 1)
+        else
+          log.write(string.format("Unable to find platform for %s", item))
+          self:insert("platforms", item, "unmapped")
+          self:insert("platformsSelected", item, 0)
+        end
       end
     else
       log.write(string.format("Unable to find platform for %s", item))
