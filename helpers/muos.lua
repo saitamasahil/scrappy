@@ -160,7 +160,6 @@ local muos = {
     ["The 3DO Company - 3DO"] = "3do",
     ["Watara Supervision"] = "supervision",
   },
-  assign = {},
 }
 
 return muos
