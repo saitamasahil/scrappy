@@ -57,7 +57,7 @@ local function on_rom_press(rom)
   if artwork_name then
     local platform_dest = platforms[last_selected_platform]
     dispatch_info(rom, "Scraping ROM, please wait...")
-    skyscraper.fetch_single(rom_path, rom, platform_dest)
+    skyscraper.fetch_single(rom_path, rom, last_selected_platform, platform_dest)
   else
     dispatch_info("Error", "Artwork XML not found")
   end
@@ -145,7 +145,7 @@ local function process_fetched_game()
     local rom_path, _ = user_config:get_paths()
     rom_path = string.format("%s/%s", rom_path, last_selected_platform)
     local artwork_name = artwork.get_artwork_name()
-    skyscraper.update_artwork(rom_path, last_selected_rom, t.platform, artwork_name)
+    skyscraper.update_artwork(rom_path, last_selected_rom, t.input_folder, t.platform, artwork_name)
   end
 end
 

@@ -127,19 +127,17 @@ local function generate_command(config)
   return command
 end
 
-function skyscraper.run(command, platform, op, game, ...)
-  -- print("Running Skyscraper")
+function skyscraper.run(command, input_folder, platform, op, game)
   platform = platform or "none"
   op = op or "generate"
   game = game or "none"
-  local task_id = select(1, ...) or nil
   if op == "generate" then
     push_command({
       command = skyscraper.base_command .. command,
       platform = platform,
       op = op,
       game = game,
-      task_id = task_id,
+      input_folder = input_folder,
     })
   else
     push_cache_command({
@@ -147,7 +145,7 @@ function skyscraper.run(command, platform, op, game, ...)
       platform = platform,
       op = op,
       game = game,
-      task_id = task_id,
+      input_folder = input_folder,
     })
   end
 end
@@ -166,7 +164,7 @@ function skyscraper.update_sample(artwork_path)
     artwork = artwork_path,
     flags = { "unattend" },
   })
-  skyscraper.run(command, "N/A", "generate", "fake-rom")
+  skyscraper.run(command, "N/A", "N/A", "generate", "fake-rom")
 end
 
 function skyscraper.custom_update_artwork(platform, cache, input, artwork)
@@ -181,29 +179,28 @@ function skyscraper.custom_update_artwork(platform, cache, input, artwork)
   skyscraper.run(command)
 end
 
-function skyscraper.fetch_artwork(rom_path, platform, ...)
+function skyscraper.fetch_artwork(rom_path, input_folder, platform)
   local command = generate_command({
     platform = platform,
     input = rom_path,
     fetch = true,
     flags = { "unattend", "onlymissing" },
   })
-  skyscraper.run(command, platform, "update")
+  skyscraper.run(command, input_folder, platform, "update")
 end
 
-function skyscraper.update_artwork(rom_path, rom, platform, artwork, ...)
+function skyscraper.update_artwork(rom_path, rom, input_folder, platform, artwork)
   local artwork = WORK_DIR .. "/templates/" .. artwork .. ".xml"
-  local task_id = select(1, ...) or rom
   local update_command = generate_command({
     platform = platform,
     input = rom_path,
     artwork = artwork,
     rom = rom,
   })
-  skyscraper.run(update_command, platform, "generate", rom, task_id)
+  skyscraper.run(update_command, input_folder, platform, "generate", rom)
 end
 
-function skyscraper.fetch_single(rom_path, rom, platform, ...)
+function skyscraper.fetch_single(rom_path, rom, input_folder, platform, ...)
   local flags = select(1, ...) or { "unattend" }
   local fetch_command = generate_command({
     platform = platform,
@@ -212,7 +209,7 @@ function skyscraper.fetch_single(rom_path, rom, platform, ...)
     rom = rom,
     flags = flags,
   })
-  skyscraper.run(fetch_command, platform, "fetch", rom)
+  skyscraper.run(fetch_command, input_folder, platform, "fetch", rom)
 end
 
 function skyscraper.custom_import(rom_path, platform)
@@ -222,7 +219,7 @@ function skyscraper.custom_import(rom_path, platform)
     module = "import",
     fetch = true,
   })
-  skyscraper.run(command, platform, "import")
+  skyscraper.run(command, "N/A", platform, "import")
 end
 
 return skyscraper
