@@ -1,5 +1,6 @@
 require("globals")
 
+local json              = require("lib.json")
 local log               = require("lib.log")
 local channels          = require("lib.backend.channels")
 local skyscraper_config = require("helpers.config").skyscraper_config
@@ -8,6 +9,7 @@ local skyscraper        = {
   base_command = "./Skyscraper",
   module = "screenscraper",
   config_path = "",
+  peas_json = {}
 }
 
 local cache_thread, gen_thread
@@ -40,9 +42,45 @@ function skyscraper.init(config_path, binary)
   cache_thread = love.thread.newThread("lib/backend/skyscraper_backend.lua")
   gen_thread = love.thread.newThread("lib/backend/skyscraper_generate_backend.lua")
 
+  -- Load peas.json file
+  local peas_file = nativefs.read(string.format("%s/static/.skyscraper/peas.json", WORK_DIR))
+  if peas_file then
+    skyscraper.peas_json = json.decode(peas_file)
+  else
+    log.write("Unable to load peas.json file")
+  end
+
   cache_thread:start()
   gen_thread:start()
   push_cache_command({ command = string.format("%s -v", skyscraper.base_command), version = 1 })
+end
+
+function skyscraper.filename_matches_extension(filename, platform)
+  local formats = skyscraper.peas_json[platform] and skyscraper.peas_json[platform].formats
+  if not formats then
+    log.write("Unable to determine file formats for platform " .. platform)
+    return true
+  end
+
+  -- .zip and .7z are added by default
+  -- https://gemba.github.io/skyscraper/PLATFORMS/#sample-usecase-adding-platform-satellaview
+  local match_patterns = { '%.*%.zip$', '%.*%.7z$' }
+  -- Convert patterns to Lua-compatible patterns
+  for _, pattern in ipairs(formats) do
+    local lua_pattern = pattern:gsub("%*", ".*"):gsub("%.", "%%.")
+    -- Add '$' to ensure the pattern matches the end of the string
+    lua_pattern = lua_pattern .. "$"
+    table.insert(match_patterns, lua_pattern)
+  end
+
+  -- Check if a file matches any of the patterns
+  for _, pattern in ipairs(match_patterns) do
+    if filename:match(pattern) then
+      return true
+    end
+  end
+
+  return false
 end
 
 local function generate_command(config)

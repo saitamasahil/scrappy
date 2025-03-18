@@ -122,29 +122,44 @@ local function scrape_platforms()
     local uncached_games = false
     local game_list = {}
 
-    -- Get list of roms
-    local roms = nativefs.getDirectoryItems(platform_path)
-    if not roms or #roms == 0 then
+    -- Get list of files
+    local files = nativefs.getDirectoryItems(platform_path)
+    if not files or #files == 0 then
       log.write("No roms found in " .. platform_path)
       goto skip
     end
-    for i = 1, #roms do
-      local file = roms[i]
+
+    -- Filter files -> ROMs
+    local roms = {}
+    for _, file in pairs(files) do
       -- Check if it's a file or directory
       local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, file))
       if file_info and file_info.type == "file" then
-        local is_cached = artwork.cached_game_ids[dest] and artwork.cached_game_ids[dest][file]
-        uncached_games = not is_cached
-
-        -- Get the title without extension
-        local game_title = utils.get_filename(file)
-
-        -- Save in reference map
-        if game_file_map[dest] == nil then game_file_map[dest] = {} end
-        if game_title then game_file_map[dest][game_title] = file end
-        state.tasks = state.tasks + 1
-        table.insert(game_list, game_title)
+        -- Verify if extension matches peas file
+        if skyscraper.filename_matches_extension(file, dest) then
+          table.insert(roms, file)
+        else
+          log.write(string.format("Skipping file %s because it doesn't match any supported extensions for %s", file, dest))
+        end
       end
+    end
+
+    -- Iterate over ROMs
+    for _, rom in pairs(roms) do
+      -- Verify if game is cached
+      if not uncached_games then
+        local res_cache_id = artwork.cached_game_ids[dest] and artwork.cached_game_ids[dest][rom]
+        uncached_games = res_cache_id == nil
+      end
+
+      -- Get the title without extension
+      local game_title = utils.get_filename(rom)
+
+      -- Save in reference map
+      if game_file_map[dest] == nil then game_file_map[dest] = {} end
+      if game_title then game_file_map[dest][game_title] = rom end
+      state.tasks = state.tasks + 1
+      table.insert(game_list, game_title)
     end
 
     if uncached_games then
