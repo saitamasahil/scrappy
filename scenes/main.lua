@@ -163,9 +163,9 @@ local function scrape_platforms()
     end
 
     if uncached_games then
-      skyscraper.fetch_artwork(platform_path, dest)
+      skyscraper.fetch_artwork(platform_path, src, dest)
     else
-      print("ALL GAMES ARE CACHED FOR " .. dest)
+      print("ALL GAMES ARE CACHED FOR " .. src)
       for i = 1, #game_list do
         channels.SKYSCRAPER_GAME_QUEUE:push({
           game = game_list[i],
@@ -519,7 +519,7 @@ local function process_game_queue()
   -- Wait for a ready signal from the Skyscraper backend
   local ready = channels.SKYSCRAPER_GAME_QUEUE:pop()
   if ready then
-    local game, platform, skipped = ready.game, ready.platform, ready.skipped
+    local game, platform, input_folder, skipped = ready.game, ready.platform, ready.input_folder, ready.skipped
     print("\nReceived a ready signal, queuing update_artwork for " .. game)
     if skipped then
       update_state({
@@ -531,15 +531,8 @@ local function process_game_queue()
       return
     end
     local rom_path, _ = user_config:get_paths()
-    local platforms = user_config:get().platforms
-    local platform_path = ""
-    for src, dest in utils.orderedPairs(platforms) do
-      if dest == platform then
-        platform_path = string.format("%s/%s", rom_path, src)
-        break
-      end
-    end
-    if not platform_path then
+    local platform_path = string.format("%s/%s", rom_path, input_folder)
+    if not input_folder then
       log.write("No valid platform found")
       return
     end
@@ -547,7 +540,7 @@ local function process_game_queue()
       local game_file = game_file_map[platform][game]
       state.task_in_progress = game_file
       print(string.format("Task in progress: %s", game_file))
-      skyscraper.update_artwork(platform_path, game_file,
+      skyscraper.update_artwork(platform_path, game_file, input_folder,
         platform, templates[current_template])
     end
   end

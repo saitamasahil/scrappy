@@ -98,7 +98,7 @@ local function on_update_press()
   for src, dest in utils.orderedPairs(platforms or {}) do
     if dest ~= "unmapped" then
       local platform_path = string.format("%s/%s", rom_path, src)
-      skyscraper.fetch_artwork(platform_path, dest, "update")
+      skyscraper.fetch_artwork(platform_path, src, dest)
     end
   end
 end

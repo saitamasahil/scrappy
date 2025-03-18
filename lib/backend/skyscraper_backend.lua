@@ -28,9 +28,8 @@ local function log_version(output)
   end
 end
 
-local function emit_ready(game, platform, skipped)
-  -- print(string.format("Game queued: \"%s\"", game))
-  channels.SKYSCRAPER_GAME_QUEUE:push({ game = game, platform = platform, skipped = skipped })
+local function emit_ready(game, platform, input_folder, skipped)
+  channels.SKYSCRAPER_GAME_QUEUE:push({ game = game, platform = platform, input_folder = input_folder, skipped = skipped })
 end
 
 while true do
@@ -41,8 +40,7 @@ while true do
   -- Extract the command, platform, type, and game
   local command = input_data.command
   local current_platform = input_data.platform
-  -- local game = utils.get_filename(input_data.game)
-  -- local task_id = input_data.task_id
+  local input_folder = input_data.input_folder
   local op = input_data.op
 
   log.write("Starting Skyscraper, please wait...")
@@ -92,7 +90,7 @@ while true do
       log.write(string.format("[fetch] %s", line), "skyscraper")
       channels.SKYSCRAPER_OUTPUT:push({ log = string.format("[fetch] %s", line) })
       if rtype == "game" then
-        emit_ready(res, current_platform, skipped)
+        emit_ready(res, current_platform, input_folder, skipped)
       end
     end
 
