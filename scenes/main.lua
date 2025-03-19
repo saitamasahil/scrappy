@@ -170,6 +170,7 @@ local function scrape_platforms()
         channels.SKYSCRAPER_GAME_QUEUE:push({
           game = game_list[i],
           platform = dest,
+          input_folder = src,
         })
       end
     end
