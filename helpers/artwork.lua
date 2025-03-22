@@ -15,7 +15,8 @@ local output_types = {
   PREVIEW = "preview",
   SPLASH = "splash",
 }
-local output_map = {
+
+artwork.output_map = {
   [output_types.BOX] = "covers",
   [output_types.PREVIEW] = "screenshots",
   [output_types.SPLASH] = "wheels",
@@ -53,15 +54,13 @@ end
 
 function artwork.get_output_types(xml_path)
   local xml_content = nativefs.read(xml_path)
-  if not xml_content then
-    return nil
-  end
-
   local result = {
     box = false,
     preview = false,
     splash = false
   }
+
+  if not xml_content then return result end
 
   if xml_content:find('<output [^>]*type="cover"') then
     result.box = true
@@ -86,10 +85,10 @@ function artwork.copy_artwork_type(platform, game, media_path, copy_path, output
   --]]
 
   -- Find scraped artwork in output folder
-  local scraped_art_path = string.format("%s/%s/%s.png", media_path, output_map[output_type], game)
+  local scraped_art_path = string.format("%s/%s/%s.png", media_path, artwork.output_map[output_type], game)
   local scraped_art = nativefs.newFileData(scraped_art_path)
   if not scraped_art then
-    log.write(string.format("Scraped artwork not found for output '%s'", output_map[output_type]))
+    log.write(string.format("Scraped artwork not found for output '%s'", artwork.output_map[output_type]))
     return
   end
 
