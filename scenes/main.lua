@@ -14,6 +14,7 @@ local component  = require "lib.gui.badr"
 local button     = require "lib.gui.button"
 local label      = require "lib.gui.label"
 local select     = require "lib.gui.select"
+local listitem   = require "lib.gui.listitem"
 local popup      = require "lib.gui.popup"
 local output_log = require "lib.gui.output_log"
 
@@ -58,15 +59,33 @@ local state = {
 --]]
 local game_file_map = {}
 
+-- Display popup window
 local function show_info_window(title, content)
   info_window.visible = true
   info_window.title = title
   info_window.content = content
 end
 
+-- Finds first supported output type for a template
+local function first_template_output(output_path, platform, game_title)
+  local curr_template_path = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
+  -- Read supported output types
+  local output_types = artwork.get_output_types(curr_template_path)
+  local curr_output = "covers"
+  -- Find first supported output type
+  for key, supported in utils.orderedPairs(output_types) do
+    if supported then
+      curr_output = artwork.output_map[key]
+      break
+    end
+  end
+  return curr_output
+end
+
+-- Cycles templates and triggers update to artwork preview
 local function update_preview(direction)
   state.loading = true
-  cover_preview_path = default_cover_path
+  -- Cycle templates
   local direction = direction or 1
   current_template = current_template + direction
   if current_template < 1 then
@@ -75,26 +94,34 @@ local function update_preview(direction)
   if current_template > #templates then
     current_template = 1
   end
+  -- Generate new artwork
   local sample_artwork = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
   skyscraper.change_artwork(sample_artwork)
   skyscraper.update_sample(sample_artwork)
+  -- Update cover
+  local output = first_template_output()
+  cover_preview_path = string.format("sample/media/%s/fake-rom.png", output)
 end
 
+-- Updates feedback for template outputs
 local function update_output_types()
   local sample_artwork = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
   local keys = { "box", "preview", "splash" }
   local outputs = artwork.get_output_types(sample_artwork)
   for _, key in ipairs(keys) do
     if outputs and outputs[key] then
-      local output_label = menu ^ ("output_" .. key)
-      output_label.icon = "square_check"
+      local output_item = menu ^ ("output_" .. key)
+      output_item.icon = "square_check"
+      output_item.focusable = true
     else
-      local output_label = menu ^ ("output_" .. key)
-      output_label.icon = "square"
+      local output_item = menu ^ ("output_" .. key)
+      output_item.icon = "square"
+      output_item.focusable = false
     end
   end
 end
 
+-- Main function to scrape selected platforms
 local function scrape_platforms()
   log.write("Scraping artwork")
   -- Load platforms from config, merging mapped and custom
@@ -194,6 +221,7 @@ local function scrape_platforms()
   log.write(string.format("Generated %d Skyscraper tasks", state.total))
 end
 
+-- Stops all scraping and clears queue
 local function halt_scraping()
   channels.SKYSCRAPER_INPUT:clear()
   state.scraping = false
@@ -204,6 +232,7 @@ local function halt_scraping()
   if scraping_window then scraping_window.visible = false end
 end
 
+-- Takes the output from Skyscraper commands and updates state
 local function update_state(t)
   if t.error and t.error ~= "" then
     state.error = t.error
@@ -241,10 +270,12 @@ local function update_state(t)
       if t.success then
         -- Reload preview
         -- Read output folder
-        local output = skyscraper_config:read("main", "gameListFolder")
-        output = output and utils.strip_quotes(output) or "data/output"
+        local output_path = skyscraper_config:read("main", "gameListFolder")
+        output_path = output_path and utils.strip_quotes(output_path) or "data/output"
+        -- Get first supported output type
+        local curr_output = first_template_output()
         -- Load cover preview art
-        cover_preview_path = string.format("%s/%s/media/covers/%s.png", output, t.platform, t.title)
+        cover_preview_path = string.format("%s/%s/media/%s/%s.png", output_path, t.platform, curr_output, t.title)
         state.reload_preview = true
         -- Copy game artwork
         artwork.copy_to_catalogue(t.platform, t.title)
@@ -281,6 +312,7 @@ local function update_state(t)
   end
 end
 
+-- Triggered when artwork template changes
 local function on_artwork_change(key)
   if key == "left" then
     update_preview(-1)
@@ -290,6 +322,7 @@ local function on_artwork_change(key)
   update_output_types()
 end
 
+-- Loads templates in the templates/ dir
 local function get_templates()
   local items = nativefs.getDirectoryItems(WORK_DIR .. "/templates")
   if not items then
@@ -352,6 +385,7 @@ local function get_templates()
   end
 end
 
+-- Renders cover art to preview canvas
 local function render_to_canvas()
   -- Attempt to load the image
   local img = utils.load_image(cover_preview_path)
@@ -370,6 +404,13 @@ local function render_to_canvas()
       love.graphics.draw(cover_preview, canvas_w - cover_w, canvas_h * 0.5 - cover_h * 0.5, 0)
     end
   end)
+end
+
+-- Triggered when one of the outputs item is focused
+-- output_type: "covers" | "screenshots" | "wheels"
+local function on_output_focus(output_type)
+  cover_preview_path = string.format("sample/media/%s/fake-rom.png", output_type)
+  state.reload_preview = true
 end
 
 function main:load()
@@ -438,22 +479,31 @@ function main:load()
         onClick = scrape_platforms,
       }
       + label {
-        text = "This template outputs:",
+        text = "Select to preview outputs:",
       }
-      + label {
+      + listitem {
         id = "output_box",
         text = "Boxart",
-        icon = "square"
+        icon = "square",
+        onFocus = function()
+          on_output_focus("covers")
+        end,
       }
-      + label {
+      + listitem {
         id = "output_preview",
         text = "Preview",
-        icon = "square"
+        icon = "square",
+        onFocus = function()
+          on_output_focus("screenshots")
+        end,
       }
-      + label {
+      + listitem {
         id = "output_splash",
         text = "Splash",
-        icon = "square"
+        icon = "square",
+        onFocus = function()
+          on_output_focus("wheels")
+        end,
       }
 
   local infoComponent = component { column = true, gap = 10 }
@@ -521,6 +571,7 @@ function main:load()
   update_output_types()
 end
 
+-- Reads games from fetch queue and pushes "ready" games into generate queue
 local function process_game_queue()
   -- If there's already a task in progress, wait for the finished signal
   if state.task_in_progress then
