@@ -12,11 +12,9 @@ return function(props)
   local text = props.text or ""
 
   local itemHeight = theme:read_number("listitem", "ITEM_HEIGHT", 16)
-  local width = props.width or 0
   local height = math.max(props.height or 0, itemHeight + padding.vertical)
 
   -- Scroll-related variables
-  local contentWidth = width - iconSize - padding.horizontal
   local scrollOffset = 0
   local scrollSpeed = 50 -- Pixels per second
   local spacer = " • " -- Spacer between wrapped text
@@ -35,11 +33,12 @@ return function(props)
     -- Positioning and layout properties
     x = props.x or 0,
     y = props.y or 0,
-    width = width,
+    width = props.width or 0,
     height = height,
     focusable = props.focusable or true,
     disabled = props.disabled or false,
     active = props.active or false,
+    icon = props.icon or nil,
     -- Colors and styles
     backgroundColor = theme:read_color("listitem", "ITEM_BACKGROUND", "#000000"),
     focusColor = theme:read_color("listitem", "ITEM_FOCUS", "#2d3436"),
@@ -57,10 +56,17 @@ return function(props)
       end
     end,
     onUpdate = function(self, dt)
+      -- Update width if necessary
+      if self.width == 0 then
+        self.width = self.parent.width
+      end
+      -- Update focus state
       if self.focused and not self.last_focused then
         if self.onFocus then self:onFocus() end
       end
       self.last_focused = self.focused
+
+      local contentWidth = self.width - iconSize - padding.horizontal
 
       -- Update scroll offset if text is wider than the button
       local textWidth = font:getWidth(self.text or "")
@@ -87,7 +93,7 @@ return function(props)
       -- Background and focus styling
       if self.focused then
         love.graphics.setColor(self.focusColor)
-        love.graphics.rectangle("fill", self.x, self.y, self.parent.width or self.width, self.height)
+        love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
       end
 
       if self.active then
@@ -95,9 +101,9 @@ return function(props)
         love.graphics.rectangle("fill", self.x, self.y + self.height * 0.25, 4, self.height * 0.5)
       end
 
-      if props.icon then
+      if self.icon then
         local leftIcon = icon {
-          name = props.icon,
+          name = self.icon,
           x = self.x + leftPadding,
           y = self.y + (self.height - iconSize) * 0.5,
           size = iconSize
@@ -108,8 +114,8 @@ return function(props)
       -- Stencil needed for framebuffer issues
       love.graphics.stencil(
         function()
-          love.graphics.rectangle("fill", self.x + padding.horizontal, self.y,
-            (self.parent.width or self.width) - padding.horizontal, self.height)
+          love.graphics.rectangle("fill", self.x + padding.horizontal, self.y, self.width - padding.horizontal,
+            self.height)
         end,
         "replace", 1
       )
