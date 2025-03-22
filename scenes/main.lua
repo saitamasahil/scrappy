@@ -45,7 +45,7 @@ local state = {
   failed_tasks = {},
   total = 0,
   task_in_progress = nil,
-  log = ""
+  log = {}
 }
 
 --[[
@@ -211,9 +211,16 @@ local function update_state(t)
     halt_scraping()
   end
   if t.log then
-    state.log = state.log .. t.log .. "\n"
+    table.insert(state.log, t.log)
+    if #state.log > 6 then
+      table.remove(state.log, 1)
+    end
+    local log_str = ""
+    for _, lstr in ipairs(state.log) do
+      log_str = log_str .. lstr .. "\n"
+    end
     local scraping_log = scraping_window ^ "scraping_log"
-    scraping_log.text = state.log
+    scraping_log.text = log_str
   end
   if t.title then
     state.loading = false
@@ -249,14 +256,20 @@ local function update_state(t)
       -- Check if finished
       if state.scraping and state.tasks == 0 then
         log.write(string.format("Finished scraping %d games. %d failed or skipped", state.total, #state.failed_tasks))
+        -- Clear state
         state.scraping = false
         scraping_window.visible = false
-        state.log = ""
+        state.log = {}
+        -- Clear log
+        local scraping_log = scraping_window ^ "scraping_log"
+        scraping_log.text = ""
+        -- Show success message
         show_info_window(
           "Finished scraping",
           string.format("Scraped %d games, %d failed or skipped! %s", state.total,
             #state.failed_tasks, table.concat(state.failed_tasks, ", "))
         )
+        channels.SKYSCRAPER_OUTPUT:clear()
       end
     else
       state.reload_preview = true
