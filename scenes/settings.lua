@@ -41,7 +41,8 @@ local function update_checkboxes()
       text = platform,
       id = platform,
       onToggle = function() on_change_platform(platform) end,
-      checked = selected_platforms[platform] == "1"
+      checked = selected_platforms[platform] == "1",
+      width = w_width - 20,
     }
   end
 end
@@ -79,8 +80,6 @@ function settings:load()
         + button { text = 'Un/check all', width = 200, onClick = on_check_all_press })
 
   local menu_height = menu.height
-
-
 
   update_checkboxes()
 

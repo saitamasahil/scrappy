@@ -269,7 +269,10 @@ function tools:keypressed(key)
   if key == "escape" then
     if info_window.visible then
       info_window.visible = false
+      -- Clear logs
       command_output = ""
+      local scraping_log = info_window ^ "scraping_log"
+      scraping_log.text = ""
     else
       scenes:pop()
     end
