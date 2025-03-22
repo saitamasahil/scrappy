@@ -240,7 +240,11 @@ local function update_state(t)
       state.tasks = state.tasks - 1
       if t.success then
         -- Reload preview
-        cover_preview_path = string.format("data/output/%s/media/covers/%s.png", t.platform, t.title)
+        -- Read output folder
+        local output = skyscraper_config:read("main", "gameListFolder")
+        output = output and utils.strip_quotes(output) or "data/output"
+        -- Load cover preview art
+        cover_preview_path = string.format("%s/%s/media/covers/%s.png", output, t.platform, t.title)
         state.reload_preview = true
         -- Copy game artwork
         artwork.copy_to_catalogue(t.platform, t.title)
