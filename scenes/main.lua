@@ -433,6 +433,11 @@ function main:load()
       love.graphics.push()
       love.graphics.translate(self.x, self.y)
       love.graphics.scale(scale)
+      -- Background
+      love.graphics.setColor(.15, .15, .15);
+      love.graphics.rectangle("fill", 0, 0, cw, ch)
+      love.graphics.setColor(1, 1, 1);
+      -- Artwork (canvas)
       love.graphics.draw(canvas, 0, 0);
       if state.loading then
         love.graphics.setColor(0, 0, 0, 0.5);
@@ -456,6 +461,11 @@ function main:load()
       love.graphics.push()
       love.graphics.translate(self.x, self.y)
       love.graphics.scale(scale)
+      -- Background
+      love.graphics.setColor(.15, .15, .15);
+      love.graphics.rectangle("fill", 0, 0, cw, ch)
+      love.graphics.setColor(1, 1, 1);
+      -- Artwork (canvas)
       love.graphics.draw(canvas, 0, 0);
       love.graphics.setColor(0, 0, 0, 0.5);
       love.graphics.rectangle("fill", 0, 0, cw, ch)
