@@ -303,7 +303,12 @@ function skyscraper_config:init()
     end
     local region_prios = self:read("main", "regionPrios")
     if not region_prios or region_prios == "\"\"" then
-      self:insert("main", "regionPrios", "us,eu,wor,jp")
+      self:insert("main", "regionPrios",
+        "\"us,wor,eu,jp,ss,uk,au,ame,de,cus,cn,kr,asi,br,sp,fr,gr,it,no,dk,nz,nl,pl,ru,se,tw,ca\"")
+    end
+    local subdirs = self:read("main", "subdirs")
+    if not subdirs or subdirs == "\"\"" then
+      self:insert("main", "subdirs", "\"false\"")
     end
   else
     self:start_fresh()
