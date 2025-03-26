@@ -1,4 +1,5 @@
 local log               = require("lib.log")
+local pprint            = require("lib.pprint")
 local scenes            = require("lib.scenes")
 local skyscraper        = require("lib.skyscraper")
 local channels          = require("lib.backend.channels")
@@ -28,7 +29,10 @@ local command_output = ""
 
 local function dispatch_info(title, content)
   if title then info_window.title = title end
-  -- if content then info_window.content = content end
+  if content then
+    local scraping_log = info_window ^ "scraping_log"
+    scraping_log.text = scraping_log.text .. "\n" .. content
+  end
   info_window.visible = true
 end
 
@@ -68,7 +72,7 @@ local function update_task_state()
     if t.command_finished then
       if t.command == "backup" then
         dispatch_info("Backed up cache",
-          "Cache has been backed up to SD2/ARCHIVE. You can restore it using the muOS Archive Manager")
+          "Cache has been backed up to SD2/ARCHIVE.\nYou can restore it using the muOS Archive Manager")
         log.write("Cache backed up successfully")
       elseif t.command == "migrate" then
         dispatch_info("Migrated cache", "Cache has been migrated to SD2.")
@@ -76,7 +80,7 @@ local function update_task_state()
         skyscraper_config:save()
         log.write("Cache migrated successfully")
       elseif t.command == "update_app" then
-        dispatch_info("Updated Scrappy", "Scrappy has been updated. Please restart the app to apply the changes.")
+        dispatch_info("Updated Scrappy")
       end
     end
   end
@@ -93,7 +97,7 @@ local function on_update_press()
   local platforms = user_config:get().platforms
   local rom_path, _ = user_config:get_paths()
 
-  dispatch_info("Updating cache, please wait...", string.format("Finished %d games", finished_tasks))
+  dispatch_info("Updating cache", "Updating cache, please wait...")
 
   for src, dest in utils.orderedPairs(platforms or {}) do
     if dest ~= "unmapped" then
@@ -105,34 +109,42 @@ end
 
 local function on_import_press()
   log.write("Importing custom data")
+  dispatch_info("Importing custom data", "Running import command...")
   local import_path = WORK_DIR .. "/static/.skyscraper/import"
   local lookup_folders = {}
 
   for _, item in ipairs(nativefs.getDirectoryItems(import_path) or {}) do
     local file_info = nativefs.getInfo(string.format("%s/%s", import_path, item))
     if file_info and file_info.type == "directory" then
-      print(item)
       table.insert(lookup_folders, item)
     end
   end
 
   if #lookup_folders == 0 then
-    log.write("No folders to import")
-    dispatch_info("Error", "No folders to import.")
+    log.write("Import Error: No folders to import")
+    dispatch_info("Error", "Error: no folders to import.")
     return
   end
 
   local platforms = user_config:get().platforms
   local rom_path, _ = user_config:get_paths()
 
+  local any_match = false
+
   for _, folder in ipairs(lookup_folders) do
     for src, dest in utils.orderedPairs(platforms or {}) do
       if folder == dest then
-        print("FOUND MATCH", folder, dest)
+        any_match = true
         local platform_path = string.format("%s/%s", rom_path, src)
         skyscraper.custom_import(platform_path, dest)
       end
     end
+  end
+
+  if not any_match then
+    log.write("No matching platforms found")
+    dispatch_info("Error", "Error: No matching platforms found.")
+    return
   end
 end
 
@@ -242,6 +254,7 @@ function tools:load()
       + (
         component { column = true, gap = 15 }
         + output_log {
+          visible = false,
           id = "scraping_log",
           width = info_window.width,
           height = w_height * 0.50,
