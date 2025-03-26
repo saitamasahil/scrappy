@@ -81,7 +81,7 @@ while true do
     -- if game ~= "fake-rom" then log.write(line, "skyscraper") end
     line = utils.strip_ansi_colors(line)
     -- RUNNING TASK; PUSH OUTPUT
-    if op == "update" then
+    if op == "update" or op == "import" then
       channels.TASK_OUTPUT:push({ output = line, error = nil })
     end
     local res, error, skipped, rtype = parser.parse(line)
