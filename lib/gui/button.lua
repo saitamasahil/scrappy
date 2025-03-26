@@ -1,4 +1,5 @@
 local component = require("lib.gui.badr")
+local icon      = require("lib.gui.icon")
 local theme     = require("helpers.config").theme
 
 return function(props)
@@ -10,6 +11,8 @@ return function(props)
   -- local width = math.max(props.width or 0, font:getWidth(props.text) + padding.horizontal)
   local width = props.width or 0
   local height = math.max(props.height or 0, font:getHeight() + padding.vertical)
+
+  local iconSize = props.iconSize or 16
 
   -- Scroll-related variables
   local scrollOffset = 0
@@ -32,7 +35,7 @@ return function(props)
     backgroundColor = theme:read_color("button", "BUTTON_BACKGROUND", "#2d3436"),
     focusColor = theme:read_color("button", "BUTTON_FOCUS", "#636e72"),
     textColor = theme:read_color("button", "BUTTON_TEXT", "#dfe6e9"),
-    leftPadding = props.leftPadding or 4,
+    leftPadding = props.leftPadding or 8,
     rightPadding = props.rightPadding or 4,
     topPadding = props.topPadding or 4,
     bottomPadding = props.bottomPadding or 4,
@@ -73,6 +76,16 @@ return function(props)
 
       -- Draw button background
       love.graphics.rectangle('fill', self.x, self.y, self.width, self.height, self.cornerRadius)
+
+      if self.icon then
+        local leftIcon = icon {
+          name = self.icon,
+          x = self.x + self.leftPadding,
+          y = self.y + (self.height - iconSize) * 0.5,
+          size = iconSize
+        }
+        leftIcon:draw()
+      end
 
       -- Draw button text
       love.graphics.setColor(self.textColor)
