@@ -124,8 +124,12 @@ end
 -- Main function to scrape selected platforms
 local function scrape_platforms()
   log.write("Scraping artwork")
-  -- Load platforms from config, merging mapped and custom
+  -- Load platforms from config
   local platforms = user_config:get().platforms
+  if not platforms then
+    show_info_window("No platforms to scrape", "Make sure your ROM folders have muOS cores assigned to them.")
+    return
+  end
   -- Load selected platforms
   local selected_platforms = user_config:get().platformsSelected
   local rom_path, _ = user_config:get_paths()
@@ -137,7 +141,7 @@ local function scrape_platforms()
     artwork.process_cached_data()
   end
   -- For each source = destionation pair in config, fetch and update artwork
-  for src, dest in utils.orderedPairs(platforms) do
+  for src, dest in utils.orderedPairs(platforms or {}) do
     if not selected_platforms[src] or selected_platforms[src] == "0" or dest == "unmapped" then
       log.write("Skipping " .. src)
       goto skip
