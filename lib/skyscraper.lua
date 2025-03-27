@@ -44,7 +44,7 @@ function skyscraper.init(config_path, binary)
 
   cache_thread:start()
   gen_thread:start()
-  push_cache_command({ command = string.format("%s -v", skyscraper.base_command), version = 1 })
+  push_cache_command({ command = string.format("%s -v", skyscraper.base_command) })
 end
 
 function skyscraper.filename_matches_extension(filename, platform)
