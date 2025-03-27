@@ -6,7 +6,7 @@ local sem_ver = {
   major = 2,
   minor = 2,
   patch = 0,
-  extra = ""
+  extra = "hotfix"
 }
 
 _G.version = (function()
