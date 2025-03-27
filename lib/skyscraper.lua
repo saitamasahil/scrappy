@@ -30,14 +30,6 @@ function skyscraper.init(config_path, binary)
   skyscraper.config_path = WORK_DIR .. "/" .. config_path
   skyscraper.base_command = "./" .. binary
 
-  local quick_id = nativefs.read("sample/quickid.xml")
-  if quick_id then
-    -- print("Writing quickid.xml")
-    quick_id = string.gsub(quick_id, "filepath=\"%S+\"", "filepath=\"" .. WORK_DIR .. "/sample/fake-rom.zip\"")
-    quick_id = string.gsub(quick_id, "id=\"%S+\"", "id=\"fake-rom\"")
-    nativefs.write("sample/quickid.xml", quick_id)
-  end
-
   -- Create threads for cache and generate commands
   cache_thread = love.thread.newThread("lib/backend/skyscraper_backend.lua")
   gen_thread = love.thread.newThread("lib/backend/skyscraper_generate_backend.lua")

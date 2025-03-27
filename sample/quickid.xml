@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <quickids>
-    <quickid filepath="fake-rom-path" timestamp="1729492127886" id="fake-rom"/>
+    <quickid filepath="/mnt/mmc/MUOS/application/Scrappy/.scrappy/sample/fake-rom.zip" timestamp="1741875284807" id="fake-rom"/>
 </quickids>
