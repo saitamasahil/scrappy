@@ -539,11 +539,13 @@ function main:load()
         + button {
           text = "Scrape single ROM",
           width = w_width * 0.5,
+          icon = "mag_glass",
           onClick = function() scenes:push("single_scrape") end,
         }
         + button {
           text = "Advanced tools",
           width = w_width * 0.5 - 30,
+          icon = "wrench",
           onClick = function() scenes:push("tools") end
         }
       )
