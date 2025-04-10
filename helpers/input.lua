@@ -14,7 +14,21 @@ input.events = {
   DOWN = "down",
   ESC = "escape",
   RETURN = "return",
-  LALT = "lalt",
+  MENU = "lalt",
+  PREV = "[",
+  NEXT = "]",
+}
+
+input.joystick_mapping = {
+  ["dpleft"] = input.events.LEFT,
+  ["dpright"] = input.events.RIGHT,
+  ["dpup"] = input.events.UP,
+  ["dpdown"] = input.events.DOWN,
+  ["a"] = input.events.RETURN,
+  ["b"] = input.events.ESC,
+  ["back"] = input.events.MENU,
+  ["l1"] = input.events.PREV,
+  ["r1"] = input.events.NEXT,
 }
 
 local cooldown_duration = 0.2
@@ -48,26 +62,10 @@ end
 
 function input.update(dt)
   if joystick then
-    if joystick:isGamepadDown("dpleft") then
-      trigger(input.events.LEFT)
-    end
-    if joystick:isGamepadDown("dpright") then
-      trigger(input.events.RIGHT)
-    end
-    if joystick:isGamepadDown("dpup") then
-      trigger(input.events.UP)
-    end
-    if joystick:isGamepadDown("dpdown") then
-      trigger(input.events.DOWN)
-    end
-    if joystick:isGamepadDown("a") then
-      trigger(input.events.RETURN)
-    end
-    if joystick:isGamepadDown("b") then
-      trigger(input.events.ESC)
-    end
-    if joystick:isGamepadDown("back") then
-      trigger(input.events.LALT)
+    for button, event in ipairs(input.joystick_mapping) do
+      if joystick:isGamepadDown(button) then
+        trigger(event)
+      end
     end
   end
 end
@@ -80,32 +78,10 @@ function input.onEvent(callback)
 end
 
 function love.keypressed(key)
-  if key == "escape" then
-    trigger(input.events.ESC)
-  end
-
-  if key == "left" then
-    trigger(input.events.LEFT)
-  end
-
-  if key == "right" then
-    trigger(input.events.RIGHT)
-  end
-
-  if key == "up" then
-    trigger(input.events.UP)
-  end
-
-  if key == "down" then
-    trigger(input.events.DOWN)
-  end
-
-  if key == "return" then
-    trigger(input.events.RETURN)
-  end
-
-  if key == "lalt" then
-    trigger(input.events.LALT)
+  for _, k in pairs(input.events) do
+    if key == k then
+      trigger(key)
+    end
   end
 end
 

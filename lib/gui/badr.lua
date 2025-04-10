@@ -231,6 +231,34 @@ function badr:getNextFocusable(direction)
   return focusableComponents[nextIndex]
 end
 
+function badr:getNthFocusable(direction, n)
+  local root = self:getRoot() -- Focus within the current root context
+  local focusableComponents = gatherFocusableComponents(root)
+  local currentIndex = nil
+
+  for i, component in ipairs(focusableComponents) do
+    if component == root.focusedElement then
+      currentIndex = i
+      break
+    end
+  end
+
+  if not currentIndex then return nil end
+
+  local nextIndex
+  local total = #focusableComponents
+
+  if direction == "previous" then
+    nextIndex = math.max(1, currentIndex - n) -- go to -n or the first element
+  elseif direction == "next" then
+    nextIndex = math.min(total, currentIndex + n) -- go to +n or the last element
+  end
+
+  nextIndex = math.max(1, math.min(total, nextIndex))
+
+  return focusableComponents[nextIndex]
+end
+
 function badr:focusFirstElement()
   local root = self:getRoot() -- Get the root context of this element
   for _, child in ipairs(gatherFocusableComponents(root)) do
@@ -253,6 +281,10 @@ function badr:keypressed(key)
     nextElement = root.focusedElement:getNextFocusable("previous")
   elseif (self.column and key == "down") or (self.row and key == "right") then
     nextElement = root.focusedElement:getNextFocusable("next")
+  elseif key == "[" then
+    nextElement = root.focusedElement:getNthFocusable("previous", 4)
+  elseif key == "]" then
+    nextElement = root.focusedElement:getNthFocusable("next", 4)
   end
 
   if nextElement then
