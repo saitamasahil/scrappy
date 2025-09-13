@@ -45,12 +45,12 @@ jobs:
           # Copy files for the full install package
           cp -r bin data logs sample static ./Scrappy/.scrappy/
 
-          # Include assets/scrappy.png in /glyph/muxapp/
-          mkdir -p ./glyph/muxapp/
-          cp assets/scrappy.png ./glyph/muxapp/
+          # Include assets/scrappy.png in /glyph/
+          mkdir -p ./glyph/
+          cp assets/scrappy.png ./glyph/
 
           # Create the full install zip
-          zip -r $ZIP_NAME ./Scrappy ./glyph/muxapp/scrappy.png
+          zip -r $ZIP_NAME ./Scrappy ./glyph/scrappy.png
 
           # List files to verify they were created
           ls -l
