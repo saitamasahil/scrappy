@@ -217,7 +217,7 @@ function user_config:load_platforms()
 
   for _, item in ipairs(platforms) do
     -- Find muos core info
-    local core_path = muos.CORE_DIR .. "/" .. item:lower() .. "/core.cfg"
+    local core_path = muos.CORE_DIR .. "/" .. item .. "/core.cfg"
     local muos_core_info = nativefs.getInfo(core_path)
 
     if muos_core_info then
