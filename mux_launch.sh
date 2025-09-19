@@ -23,7 +23,7 @@ STATICDIR="$LOVEDIR/static/"
 BINDIR="$LOVEDIR/bin"
 
 # Export environment variables
-export SDL_GAMECONTROLLERCONFIG_FILE="/usr/lib/gamecontrollerdb.txt"
+SETUP_SDL_ENVIRONMENT
 export XDG_DATA_HOME="$STATICDIR"
 export HOME="$STATICDIR"
 export LD_LIBRARY_PATH="$BINDIR/libs.aarch64:$LD_LIBRARY_PATH"

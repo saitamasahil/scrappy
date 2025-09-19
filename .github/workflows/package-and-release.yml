@@ -28,7 +28,7 @@ jobs:
 
       - name: Package full install and update zips
         run: |
-          ZIP_NAME="Scrappy_${TAG_NAME}.muxzip"
+          ZIP_NAME="Scrappy_${TAG_NAME}.muxapp"
           UPDATE_ZIP_NAME="Scrappy_${TAG_NAME}_update.muxapp"
 
           # Create the Scrappy directory structure
@@ -44,16 +44,13 @@ jobs:
 
           # Copy files for the full install package
           cp -r bin data logs sample static ./Scrappy/.scrappy/
-          # Create the full install directory structure
-          mkdir -p ./mnt/mmc/MUOS/application
-          cp -r ./Scrappy ./mnt/mmc/MUOS/application/
 
-          # Include assets/scrappy.png in /opt/muos/default/MUOS/theme/active/glyph/muxapp/
-          mkdir -p ./opt/muos/default/MUOS/theme/active/glyph/muxapp/
-          cp assets/scrappy.png ./opt/muos/default/MUOS/theme/active/glyph/muxapp/
+          # Include assets/scrappy.png in /glyph/
+          mkdir -p ./glyph/
+          cp assets/scrappy.png ./glyph/
 
           # Create the full install zip
-          zip -r $ZIP_NAME ./mnt/mmc/MUOS/application/Scrappy ./opt/muos/default/MUOS/theme/active/glyph/muxapp/scrappy.png
+          zip -r $ZIP_NAME ./Scrappy ./glyph/scrappy.png
 
           # List files to verify they were created
           ls -l
