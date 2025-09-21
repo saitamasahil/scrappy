@@ -28,7 +28,7 @@ echo "Building version: $TAG"
 # Set up paths
 FULL="$BUILD_DIR/Scrappy_${TAG}.muxapp"
 UPDATE="$BUILD_DIR/Scrappy_${TAG}_update.muxapp"
-WORKDIR="$BUILD_DIR/pkg_v22${VERSION}"
+WORKDIR="$BUILD_DIR/pkg_${MAJOR}${MINOR}${PATCH}"
 
 # Clean up old build
 rm -rf "$WORKDIR" "$FULL" "$UPDATE"
