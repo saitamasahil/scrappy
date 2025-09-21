@@ -229,6 +229,18 @@ function user_config:load_platforms()
           return
         end
         local assignment = muos.assignment[folder_name]
+        -- Heuristic override: if core assignment is GB but folder contains GBC roms, treat as GBC
+        -- This addresses cases where a shared core (e.g., Gambatte) is used for both GB and GBC
+        if assignment == "gb" then
+          local platform_path = string.format("%s/%s", rom_path, item)
+          local files = nativefs.getDirectoryItems(platform_path) or {}
+          for _, f in ipairs(files) do
+            if f:lower():match("%.gbc$") then
+              assignment = "gbc"
+              break
+            end
+          end
+        end
         if assignment then
           self:insert("platforms", item, assignment)
           self:insert("platformsSelected", item, 1)
