@@ -20,8 +20,12 @@ return function(props)
   local spacer = " • " -- Spacer between wrapped text
   local spacerWidth = font:getWidth(spacer) -- Width of the spacer
 
+  -- Support dynamic button text (function returning string)
+  local get_text = (type(props.text) == "function") and props.text or function() return props.text or "" end
+
   return component {
-    text = props.text,
+    text = get_text(),
+    get_text = get_text,
     icon = props.icon or nil,
     --
     id = props.id or tostring(love.timer.getTime()),
@@ -49,7 +53,8 @@ return function(props)
     end,
     onUpdate = function(self, dt)
       -- Update scroll offset if text is wider than the button
-      local textWidth = font:getWidth(self.text)
+      local currentText = (self.get_text and self.get_text()) or self.text or ""
+      local textWidth = font:getWidth(currentText)
       -- Only scroll if the button is focused and the text is longer than the button width
       if self.focused and textWidth > self.width - padding.horizontal then
         scrollOffset = scrollOffset + scrollSpeed * dt
@@ -91,19 +96,20 @@ return function(props)
       love.graphics.setColor(self.textColor)
       love.graphics.setScissor(self.x, self.y, self.width, self.height) -- Clip text to button bounds
 
-      local textWidth = font:getWidth(self.text)
+      local currentText = (self.get_text and self.get_text()) or self.text or ""
+      local textWidth = font:getWidth(currentText)
 
       if textWidth <= self.width - padding.horizontal then
         -- Center the text if it fits within the button
-        love.graphics.printf(self.text, self.x, self.y + self.topPadding, self.width, 'center')
+        love.graphics.printf(currentText, self.x, self.y + self.topPadding, self.width, 'center')
       else
         -- Scroll the text if it's longer than the button width
         local textX = self.x + self.leftPadding - scrollOffset
-        love.graphics.print(self.text, textX, self.y + self.topPadding)
+        love.graphics.print(currentText, textX, self.y + self.topPadding)
 
         -- Draw the wrapped text with a spacer to the right of the first text
         if scrollOffset > textWidth - (self.width - padding.horizontal) then
-          love.graphics.print(spacer .. self.text, textX + textWidth, self.y + self.topPadding)
+          love.graphics.print(spacer .. currentText, textX + textWidth, self.y + self.topPadding)
         end
       end
 

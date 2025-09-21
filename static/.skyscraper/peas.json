@@ -1912,9 +1912,11 @@
             "sony playstation"
         ],
         "formats": [
+            "*.bin",
             "*.cbn",
             "*.chd",
             "*.cue",
+            "*.ecm",
             "*.img",
             "*.iso",
             "*.m3u",

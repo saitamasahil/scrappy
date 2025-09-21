@@ -299,7 +299,7 @@ function skyscraper_config:init()
     end
     local output_path = self:read("main", "gameListFolder")
     if not output_path or output_path == "\"\"" then
-      self:insert("main", "cacheFolder", string.format("\"%s/%s\"", WORK_DIR, "data/output"))
+      self:insert("main", "gameListFolder", string.format("\"%s/%s\"", WORK_DIR, "data/output"))
     end
     local region_prios = self:read("main", "regionPrios")
     if not region_prios or region_prios == "\"\"" then
