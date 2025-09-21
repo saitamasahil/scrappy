@@ -241,6 +241,51 @@ function user_config:load_platforms()
             end
           end
         end
+        -- Heuristic override: Wonderswan vs Wonderswan Color
+        -- If resolved to color but only .ws files exist (and no .wsc), use wonderswan
+        if assignment == "wonderswancolor" then
+          local platform_path = string.format("%s/%s", rom_path, item)
+          local files = nativefs.getDirectoryItems(platform_path) or {}
+          local has_ws, has_wsc = false, false
+          for _, f in ipairs(files) do
+            local fl = f:lower()
+            if fl:match("%.ws$") then has_ws = true end
+            if fl:match("%.wsc$") then has_wsc = true end
+            if has_wsc then break end
+          end
+          if has_ws and not has_wsc then
+            assignment = "wonderswan"
+          end
+        end
+        -- Heuristic override: Neo Geo Pocket vs Neo Geo Pocket Color
+        -- If resolved to color but only .ngp files exist (and no color-specific), use ngp
+        if assignment == "ngpc" then
+          local platform_path = string.format("%s/%s", rom_path, item)
+          local files = nativefs.getDirectoryItems(platform_path) or {}
+          local has_ngp, has_ngpc_like = false, false
+          for _, f in ipairs(files) do
+            local fl = f:lower()
+            if fl:match("%.ngp$") then has_ngp = true end
+            -- Common color extensions seen in the wild include .ngc and .ngpc
+            if fl:match("%.ngc$") or fl:match("%.ngpc$") then has_ngpc_like = true end
+            if has_ngpc_like then break end
+          end
+          if has_ngp and not has_ngpc_like then
+            assignment = "ngp"
+          end
+        end
+        -- Heuristic override: SG-1000 vs Master System
+        -- If folder contains any .sg files, prefer sg-1000 platform for correct extension matching
+        if assignment == "mastersystem" then
+          local platform_path = string.format("%s/%s", rom_path, item)
+          local files = nativefs.getDirectoryItems(platform_path) or {}
+          for _, f in ipairs(files) do
+            if f:lower():match("%.sg$") then
+              assignment = "sg-1000"
+              break
+            end
+          end
+        end
         if assignment then
           self:insert("platforms", item, assignment)
           self:insert("platformsSelected", item, 1)
