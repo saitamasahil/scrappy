@@ -27,8 +27,9 @@ input.joystick_mapping = {
   ["a"] = input.events.RETURN,
   ["b"] = input.events.ESC,
   ["back"] = input.events.MENU,
-  ["l1"] = input.events.PREV,
-  ["r1"] = input.events.NEXT,
+  -- Use LÖVE standard names for shoulder buttons
+  ["leftshoulder"] = input.events.PREV,
+  ["rightshoulder"] = input.events.NEXT,
 }
 
 local cooldown_duration = 0.2
@@ -57,17 +58,22 @@ function input.load()
   local joysticks = love.joystick.getJoysticks()
   if #joysticks > 0 then
     joystick = joysticks[1]
+    -- Log basic joystick info for debugging
+    local name = joystick:getName() or "unknown"
+    local guid = (joystick.getGUID and joystick:getGUID()) or "n/a"
+    local is_gamepad = (joystick.isGamepad and joystick:isGamepad()) and "yes" or "no"
+    print(string.format("[input] joystick detected: name='%s' guid='%s' is_gamepad=%s", name, guid, is_gamepad))
+  else
+    print("[input] no joystick detected")
   end
 end
 
 function input.update(dt)
-  if joystick then
-    for button, event in ipairs(input.joystick_mapping) do
-      if joystick:isGamepadDown(button) then
-        trigger(event)
-      end
-    end
-  end
+  -- Intentionally disable polling to avoid crashes on devices
+  -- where SDL/LÖVE report non-standard button names (e.g., "r1").
+  -- We now rely on:
+  -- 1) love.gamepadpressed callback (for supported devices)
+  -- 2) gptokeyb mapping -> love.keypressed (provided by mux_launch.sh)
 end
 
 function input.onEvent(callback)
@@ -82,6 +88,14 @@ function love.keypressed(key)
     if key == k then
       trigger(key)
     end
+  end
+end
+
+function love.gamepadpressed(js, button)
+  -- Use mapping table to trigger events
+  local event = input.joystick_mapping[button]
+  if event then
+    trigger(event)
   end
 end
 
