@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Variables
-REPO_URL="https://api.github.com/repos/gabrielfvale/scrappy/releases/latest"
+REPO_URL="https://api.github.com/repos/saitamasahil/scrappy/releases/latest"
 TARGET_DIR="/mnt/mmc/MUOS/application"
 TEMP_DIR=$(mktemp -d)
 
