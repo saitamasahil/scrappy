@@ -25,8 +25,16 @@ local function get_default_module_for(platform)
   local entry = skyscraper.peas_json[platform]
   local scrapers = entry and entry.scrapers
   if scrapers and #scrapers > 0 then
+    -- Prefer ScreenScraper when available for broader coverage
+    for _, s in ipairs(scrapers) do
+      if s == "screenscraper" then
+        return "screenscraper"
+      end
+    end
+    -- Fallback to the first declared scraper for the platform
     return scrapers[1]
   end
+  -- Global default module fallback
   return skyscraper.module
 end
 local function push_command(command)
