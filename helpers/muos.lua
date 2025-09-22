@@ -164,6 +164,8 @@ local muos = {
     ["Sinclair ZX Spectrum"] = "zxspectrum",
     ["Sony PlayStation"] = "psx",
     ["Sony Playstation Portable"] = "psp",
+    -- Some core.cfg variants use the correct PlayStation capitalization
+    ["Sony PlayStation Portable"] = "psp",
     ["TIC-80"] = "tic80",
     ["The 3DO Company - 3DO"] = "3do",
     ["Uzebox"] = "uzebox",
