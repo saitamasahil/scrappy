@@ -19,6 +19,16 @@ local function push_cache_command(command)
     channels.SKYSCRAPER_INPUT:push(command)
   end
 end
+
+-- Returns the preferred module for a given platform using peas.json
+local function get_default_module_for(platform)
+  local entry = skyscraper.peas_json[platform]
+  local scrapers = entry and entry.scrapers
+  if scrapers and #scrapers > 0 then
+    return scrapers[1]
+  end
+  return skyscraper.module
+end
 local function push_command(command)
   if channels.SKYSCRAPER_GEN_INPUT then
     channels.SKYSCRAPER_GEN_INPUT:push(command)
@@ -176,6 +186,7 @@ function skyscraper.fetch_artwork(rom_path, input_folder, platform)
     platform = platform,
     input = rom_path,
     fetch = true,
+    module = get_default_module_for(platform),
     flags = { "unattend", "onlymissing" },
   })
   skyscraper.run(command, input_folder, platform, "update")
@@ -198,6 +209,7 @@ function skyscraper.fetch_single(rom_path, rom, input_folder, platform, ...)
     platform = platform,
     input = rom_path,
     fetch = true,
+    module = get_default_module_for(platform),
     rom = rom,
     flags = flags,
   })

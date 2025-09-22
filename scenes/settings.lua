@@ -331,7 +331,7 @@ function settings:load()
   checkboxes = component { column = true, gap = 0 }
 
   menu = menu
-      + label { text = 'Screenscraper Account', icon = "user" }
+      + label { text = 'ScreenScraper Account', icon = "user" }
       + (component { column = true, gap = 6 }
           + button { text = function() return 'Username: ' .. (ss_username ~= '' and ss_username or '(set)') end, width = w_width - 20, onClick = on_edit_username }
           + button { text = function()
