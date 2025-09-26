@@ -216,7 +216,9 @@ local function scrape_platforms()
     state.scraping = true
     if scraping_window then
       local ui_progress = scraping_window ^ "progress"
-      ui_progress.text = string.format("Game %d of %d", (state.total - state.tasks), state.total)
+      if ui_progress then
+        ui_progress.text = string.format("Progress: %d / %d", (state.total - state.tasks), state.total)
+      end
       scraping_window.visible = true
     end
   else
@@ -261,10 +263,8 @@ local function update_state(t)
     local ui_platform, ui_game = scraping_window ^ "platform", scraping_window ^ "game"
     local ui_progress = scraping_window ^ "progress"
     -- Update UI
-    if scraping_window.children then
-      ui_platform.text = muos.platforms[t.platform]
-      ui_game.text = t.title
-    end
+    if ui_platform then ui_platform.text = muos.platforms[t.platform] or t.platform or "N/A" end
+    if ui_game then ui_game.text = t.title or "N/A" end
     if t.title ~= "fake-rom" then
       log.write(string.format("[%s] Finished Skyscraper task \"%s\"", t.success and "SUCCESS" or "FAILURE", t
         .title))
@@ -288,7 +288,7 @@ local function update_state(t)
       end
 
       -- Update UI
-      if scraping_window.children then
+      if ui_progress then
         ui_progress.text = string.format("Game %d of %d", (state.total - state.tasks), state.total)
       end
 
@@ -606,6 +606,10 @@ local function process_game_queue()
   if ready then
     local game, platform, input_folder, skipped = ready.game, ready.platform, ready.input_folder, ready.skipped
     print("\nReceived a ready signal, queuing update_artwork for " .. game)
+    -- Immediately reflect current platform/game in the UI
+    local ui_platform, ui_game = scraping_window ^ "platform", scraping_window ^ "game"
+    if ui_platform then ui_platform.text = muos.platforms[platform] or platform or "N/A" end
+    if ui_game then ui_game.text = game or "N/A" end
     if skipped then
       update_state({
         title = game,
