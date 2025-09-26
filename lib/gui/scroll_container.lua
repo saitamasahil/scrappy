@@ -8,6 +8,8 @@ return function(props)
   local scrollY = 0                                                        -- Initialize scroll position
   local scrollbarWidth = theme:read_number("scroll", "SCROLLBAR_WIDTH", 6) -- Width of the scroll bar
 
+  -- No per-node offsets needed when children don't use absolute scissor.
+
   return component {
     x = props.x or 0,
     y = props.y or 0,
@@ -41,12 +43,14 @@ return function(props)
 
       -- Determine the relative position of the focused child within the container
       local childY = focusedChild.y - self.y - scrollY -- Relative Y position accounting for scroll offset
-      if childY < 0 then
-        -- Scroll up to bring the child into view
-        self:scrollTo(scrollY + childY)
-      elseif childY + focusedChild.height > height then
-        -- Scroll down to bring the child into view
-        self:scrollTo(scrollY + childY + focusedChild.height - height)
+      -- Dynamic margin so section headers above the focused control are fully visible
+      local margin = math.max(24, math.min(80, math.floor(height * 0.12)))
+      if childY < margin then
+        -- Scroll up slightly more to reveal the header above the focused control
+        self:scrollTo(scrollY + childY - margin)
+      elseif childY + focusedChild.height > height - margin then
+        -- Scroll down and keep a bottom margin
+        self:scrollTo(scrollY + childY + focusedChild.height - height + margin)
       end
     end,
 
@@ -77,12 +81,12 @@ return function(props)
       love.graphics.setScissor(self.x, self.y, self.width, self.height)
 
       -- Draw each child with adjusted position for scrolling
+      love.graphics.push()
+      love.graphics.translate(0, -scrollY)
       for _, child in ipairs(self.children) do
-        love.graphics.push()
-        love.graphics.translate(0, -scrollY) -- Adjust for scroll position
         child:draw()
-        love.graphics.pop()
       end
+      love.graphics.pop()
 
       -- Remove clipping after drawing the children
       love.graphics.setScissor()

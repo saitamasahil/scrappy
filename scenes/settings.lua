@@ -33,7 +33,7 @@ local vk_font = love.graphics.newFont(12)
 
 local settings          = {}
 
-local menu, checkboxes
+local menu, content, scroller, checkboxes
 
 local all_check         = true
 
@@ -327,10 +327,13 @@ function settings:load()
   -- Preload Screenscraper credentials (if previously saved)
   load_screenscraper_creds()
 
+  -- Root container holds just the scroller; content lives inside scroller
   menu = component:root { column = true, gap = 10 }
+  content = component { column = true, gap = 10 }
   checkboxes = component { column = true, gap = 0 }
 
-  menu = menu
+  -- Build the non-platform sections into content
+  content = content
       + label { text = 'ScreenScraper Account', icon = "user" }
       + (component { column = true, gap = 6 }
           + button { text = function() return 'Username: ' .. (ss_username ~= '' and ss_username or '(set)') end, width = w_width - 20, onClick = on_edit_username }
@@ -355,27 +358,31 @@ function settings:load()
         + button { text = 'Rescan folders', width = 200, onClick = on_refresh_press }
         + button { text = 'Un/check all', width = 200, onClick = on_check_all_press })
 
-  local menu_height = menu.height
-
+  -- Populate platforms list
   update_checkboxes()
 
-  menu:updatePosition(10, 10)
-  menu:focusFirstElement()
-
   if not user_config:has_platforms() then
-    menu = menu + label {
+    content = content + label {
       text = "No platforms found; your paths might not have cores assigned",
       icon = "warn",
     }
   else
-    menu = menu
-        + (scroll_container {
-            width = w_width - 20,
-            height = w_height - menu_height - 60,
-            scroll_speed = 30,
-          }
-          + checkboxes)
+    content = content + checkboxes
   end
+
+  -- Wrap entire content in a single scroll container so the whole UI scrolls
+  scroller = scroll_container {
+    width = w_width - 20,
+    -- Subtract footer/help area so the bar isn't covered by the scroller
+    height = w_height - 78,
+    scroll_speed = 30,
+  } + content
+
+  menu = menu + scroller
+
+  -- Position and focus
+  menu:updatePosition(10, 10)
+  menu:focusFirstElement()
 end
 
 function settings:update(dt)

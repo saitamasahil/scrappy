@@ -94,7 +94,7 @@ return function(props)
 
       -- Draw button text
       love.graphics.setColor(self.textColor)
-      love.graphics.setScissor(self.x, self.y, self.width, self.height) -- Clip text to button bounds
+      -- Avoid setScissor here because absolute scissor conflicts with parent scroll translate.
 
       local currentText = (self.get_text and self.get_text()) or self.text or ""
       local textWidth = font:getWidth(currentText)
@@ -113,7 +113,7 @@ return function(props)
         end
       end
 
-      love.graphics.setScissor() -- Reset scissor
+      -- No scissor to reset
       love.graphics.pop()
     end
   }
