@@ -2,9 +2,26 @@ require("globals")
 
 local splash = { finished = false }
 
-local app_name = love.graphics.newText(love.graphics.getFont(), "Scrappy")
-local version = love.graphics.newText(love.graphics.getFont(), version)
-local credits = love.graphics.newText(love.graphics.getFont(), string.format("by gabrielfvale"))
+-- Dynamically sized texts
+local app_name
+local app_version_text
+local credits
+local last_w, last_h
+
+local function refresh_texts()
+  local w, h = love.graphics.getDimensions()
+  last_w, last_h = w, h
+  -- Font sizes scale with height; clamp to sensible min/max for handhelds
+  local title_size = math.max(18, math.min(96, math.floor(h * 0.10)))
+  local sub_size   = math.max(12, math.min(48, math.floor(h * 0.035)))
+
+  local title_font = love.graphics.newFont(title_size)
+  local sub_font   = love.graphics.newFont(sub_size)
+
+  app_name = love.graphics.newText(title_font, "Scrappy")
+  app_version_text = love.graphics.newText(sub_font, _G.version)
+  credits = love.graphics.newText(sub_font, "by gabrielfvale")
+end
 
 local logo = love.graphics.newImage("assets/scrappy_logo.png")
 local anim = { value = 0 }
@@ -22,11 +39,15 @@ function splash.load(delay)
       splash.finished = true
     end)
   end)
+  refresh_texts()
 end
 
 function splash.draw()
   if splash.finished then return end
   local width, height = love.graphics.getDimensions()
+  if width ~= last_w or height ~= last_h or not app_name then
+    refresh_texts()
+  end
   local logo_scale = 1
   local half_logo_height = logo:getHeight() * 0.5
 
@@ -42,16 +63,18 @@ function splash.draw()
   love.graphics.setColor(1, 1, 1, anim.value)
   love.graphics.push()
   love.graphics.translate(0, half_logo_height)
-  love.graphics.scale(1.5)
   love.graphics.draw(app_name, -app_name:getWidth() * 0.5,
     -anim.value * app_name:getHeight())
   love.graphics.pop()
   love.graphics.push()
   love.graphics.setColor(1, 1, 1, 0.5)
   love.graphics.translate(0, height * 0.5 - 20)
-  love.graphics.scale(0.75)
-  love.graphics.draw(credits, -credits:getWidth() * 0.5, -credits:getHeight() - 20)
-  love.graphics.draw(version, -version:getWidth() * 0.5, -version:getHeight())
+  local v_h = app_version_text:getHeight()
+  local c_h = credits:getHeight()
+  local spacing = math.max(6, math.floor(c_h * 0.4))
+  -- Draw credits above version with a bit of spacing
+  love.graphics.draw(app_version_text, -app_version_text:getWidth() * 0.5, -v_h)
+  love.graphics.draw(credits, -credits:getWidth() * 0.5, -v_h - c_h - spacing)
   love.graphics.pop()
   love.graphics.setColor(colors.background)
   love.graphics.pop()
