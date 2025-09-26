@@ -45,6 +45,8 @@ while true do
   -- end
 
   local parsed = false
+  local sent_title = false
+  local had_error = false
   for line in output:lines() do
     line = utils.strip_ansi_colors(line)
     if game ~= "fake-rom" then log.write(line, "skyscraper") end
@@ -63,22 +65,27 @@ while true do
         success = not skipped,
         error = error,
       })
+      sent_title = true
     end
 
     if error ~= nil and error ~= "" then
       log.write("ERROR: " .. error, "skyscraper")
       channels.SKYSCRAPER_OUTPUT:push({ error = error })
+      had_error = true
       break
     end
   end
 
-  if not parsed then
-    log.write(string.format("Failed to parse Skyscraper output for %s", game))
+  -- Always emit a final result if no title was sent during parsing
+  if not sent_title then
+    if not parsed then
+      log.write(string.format("Failed to parse Skyscraper output for %s", game))
+    end
     channels.SKYSCRAPER_OUTPUT:push({
       title = game,
       platform = current_platform,
-      error = "Failed to parse Skyscraper output",
-      success = false
+      error = (not parsed) and "Failed to parse Skyscraper output" or nil,
+      success = not had_error
     })
   end
 

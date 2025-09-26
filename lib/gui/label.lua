@@ -7,9 +7,9 @@ local function label(props)
   local color = props.color or theme:read_color("label", "LABEL_TEXT")
   local iconSize = 20
   local padding = props.iconPadding or 4
-  -- Support dynamic labels: props.text may be a function returning a string
-  local get_text = (type(props.text) == "function") and props.text or function() return props.text or props end
-  local initial_text = get_text() or ""
+  -- Support dynamic labels: if props.text is a function, call it on draw; otherwise use self.text
+  local get_text = (type(props.text) == "function") and props.text or nil
+  local initial_text = (get_text and get_text()) or (props.text or "")
   local textWidth = _font:getWidth(initial_text)
   local textHeight = _font:getHeight()
   local totalWidth = textWidth
@@ -53,7 +53,7 @@ local function label(props)
 
       -- Draw the label text
       love.graphics.setColor(color)
-      local txt = self.get_text and self.get_text() or self.text or ""
+      local txt = (self.get_text and self.get_text()) or self.text or ""
       love.graphics.print(txt, textX, self.y)
       love.graphics.setColor({ 1, 1, 1 }) -- Reset color to white
       love.graphics.pop()
