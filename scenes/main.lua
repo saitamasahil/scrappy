@@ -573,7 +573,7 @@ function main:load()
   menu:focusFirstElement()
   if not skyscraper_config:has_credentials() then
     menu = menu + label {
-      text = "No credentials provided in skyscraper_config.ini",
+      text = "Open Settings and add your ScreenScraper credentials.",
       icon = "warn",
     }
   end
