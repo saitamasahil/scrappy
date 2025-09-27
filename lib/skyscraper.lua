@@ -75,6 +75,14 @@ function skyscraper.filename_matches_extension(filename, platform)
   -- .zip and .7z are added by default
   -- https://gemba.github.io/skyscraper/PLATFORMS/#sample-usecase-adding-platform-satellaview
   local match_patterns = { '%.*%.zip$', '%.*%.7z$' }
+  -- Heuristic: accept common DOSBox Pure/SVN formats when platform is 'pc'
+  if platform == 'pc' then
+    local extra_pc = {
+      '%.*%.exe$', '%.*%.com$', '%.*%.bat$', '%.*%.dosz$',
+      '%.*%.iso$', '%.*%.img$', '%.*%.cue$', '%.*%.m3u$'
+    }
+    for _, p in ipairs(extra_pc) do table.insert(match_patterns, p) end
+  end
   -- Convert patterns to Lua-compatible patterns
   for _, pattern in ipairs(formats) do
     local lua_pattern = pattern:gsub("%*", ".*"):gsub("%.", "%%.")

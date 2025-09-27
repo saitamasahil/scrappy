@@ -215,9 +215,12 @@ function user_config:load_platforms()
   ini.deleteSection(self.values, "platforms")
   ini.deleteSection(self.values, "platformsSelected")
 
+  local inserted = {}
   for _, item in ipairs(platforms) do
+    -- Use top-level folder for core assignment (handles nested like "DOS/Game1")
+    local top = tostring(item):match("^[^/]+") or tostring(item)
     -- Find muos core info
-    local core_path = muos.CORE_DIR .. "/" .. item .. "/core.cfg"
+    local core_path = muos.CORE_DIR .. "/" .. top .. "/core.cfg"
     local muos_core_info = nativefs.getInfo(core_path)
 
     if muos_core_info then
@@ -229,6 +232,12 @@ function user_config:load_platforms()
           return
         end
         local assignment = muos.assignment[folder_name]
+        -- Fallback for cores with different labels (e.g., DOSBox Pure, blueMSX)
+        if not assignment then
+          local fn = tostring(folder_name):lower()
+          if fn:find("dosbox") then assignment = "pc" end
+          if fn:find("msx") or fn:find("bluemsx") then assignment = "msx" end
+        end
         -- Heuristic override: if core assignment is GB but folder contains GBC roms, treat as GBC
         -- This addresses cases where a shared core (e.g., Gambatte) is used for both GB and GBC
         if assignment == "gb" then
@@ -286,17 +295,83 @@ function user_config:load_platforms()
             end
           end
         end
+        -- Heuristic override: Umbrella 'coleco' (MSX-SVI-ColecoVision-SG1000) -> specialize based on files/folder
+        if assignment == "coleco" then
+          local platform_path = string.format("%s/%s", rom_path, item)
+          local files = nativefs.getDirectoryItems(platform_path) or {}
+          local has_msx_like, has_sg = false, false
+          for _, f in ipairs(files) do
+            local fl = f:lower()
+            if fl:match("%.mx1$") or fl:match("%.mx2$") or fl:match("%.dsk$") or fl:match("%.cas$") then
+              has_msx_like = true
+              break
+            end
+            if fl:match("%.sg$") then
+              has_sg = true
+            end
+          end
+          if tostring(item):lower() == "msx" or has_msx_like then
+            assignment = "msx"
+          elseif has_sg then
+            assignment = "sg-1000"
+          end
+        end
         if assignment then
-          self:insert("platforms", item, assignment)
-          self:insert("platformsSelected", item, 1)
+          local key = item
+          if item:find("/") then key = top end
+          if not inserted[key] then
+            self:insert("platforms", key, assignment)
+            self:insert("platformsSelected", key, 1)
+            inserted[key] = true
+          end
         else
           log.write(string.format("Unable to find platform for %s", item))
-          self:insert("platforms", item, "unmapped")
-          self:insert("platformsSelected", item, 0)
+          local key = item
+          if item:find("/") then key = top end
+          if not inserted[key] then
+            self:insert("platforms", key, "unmapped")
+            self:insert("platformsSelected", key, 0)
+            inserted[key] = true
+          end
         end
       end
     else
-      log.write(string.format("Unable to find platform for %s", item))
+      -- Fallback: infer assignment by matching TOP folder name to muOS platform labels or keys (case-insensitive)
+      local inferred = nil
+      local item_l = tostring(top):lower()
+      -- Heuristic shortcuts
+      if item_l == "pc" or item_l:find("dos") then
+        inferred = "pc"
+      end
+      for key, label in pairs(muos.platforms or {}) do
+        if type(label) == "string" then
+          local key_l = tostring(key):lower()
+          local label_l = label:lower()
+          if label_l == item_l or key_l == item_l then
+            inferred = key
+            break
+          end
+        end
+      end
+      if inferred then
+        local key = item
+        if item:find("/") then key = top end
+        if not inserted[key] then
+          log.write(string.format("Inferred platform '%s' for folder '%s' via label match", inferred, key))
+          self:insert("platforms", key, inferred)
+          self:insert("platformsSelected", key, 1)
+          inserted[key] = true
+        end
+      else
+        local key = item
+        if item:find("/") then key = top end
+        if not inserted[key] then
+          log.write(string.format("Unable to find platform for %s", key))
+          self:insert("platforms", key, "unmapped")
+          self:insert("platformsSelected", key, 0)
+          inserted[key] = true
+        end
+      end
     end
   end
 end
