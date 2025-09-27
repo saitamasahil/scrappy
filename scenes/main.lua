@@ -164,13 +164,19 @@ local function scrape_platforms()
     local roms = {}
     for _, file in pairs(files) do
       -- Check if it's a file or directory
-      local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, file))
-      if file_info and file_info.type == "file" then
-        -- Verify if extension matches peas file
-        if skyscraper.filename_matches_extension(file, dest) then
+      local full_path = string.format("%s/%s", platform_path, file)
+      local file_info = nativefs.getInfo(full_path)
+      if file_info then
+        if file_info.type == "file" then
+          -- Verify if extension matches peas file
+          if skyscraper.filename_matches_extension(file, dest) then
+            table.insert(roms, file)
+          else
+            log.write(string.format("Skipping file %s because it doesn't match any supported extensions for %s", file, dest))
+          end
+        elseif file_info.type == "directory" and dest == "pc" then
+          -- DOS often uses per-game folders; treat folder names as ROM identifiers
           table.insert(roms, file)
-        else
-          log.write(string.format("Skipping file %s because it doesn't match any supported extensions for %s", file, dest))
         end
       end
     end
