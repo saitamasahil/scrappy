@@ -153,7 +153,7 @@ local function scrape_platforms()
     local uncached_games = false
     local game_list = {}
 
-    -- Get list of files
+    -- Get list of files and per-game subfolders
     local files = nativefs.getDirectoryItems(platform_path)
     if not files or #files == 0 then
       log.write("No roms found in " .. platform_path)
@@ -174,9 +174,32 @@ local function scrape_platforms()
           else
             log.write(string.format("Skipping file %s because it doesn't match any supported extensions for %s", file, dest))
           end
-        elseif file_info.type == "directory" and dest == "pc" then
-          -- DOS often uses per-game folders; treat folder names as ROM identifiers
-          table.insert(roms, file)
+        elseif file_info.type == "directory" then
+          -- Ignore hidden metadata folders (e.g., .psmultidisc)
+          if file:sub(1,1) == "." then goto continue end
+          if dest == "pc" then
+            -- DOS often uses per-game folders; treat folder names as ROM identifiers
+            table.insert(roms, file)
+          else
+            -- One-level deep scan: pick the first matching ROM inside the folder (prefer .m3u if present)
+            local sub_items = nativefs.getDirectoryItems(full_path) or {}
+            local candidate, fallback
+            for _, sub in ipairs(sub_items) do
+              local rel = string.format("%s/%s", file, sub)
+              if skyscraper.filename_matches_extension(sub, dest) or skyscraper.filename_matches_extension(rel, dest) then
+                -- Prefer playlist aggregators
+                local lower = sub:lower()
+                if lower:match("%.m3u$") then candidate = rel; break end
+                if not fallback then fallback = rel end
+              end
+            end
+            if candidate or fallback then
+              table.insert(roms, candidate or fallback)
+            else
+              -- No directly matching files in subfolder; keep scanning
+            end
+          end
+          ::continue::
         end
       end
     end
