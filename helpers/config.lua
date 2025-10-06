@@ -217,10 +217,10 @@ function user_config:load_platforms()
 
   local inserted = {}
   for _, item in ipairs(platforms) do
-    -- Use top-level folder for core assignment (handles nested like "DOS/Game1")
-    local top = tostring(item):match("^[^/]+") or tostring(item)
-    -- Find muos core info
-    local core_path = muos.CORE_DIR .. "/" .. top .. "/core.cfg"
+    -- Use leaf folder for core assignment (so nested like "Consoles/nes" resolves to "nes")
+    local leaf = tostring(item):match("[^/]+$") or tostring(item)
+    -- Find muOS core info using the leaf folder name
+    local core_path = muos.CORE_DIR .. "/" .. leaf .. "/core.cfg"
     local muos_core_info = nativefs.getInfo(core_path)
 
     if muos_core_info then
@@ -318,7 +318,6 @@ function user_config:load_platforms()
         end
         if assignment then
           local key = item
-          if item:find("/") then key = top end
           if not inserted[key] then
             self:insert("platforms", key, assignment)
             self:insert("platformsSelected", key, 1)
@@ -327,7 +326,6 @@ function user_config:load_platforms()
         else
           log.write(string.format("Unable to find platform for %s", item))
           local key = item
-          if item:find("/") then key = top end
           if not inserted[key] then
             self:insert("platforms", key, "unmapped")
             self:insert("platformsSelected", key, 0)
@@ -336,35 +334,82 @@ function user_config:load_platforms()
         end
       end
     else
-      -- Fallback: infer assignment by matching TOP folder name to muOS platform labels or keys (case-insensitive)
+      -- Fallback: infer assignment by matching LEAF folder name to muOS platform labels or keys (case-insensitive)
       local inferred = nil
-      local item_l = tostring(top):lower()
-      -- Heuristic shortcuts
-      if item_l == "pc" or item_l:find("dos") then
-        inferred = "pc"
+      local item_l = tostring(leaf):lower()
+      -- Heuristic shortcuts and common aliases for folder names
+      local alias = {
+        ["pc"] = "pc",
+        ["dos"] = "pc",
+        ["dosgames"] = "pc",
+        ["arcade"] = "arcade",
+        ["mame"] = "arcade",
+        ["genesis"] = "megadrive",
+        ["md"] = "megadrive",
+        ["smd"] = "megadrive",
+        ["megadrive"] = "megadrive",
+        ["sms"] = "mastersystem",
+        ["mastersystem"] = "mastersystem",
+        ["sg1000"] = "mastersystem",  -- will be refined by .sg heuristic later
+        ["gg"] = "gamegear",
+        ["gamegear"] = "gamegear",
+        ["pce"] = "pcengine",
+        ["pcengine"] = "pcengine",
+        ["pcecd"] = "pcenginecd",
+        ["pcenginecd"] = "pcenginecd",
+        ["supergrafx"] = "pcengine_",
+        ["fds"] = "fds",
+        ["nes"] = "nes",
+        ["snes"] = "snes",
+        ["n64"] = "n64",
+        ["psx"] = "psx",
+        ["ps1"] = "psx",
+        ["psx-multi"] = "psx",
+        ["psp"] = "psp",
+        ["ngp"] = "ngp",
+        ["ngpc"] = "ngpc",
+        ["32x"] = "sega32x",
+        ["sega32x"] = "sega32x",
+        ["segacd"] = "segacd",
+        ["megacd"] = "segacd",
+        ["cd-i"] = "cdi",
+      }
+      if alias[item_l] then inferred = alias[item_l] end
+      -- Exact key/label match
+      if not inferred then
+        for key, label in pairs(muos.platforms or {}) do
+          if type(label) == "string" then
+            local key_l = tostring(key):lower()
+            local label_l = label:lower()
+            if label_l == item_l or key_l == item_l then
+              inferred = key
+              break
+            end
+          end
+        end
       end
-      for key, label in pairs(muos.platforms or {}) do
-        if type(label) == "string" then
-          local key_l = tostring(key):lower()
-          local label_l = label:lower()
-          if label_l == item_l or key_l == item_l then
-            inferred = key
-            break
+      -- Partial label contains match (e.g., leaf "genesis" in label "Sega Mega Drive - Genesis")
+      if not inferred then
+        for key, label in pairs(muos.platforms or {}) do
+          if type(label) == "string" then
+            local label_l = label:lower()
+            if label_l:find(item_l, 1, true) then
+              inferred = key
+              break
+            end
           end
         end
       end
       if inferred then
         local key = item
-        if item:find("/") then key = top end
         if not inserted[key] then
-          log.write(string.format("Inferred platform '%s' for folder '%s' via label match", inferred, key))
+          log.write(string.format("Inferred platform '%s' for folder '%s' via leaf label match", inferred, key))
           self:insert("platforms", key, inferred)
           self:insert("platformsSelected", key, 1)
           inserted[key] = true
         end
       else
         local key = item
-        if item:find("/") then key = top end
         if not inserted[key] then
           log.write(string.format("Unable to find platform for %s", key))
           self:insert("platforms", key, "unmapped")
