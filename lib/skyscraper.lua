@@ -1,3 +1,13 @@
+-- Normalize internal or umbrella platform keys to peas/Skyscraper keys
+local function normalize_platform(platform)
+  if not platform then return platform end
+  -- Map internal distinctions to real Skyscraper platform IDs
+  local map = {
+    ["pcengine_"] = "pcengine",   -- SuperGrafx shares Skyscraper platform with PC Engine
+    ["coleco_"]   = "coleco",     -- Umbrella SVI - ColecoVision - SG1000 uses coleco in Skyscraper
+  }
+  return map[platform] or platform
+end
 require("globals")
 
 local json              = require("lib.json")
@@ -22,7 +32,8 @@ end
 
 -- Returns the preferred module for a given platform using peas.json
 local function get_default_module_for(platform)
-  local entry = skyscraper.peas_json[platform]
+  local pea_key = normalize_platform(platform)
+  local entry = skyscraper.peas_json[pea_key]
   local scrapers = entry and entry.scrapers
   if scrapers and #scrapers > 0 then
     -- Prefer ScreenScraper when available for broader coverage
@@ -66,9 +77,10 @@ function skyscraper.init(config_path, binary)
 end
 
 function skyscraper.filename_matches_extension(filename, platform)
-  local formats = skyscraper.peas_json[platform] and skyscraper.peas_json[platform].formats
+  local pea_key = normalize_platform(platform)
+  local formats = skyscraper.peas_json[pea_key] and skyscraper.peas_json[pea_key].formats
   if not formats then
-    log.write("Unable to determine file formats for platform " .. platform)
+    log.write("Unable to determine file formats for platform " .. (pea_key or tostring(platform)))
     return true
   end
 
@@ -76,7 +88,7 @@ function skyscraper.filename_matches_extension(filename, platform)
   -- https://gemba.github.io/skyscraper/PLATFORMS/#sample-usecase-adding-platform-satellaview
   local match_patterns = { '%.*%.zip$', '%.*%.7z$' }
   -- Heuristic: accept common DOSBox Pure/SVN formats when platform is 'pc'
-  if platform == 'pc' then
+  if pea_key == 'pc' then
     local extra_pc = {
       '%.*%.exe$', '%.*%.com$', '%.*%.bat$', '%.*%.dosz$',
       '%.*%.iso$', '%.*%.img$', '%.*%.cue$', '%.*%.m3u$'
@@ -114,7 +126,7 @@ local function generate_command(config)
 
   local command = ""
   if config.platform then
-    command = string.format('%s -p %s', command, config.platform)
+    command = string.format('%s -p %s', command, normalize_platform(config.platform))
   end
   if config.fetch then
     command = string.format('%s -s %s', command, config.module)

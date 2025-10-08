@@ -350,7 +350,8 @@ function user_config:load_platforms()
         ["megadrive"] = "megadrive",
         ["sms"] = "mastersystem",
         ["mastersystem"] = "mastersystem",
-        ["sg1000"] = "mastersystem",  -- will be refined by .sg heuristic later
+        ["sg-1000"] = "sg-1000",
+        ["sg1000"] = "sg-1000",  -- legacy alias
         ["gg"] = "gamegear",
         ["gamegear"] = "gamegear",
         ["pce"] = "pcengine",
