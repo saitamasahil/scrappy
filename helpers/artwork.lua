@@ -24,6 +24,15 @@ artwork.output_map = {
 
 local user_config, skyscraper_config = config.user_config, config.skyscraper_config
 
+-- Normalize internal distinctions to Skyscraper/peas output folder keys
+local function normalize_platform(platform)
+  local map = {
+    ["pcengine_"] = "pcengine",
+    ["coleco_"] = "coleco",
+  }
+  return map[platform] or platform
+end
+
 function artwork.get_artwork_path()
   local artwork_xml = skyscraper_config:read("main", "artworkXml")
   if not artwork_xml or artwork_xml == "\"\"" then return nil end
@@ -119,7 +128,8 @@ function artwork.copy_to_catalogue(platform, game)
     return
   end
 
-  local media_path = string.format("%s/%s/media", output_path, platform)
+  local pea_key = normalize_platform(platform)
+  local media_path = string.format("%s/%s/media", output_path, pea_key)
   local copy_path = string.format("%s/%s", catalogue_path, platform_str)
 
   -- Create platform directory and common subfolders if missing
