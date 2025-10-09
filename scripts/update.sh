@@ -2,7 +2,7 @@
 
 # Variables
 REPO_URL="https://api.github.com/repos/gabrielfvale/scrappy/releases/latest"
-TARGET_DIR="/mnt/mmc/MUOS/application"
+TARGET_DIR="/run/muos/storage/application"
 TEMP_DIR=$(mktemp -d)
 
 # Fetch the latest release information
