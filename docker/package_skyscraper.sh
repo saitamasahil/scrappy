@@ -21,7 +21,7 @@ cp $(which Skyscraper) /skysource/output/
 # Copy shared libraries needed by Skyscraper
 ldd $(which Skyscraper) | grep "=>" | awk '{print $3}' | xargs -I '{}' cp '{}' /skysource/output/
 cp /usr/lib/aarch64-linux-gnu/libssl.so.1.1 /skysource/output/
-cp /usr/lib/aarch64-linux-gnu/libcrypto.so.1 /skysource/output/
+cp /usr/lib/aarch64-linux-gnu/libcrypto.so.1.1 /skysource/output/
 
 # Package the binary and libraries into a .zip file
 cd /skysource/output

@@ -5,7 +5,7 @@ _G.WORK_DIR = nativefs.getWorkingDirectory()
 local sem_ver = {
   major = 3,
   minor = 0,
-  patch = 11,
+  patch = 12,
   extra = ""
 }
 
