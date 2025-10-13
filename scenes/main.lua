@@ -37,6 +37,18 @@ local main = {}
 local templates = {}
 local current_template = 1
 
+-- Ensure sample media folders exist and remove stale fake-rom images
+local function prepare_sample_media()
+  local base = WORK_DIR .. "/sample/media"
+  local sub = { "covers", "screenshots", "wheels" }
+  for _, d in ipairs(sub) do
+    local dir = string.format("%s/%s", base, d)
+    if not nativefs.getInfo(dir) then nativefs.createDirectory(dir) end
+    local f = string.format("%s/fake-rom.png", dir)
+    if nativefs.getInfo(f) then nativefs.remove(f) end
+  end
+end
+
 -- TODO: Refactor
 local state = {
   error = "",
@@ -46,7 +58,8 @@ local state = {
   failed_tasks = {},
   total = 0,
   task_in_progress = nil,
-  log = {}
+  log = {},
+  sample_poll = nil,
 }
 
 --[[
@@ -96,11 +109,14 @@ local function update_preview(direction)
   end
   -- Generate new artwork
   local sample_artwork = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
+  prepare_sample_media()
   skyscraper.change_artwork(sample_artwork)
   skyscraper.update_sample(sample_artwork)
   -- Update cover
   local output = first_template_output()
   cover_preview_path = string.format("sample/media/%s/fake-rom.png", output)
+  -- Begin polling for the generated file to exist (fallback to backend signal)
+  state.sample_poll = { path = cover_preview_path, t0 = love.timer.getTime(), timeout = 3.0 }
 end
 
 -- Updates feedback for template outputs
@@ -340,6 +356,9 @@ local function update_state(t)
         channels.SKYSCRAPER_OUTPUT:clear()
       end
     else
+      -- Sample generation finished: reload preview
+      local output = first_template_output()
+      cover_preview_path = string.format("sample/media/%s/fake-rom.png", output)
       state.reload_preview = true
     end
   end
@@ -426,9 +445,7 @@ local function render_to_canvas()
     log.write("Failed to load cover preview image")
     return
   end
-
   cover_preview = img
-
   canvas:renderTo(function()
     love.graphics.clear(0, 0, 0, 0)
     if cover_preview then
@@ -673,6 +690,18 @@ function main:update(dt)
   if state.reload_preview then
     state.reload_preview = false
     render_to_canvas()
+  end
+
+  -- Poll for sample image availability to avoid races with backend output
+  if state.sample_poll then
+    local p = state.sample_poll
+    if nativefs.getInfo(p.path) then
+      state.sample_poll = nil
+      render_to_canvas()
+    elseif (love.timer.getTime() - p.t0) > p.timeout then
+      state.sample_poll = nil
+      -- give up silently; user can change template again
+    end
   end
 
   process_game_queue()
