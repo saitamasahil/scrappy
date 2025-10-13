@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+    <output type="cover" width="640" height="480">
+        <layer resource="screenshot" mpixels="1" width="640" align="center" valign="middle">
+          <blur softness="5"/>
+        </layer>
+        <layer resource="screenshot" mpixels="1" width="640" align="center" valign="middle" opacity="50">
+          <balance red="-255" green="-255" blue="-255"/>
+        </layer>
+        <layer resource="screenshot" width="640" height="480" align="center" valign="middle">
+        <mask file="mask/box-window-jdcross.png"/>
+        </layer>
+        <frame file="frames/box-window-frame-jdcross.png" x="0" y="0" width="640" height="480" />
+        <layer resource="wheel" width="180" align="right" valign="middle" x="-70" y="0">
+            <stroke width="2" red="0" green="0" blue="0"/>
+            <shadow distance="5" softness="5" opacity="50"/>
+        </layer>
+    </output>
+</artwork>

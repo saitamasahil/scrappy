@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created by joyrider3774 -->
+<artwork>
+  <output type="cover" width="250" height="374">
+    <!-- use a static arcade machine image -->
+	<layer width="250" height="374" align="left" valign="top">
+		<frame file="arcademachine_cropped.png" width="250" height="374" x="0" y="0"/>
+	</layer>
+	<!-- place screenshot we use layer with aspect="keep" to remain within boundries -->
+	<layer resource="screenshot" aspect="keep" width="189" height="149" align="center" valign="middle" x="0" y="10" />
+	<!-- draw wheel as "marque" as with screenscraper screenmarque is used we use layer with aspect="keep" to remain within boundries -->
+	<layer resource="wheel" width="200" aspect="keep" height="40" align="center" valign="middle" x="0" y="-145" />
+  </output>
+</artwork>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+  <output type="wheel" width="640" height="480">
+    <layer width="640" height="480" align="left" valign="top">
+		<frame file="black640x480.png" width="640" height="480" x="0" y="0"/>
+	</layer>
+	<layer resource="screenshot" width="640" align="center" valign="middle"/>
+	<layer width="640" height="480" align="left" valign="top">
+		<frame file="loading1.png" width="640" height="480" x="0" y="0"/>
+	</layer>
+	<layer resource="wheel" mpixels="0.008" width="400" align="center" valign="top" x="0" y="65">		
+		<stroke width="2" red="0" green="0" blue="0"/>
+		<shadow distance="8" softness="5" opacity="50"/>
+	</layer>	
+  </output>
+</artwork>
