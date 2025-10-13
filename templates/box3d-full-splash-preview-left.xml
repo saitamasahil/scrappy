@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+  <output type="screenshot" resource="screenshot" width="720" height="480">
+  </output>
+  <output type="wheel" width="720" height="480">
+    <layer resource="screenshot" width="720" height="480"/>
+    <layer resource="wheel" width="350" align="center" valign="middle">
+      <stroke width="2" red="0" green="0" blue="0" />
+      <shadow distance="8" softness="5" opacity="50" />
+    </layer>
+  </output>
+  <output type="cover" width="720" height="480">
+    <layer resource="screenshot" width="720" height="480" align="center" valign="middle" opacity="100"></layer>
+    <mask file="mask/md9000-reverse-split.png"/>
+    <layer resource="cover" width="185" x="55" y="-80" valign="bottom">
+      <gamebox side="wheel" rotate="90"/>
+      <shadow distance="5" softness="5" opacity="70"/>
+    </layer>
+    <layer resource="texture" width="100" x="165" y="-80" valign="bottom">
+      <stroke width="2" red="0" green="0" blue="0"/>
+      <shadow distance="8" softness="5" opacity="50"/>
+    </layer>
+  </output>
+
+</artwork>

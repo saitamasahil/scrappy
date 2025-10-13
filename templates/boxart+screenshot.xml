@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created By Joyrider3774 -->
+<artwork> 
+  <output type="cover" width="260" height="360">
+    <layer width="260" height="180" align="left" valign="bottom" x="0" y="0">
+      <layer resource="screenshot" aspect="keep" width="250" height="165" align="center" valign="middle" y="0" x="0">
+        <stroke width="2" red="0" green="0" blue="0"/>
+	  </layer>
+	</layer>
+	
+	<layer width="260" height="180" align="left" valign="bottom" x="0" y="-180">
+	  <layer resource="cover" aspect="keep" width="250" height="165" align="center" valign="middle" x="0" y="0">
+        <stroke width="2" red="0" green="0" blue="0"/>
+	  </layer>
+	</layer>
+  </output>
+</artwork>

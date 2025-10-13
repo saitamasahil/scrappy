@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+    <output type="cover" width="720" height="480">
+        <layer resource="screenshot" mpixels="0.7" width="720" align="right" valign="middle" opacity="70">
+        </layer>
+        <mask width="720" height="480" file="mask/muos-advance2.png" />
+		<layer resource="cover" width="220" mpixels="0.025" x="-40" y="0" align="right" valign="middle">
+			<rounded radius="7"/>
+			<stroke width="2" red="0" green="0" blue="0"/>
+			<shadow distance="8" softness="5" opacity="50"/>
+		</layer>
+		<layer resource="texture" mpixels="0.003122" x="-30" y="70" align="right" valign="middle">
+		<stroke width="2" red="0" green="0" blue="0"/>
+		<shadow distance="8" softness="5" opacity="50"/>
+		</layer>
+    </output>
+</artwork>
