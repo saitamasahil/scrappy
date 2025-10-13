@@ -54,8 +54,9 @@ function scenes:update(dt)
 end
 
 function scenes:draw()
-  for _, v in pairs(self.focus) do
-    self.states[v]:draw()
+  local top = self:currentFocus()
+  if top then
+    self.states[top]:draw()
   end
 end
 

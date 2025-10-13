@@ -37,6 +37,18 @@ local main = {}
 local templates = {}
 local current_template = 1
 
+-- Ensure sample media folders exist and remove stale fake-rom images
+local function prepare_sample_media()
+  local base = WORK_DIR .. "/sample/media"
+  local sub = { "covers", "screenshots", "wheels" }
+  for _, d in ipairs(sub) do
+    local dir = string.format("%s/%s", base, d)
+    if not nativefs.getInfo(dir) then nativefs.createDirectory(dir) end
+    local f = string.format("%s/fake-rom.png", dir)
+    if nativefs.getInfo(f) then nativefs.remove(f) end
+  end
+end
+
 -- TODO: Refactor
 local state = {
   error = "",
@@ -46,7 +58,8 @@ local state = {
   failed_tasks = {},
   total = 0,
   task_in_progress = nil,
-  log = {}
+  log = {},
+  sample_poll = nil,
 }
 
 --[[
@@ -96,11 +109,14 @@ local function update_preview(direction)
   end
   -- Generate new artwork
   local sample_artwork = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
+  prepare_sample_media()
   skyscraper.change_artwork(sample_artwork)
   skyscraper.update_sample(sample_artwork)
   -- Update cover
   local output = first_template_output()
   cover_preview_path = string.format("sample/media/%s/fake-rom.png", output)
+  -- Begin polling for the generated file to exist (fallback to backend signal)
+  state.sample_poll = { path = cover_preview_path, t0 = love.timer.getTime(), timeout = 3.0 }
 end
 
 -- Updates feedback for template outputs
@@ -153,7 +169,7 @@ local function scrape_platforms()
     local uncached_games = false
     local game_list = {}
 
-    -- Get list of files
+    -- Get list of files and per-game subfolders
     local files = nativefs.getDirectoryItems(platform_path)
     if not files or #files == 0 then
       log.write("No roms found in " .. platform_path)
@@ -164,13 +180,42 @@ local function scrape_platforms()
     local roms = {}
     for _, file in pairs(files) do
       -- Check if it's a file or directory
-      local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, file))
-      if file_info and file_info.type == "file" then
-        -- Verify if extension matches peas file
-        if skyscraper.filename_matches_extension(file, dest) then
-          table.insert(roms, file)
-        else
-          log.write(string.format("Skipping file %s because it doesn't match any supported extensions for %s", file, dest))
+      local full_path = string.format("%s/%s", platform_path, file)
+      local file_info = nativefs.getInfo(full_path)
+      if file_info then
+        if file_info.type == "file" then
+          -- Verify if extension matches peas file
+          if skyscraper.filename_matches_extension(file, dest) then
+            table.insert(roms, file)
+          else
+            log.write(string.format("Skipping file %s because it doesn't match any supported extensions for %s", file, dest))
+          end
+        elseif file_info.type == "directory" then
+          -- Ignore hidden metadata folders (e.g., .psmultidisc)
+          if file:sub(1,1) == "." then goto continue end
+          if dest == "pc" then
+            -- DOS often uses per-game folders; treat folder names as ROM identifiers
+            table.insert(roms, file)
+          else
+            -- One-level deep scan: pick the first matching ROM inside the folder (prefer .m3u if present)
+            local sub_items = nativefs.getDirectoryItems(full_path) or {}
+            local candidate, fallback
+            for _, sub in ipairs(sub_items) do
+              local rel = string.format("%s/%s", file, sub)
+              if skyscraper.filename_matches_extension(sub, dest) or skyscraper.filename_matches_extension(rel, dest) then
+                -- Prefer playlist aggregators
+                local lower = sub:lower()
+                if lower:match("%.m3u$") then candidate = rel; break end
+                if not fallback then fallback = rel end
+              end
+            end
+            if candidate or fallback then
+              table.insert(roms, candidate or fallback)
+            else
+              -- No directly matching files in subfolder; keep scanning
+            end
+          end
+          ::continue::
         end
       end
     end
@@ -216,7 +261,9 @@ local function scrape_platforms()
     state.scraping = true
     if scraping_window then
       local ui_progress = scraping_window ^ "progress"
-      ui_progress.text = string.format("Game %d of %d", (state.total - state.tasks), state.total)
+      if ui_progress then
+        ui_progress.text = string.format("Progress: %d / %d", (state.total - state.tasks), state.total)
+      end
       scraping_window.visible = true
     end
   else
@@ -261,10 +308,8 @@ local function update_state(t)
     local ui_platform, ui_game = scraping_window ^ "platform", scraping_window ^ "game"
     local ui_progress = scraping_window ^ "progress"
     -- Update UI
-    if scraping_window.children then
-      ui_platform.text = muos.platforms[t.platform]
-      ui_game.text = t.title
-    end
+    if ui_platform then ui_platform.text = muos.platforms[t.platform] or t.platform or "N/A" end
+    if ui_game then ui_game.text = t.title or "N/A" end
     if t.title ~= "fake-rom" then
       log.write(string.format("[%s] Finished Skyscraper task \"%s\"", t.success and "SUCCESS" or "FAILURE", t
         .title))
@@ -288,7 +333,7 @@ local function update_state(t)
       end
 
       -- Update UI
-      if scraping_window.children then
+      if ui_progress then
         ui_progress.text = string.format("Game %d of %d", (state.total - state.tasks), state.total)
       end
 
@@ -311,6 +356,9 @@ local function update_state(t)
         channels.SKYSCRAPER_OUTPUT:clear()
       end
     else
+      -- Sample generation finished: reload preview
+      local output = first_template_output()
+      cover_preview_path = string.format("sample/media/%s/fake-rom.png", output)
       state.reload_preview = true
     end
   end
@@ -397,9 +445,7 @@ local function render_to_canvas()
     log.write("Failed to load cover preview image")
     return
   end
-
   cover_preview = img
-
   canvas:renderTo(function()
     love.graphics.clear(0, 0, 0, 0)
     if cover_preview then
@@ -573,7 +619,7 @@ function main:load()
   menu:focusFirstElement()
   if not skyscraper_config:has_credentials() then
     menu = menu + label {
-      text = "No credentials provided in skyscraper_config.ini",
+      text = "Open Settings and add your ScreenScraper credentials.",
       icon = "warn",
     }
   end
@@ -606,6 +652,10 @@ local function process_game_queue()
   if ready then
     local game, platform, input_folder, skipped = ready.game, ready.platform, ready.input_folder, ready.skipped
     print("\nReceived a ready signal, queuing update_artwork for " .. game)
+    -- Immediately reflect current platform/game in the UI
+    local ui_platform, ui_game = scraping_window ^ "platform", scraping_window ^ "game"
+    if ui_platform then ui_platform.text = muos.platforms[platform] or platform or "N/A" end
+    if ui_game then ui_game.text = game or "N/A" end
     if skipped then
       update_state({
         title = game,
@@ -640,6 +690,18 @@ function main:update(dt)
   if state.reload_preview then
     state.reload_preview = false
     render_to_canvas()
+  end
+
+  -- Poll for sample image availability to avoid races with backend output
+  if state.sample_poll then
+    local p = state.sample_poll
+    if nativefs.getInfo(p.path) then
+      state.sample_poll = nil
+      render_to_canvas()
+    elseif (love.timer.getTime() - p.t0) > p.timeout then
+      state.sample_poll = nil
+      -- give up silently; user can change template again
+    end
   end
 
   process_game_queue()

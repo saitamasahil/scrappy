@@ -24,6 +24,15 @@ artwork.output_map = {
 
 local user_config, skyscraper_config = config.user_config, config.skyscraper_config
 
+-- Normalize internal distinctions to Skyscraper/peas output folder keys
+local function normalize_platform(platform)
+  local map = {
+    ["pcengine_"] = "pcengine",
+    ["coleco_"] = "coleco",
+  }
+  return map[platform] or platform
+end
+
 function artwork.get_artwork_path()
   local artwork_xml = skyscraper_config:read("main", "artworkXml")
   if not artwork_xml or artwork_xml == "\"\"" then return nil end
@@ -92,6 +101,11 @@ function artwork.copy_artwork_type(platform, game, media_path, copy_path, output
     return
   end
 
+  -- Ensure destination directory exists
+  local dest_dir = string.format("%s/%s", copy_path, output_type)
+  if not nativefs.getInfo(dest_dir) then
+    nativefs.createDirectory(dest_dir)
+  end
   -- Copy to catalogue
   local _, err = nativefs.write(string.format("%s/%s/%s.png", copy_path, output_type, game), scraped_art)
   if err then
@@ -114,8 +128,19 @@ function artwork.copy_to_catalogue(platform, game)
     return
   end
 
-  local media_path = string.format("%s/%s/media", output_path, platform)
+  local pea_key = normalize_platform(platform)
+  local media_path = string.format("%s/%s/media", output_path, pea_key)
   local copy_path = string.format("%s/%s", catalogue_path, platform_str)
+
+  -- Create platform directory and common subfolders if missing
+  if not nativefs.getInfo(copy_path) then
+    nativefs.createDirectory(copy_path)
+  end
+  local ensure_dirs = { "box", "preview", "splash", "text" }
+  for _, d in ipairs(ensure_dirs) do
+    local p = string.format("%s/%s", copy_path, d)
+    if not nativefs.getInfo(p) then nativefs.createDirectory(p) end
+  end
 
   -- Copy box/cover artwork
   artwork.copy_artwork_type(platform, game, media_path, copy_path, output_types.BOX)
