@@ -4,14 +4,9 @@ set -euo pipefail
 
 # Variables (newer muOS)
 REPO_URL="https://api.github.com/repos/saitamasahil/scrappy/releases/latest"
-TARGET_DIR="$MUOS_STORE_DIR/application"
+# This will always point to the mounted directory
+TARGET_DIR="/run/muos/storage/application"
 TEMP_DIR=$(mktemp -d)
-
-# Ensure MUOS_STORE_DIR is set
-if [ -z "${MUOS_STORE_DIR:-}" ]; then
-  echo "Error: MUOS_STORE_DIR is not set in the environment." >&2
-  exit 1
-fi
 
 # Fetch the latest release information
 echo "Fetching latest release information..."

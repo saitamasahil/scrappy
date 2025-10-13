@@ -17,7 +17,7 @@ echo app >/tmp/act_go
 
 # Define paths and commands (newer muOS only)
 LOVEDIR="$MUOS_STORE_DIR/application/Scrappy/.scrappy"
-GPTOKEYB="$MUOS_STORE_DIR/emulator/gptokeyb/gptokeyb2.armhf"
+GPTOKEYB="$(GET_VAR "device" "storage/rom/mount")/MUOS/emulator/gptokeyb/gptokeyb2.armhf"
 STATICDIR="$LOVEDIR/static/"
 BINDIR="$LOVEDIR/bin"
 
