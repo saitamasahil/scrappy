@@ -6,6 +6,11 @@ local channels = require("lib.backend.channels")
 local task     = ...
 local running  = true
 
+-- Newer muOS storage root
+local STORAGE_ROOT = os.getenv("MUOS_STORE_DIR") or "/run/muos/storage"
+local APP_ROOT = STORAGE_ROOT .. "/application/Scrappy/.scrappy"
+local CACHE_DIR = APP_ROOT .. "/data/cache/"
+
 local function base_task_command(id, command)
   local stderr_to_stdout = " 2>&1"
   -- local stdout_null = " > /dev/null 2>&1"
@@ -30,7 +35,7 @@ local function migrate_cache()
   log.write("Migrating cache to SD2")
   base_task_command(
     "migrate",
-    "cp -r /mnt/mmc/MUOS/application/Scrappy/.scrappy/data/cache/ /mnt/sdcard/scrappy_cache/"
+    string.format("cp -r \"%s\" /mnt/sdcard/scrappy_cache/", CACHE_DIR)
   )
 end
 
@@ -38,7 +43,7 @@ local function backup_cache()
   log.write("Starting Zip to compress and move cache folder")
   base_task_command(
     "backup",
-    'zip -r /mnt/sdcard/ARCHIVE/scrappy_cache-$(date +"%Y-%m-%d-%H-%M-%S").zip /mnt/mmc/MUOS/application/Scrappy/.scrappy/data/cache/'
+    string.format('zip -r /mnt/sdcard/ARCHIVE/scrappy_cache-$(date +"%%Y-%%m-%%d-%%H-%%M-%%S").zip "%s"', CACHE_DIR)
   )
 end
 

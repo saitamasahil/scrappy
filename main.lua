@@ -68,6 +68,10 @@ function love.draw()
 
   if splash.finished then
     scenes:draw()
-    footer:draw()
+    -- Draw footer on main scene; also on settings when no overlay (VK) is active
+    local focus = scenes:currentFocus()
+    if focus == "main" or (focus == "settings" and not (_G.ui_overlay_active or false)) then
+      footer:draw()
+    end
   end
 end

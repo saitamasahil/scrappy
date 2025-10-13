@@ -56,8 +56,13 @@ local function on_rom_press(rom)
 
   if artwork_name then
     local platform_dest = platforms[last_selected_platform]
-    dispatch_info(rom, "Scraping ROM, please wait...")
-    skyscraper.fetch_single(rom_path, rom, last_selected_platform, platform_dest)
+    -- Prevent running Skyscraper with an unmapped platform
+    if not platform_dest or platform_dest == "unmapped" then
+      dispatch_info("Error", "Selected platform is not mapped to a muOS core. Open Settings and rescan/assign cores.")
+    else
+      dispatch_info(rom, "Scraping ROM, please wait...")
+      skyscraper.fetch_single(rom_path, rom, last_selected_platform, platform_dest)
+    end
   else
     dispatch_info("Error", "Artwork XML not found")
   end

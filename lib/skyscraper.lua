@@ -1,3 +1,13 @@
+-- Normalize internal or umbrella platform keys to peas/Skyscraper keys
+local function normalize_platform(platform)
+  if not platform then return platform end
+  -- Map internal distinctions to real Skyscraper platform IDs
+  local map = {
+    ["pcengine_"] = "pcengine",   -- SuperGrafx shares Skyscraper platform with PC Engine
+    ["coleco_"]   = "coleco",     -- Umbrella SVI - ColecoVision - SG1000 uses coleco in Skyscraper
+  }
+  return map[platform] or platform
+end
 require("globals")
 
 local json              = require("lib.json")
@@ -18,6 +28,25 @@ local function push_cache_command(command)
   if channels.SKYSCRAPER_INPUT then
     channels.SKYSCRAPER_INPUT:push(command)
   end
+end
+
+-- Returns the preferred module for a given platform using peas.json
+local function get_default_module_for(platform)
+  local pea_key = normalize_platform(platform)
+  local entry = skyscraper.peas_json[pea_key]
+  local scrapers = entry and entry.scrapers
+  if scrapers and #scrapers > 0 then
+    -- Prefer ScreenScraper when available for broader coverage
+    for _, s in ipairs(scrapers) do
+      if s == "screenscraper" then
+        return "screenscraper"
+      end
+    end
+    -- Fallback to the first declared scraper for the platform
+    return scrapers[1]
+  end
+  -- Global default module fallback
+  return skyscraper.module
 end
 local function push_command(command)
   if channels.SKYSCRAPER_GEN_INPUT then
@@ -48,15 +77,24 @@ function skyscraper.init(config_path, binary)
 end
 
 function skyscraper.filename_matches_extension(filename, platform)
-  local formats = skyscraper.peas_json[platform] and skyscraper.peas_json[platform].formats
+  local pea_key = normalize_platform(platform)
+  local formats = skyscraper.peas_json[pea_key] and skyscraper.peas_json[pea_key].formats
   if not formats then
-    log.write("Unable to determine file formats for platform " .. platform)
+    log.write("Unable to determine file formats for platform " .. (pea_key or tostring(platform)))
     return true
   end
 
   -- .zip and .7z are added by default
   -- https://gemba.github.io/skyscraper/PLATFORMS/#sample-usecase-adding-platform-satellaview
   local match_patterns = { '%.*%.zip$', '%.*%.7z$' }
+  -- Heuristic: accept common DOSBox Pure/SVN formats when platform is 'pc'
+  if pea_key == 'pc' then
+    local extra_pc = {
+      '%.*%.exe$', '%.*%.com$', '%.*%.bat$', '%.*%.dosz$',
+      '%.*%.iso$', '%.*%.img$', '%.*%.cue$', '%.*%.m3u$'
+    }
+    for _, p in ipairs(extra_pc) do table.insert(match_patterns, p) end
+  end
   -- Convert patterns to Lua-compatible patterns
   for _, pattern in ipairs(formats) do
     local lua_pattern = pattern:gsub("%*", ".*"):gsub("%.", "%%.")
@@ -88,7 +126,7 @@ local function generate_command(config)
 
   local command = ""
   if config.platform then
-    command = string.format('%s -p %s', command, config.platform)
+    command = string.format('%s -p %s', command, normalize_platform(config.platform))
   end
   if config.fetch then
     command = string.format('%s -s %s', command, config.module)
@@ -110,6 +148,13 @@ local function generate_command(config)
   end
   if config.flags and next(config.flags) then
     command = string.format('%s --flags %s', command, table.concat(config.flags, ","))
+  end
+  -- Force regeneration of media even if it already exists
+  if config.refresh then
+    command = string.format('%s --refresh', command)
+  end
+  if config.output then
+    command = string.format('%s -o "%s"', command, config.output)
   end
 
   -- Force maximum number of threads
@@ -155,6 +200,8 @@ function skyscraper.update_sample(artwork_path)
     input = WORK_DIR .. "/sample",
     artwork = artwork_path,
     flags = { "unattend" },
+    refresh = true,
+    output = WORK_DIR .. "/sample/media",
   })
   skyscraper.run(command, "N/A", "N/A", "generate", "fake-rom")
 end
@@ -176,6 +223,7 @@ function skyscraper.fetch_artwork(rom_path, input_folder, platform)
     platform = platform,
     input = rom_path,
     fetch = true,
+    module = get_default_module_for(platform),
     flags = { "unattend", "onlymissing" },
   })
   skyscraper.run(command, input_folder, platform, "update")
@@ -198,6 +246,7 @@ function skyscraper.fetch_single(rom_path, rom, input_folder, platform, ...)
     platform = platform,
     input = rom_path,
     fetch = true,
+    module = get_default_module_for(platform),
     rom = rom,
     flags = flags,
   })

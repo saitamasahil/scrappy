@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+    <output type="cover" width="640" height="480">
+        <layer resource="screenshot" mpixels="0.7" width="640" align="center" valign="middle" opacity="100">
+        </layer>
+        <mask file="mask/epic-gradient.png"/>
+        <layer resource="cover" width="175" x="-16" y="-60" valign="bottom" align="right">
+            <rounded radius="7"/>
+            <shadow distance="0" softness="8" opacity="80"/>
+        </layer>
+    </output>
+</artwork>

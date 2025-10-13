@@ -16,14 +16,19 @@ fi
 
 echo app >/tmp/act_go
 
-# Define paths and commands
-LOVEDIR="$(GET_VAR "device" "storage/rom/mount")/MUOS/application/Scrappy/.scrappy"
-GPTOKEYB="$(GET_VAR "device" "storage/rom/mount")/MUOS/emulator/gptokeyb/gptokeyb2.armhf"
+# Define paths and commands (newer muOS only)
+if [ -z "${MUOS_STORE_DIR:-}" ]; then
+  echo "Error: MUOS_STORE_DIR is not set" >&2
+  exit 1
+fi
+LOVEDIR="$MUOS_STORE_DIR/application/Scrappy/.scrappy"
+GPTOKEYB="$MUOS_STORE_DIR/emulator/gptokeyb/gptokeyb2.armhf"
 STATICDIR="$LOVEDIR/static/"
 BINDIR="$LOVEDIR/bin"
 
 # Export environment variables
 SETUP_SDL_ENVIRONMENT
+export SDL_GAMECONTROLLERCONFIG_FILE="/usr/lib/gamecontrollerdb.txt"
 export XDG_DATA_HOME="$STATICDIR"
 export HOME="$STATICDIR"
 export LD_LIBRARY_PATH="$BINDIR/libs.aarch64:$LD_LIBRARY_PATH"
