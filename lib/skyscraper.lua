@@ -149,6 +149,13 @@ local function generate_command(config)
   if config.flags and next(config.flags) then
     command = string.format('%s --flags %s', command, table.concat(config.flags, ","))
   end
+  -- Force regeneration of media even if it already exists
+  if config.refresh then
+    command = string.format('%s --refresh', command)
+  end
+  if config.output then
+    command = string.format('%s -o "%s"', command, config.output)
+  end
 
   -- Force maximum number of threads
   command = string.format('%s -t 8', command)
@@ -193,6 +200,8 @@ function skyscraper.update_sample(artwork_path)
     input = WORK_DIR .. "/sample",
     artwork = artwork_path,
     flags = { "unattend" },
+    refresh = true,
+    output = WORK_DIR .. "/sample/media",
   })
   skyscraper.run(command, "N/A", "N/A", "generate", "fake-rom")
 end
