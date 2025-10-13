@@ -7,7 +7,7 @@ local task     = ...
 local running  = true
 
 -- Newer muOS storage root
-local STORAGE_ROOT = os.getenv("MUOS_STORE_DIR") or "/run/muos/storage"
+local STORAGE_ROOT = "/run/muos/storage"
 local APP_ROOT = STORAGE_ROOT .. "/application/Scrappy/.scrappy"
 local CACHE_DIR = APP_ROOT .. "/data/cache/"
 
