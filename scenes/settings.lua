@@ -48,6 +48,14 @@ local vk_shift = false
 local vk_row, vk_col = 1, 1
 local vk_buffer = ""
 local vk_target = nil -- 'user' | 'pass'
+local vk_hold_dir = nil
+local vk_hold_time = 0
+local vk_repeat_delay = 0.28
+local vk_repeat_rate = 0.06
+local vk_repeat_started = false
+local vk_hold_acc = 0
+local vk_char_font = nil
+local vk_char_font_size = 0
 
 -- Optional pixel icon support for special keys (if PNGs exist)
 -- Expected files under assets/icons/: key_shift.png, key_backspace.png, key_space.png, key_enter.png
@@ -98,7 +106,14 @@ local function vk_show(target, initial)
     if vk_target == 'pass' then ss_password = vk_buffer end
   end
   vk_target = target
-  vk_buffer = initial or ""
+  local current = initial or (target == 'user' and ss_username or ss_password) or ""
+  if target == 'user' and current == "USER" then
+    vk_buffer = ""
+  elseif target == 'pass' and current == "PASS" then
+    vk_buffer = ""
+  else
+    vk_buffer = current
+  end
   vk_row, vk_col = 1, 1
   vk_shift = false
   vk_visible = true
@@ -112,6 +127,10 @@ local function vk_hide(apply)
   end
   vk_visible = false
   vk_target = nil
+  vk_hold_dir = nil
+  vk_hold_time = 0
+  vk_repeat_started = false
+  vk_hold_acc = 0
   _G.ui_overlay_active = false -- restore footer when VK closes
 end
 
@@ -121,18 +140,14 @@ local function vk_handle_key(key)
   if key == 'up' then
     vk_row = math.max(1, vk_row - 1)
     vk_col = math.min(vk_col, #layout[vk_row])
-    return true
   elseif key == 'down' then
     vk_row = math.min(#layout, vk_row + 1)
     vk_col = math.min(vk_col, #layout[vk_row])
-    return true
   elseif key == 'left' then
     vk_col = vk_col > 1 and (vk_col - 1) or #layout[vk_row]
-    return true
   elseif key == 'right' then
     vk_col = vk_col < #layout[vk_row] and (vk_col + 1) or 1
-    return true
-  elseif key == 'confirm' then -- A button
+  elseif key == 'confirm' then
     local char = layout[vk_row][vk_col]
     local lower = char:lower()
     if lower == 'shift' then
@@ -144,16 +159,16 @@ local function vk_handle_key(key)
     elseif lower == 'done' then
       vk_hide(true)
     else
-      -- Use shifted form if shift active
       vk_buffer = vk_buffer .. (vk_shift and char or lower)
       vk_shift = false
     end
+    vk_hold_dir = nil
     return true
-  elseif key == 'cancel' then -- B button
+  elseif key == 'cancel' then
     vk_hide(false)
     return true
   end
-  return false
+  return key == 'up' or key == 'down' or key == 'left' or key == 'right'
 end
 
 local function vk_draw()
@@ -245,7 +260,17 @@ local function vk_draw()
       if lower == 'shift' or lower == 'del' or lower == 'space' or lower == 'done' then
         draw_special_icon(rx, ry, key_w, key_h, lower)
       else
-        love.graphics.printf(keytxt, rx, ry + key_h/2 - 8, key_w, 'center')
+        local desired = math.max(14, math.floor(key_h * 0.70))
+        if desired ~= vk_char_font_size then
+          vk_char_font = love.graphics.newFont(desired)
+          vk_char_font_size = desired
+        end
+        local prev = love.graphics.getFont()
+        love.graphics.setFont(vk_char_font)
+        local fh = vk_char_font:getHeight()
+        local ty = ry + math.floor((key_h - fh) / 2)
+        love.graphics.printf(keytxt, rx, ty, key_w, 'center')
+        love.graphics.setFont(prev)
       end
     end
   end
@@ -387,6 +412,50 @@ end
 
 function settings:update(dt)
   menu:update(dt)
+  if not vk_visible then return end
+  local held = nil
+  if love.keyboard.isDown('up') then held = 'up'
+  elseif love.keyboard.isDown('down') then held = 'down'
+  elseif love.keyboard.isDown('left') then held = 'left'
+  elseif love.keyboard.isDown('right') then held = 'right' end
+  if not held then
+    local sticks = love.joystick and love.joystick.getJoysticks and love.joystick.getJoysticks() or {}
+    for i = 1, #sticks do
+      local j = sticks[i]
+      if j:isGamepadDown('dpup') then held = 'up' break end
+      if j:isGamepadDown('dpdown') then held = 'down' break end
+      if j:isGamepadDown('dpleft') then held = 'left' break end
+      if j:isGamepadDown('dpright') then held = 'right' break end
+    end
+  end
+  if held then
+    if vk_hold_dir ~= held then
+      vk_hold_dir = held
+      vk_hold_time = 0
+      vk_repeat_started = false
+      vk_hold_acc = 0
+      vk_handle_key(held)
+      return
+    end
+    vk_hold_time = vk_hold_time + dt
+    if not vk_repeat_started then
+      if vk_hold_time >= vk_repeat_delay then
+        vk_repeat_started = true
+        vk_hold_acc = 0
+      end
+    else
+      vk_hold_acc = vk_hold_acc + dt
+      while vk_hold_acc >= vk_repeat_rate do
+        vk_handle_key(held)
+        vk_hold_acc = vk_hold_acc - vk_repeat_rate
+      end
+    end
+  else
+    vk_hold_dir = nil
+    vk_hold_time = 0
+    vk_repeat_started = false
+    vk_hold_acc = 0
+  end
 end
 
 function settings:draw()
@@ -401,7 +470,15 @@ function settings:keypressed(key)
   if key == 'up' or key == 'down' or key == 'left' or key == 'right' then mapped = key end
   if key == 'return' then mapped = 'confirm' end
   if key == 'escape' then mapped = 'cancel' end
-  if mapped and vk_handle_key(mapped) then return end
+  if mapped then
+    if vk_visible then
+      if mapped == 'confirm' or mapped == 'cancel' then
+        if vk_handle_key(mapped) then return end
+      else
+        return
+      end
+    end
+  end
 
   menu:keypressed(key)
   if key == "escape" or key == "lalt" then
@@ -416,7 +493,15 @@ function settings:gamepadpressed(joystick, button)
     a = 'confirm', b = 'cancel'
   }
   local m = map[button]
-  if m and vk_handle_key(m) then return end
+  if m then
+    if vk_visible then
+      if m == 'up' or m == 'down' or m == 'left' or m == 'right' then
+        return
+      else
+        if vk_handle_key(m) then return end
+      end
+    end
+  end
   if menu.gamepadpressed then return menu:gamepadpressed(joystick, button) end
 end
 
