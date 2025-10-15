@@ -29,6 +29,26 @@ export HOME="$STATICDIR"
 export LD_LIBRARY_PATH="$BINDIR/libs.aarch64:$LD_LIBRARY_PATH"
 export QT_PLUGIN_PATH="$BINDIR/plugins"
 
+# Ensure glyphs are mirrored to SD1 so icon resolves from primary storage
+PRIMARY_APP_DIR="$(GET_VAR "device" "storage/rom/mount")/MUOS/application"
+# Derive the app root (Scrappy) from LOVEDIR which points to Scrappy/.scrappy
+APP_DIR="$(dirname "$LOVEDIR")"
+SRC_GLYPH_DIR="$APP_DIR/glyph"
+DEST_APP_DIR="$PRIMARY_APP_DIR/Scrappy"
+DEST_GLYPH_DIR="$DEST_APP_DIR/glyph"
+# Only mirror when installed outside SD1 (APP_DIR not prefixed by PRIMARY_APP_DIR)
+case "$APP_DIR/" in
+  "$PRIMARY_APP_DIR"/*)
+    : # Installed on SD1; no-op
+    ;;
+  *)
+    if [ -d "$SRC_GLYPH_DIR" ]; then
+      mkdir -p "$DEST_GLYPH_DIR" 2>/dev/null || true
+      cp -rf "$SRC_GLYPH_DIR"/. "$DEST_GLYPH_DIR"/ 2>/dev/null || true
+    fi
+    ;;
+esac
+
 # Create Skyscraper folders
 mkdir -p $HOME/.skyscraper/resources
 cp -r $LOVEDIR/templates/resources/* $HOME/.skyscraper/resources
