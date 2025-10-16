@@ -60,6 +60,26 @@ local vk_mode = 'lower' -- lower | upper | symbol
 local vk_last_char_time = 0
 local vk_last_char_window = 0.8
 
+-- Optional button prompt icons (A/B)
+local INPUT_ICONS = {}
+local function load_input_icon(kind)
+  if INPUT_ICONS[kind] ~= nil then return INPUT_ICONS[kind] end
+  local candidates = {
+    "assets/inputs/switch_button_"..kind..".png",
+    "assets/inputs/"..kind..".png",
+    "assets/inputs/"..kind:upper()..".png",
+    "assets/inputs/button_"..kind..".png",
+  }
+  for _,p in ipairs(candidates) do
+    if love.filesystem.getInfo(p) then
+      local ok, img = pcall(love.graphics.newImage, p)
+      if ok and img then INPUT_ICONS[kind] = img; return img end
+    end
+  end
+  INPUT_ICONS[kind] = false
+  return nil
+end
+
 -- Optional pixel icon support for special keys (if PNGs exist)
 -- Expected files under assets/icons/: key_shift.png, key_backspace.png, key_space.png, key_enter.png
 local VK_ICONS = {
@@ -179,6 +199,17 @@ local function vk_handle_key(key)
     vk_col = vk_col > 1 and (vk_col - 1) or #layout[vk_row]
   elseif key == 'right' then
     vk_col = vk_col < #layout[vk_row] and (vk_col + 1) or 1
+  elseif key == 'space' then
+    vk_buffer = vk_buffer .. ' '
+    if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
+    return true
+  elseif key == 'backspace' then
+    vk_buffer = vk_buffer:sub(1, -2)
+    if vk_target=='pass' then vk_last_char_time = 0 end
+    return true
+  elseif key == 'ok_now' then
+    vk_hide(true)
+    return true
   elseif key == 'confirm' then
     local keydef = layout[vk_row][vk_col]
     if type(keydef) == 'table' then
@@ -219,10 +250,14 @@ local function vk_draw()
   local layout = vk_current_layout()
   local key_w, key_h, margin = 30, 30, 4
   if h >= 720 then key_w, key_h, margin = 38, 38, 6 end
+  local prompt_w = 136 -- tighter panel width
+  local panel_gap = 12
+  local area_x0 = 6 -- shift VK a bit more to the left
+  local area_w = math.max(100, w - area_x0 - prompt_w - panel_gap)
   local box_h = math.max(22, math.floor(key_h * 0.95))
   local box_y = y0 + 6
-  local box_x = 10
-  local box_w = w - 20
+  local box_x = area_x0
+  local box_w = area_w
   love.graphics.setColor(0.16, 0.16, 0.16, 1)
   love.graphics.rectangle('fill', box_x, box_y, box_w, box_h, 12, 12)
   love.graphics.setColor(1, 1, 1, 1)
@@ -270,7 +305,7 @@ local function vk_draw()
       local mult = (type(k)=='table' and k.w) or 1
       row_w = row_w + (key_w*mult) + (i>1 and margin or 0)
     end
-    local x = math.floor((w - row_w) / 2)
+    local x = area_x0 + math.floor((area_w - row_w) / 2)
     local cx = x
     for c = 1, #row do
       local k = row[c]
@@ -308,6 +343,44 @@ local function vk_draw()
     end
   end
   love.graphics.setFont(prev_font)
+
+  -- Button prompts panel (right side)
+  local pw = prompt_w
+  -- Compact panel sized for two lines (A/B)
+  local line_h = math.floor(key_h * 0.9)
+  local gap_h = 6
+  local rows = 2
+  local ph = 8 + rows * line_h + (rows - 1) * gap_h + 8
+  local right_margin = 36
+  local px = area_x0 + area_w + panel_gap - right_margin
+  -- Center within keyboard area, but do not overlap the preview box
+  local centered_py = y0 + math.floor((kb_h - ph) / 2)
+  local min_py = box_y + box_h + 6
+  local py = math.max(min_py, centered_py)
+  love.graphics.setColor(0.12,0.12,0.12,0.9)
+  love.graphics.rectangle('fill', px, py, pw, ph, 12, 12)
+  love.graphics.setColor(1,1,1,1)
+
+  local function draw_prompt(row_i, icon_key, text)
+    local ly = py + 8 + (row_i-1) * (line_h + gap_h)
+    local icon = load_input_icon(icon_key)
+    local ix = px + 10
+    local iy = ly
+    local iw = line_h
+    local ih = line_h
+    if icon then
+      local w0,h0 = icon:getDimensions()
+      local sx, sy = iw / w0, ih / h0
+      love.graphics.draw(icon, ix, iy, 0, sx, sy)
+    else
+      love.graphics.rectangle('line', ix, iy, iw, ih, 6, 6)
+      love.graphics.printf(icon_key:upper(), ix, iy + ih*0.25, iw, 'center')
+    end
+    love.graphics.printf(text, ix + iw + 10, iy + math.floor((ih - love.graphics.getFont():getHeight())/2), pw - (iw + 20), 'left')
+  end
+
+  draw_prompt(1, 'a', 'Confirm')
+  draw_prompt(2, 'b', 'Close')
 end
 
 
@@ -520,12 +593,13 @@ function settings:keypressed(key)
 end
 
 function settings:gamepadpressed(joystick, button)
-  -- Map gamepad to VK
+  -- Map gamepad to VK (A/B and D-Pad only)
   local map = {
     dpup = 'up', dpdown = 'down', dpleft = 'left', dpright = 'right',
     a = 'confirm', b = 'cancel'
   }
-  local m = map[button]
+  local btn = type(button) == 'string' and button:lower() or button
+  local m = map[btn] or map[button]
   if m then
     if vk_visible then
       if m == 'up' or m == 'down' or m == 'left' or m == 'right' then
