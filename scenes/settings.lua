@@ -59,6 +59,7 @@ local vk_char_font_size = 0
 local vk_mode = 'lower' -- lower | upper | symbol
 local vk_last_char_time = 0
 local vk_last_char_window = 0.8
+local vk_move_lock_until = 0 -- time until which dpad movement is ignored after confirm
 
 -- Optional button prompt icons (A/B)
 local INPUT_ICONS = {}
@@ -189,15 +190,20 @@ end
 local function vk_handle_key(key)
   if not vk_visible then return false end
   local layout = vk_current_layout()
+  local now = love.timer.getTime()
   if key == 'up' then
+    if now < vk_move_lock_until then return true end
     vk_row = math.max(1, vk_row - 1)
     vk_col = math.min(vk_col, #layout[vk_row])
   elseif key == 'down' then
+    if now < vk_move_lock_until then return true end
     vk_row = math.min(#layout, vk_row + 1)
     vk_col = math.min(vk_col, #layout[vk_row])
   elseif key == 'left' then
+    if now < vk_move_lock_until then return true end
     vk_col = vk_col > 1 and (vk_col - 1) or #layout[vk_row]
   elseif key == 'right' then
+    if now < vk_move_lock_until then return true end
     vk_col = vk_col < #layout[vk_row] and (vk_col + 1) or 1
   elseif key == 'space' then
     vk_buffer = vk_buffer .. ' '
@@ -225,6 +231,8 @@ local function vk_handle_key(key)
       vk_buffer = vk_buffer .. tostring(keydef)
       if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
     end
+    -- Short debounce to avoid movement mixing with confirm
+    vk_move_lock_until = love.timer.getTime() + 0.10
     vk_hold_dir = nil
     return true
   elseif key == 'cancel' then
