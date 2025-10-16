@@ -20,7 +20,7 @@ Please read the Wiki for more info on installation and configuration!
 ![image](https://github.com/user-attachments/assets/3f22110f-9df0-4ee6-80f5-e83f42dd1052)
 
 ## Caveats
-* Screenscraper credentials need to be manually added to `skyscraper_config.ini`
+* Screenscraper credentials need to be added in setting
 * First time scraping can be slow (this is expected, but worth noting)
 
 ## Resources
