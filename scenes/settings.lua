@@ -193,10 +193,28 @@ local function vk_handle_key(key)
   local now = love.timer.getTime()
   if key == 'up' then
     if now < vk_move_lock_until then return true end
+    -- Vertical wrap: from top row, Up wraps to bottom row
+    if vk_row == 1 then
+      if vk_col == 1 then
+        -- Special wrap from '1' to bottom-right
+        vk_row = #layout
+        vk_col = #layout[vk_row]
+      else
+        vk_row = #layout
+        vk_col = math.min(vk_col, #layout[vk_row])
+      end
+      return true
+    end
     vk_row = math.max(1, vk_row - 1)
     vk_col = math.min(vk_col, #layout[vk_row])
   elseif key == 'down' then
     if now < vk_move_lock_until then return true end
+    -- Vertical wrap: from bottom row, Down wraps to top row
+    if vk_row == #layout then
+      vk_row = 1
+      vk_col = math.min(vk_col, #layout[vk_row])
+      return true
+    end
     vk_row = math.min(#layout, vk_row + 1)
     vk_col = math.min(vk_col, #layout[vk_row])
   elseif key == 'left' then
