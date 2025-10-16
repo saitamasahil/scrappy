@@ -5,7 +5,9 @@ local splash = { finished = false }
 -- Dynamically sized texts
 local app_name
 local app_version_text
-local credits
+local credits_author
+local credits_maintainer
+local credits_font
 local last_w, last_h
 
 local function refresh_texts()
@@ -15,12 +17,14 @@ local function refresh_texts()
   local title_size = math.max(18, math.min(96, math.floor(h * 0.10)))
   local sub_size   = math.max(12, math.min(48, math.floor(h * 0.035)))
 
-  local title_font = love.graphics.newFont(title_size)
-  local sub_font   = love.graphics.newFont(sub_size)
+  local title_font   = love.graphics.newFont(title_size)
+  local sub_font     = love.graphics.newFont(sub_size)
+  credits_font       = love.graphics.newFont(sub_size + 2) -- slight increase for credits
 
   app_name = love.graphics.newText(title_font, "Scrappy")
   app_version_text = love.graphics.newText(sub_font, _G.version)
-  credits = love.graphics.newText(sub_font, "by gabrielfvale")
+  credits_author = love.graphics.newText(credits_font, "Author — gabrielfvale")
+  credits_maintainer = love.graphics.newText(credits_font, "Maintainer — saitamasahil")
 end
 
 local logo = love.graphics.newImage("assets/scrappy_logo.png")
@@ -70,11 +74,13 @@ function splash.draw()
   love.graphics.setColor(1, 1, 1, 0.5)
   love.graphics.translate(0, height * 0.5 - 20)
   local v_h = app_version_text:getHeight()
-  local c_h = credits:getHeight()
-  local spacing = math.max(6, math.floor(c_h * 0.4))
-  -- Draw credits above version with a bit of spacing
+  local ca_h = credits_author:getHeight()
+  local cm_h = credits_maintainer:getHeight()
+  local spacing = math.max(6, math.floor(ca_h * 0.4))
+  -- Stack credits above version: author above maintainer above version
   love.graphics.draw(app_version_text, -app_version_text:getWidth() * 0.5, -v_h)
-  love.graphics.draw(credits, -credits:getWidth() * 0.5, -v_h - c_h - spacing)
+  love.graphics.draw(credits_maintainer, -credits_maintainer:getWidth() * 0.5, -v_h - cm_h - spacing)
+  love.graphics.draw(credits_author, -credits_author:getWidth() * 0.5, -v_h - cm_h - ca_h - spacing * 2)
   love.graphics.pop()
   love.graphics.setColor(colors.background)
   love.graphics.pop()
