@@ -191,6 +191,58 @@ local function vk_handle_key(key)
   if not vk_visible then return false end
   local layout = vk_current_layout()
   local now = love.timer.getTime()
+  -- Helper: compute nearest column in target row by comparing visual X centers
+  local function nearest_col_by_x(src_row_idx, src_col_idx, dst_row_idx)
+    local w, h = w_width, w_height
+    local key_w, key_h, margin = 30, 30, 4
+    if h >= 720 then key_w, key_h, margin = 38, 38, 6 end
+    local function row_width(row)
+      local rw = 0
+      for i=1,#row do
+        local k = row[i]
+        local mult = (type(k)=='table' and k.w) or 1
+        rw = rw + key_w * mult
+        if i>1 then rw = rw + margin end
+      end
+      return rw
+    end
+    local function col_center_x(row, col)
+      local rw = row_width(row)
+      local x = math.floor((w - rw) / 2)
+      local acc = 0
+      for i=1,col do
+        local k = row[i]
+        local mult = (type(k)=='table' and k.w) or 1
+        local kw = key_w * mult
+        if i == col then
+          return x + acc + kw/2
+        end
+        acc = acc + kw + margin
+      end
+      return x + acc -- fallback, shouldn't hit
+    end
+    local src_row = layout[src_row_idx]
+    local dst_row = layout[dst_row_idx]
+    local src_cx = col_center_x(src_row, math.min(src_col_idx, #src_row))
+    -- Find dst col with closest center x
+    local best_col, best_d = 1, math.huge
+    local acc = 0
+    local rw = row_width(dst_row)
+    local x0 = math.floor((w - rw) / 2)
+    for i=1,#dst_row do
+      local k = dst_row[i]
+      local mult = (type(k)=='table' and k.w) or 1
+      local kw = key_w * mult
+      local cx = x0 + acc + kw/2
+      local d = math.abs(cx - src_cx)
+      -- Deterministic tie-breaker: prefer the right (higher column) when equal
+      if d < best_d or (d == best_d and i > best_col) then
+        best_d, best_col = d, i
+      end
+      acc = acc + kw + margin
+    end
+    return best_col
+  end
   if key == 'up' then
     if now < vk_move_lock_until then return true end
     -- Vertical wrap: from top row, Up wraps to bottom row
@@ -205,8 +257,14 @@ local function vk_handle_key(key)
       end
       return true
     end
-    vk_row = math.max(1, vk_row - 1)
-    vk_col = math.min(vk_col, #layout[vk_row])
+    local target_row = vk_row - 1
+    if target_row >= 1 then
+      vk_col = nearest_col_by_x(vk_row, vk_col, target_row)
+      vk_row = target_row
+    else
+      vk_row = 1
+      vk_col = math.min(vk_col, #layout[vk_row])
+    end
   elseif key == 'down' then
     if now < vk_move_lock_until then return true end
     -- Vertical wrap: from bottom row, Down wraps to top row
@@ -215,8 +273,14 @@ local function vk_handle_key(key)
       vk_col = math.min(vk_col, #layout[vk_row])
       return true
     end
-    vk_row = math.min(#layout, vk_row + 1)
-    vk_col = math.min(vk_col, #layout[vk_row])
+    local target_row = vk_row + 1
+    if target_row <= #layout then
+      vk_col = nearest_col_by_x(vk_row, vk_col, target_row)
+      vk_row = target_row
+    else
+      vk_row = #layout
+      vk_col = math.min(vk_col, #layout[vk_row])
+    end
   elseif key == 'left' then
     if now < vk_move_lock_until then return true end
     vk_col = vk_col > 1 and (vk_col - 1) or #layout[vk_row]
