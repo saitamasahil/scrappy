@@ -57,6 +57,8 @@ local vk_hold_acc = 0
 local vk_char_font = nil
 local vk_char_font_size = 0
 local vk_mode = 'lower' -- lower | upper | symbol
+local vk_last_char_time = 0
+local vk_last_char_window = 0.8
 
 -- Optional pixel icon support for special keys (if PNGs exist)
 -- Expected files under assets/icons/: key_shift.png, key_backspace.png, key_space.png, key_enter.png
@@ -96,8 +98,9 @@ local function load_screenscraper_creds()
   end
 end
 
+local MASK_CHAR = "*"
 local function masked(text)
-  return text ~= nil and text ~= "" and string.rep("•", #text) or "(set)"
+  return text ~= nil and text ~= "" and string.rep(MASK_CHAR, #text) or "(set)"
 end
 
 local function vk_show(target, initial)
@@ -179,8 +182,8 @@ local function vk_handle_key(key)
   elseif key == 'confirm' then
     local keydef = layout[vk_row][vk_col]
     if type(keydef) == 'table' then
-      if keydef.t == 'space' then vk_buffer = vk_buffer .. ' '
-      elseif keydef.t == 'back' then vk_buffer = vk_buffer:sub(1, -2)
+      if keydef.t == 'space' then vk_buffer = vk_buffer .. ' ' ; if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
+      elseif keydef.t == 'back' then vk_buffer = vk_buffer:sub(1, -2) ; if vk_target=='pass' then vk_last_char_time = 0 end
       elseif keydef.t == 'ok' then vk_hide(true)
       elseif keydef.t == 'toggle' then
         if vk_mode == 'lower' then vk_mode = 'upper'
@@ -189,6 +192,7 @@ local function vk_handle_key(key)
       end
     else
       vk_buffer = vk_buffer .. tostring(keydef)
+      if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
     end
     vk_hold_dir = nil
     return true
@@ -222,7 +226,23 @@ local function vk_draw()
   love.graphics.setColor(0.16, 0.16, 0.16, 1)
   love.graphics.rectangle('fill', box_x, box_y, box_w, box_h, 12, 12)
   love.graphics.setColor(1, 1, 1, 1)
-  local preview = (vk_target == 'pass') and masked(vk_buffer) or (vk_buffer == '' and '(enter)' or vk_buffer)
+  local preview
+  if vk_target == 'pass' then
+    local now = love.timer.getTime()
+    local n = #vk_buffer
+    if n > 0 then
+      if vk_last_char_time > 0 and (now - vk_last_char_time) <= vk_last_char_window then
+        local visible = vk_buffer:sub(-1)
+        preview = string.rep(MASK_CHAR, math.max(0, n-1)) .. visible
+      else
+        preview = string.rep(MASK_CHAR, n)
+      end
+    else
+      preview = '(enter)'
+    end
+  else
+    preview = (vk_buffer == '' and '(enter)' or vk_buffer)
+  end
   love.graphics.printf(preview, box_x + 12, box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2), box_w - 24, 'left')
   -- Keys
   local ypos = box_y + box_h + 10
