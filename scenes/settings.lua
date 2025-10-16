@@ -241,7 +241,7 @@ local function vk_draw()
   local kb_h = math.floor(h * 0.30)
   local y0 = h - kb_h - 68
   -- Dim the entire screen so VK stands out
-  love.graphics.setColor(0, 0, 0, 0.55)
+  love.graphics.setColor(0, 0, 0, 0.78)
   love.graphics.rectangle('fill', 0, 0, w, h)
   -- Keyboard panel background
   love.graphics.setColor(0, 0, 0, 0.85)
@@ -353,10 +353,12 @@ local function vk_draw()
   local ph = 8 + rows * line_h + (rows - 1) * gap_h + 8
   local right_margin = 36
   local px = area_x0 + area_w + panel_gap - right_margin
-  -- Center within keyboard area, but do not overlap the preview box
-  local centered_py = y0 + math.floor((kb_h - ph) / 2)
-  local min_py = box_y + box_h + 6
-  local py = math.max(min_py, centered_py)
+  -- Center within the space below the preview box; bias slightly lower
+  local avail_top = box_y + box_h + 6
+  local avail_bottom = y0 + kb_h - 6
+  local centered_py = math.floor((avail_top + avail_bottom - ph) / 2)
+  local py = math.max(avail_top, centered_py + 6)
+  if py + ph > avail_bottom then py = avail_bottom - ph end
   love.graphics.setColor(0.12,0.12,0.12,0.9)
   love.graphics.rectangle('fill', px, py, pw, ph, 12, 12)
   love.graphics.setColor(1,1,1,1)
