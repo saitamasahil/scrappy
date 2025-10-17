@@ -49,6 +49,22 @@ Please read the Wiki for more info on installation and configuration!
 
 Contributions to Scrappy are welcome! Please fork the repository, make your changes, and submit a pull request.
 
+## Build from source
+
+Scrappy includes a simple build script for packaging releases.
+
+Requirements:
+- bash
+- zip (for packaging)
+
+Build:
+```bash
+./build.sh
+```
+
+Troubleshooting:
+- On Linux, make the script executable: `chmod +x build.sh`
+
 ## License
 
 This project is licensed under the MIT License. See `LICENSE.md` for more details.
