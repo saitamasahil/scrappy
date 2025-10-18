@@ -157,8 +157,11 @@ local function generate_command(config)
     command = string.format('%s -o "%s"', command, config.output)
   end
 
-  -- Force maximum number of threads
-  command = string.format('%s -t 8', command)
+  -- Threads: read from config [main] threads, default 8
+  local threads_cfg = skyscraper_config:read("main", "threads")
+  local threads = tonumber(threads_cfg or "") or 8
+  if threads < 1 then threads = 1 end
+  command = string.format('%s -t %d', command, threads)
   -- Use 'pegasus' frontend for simpler gamelist generation
   command = string.format('%s -f pegasus', command)
   return command
