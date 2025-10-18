@@ -60,6 +60,7 @@ local vk_mode = 'lower' -- lower | upper | symbol
 local vk_last_char_time = 0
 local vk_last_char_window = 0.8
 local vk_move_lock_until = 0 -- time until which dpad movement is ignored after confirm
+local vk_opened_at = 0       -- timestamp when VK opened; brief grace to ignore movement
 
 -- Optional button prompt icons (A/B)
 local INPUT_ICONS = {}
@@ -142,6 +143,7 @@ local function vk_show(target, initial)
   vk_row, vk_col = 1, 1
   vk_shift = false
   vk_visible = true
+  vk_opened_at = love.timer.getTime()
   _G.ui_overlay_active = true -- hide global footer while VK is open
 end
 
@@ -191,6 +193,11 @@ local function vk_handle_key(key)
   if not vk_visible then return false end
   local layout = vk_current_layout()
   local now = love.timer.getTime()
+  local function movement_locked()
+    if now < vk_move_lock_until then return true end
+    if vk_opened_at > 0 and (now - vk_opened_at) < 0.12 then return true end
+    return false
+  end
   -- Helper: compute nearest column in target row by comparing visual X centers
   local function nearest_col_by_x(src_row_idx, src_col_idx, dst_row_idx)
     local w, h = w_width, w_height
@@ -244,7 +251,7 @@ local function vk_handle_key(key)
     return best_col
   end
   if key == 'up' then
-    if now < vk_move_lock_until then return true end
+    if movement_locked() then return true end
     -- Vertical wrap: from top row, Up wraps to bottom row
     if vk_row == 1 then
       if vk_col == 1 then
@@ -255,38 +262,47 @@ local function vk_handle_key(key)
         vk_row = #layout
         vk_col = math.min(vk_col, #layout[vk_row])
       end
+      -- brief movement lock to stabilize selection for quick confirm
+      vk_move_lock_until = love.timer.getTime() + 0.06
       return true
     end
     local target_row = vk_row - 1
     if target_row >= 1 then
       vk_col = nearest_col_by_x(vk_row, vk_col, target_row)
       vk_row = target_row
+      vk_move_lock_until = love.timer.getTime() + 0.06
     else
       vk_row = 1
       vk_col = math.min(vk_col, #layout[vk_row])
+      vk_move_lock_until = love.timer.getTime() + 0.06
     end
   elseif key == 'down' then
-    if now < vk_move_lock_until then return true end
+    if movement_locked() then return true end
     -- Vertical wrap: from bottom row, Down wraps to top row
     if vk_row == #layout then
       vk_row = 1
       vk_col = math.min(vk_col, #layout[vk_row])
+      vk_move_lock_until = love.timer.getTime() + 0.06
       return true
     end
     local target_row = vk_row + 1
     if target_row <= #layout then
       vk_col = nearest_col_by_x(vk_row, vk_col, target_row)
       vk_row = target_row
+      vk_move_lock_until = love.timer.getTime() + 0.06
     else
       vk_row = #layout
       vk_col = math.min(vk_col, #layout[vk_row])
+      vk_move_lock_until = love.timer.getTime() + 0.06
     end
   elseif key == 'left' then
-    if now < vk_move_lock_until then return true end
+    if movement_locked() then return true end
     vk_col = vk_col > 1 and (vk_col - 1) or #layout[vk_row]
+    vk_move_lock_until = love.timer.getTime() + 0.06
   elseif key == 'right' then
-    if now < vk_move_lock_until then return true end
+    if movement_locked() then return true end
     vk_col = vk_col < #layout[vk_row] and (vk_col + 1) or 1
+    vk_move_lock_until = love.timer.getTime() + 0.06
   elseif key == 'space' then
     vk_buffer = vk_buffer .. ' '
     if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
@@ -314,7 +330,7 @@ local function vk_handle_key(key)
       if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
     end
     -- Short debounce to avoid movement mixing with confirm
-    vk_move_lock_until = love.timer.getTime() + 0.10
+    vk_move_lock_until = love.timer.getTime() + 0.08
     vk_hold_dir = nil
     return true
   elseif key == 'cancel' then
