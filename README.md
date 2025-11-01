@@ -1,9 +1,10 @@
 ![scrappy](https://github.com/user-attachments/assets/78e48f14-45a8-427d-99ba-80f20ba018dd)
 # Scrappy
+> Maintained fork by **saitamasahil** · Original author **gabrielfvale** · Original repo: https://github.com/gabrielfvale/scrappy
 Scrappy is an art scraper for muOS, with the standout feature of incorporating a fully-fledged **Skyscraper** app under the hood. This integration enables near-complete support for artwork XML layouts, allowing Scrappy to scrape, cache assets, and generate artwork using XML mixes with ease.
 
 Please read the Wiki for more info on installation and configuration!
-* [Getting started](https://github.com/gabrielfvale/scrappy/wiki/Getting-Started)
+* [Getting started](https://github.com/saitamasahil/scrappy/wiki/Getting-Started)
 
 ## Features
 * Skyscraper backend (artwork XML, cached data, and many other features)
@@ -19,7 +20,7 @@ Please read the Wiki for more info on installation and configuration!
 ![image](https://github.com/user-attachments/assets/3f22110f-9df0-4ee6-80f5-e83f42dd1052)
 
 ## Caveats
-* Screenscraper credentials need to be manually added to `skyscraper_config.ini`
+* Screenscraper credentials need to be added in setting
 * First time scraping can be slow (this is expected, but worth noting)
 
 ## Resources
@@ -39,13 +40,30 @@ Please read the Wiki for more info on installation and configuration!
 - Testers and many other contributors
 
 ## Supporting the project
-Your greatest support comes through testing. If you'd like to help the project financially, consider donating through Ko-Fi!
+- **Testing and feedback:** The most valuable support for this maintained fork is testing new builds, reporting issues, and submitting improvements via pull requests.
+- **Donations to the original author:** Financial contributions via Ko‑fi support the original creator of Scrappy.
 
 [![Ko-Fi](https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/gabrielfvale)
 
 ## Contributing
 
 Contributions to Scrappy are welcome! Please fork the repository, make your changes, and submit a pull request.
+
+## Build from source
+
+Scrappy includes a simple build script for packaging releases.
+
+Requirements:
+- bash
+- zip (for packaging)
+
+Build:
+```bash
+./build.sh
+```
+
+Troubleshooting:
+- On Linux, make the script executable: `chmod +x build.sh`
 
 ## License
 

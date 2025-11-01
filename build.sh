@@ -63,12 +63,20 @@ fi
 
 # Ensure glyph directory exists in the root of the app and copy scrappy.png
 mkdir -p "$WORKDIR/Scrappy/glyph"
+GLYPH_SRC=""
 if [ -f "$PROJECT_ROOT/assets/scrappy.png" ]; then
-    echo "Copying scrappy.png to glyph directory..."
-    cp "$PROJECT_ROOT/assets/scrappy.png" "$WORKDIR/Scrappy/glyph/"
+    GLYPH_SRC="$PROJECT_ROOT/assets/scrappy.png"
 elif [ -f "$PROJECT_ROOT/glyph/scrappy.png" ]; then
-    echo "Copying scrappy.png from glyph directory..."
-    cp "$PROJECT_ROOT/glyph/scrappy.png" "$WORKDIR/Scrappy/glyph/"
+    GLYPH_SRC="$PROJECT_ROOT/glyph/scrappy.png"
+fi
+if [ -n "$GLYPH_SRC" ]; then
+    echo "Copying scrappy.png to glyph directory..."
+    cp "$GLYPH_SRC" "$WORKDIR/Scrappy/glyph/"
+    # Also copy into resolution-specific glyph folders so MUX can resolve per-resolution icons
+    for res in 640x480 720x480 720x720 1024x768; do
+        mkdir -p "$WORKDIR/Scrappy/glyph/$res"
+        cp "$GLYPH_SRC" "$WORKDIR/Scrappy/glyph/$res/scrappy.png"
+    done
 else
     echo "Warning: scrappy.png not found in expected locations"
 fi

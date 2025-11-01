@@ -36,6 +36,10 @@ local main = {}
 
 local templates = {}
 local current_template = 1
+-- Debounce configuration for preview generation (seconds)
+local preview_debounce = 0.6
+local scheduled_preview_at = nil
+local scheduled_template_index = nil
 
 -- Ensure sample media folders exist and remove stale fake-rom images
 local function prepare_sample_media()
@@ -58,6 +62,9 @@ local state = {
   failed_tasks = {},
   total = 0,
   task_in_progress = nil,
+  task_started_at = nil,
+  task_timeout_secs = 120,
+  task_meta = nil,
   log = {},
   sample_poll = nil,
 }
@@ -95,28 +102,28 @@ local function first_template_output(output_path, platform, game_title)
   return curr_output
 end
 
--- Cycles templates and triggers update to artwork preview
-local function update_preview(direction)
+-- Internal: perform the actual preview generation now
+local function generate_preview_now()
   state.loading = true
-  -- Cycle templates
-  local direction = direction or 1
-  current_template = current_template + direction
-  if current_template < 1 then
-    current_template = #templates
-  end
-  if current_template > #templates then
-    current_template = 1
-  end
-  -- Generate new artwork
   local sample_artwork = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
   prepare_sample_media()
   skyscraper.change_artwork(sample_artwork)
   skyscraper.update_sample(sample_artwork)
-  -- Update cover
   local output = first_template_output()
   cover_preview_path = string.format("sample/media/%s/fake-rom.png", output)
-  -- Begin polling for the generated file to exist (fallback to backend signal)
   state.sample_poll = { path = cover_preview_path, t0 = love.timer.getTime(), timeout = 3.0 }
+end
+
+-- Cycles templates and schedules preview generation after a short pause
+local function update_preview(direction)
+  -- Cycle templates only
+  local direction = direction or 1
+  current_template = current_template + direction
+  if current_template < 1 then current_template = #templates end
+  if current_template > #templates then current_template = 1 end
+  -- Debounce: schedule generation after a delay; overwrite any previous schedule
+  scheduled_preview_at = love.timer.getTime() + preview_debounce
+  scheduled_template_index = current_template
 end
 
 -- Updates feedback for template outputs
@@ -274,6 +281,7 @@ end
 
 -- Stops all scraping and clears queue
 local function halt_scraping()
+  channels.SKYSCRAPER_ABORT:push({ abort = true })
   channels.SKYSCRAPER_INPUT:clear()
   state.scraping = false
   state.loading = false
@@ -643,6 +651,8 @@ local function process_game_queue()
       -- Mark task as finished
       print(string.format("Finished task \"%s\"", state.task_in_progress))
       state.task_in_progress = nil
+      state.task_started_at = nil
+      state.task_meta = nil
     end
     return -- Don't process anything further until the current task is done
   end
@@ -674,6 +684,8 @@ local function process_game_queue()
     if game_file_map[platform] and game_file_map[platform][game] then
       local game_file = game_file_map[platform][game]
       state.task_in_progress = game_file
+      state.task_started_at = love.timer.getTime()
+      state.task_meta = { title = game, platform = platform }
       print(string.format("Task in progress: %s", game_file))
       skyscraper.update_artwork(platform_path, game_file, input_folder,
         platform, templates[current_template])
@@ -686,10 +698,41 @@ function main:update(dt)
   if t then
     update_state(t) -- TODO: Refactor
   end
+  -- If a preview was scheduled and the user paused, generate it now
+  if scheduled_preview_at and love.timer.getTime() >= scheduled_preview_at then
+    -- Ensure we're still on the same template that was scheduled
+    if scheduled_template_index == current_template then
+      generate_preview_now()
+    end
+    scheduled_preview_at = nil
+    scheduled_template_index = nil
+  end
   menu:update(dt)
   if state.reload_preview then
     state.reload_preview = false
     render_to_canvas()
+  end
+
+  -- Watchdog: if a generate task hangs beyond timeout, mark it failed and unblock
+  if state.task_in_progress and state.task_started_at then
+    local elapsed = love.timer.getTime() - state.task_started_at
+    if elapsed > (state.task_timeout_secs or 120) then
+      local meta = state.task_meta or { title = utils.get_filename(state.task_in_progress), platform = "unknown" }
+      log.write(string.format("Watchdog timeout after %ds for '%s' (%s)", math.floor(elapsed), meta.title or "N/A", meta.platform or "N/A"))
+      -- Inform UI about failure
+      channels.SKYSCRAPER_OUTPUT:push({
+        title = meta.title,
+        platform = meta.platform,
+        success = false,
+        error = "Operation timed out",
+      })
+      -- Unblock processing queue
+      channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true })
+      -- Clear local state; next update_state will decrement counters
+      state.task_in_progress = nil
+      state.task_started_at = nil
+      state.task_meta = nil
+    end
   end
 
   -- Poll for sample image availability to avoid races with backend output

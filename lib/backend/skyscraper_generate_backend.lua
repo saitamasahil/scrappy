@@ -47,7 +47,15 @@ while true do
   local parsed = false
   local sent_title = false
   local had_error = false
+  local aborted = false
   for line in output:lines() do
+    -- Abort check
+    local abort_sig = channels.SKYSCRAPER_ABORT:pop()
+    if abort_sig and abort_sig.abort then
+      aborted = true
+      channels.SKYSCRAPER_OUTPUT:push({ log = string.format("[gen] Aborted \"%s\"", game) })
+      break
+    end
     line = utils.strip_ansi_colors(line)
     if game ~= "fake-rom" then log.write(line, "skyscraper") end
     local res, error, skipped, rtype = parser.parse(line)
@@ -75,6 +83,7 @@ while true do
       break
     end
   end
+  if output then output:close() end
 
   -- Always emit a final result if no title was sent during parsing
   if not sent_title then
@@ -84,8 +93,8 @@ while true do
     channels.SKYSCRAPER_OUTPUT:push({
       title = game,
       platform = current_platform,
-      error = (not parsed) and "Failed to parse Skyscraper output" or nil,
-      success = not had_error
+      error = aborted and "Operation aborted" or ((not parsed) and "Failed to parse Skyscraper output" or nil),
+      success = (not had_error) and (not aborted)
     })
   end
 

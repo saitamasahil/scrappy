@@ -48,6 +48,39 @@ local vk_shift = false
 local vk_row, vk_col = 1, 1
 local vk_buffer = ""
 local vk_target = nil -- 'user' | 'pass'
+local vk_hold_dir = nil
+local vk_hold_time = 0
+local vk_repeat_delay = 0.28
+local vk_repeat_rate = 0.06
+local vk_repeat_started = false
+local vk_hold_acc = 0
+local vk_char_font = nil
+local vk_char_font_size = 0
+local vk_mode = 'lower' -- lower | upper | symbol
+local vk_last_char_time = 0
+local vk_last_char_window = 0.8
+local vk_move_lock_until = 0 -- time until which dpad movement is ignored after confirm
+local vk_opened_at = 0       -- timestamp when VK opened; brief grace to ignore movement
+
+-- Optional button prompt icons (A/B)
+local INPUT_ICONS = {}
+local function load_input_icon(kind)
+  if INPUT_ICONS[kind] ~= nil then return INPUT_ICONS[kind] end
+  local candidates = {
+    "assets/inputs/switch_button_"..kind..".png",
+    "assets/inputs/"..kind..".png",
+    "assets/inputs/"..kind:upper()..".png",
+    "assets/inputs/button_"..kind..".png",
+  }
+  for _,p in ipairs(candidates) do
+    if love.filesystem.getInfo(p) then
+      local ok, img = pcall(love.graphics.newImage, p)
+      if ok and img then INPUT_ICONS[kind] = img; return img end
+    end
+  end
+  INPUT_ICONS[kind] = false
+  return nil
+end
 
 -- Optional pixel icon support for special keys (if PNGs exist)
 -- Expected files under assets/icons/: key_shift.png, key_backspace.png, key_space.png, key_enter.png
@@ -87,8 +120,9 @@ local function load_screenscraper_creds()
   end
 end
 
+local MASK_CHAR = "*"
 local function masked(text)
-  return text ~= nil and text ~= "" and string.rep("•", #text) or "(set)"
+  return text ~= nil and text ~= "" and string.rep(MASK_CHAR, #text) or "(set)"
 end
 
 local function vk_show(target, initial)
@@ -98,10 +132,18 @@ local function vk_show(target, initial)
     if vk_target == 'pass' then ss_password = vk_buffer end
   end
   vk_target = target
-  vk_buffer = initial or ""
+  local current = initial or (target == 'user' and ss_username or ss_password) or ""
+  if target == 'user' and current == "USER" then
+    vk_buffer = ""
+  elseif target == 'pass' and current == "PASS" then
+    vk_buffer = ""
+  else
+    vk_buffer = current
+  end
   vk_row, vk_col = 1, 1
   vk_shift = false
   vk_visible = true
+  vk_opened_at = love.timer.getTime()
   _G.ui_overlay_active = true -- hide global footer while VK is open
 end
 
@@ -112,48 +154,190 @@ local function vk_hide(apply)
   end
   vk_visible = false
   vk_target = nil
+  vk_hold_dir = nil
+  vk_hold_time = 0
+  vk_repeat_started = false
+  vk_hold_acc = 0
   _G.ui_overlay_active = false -- restore footer when VK closes
+end
+
+local function vk_current_layout()
+  if vk_mode == 'lower' then
+    return {
+      {"1","2","3","4","5","6","7","8","9","0",{t='back',w=1.6}},
+      {"q","w","e","r","t","y","u","i","o","p"},
+      {"a","s","d","f","g","h","j","k","l"},
+      {"z","x","c","v","b","n","m"},
+      {{t='toggle',label='ABC',w=1.8},{t='space',w=3.6},{t='ok',label='OK',w=1.4}},
+    }
+  elseif vk_mode == 'upper' then
+    return {
+      {"1","2","3","4","5","6","7","8","9","0",{t='back',w=1.6}},
+      {"Q","W","E","R","T","Y","U","I","O","P"},
+      {"A","S","D","F","G","H","J","K","L"},
+      {"Z","X","C","V","B","N","M"},
+      {{t='toggle',label='!@#',w=1.8},{t='space',w=3.6},{t='ok',label='OK',w=1.4}},
+    }
+  else -- symbol
+    return {
+      {"!","@","#","$","%","^","&","*","(",")",{t='back',w=1.6}},
+      {"`","~","-","_","+","=","{","}","[","]"},
+      {"|","\\",":",";","\"","'","!","@","#"},
+      {"<",">",",",".","?","/","$"},
+      {{t='toggle',label='abc',w=1.8},{t='space',w=3.6},{t='ok',label='OK',w=1.4}},
+    }
+  end
 end
 
 local function vk_handle_key(key)
   if not vk_visible then return false end
-  local layout = vk_shift and VKEY_SHIFT or VKEY
-  if key == 'up' then
-    vk_row = math.max(1, vk_row - 1)
-    vk_col = math.min(vk_col, #layout[vk_row])
-    return true
-  elseif key == 'down' then
-    vk_row = math.min(#layout, vk_row + 1)
-    vk_col = math.min(vk_col, #layout[vk_row])
-    return true
-  elseif key == 'left' then
-    vk_col = vk_col > 1 and (vk_col - 1) or #layout[vk_row]
-    return true
-  elseif key == 'right' then
-    vk_col = vk_col < #layout[vk_row] and (vk_col + 1) or 1
-    return true
-  elseif key == 'confirm' then -- A button
-    local char = layout[vk_row][vk_col]
-    local lower = char:lower()
-    if lower == 'shift' then
-      vk_shift = not vk_shift
-    elseif lower == 'space' then
-      vk_buffer = vk_buffer .. ' '
-    elseif lower == 'del' then
-      vk_buffer = vk_buffer:sub(1, -2)
-    elseif lower == 'done' then
-      vk_hide(true)
-    else
-      -- Use shifted form if shift active
-      vk_buffer = vk_buffer .. (vk_shift and char or lower)
-      vk_shift = false
+  local layout = vk_current_layout()
+  local now = love.timer.getTime()
+  local function movement_locked()
+    if now < vk_move_lock_until then return true end
+    if vk_opened_at > 0 and (now - vk_opened_at) < 0.12 then return true end
+    return false
+  end
+  -- Helper: compute nearest column in target row by comparing visual X centers
+  local function nearest_col_by_x(src_row_idx, src_col_idx, dst_row_idx)
+    local w, h = w_width, w_height
+    local key_w, key_h, margin = 30, 30, 4
+    if h >= 720 then key_w, key_h, margin = 38, 38, 6 end
+    local function row_width(row)
+      local rw = 0
+      for i=1,#row do
+        local k = row[i]
+        local mult = (type(k)=='table' and k.w) or 1
+        rw = rw + key_w * mult
+        if i>1 then rw = rw + margin end
+      end
+      return rw
     end
+    local function col_center_x(row, col)
+      local rw = row_width(row)
+      local x = math.floor((w - rw) / 2)
+      local acc = 0
+      for i=1,col do
+        local k = row[i]
+        local mult = (type(k)=='table' and k.w) or 1
+        local kw = key_w * mult
+        if i == col then
+          return x + acc + kw/2
+        end
+        acc = acc + kw + margin
+      end
+      return x + acc -- fallback, shouldn't hit
+    end
+    local src_row = layout[src_row_idx]
+    local dst_row = layout[dst_row_idx]
+    local src_cx = col_center_x(src_row, math.min(src_col_idx, #src_row))
+    -- Find dst col with closest center x
+    local best_col, best_d = 1, math.huge
+    local acc = 0
+    local rw = row_width(dst_row)
+    local x0 = math.floor((w - rw) / 2)
+    for i=1,#dst_row do
+      local k = dst_row[i]
+      local mult = (type(k)=='table' and k.w) or 1
+      local kw = key_w * mult
+      local cx = x0 + acc + kw/2
+      local d = math.abs(cx - src_cx)
+      -- Deterministic tie-breaker: prefer the right (higher column) when equal
+      if d < best_d or (d == best_d and i > best_col) then
+        best_d, best_col = d, i
+      end
+      acc = acc + kw + margin
+    end
+    return best_col
+  end
+  if key == 'up' then
+    if movement_locked() then return true end
+    -- Vertical wrap: from top row, Up wraps to bottom row
+    if vk_row == 1 then
+      if vk_col == 1 then
+        -- Special wrap from '1' to bottom-right
+        vk_row = #layout
+        vk_col = #layout[vk_row]
+      else
+        vk_row = #layout
+        vk_col = math.min(vk_col, #layout[vk_row])
+      end
+      -- brief movement lock to stabilize selection for quick confirm
+      vk_move_lock_until = love.timer.getTime() + 0.06
+      return true
+    end
+    local target_row = vk_row - 1
+    if target_row >= 1 then
+      vk_col = nearest_col_by_x(vk_row, vk_col, target_row)
+      vk_row = target_row
+      vk_move_lock_until = love.timer.getTime() + 0.06
+    else
+      vk_row = 1
+      vk_col = math.min(vk_col, #layout[vk_row])
+      vk_move_lock_until = love.timer.getTime() + 0.06
+    end
+  elseif key == 'down' then
+    if movement_locked() then return true end
+    -- Vertical wrap: from bottom row, Down wraps to top row
+    if vk_row == #layout then
+      vk_row = 1
+      vk_col = math.min(vk_col, #layout[vk_row])
+      vk_move_lock_until = love.timer.getTime() + 0.06
+      return true
+    end
+    local target_row = vk_row + 1
+    if target_row <= #layout then
+      vk_col = nearest_col_by_x(vk_row, vk_col, target_row)
+      vk_row = target_row
+      vk_move_lock_until = love.timer.getTime() + 0.06
+    else
+      vk_row = #layout
+      vk_col = math.min(vk_col, #layout[vk_row])
+      vk_move_lock_until = love.timer.getTime() + 0.06
+    end
+  elseif key == 'left' then
+    if movement_locked() then return true end
+    vk_col = vk_col > 1 and (vk_col - 1) or #layout[vk_row]
+    vk_move_lock_until = love.timer.getTime() + 0.06
+  elseif key == 'right' then
+    if movement_locked() then return true end
+    vk_col = vk_col < #layout[vk_row] and (vk_col + 1) or 1
+    vk_move_lock_until = love.timer.getTime() + 0.06
+  elseif key == 'space' then
+    vk_buffer = vk_buffer .. ' '
+    if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
     return true
-  elseif key == 'cancel' then -- B button
+  elseif key == 'backspace' then
+    vk_buffer = vk_buffer:sub(1, -2)
+    if vk_target=='pass' then vk_last_char_time = 0 end
+    return true
+  elseif key == 'ok_now' then
+    vk_hide(true)
+    return true
+  elseif key == 'confirm' then
+    local keydef = layout[vk_row][vk_col]
+    if type(keydef) == 'table' then
+      if keydef.t == 'space' then vk_buffer = vk_buffer .. ' ' ; if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
+      elseif keydef.t == 'back' then vk_buffer = vk_buffer:sub(1, -2) ; if vk_target=='pass' then vk_last_char_time = 0 end
+      elseif keydef.t == 'ok' then vk_hide(true)
+      elseif keydef.t == 'toggle' then
+        if vk_mode == 'lower' then vk_mode = 'upper'
+        elseif vk_mode == 'upper' then vk_mode = 'symbol'
+        else vk_mode = 'lower' end
+      end
+    else
+      vk_buffer = vk_buffer .. tostring(keydef)
+      if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
+    end
+    -- Short debounce to avoid movement mixing with confirm
+    vk_move_lock_until = love.timer.getTime() + 0.08
+    vk_hold_dir = nil
+    return true
+  elseif key == 'cancel' then
     vk_hide(false)
     return true
   end
-  return false
+  return key == 'up' or key == 'down' or key == 'left' or key == 'right'
 end
 
 local function vk_draw()
@@ -162,94 +346,149 @@ local function vk_draw()
   -- Keyboard height ~30% of screen and lifted higher to avoid any footer/help bar
   local kb_h = math.floor(h * 0.30)
   local y0 = h - kb_h - 68
-  -- Background
+  -- Dim the entire screen so VK stands out
+  love.graphics.setColor(0, 0, 0, 0.78)
+  love.graphics.rectangle('fill', 0, 0, w, h)
+  -- Keyboard panel background
   love.graphics.setColor(0, 0, 0, 0.85)
   love.graphics.rectangle('fill', 0, y0, w, kb_h)
-  -- Current text
-  love.graphics.setColor(1, 1, 1, 1)
-  local preview = (vk_target == 'pass') and masked(vk_buffer) or (vk_buffer == '' and '(enter)' or vk_buffer)
-  love.graphics.printf(preview, 10, y0 + 8, w - 20, 'left')
-  -- Keys
-  local layout = vk_shift and VKEY_SHIFT or VKEY
-  -- Scale key size for small screens
+  -- Message box just above keys to preview input
+  local layout = vk_current_layout()
   local key_w, key_h, margin = 30, 30, 4
   if h >= 720 then key_w, key_h, margin = 38, 38, 6 end
-  local ypos = y0 + 22
+  local prompt_w = 136 -- tighter panel width
+  local panel_gap = 12
+  local area_x0 = 6 -- shift VK a bit more to the left
+  local area_w = math.max(100, w - area_x0 - prompt_w - panel_gap)
+  local box_h = math.max(22, math.floor(key_h * 0.95))
+  local box_y = y0 + 6
+  local box_x = area_x0
+  local box_w = area_w
+  love.graphics.setColor(0.16, 0.16, 0.16, 1)
+  love.graphics.rectangle('fill', box_x, box_y, box_w, box_h, 12, 12)
+  love.graphics.setColor(1, 1, 1, 1)
+  local preview
+  if vk_target == 'pass' then
+    local now = love.timer.getTime()
+    local n = #vk_buffer
+    if n > 0 then
+      if vk_last_char_time > 0 and (now - vk_last_char_time) <= vk_last_char_window then
+        local visible = vk_buffer:sub(-1)
+        preview = string.rep(MASK_CHAR, math.max(0, n-1)) .. visible
+      else
+        preview = string.rep(MASK_CHAR, n)
+      end
+    else
+      preview = '(enter)'
+    end
+  else
+    preview = (vk_buffer == '' and '(enter)' or vk_buffer)
+  end
+  love.graphics.printf(preview, box_x + 12, box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2), box_w - 24, 'left')
+  -- Keys
+  local ypos = box_y + box_h + 10
   local prev_font = love.graphics.getFont()
   love.graphics.setFont(vk_font)
 
-  local function draw_special_icon(cx, cy, kw, kh, kind)
-    -- cx, cy are top-left of key
-    local mx, my = cx + kw/2, cy + kh/2
-    love.graphics.setColor(1,1,1,1)
-
-    -- Try pixel icon first (if asset present). Fallback to vector shape
-    local img = load_vk_icon(kind)
-    if img then
-      local iw, ih = img:getDimensions()
-      local box = math.min(kw * 0.7, kh * 0.7)
-      local sx, sy = box / iw, box / ih
-      love.graphics.draw(img, mx - (iw * sx) / 2, my - (ih * sy) / 2, 0, sx, sy)
-      return
+  local function draw_label(cx, cy, kw, kh, text)
+    local desired = math.max(14, math.floor(key_h * 0.70))
+    if desired ~= vk_char_font_size then
+      vk_char_font = love.graphics.newFont(desired)
+      vk_char_font_size = desired
     end
-    if kind == 'shift' then
-      -- Up arrow
-      local base_w = kw * 0.45
-      local base_h = kh * 0.18
-      local tri_h = kh * 0.35
-      local tri = {
-        mx, cy + kh*0.25,
-        mx - base_w*0.5, cy + kh*0.25 + tri_h,
-        mx + base_w*0.5, cy + kh*0.25 + tri_h,
-      }
-      love.graphics.polygon('fill', tri)
-      love.graphics.rectangle('fill', mx - base_w*0.35, cy + kh*0.25 + tri_h, base_w*0.7, base_h)
-    elseif kind == 'del' then
-      -- Backspace: left arrow box
-      local bw, bh = kw*0.55, kh*0.35
-      local bx, by = mx - bw*0.1, my - bh/2
-      love.graphics.rectangle('line', bx - bw*0.3, by, bw, bh)
-      love.graphics.polygon('fill', bx - bw*0.3, my, bx - bw*0.55, my - bh*0.5, bx - bw*0.55, my + bh*0.5)
-    elseif kind == 'space' then
-      -- Space: horizontal bar
-      local sw, sh = kw*0.6, kh*0.12
-      love.graphics.rectangle('fill', mx - sw/2, my - sh/2, sw, sh, 3, 3)
-    elseif kind == 'done' then
-      -- Enter: return arrow
-      local lw = kw*0.6
-      local lh = kh*0.35
-      local x0 = mx - lw*0.3
-      local y0 = my - lh*0.5
-      love.graphics.setLineWidth(2)
-      love.graphics.line(x0, y0, x0 + lw*0.6, y0, x0 + lw*0.6, y0 + lh)
-      -- arrow head
-      love.graphics.polygon('fill', x0 + lw*0.6, y0 + lh, x0 + lw*0.35, y0 + lh*0.8, x0 + lw*0.35, y0 + lh*1.2)
-      love.graphics.setLineWidth(1)
-    end
+    local prev = love.graphics.getFont()
+    love.graphics.setFont(vk_char_font)
+    local fh = vk_char_font:getHeight()
+    local ty = cy + math.floor((kh - fh) / 2)
+    love.graphics.printf(text, cx, ty, kw, 'center')
+    love.graphics.setFont(prev)
   end
   for r = 1, #layout do
     local row = layout[r]
-    local row_w = #row * (key_w + margin)
-    local x = math.floor((w - row_w) / 2)
+    local row_w = 0
+    for i=1,#row do
+      local k = row[i]
+      local mult = (type(k)=='table' and k.w) or 1
+      row_w = row_w + (key_w*mult) + (i>1 and margin or 0)
+    end
+    local x = area_x0 + math.floor((area_w - row_w) / 2)
+    local cx = x
     for c = 1, #row do
-      local rx, ry = x + (c - 1) * (key_w + margin), ypos + (r - 1) * (key_h + margin)
+      local k = row[c]
+      local mult = (type(k)=='table' and k.w) or 1
+      local kw = key_w * mult
+      local rx, ry = cx, ypos + (r - 1) * (key_h + margin)
       if r == vk_row and c == vk_col then
         love.graphics.setColor(0.3, 0.3, 0.8, 1)
-        love.graphics.rectangle('fill', rx - 3, ry - 3, key_w + 6, key_h + 6, 6, 6)
+        love.graphics.rectangle('fill', rx - 3, ry - 3, kw + 6, key_h + 6, 6, 6)
       end
       love.graphics.setColor(0.2, 0.2, 0.2, 1)
-      love.graphics.rectangle('fill', rx, ry, key_w, key_h, 4, 4)
+      love.graphics.rectangle('fill', rx, ry, kw, key_h, 4, 4)
       love.graphics.setColor(1, 1, 1, 1)
-      local keytxt = row[c]
-      local lower = keytxt:lower()
-      if lower == 'shift' or lower == 'del' or lower == 'space' or lower == 'done' then
-        draw_special_icon(rx, ry, key_w, key_h, lower)
+      if type(k)=='table' then
+        if k.t=='toggle' then draw_label(rx, ry, kw, key_h, k.label)
+        elseif k.t=='space' then draw_label(rx, ry, kw, key_h, '')
+        elseif k.t=='ok' then draw_label(rx, ry, kw, key_h, k.label or 'OK')
+        elseif k.t=='back' then
+          local img = load_vk_icon('del')
+          if img then
+            local iw, ih = img:getDimensions()
+            local box = math.min(kw * 0.65, key_h * 0.65)
+            local sx, sy = box / iw, box / ih
+            local mx, my = rx + kw/2, ry + key_h/2
+            love.graphics.setColor(1,1,1,1)
+            love.graphics.draw(img, mx - (iw * sx) / 2, my - (ih * sy) / 2, 0, sx, sy)
+          else
+            draw_label(rx, ry, kw, key_h, '⌫')
+          end
+        else draw_label(rx, ry, kw, key_h, '?') end
       else
-        love.graphics.printf(keytxt, rx, ry + key_h/2 - 8, key_w, 'center')
+        draw_label(rx, ry, kw, key_h, tostring(k))
       end
+      cx = cx + kw + margin
     end
   end
   love.graphics.setFont(prev_font)
+
+  -- Button prompts panel (right side)
+  local pw = prompt_w
+  -- Compact panel sized for two lines (A/B)
+  local line_h = math.floor(key_h * 0.9)
+  local gap_h = 6
+  local rows = 2
+  local ph = 8 + rows * line_h + (rows - 1) * gap_h + 8
+  local right_margin = 36
+  local px = area_x0 + area_w + panel_gap - right_margin
+  -- Center within the space below the preview box; bias slightly lower
+  local avail_top = box_y + box_h + 6
+  local avail_bottom = y0 + kb_h - 6
+  local centered_py = math.floor((avail_top + avail_bottom - ph) / 2)
+  local py = math.max(avail_top, centered_py + 6)
+  if py + ph > avail_bottom then py = avail_bottom - ph end
+  love.graphics.setColor(0.12,0.12,0.12,0.9)
+  love.graphics.rectangle('fill', px, py, pw, ph, 12, 12)
+  love.graphics.setColor(1,1,1,1)
+
+  local function draw_prompt(row_i, icon_key, text)
+    local ly = py + 8 + (row_i-1) * (line_h + gap_h)
+    local icon = load_input_icon(icon_key)
+    local ix = px + 10
+    local iy = ly
+    local iw = line_h
+    local ih = line_h
+    if icon then
+      local w0,h0 = icon:getDimensions()
+      local sx, sy = iw / w0, ih / h0
+      love.graphics.draw(icon, ix, iy, 0, sx, sy)
+    else
+      love.graphics.rectangle('line', ix, iy, iw, ih, 6, 6)
+      love.graphics.printf(icon_key:upper(), ix, iy + ih*0.25, iw, 'center')
+    end
+    love.graphics.printf(text, ix + iw + 10, iy + math.floor((ih - love.graphics.getFont():getHeight())/2), pw - (iw + 20), 'left')
+  end
+
+  draw_prompt(1, 'a', 'Confirm')
+  draw_prompt(2, 'b', 'Close')
 end
 
 
@@ -387,6 +626,50 @@ end
 
 function settings:update(dt)
   menu:update(dt)
+  if not vk_visible then return end
+  local held = nil
+  if love.keyboard.isDown('up') then held = 'up'
+  elseif love.keyboard.isDown('down') then held = 'down'
+  elseif love.keyboard.isDown('left') then held = 'left'
+  elseif love.keyboard.isDown('right') then held = 'right' end
+  if not held then
+    local sticks = love.joystick and love.joystick.getJoysticks and love.joystick.getJoysticks() or {}
+    for i = 1, #sticks do
+      local j = sticks[i]
+      if j:isGamepadDown('dpup') then held = 'up' break end
+      if j:isGamepadDown('dpdown') then held = 'down' break end
+      if j:isGamepadDown('dpleft') then held = 'left' break end
+      if j:isGamepadDown('dpright') then held = 'right' break end
+    end
+  end
+  if held then
+    if vk_hold_dir ~= held then
+      vk_hold_dir = held
+      vk_hold_time = 0
+      vk_repeat_started = false
+      vk_hold_acc = 0
+      vk_handle_key(held)
+      return
+    end
+    vk_hold_time = vk_hold_time + dt
+    if not vk_repeat_started then
+      if vk_hold_time >= vk_repeat_delay then
+        vk_repeat_started = true
+        vk_hold_acc = 0
+      end
+    else
+      vk_hold_acc = vk_hold_acc + dt
+      while vk_hold_acc >= vk_repeat_rate do
+        vk_handle_key(held)
+        vk_hold_acc = vk_hold_acc - vk_repeat_rate
+      end
+    end
+  else
+    vk_hold_dir = nil
+    vk_hold_time = 0
+    vk_repeat_started = false
+    vk_hold_acc = 0
+  end
 end
 
 function settings:draw()
@@ -401,7 +684,15 @@ function settings:keypressed(key)
   if key == 'up' or key == 'down' or key == 'left' or key == 'right' then mapped = key end
   if key == 'return' then mapped = 'confirm' end
   if key == 'escape' then mapped = 'cancel' end
-  if mapped and vk_handle_key(mapped) then return end
+  if mapped then
+    if vk_visible then
+      if mapped == 'confirm' or mapped == 'cancel' then
+        if vk_handle_key(mapped) then return end
+      else
+        return
+      end
+    end
+  end
 
   menu:keypressed(key)
   if key == "escape" or key == "lalt" then
@@ -410,13 +701,22 @@ function settings:keypressed(key)
 end
 
 function settings:gamepadpressed(joystick, button)
-  -- Map gamepad to VK
+  -- Map gamepad to VK (A/B and D-Pad only)
   local map = {
     dpup = 'up', dpdown = 'down', dpleft = 'left', dpright = 'right',
     a = 'confirm', b = 'cancel'
   }
-  local m = map[button]
-  if m and vk_handle_key(m) then return end
+  local btn = type(button) == 'string' and button:lower() or button
+  local m = map[btn] or map[button]
+  if m then
+    if vk_visible then
+      if m == 'up' or m == 'down' or m == 'left' or m == 'right' then
+        return
+      else
+        if vk_handle_key(m) then return end
+      end
+    end
+  end
   if menu.gamepadpressed then return menu:gamepadpressed(joystick, button) end
 end
 
