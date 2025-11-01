@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+    <output type="cover" width="1024" height="768">
+        <layer resource="screenshot" height="682" x="200" align="right" valign="bottom" opacity="70">
+			<blur softness="1"/>
+        </layer>
+        <mask width="1024" height="768" file="mask/fluent-mask-768p.png" />
+		<layer resource="wheel" width="320" x="-40" y="-102" align="right" valign="bottom">
+			<stroke width="1" color="#ffffff" />
+			<shadow distance="3" softness="5" opacity="70"/>
+		</layer>
+    </output>
+    <output type="wheel" width="1024" height="768">
+        <layer resource="screenshot" width="1024" height="768">
+            <balance red="-255" green="-255" blue="-255"/>
+        </layer> 
+        <layer resource="wheel" width="480" valign="middle" align="center">
+			<stroke width="1" color="#ffffff" />
+        </layer>
+    </output>
+    <output type="screenshot" width="1024" height="768">
+        <layer resource="screenshot" height="768" valign="center">
+        </layer>
+    </output>
+</artwork>
