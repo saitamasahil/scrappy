@@ -17,10 +17,10 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 # Remove local build artifacts
-if [ -d docker_out ]; then
-  rm -rf docker_out
-  echo "Removed docker_out/"
-fi
+# if [ -d docker_out ]; then
+#   rm -rf docker_out
+#   echo "Removed docker_out/"
+# fi
 
 # Optionally remove the specific image tag we built
 if [ -n "$VERSION" ]; then

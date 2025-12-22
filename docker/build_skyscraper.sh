@@ -12,7 +12,7 @@ set -euo pipefail
 # - Copy only needed Qt/OpenSSL/ICU libs into bin/libs.aarch64/ if required
 # - Do not copy generic system libs (e.g., libc, libstdc++, libX11, libGL, etc.)
 
-VERSION="${1:-3.17.5}"
+VERSION="${1:-3.18.0}"
 
 # Project root is the parent of this script directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -27,3 +27,6 @@ mkdir -p docker_out
 podman run --rm -v "$PWD/docker_out:/output:Z" localhost/scrappy-skyscraper:"$VERSION"
 
 echo "Created: docker_out/skyscraper_package.zip"
+
+# Auto-cleanup
+"${SCRIPT_DIR}/clean_skyscraper.sh" "$VERSION"
