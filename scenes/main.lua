@@ -714,26 +714,26 @@ function main:update(dt)
   end
 
   -- Watchdog: if a generate task hangs beyond timeout, mark it failed and unblock
-  if state.task_in_progress and state.task_started_at then
-    local elapsed = love.timer.getTime() - state.task_started_at
-    if elapsed > (state.task_timeout_secs or 120) then
-      local meta = state.task_meta or { title = utils.get_filename(state.task_in_progress), platform = "unknown" }
-      log.write(string.format("Watchdog timeout after %ds for '%s' (%s)", math.floor(elapsed), meta.title or "N/A", meta.platform or "N/A"))
-      -- Inform UI about failure
-      channels.SKYSCRAPER_OUTPUT:push({
-        title = meta.title,
-        platform = meta.platform,
-        success = false,
-        error = "Operation timed out",
-      })
-      -- Unblock processing queue
-      channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true })
-      -- Clear local state; next update_state will decrement counters
-      state.task_in_progress = nil
-      state.task_started_at = nil
-      state.task_meta = nil
-    end
-  end
+  -- if state.task_in_progress and state.task_started_at then
+  --   local elapsed = love.timer.getTime() - state.task_started_at
+  --   if elapsed > (state.task_timeout_secs or 120) then
+  --     local meta = state.task_meta or { title = utils.get_filename(state.task_in_progress), platform = "unknown" }
+  --     log.write(string.format("Watchdog timeout after %ds for '%s' (%s)", math.floor(elapsed), meta.title or "N/A", meta.platform or "N/A"))
+  --     -- Inform UI about failure
+  --     channels.SKYSCRAPER_OUTPUT:push({
+  --       title = meta.title,
+  --       platform = meta.platform,
+  --       success = false,
+  --       error = "Operation timed out",
+  --     })
+  --     -- Unblock processing queue
+  --     channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true })
+  --     -- Clear local state; next update_state will decrement counters
+  --     state.task_in_progress = nil
+  --     state.task_started_at = nil
+  --     state.task_meta = nil
+  --   end
+  -- end
 
   -- Poll for sample image availability to avoid races with backend output
   if state.sample_poll then
