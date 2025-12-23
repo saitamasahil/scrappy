@@ -3,7 +3,7 @@ FROM docker.io/arm64v8/ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Skyscraper version to build
-ARG VERSION=3.18.0
+ARG VERSION=3.18.1
 
 # Toolchain and runtime deps (Qt5, OpenSSL 1.1, etc.)
 RUN apt-get update && \

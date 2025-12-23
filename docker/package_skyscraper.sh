@@ -23,6 +23,10 @@ ldd $(which Skyscraper) | grep "=>" | awk '{print $3}' | xargs -I '{}' cp '{}' /
 cp /usr/lib/aarch64-linux-gnu/libssl.so.1.1 /skysource/output/
 cp /usr/lib/aarch64-linux-gnu/libcrypto.so.1.1 /skysource/output/
 
+# Copy Qt plugins
+mkdir -p /skysource/output/plugins
+cp -r /usr/lib/aarch64-linux-gnu/qt5/plugins/* /skysource/output/plugins/
+
 # Package the binary and libraries into a .zip file
 cd /skysource/output
 7z a /output/skyscraper_package.zip .
