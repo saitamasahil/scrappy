@@ -332,7 +332,8 @@ local function update_state(t)
         -- Get first supported output type
         local curr_output = first_template_output()
         -- Load cover preview art
-        cover_preview_path = string.format("%s/%s/media/%s/%s.png", output_path, t.platform, curr_output, t.title)
+        local normalized_platform = utils.normalize_platform(t.platform)
+        cover_preview_path = string.format("%s/%s/media/%s/%s.png", output_path, normalized_platform, curr_output, t.title)
         state.reload_preview = true
         -- Copy game artwork
         artwork.copy_to_catalogue(t.platform, t.title)

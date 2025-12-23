@@ -165,4 +165,15 @@ function utils.load_image(path)
   return love.graphics.newImage(image_data)
 end
 
+
+-- Normalize internal or umbrella platform keys to peas/Skyscraper keys
+function utils.normalize_platform(platform)
+  if not platform then return platform end
+  local map = {
+    ["pcengine_"] = "pcengine",
+    ["coleco_"] = "coleco",
+  }
+  return map[platform] or platform
+end
+
 return utils
