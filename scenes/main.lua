@@ -762,6 +762,8 @@ function main:keypressed(key)
   if key == "escape" then
     if info_window.visible then
       info_window.visible = false
+    elseif state.scraping then
+      halt_scraping()
     else
       love.event.quit()
     end
@@ -771,6 +773,26 @@ function main:keypressed(key)
   end
   if key == "lalt" then
     scenes:push("settings")
+  end
+end
+
+function main:gamepadpressed(joystick, button)
+  -- Map 'b' button to back/cancel/escape action
+  if button == "b" then
+    if info_window.visible then
+      info_window.visible = false
+    elseif state.scraping then
+      halt_scraping()
+    elseif scraping_window.visible then
+       -- Should be covered by state.scraping, but just in case
+       scraping_window.visible = false
+    else
+       love.event.quit()
+    end
+  end
+  
+  if not state.scraping and not info_window.visible then
+    if menu.gamepadpressed then menu:gamepadpressed(joystick, button) end
   end
 end
 

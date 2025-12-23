@@ -219,7 +219,9 @@ function user_config:load_platforms()
   for _, item in ipairs(platforms) do
     -- Use leaf folder for core assignment (so nested like "Consoles/nes" resolves to "nes")
     local leaf = tostring(item):match("[^/]+$") or tostring(item)
-    -- Find muOS core info using the leaf folder name
+    local assignment = nil
+
+    -- 1. Attempt to resolve via muOS core.cfg
     local core_path = muos.CORE_DIR .. "/" .. leaf .. "/core.cfg"
     local muos_core_info = nativefs.getInfo(core_path)
 
@@ -227,115 +229,22 @@ function user_config:load_platforms()
       local file = nativefs.read(core_path)
       if file then
         local folder_name, err = parse_dir(file)
-        if err then
-          log.write(err)
-          return
-        end
-        local assignment = muos.assignment[folder_name]
-        -- Fallback for cores with different labels (e.g., DOSBox Pure, blueMSX)
-        if not assignment then
-          local fn = tostring(folder_name):lower()
-          if fn:find("dosbox") then assignment = "pc" end
-          if fn:find("msx") or fn:find("bluemsx") then assignment = "msx" end
-        end
-        -- Heuristic override: if core assignment is GB but folder contains GBC roms, treat as GBC
-        -- This addresses cases where a shared core (e.g., Gambatte) is used for both GB and GBC
-        if assignment == "gb" then
-          local platform_path = string.format("%s/%s", rom_path, item)
-          local files = nativefs.getDirectoryItems(platform_path) or {}
-          for _, f in ipairs(files) do
-            if f:lower():match("%.gbc$") then
-              assignment = "gbc"
-              break
-            end
-          end
-        end
-        -- Heuristic override: Wonderswan vs Wonderswan Color
-        -- If resolved to color but only .ws files exist (and no .wsc), use wonderswan
-        if assignment == "wonderswancolor" then
-          local platform_path = string.format("%s/%s", rom_path, item)
-          local files = nativefs.getDirectoryItems(platform_path) or {}
-          local has_ws, has_wsc = false, false
-          for _, f in ipairs(files) do
-            local fl = f:lower()
-            if fl:match("%.ws$") then has_ws = true end
-            if fl:match("%.wsc$") then has_wsc = true end
-            if has_wsc then break end
-          end
-          if has_ws and not has_wsc then
-            assignment = "wonderswan"
-          end
-        end
-        -- Heuristic override: Neo Geo Pocket vs Neo Geo Pocket Color
-        -- If resolved to color but only .ngp files exist (and no color-specific), use ngp
-        if assignment == "ngpc" then
-          local platform_path = string.format("%s/%s", rom_path, item)
-          local files = nativefs.getDirectoryItems(platform_path) or {}
-          local has_ngp, has_ngpc_like = false, false
-          for _, f in ipairs(files) do
-            local fl = f:lower()
-            if fl:match("%.ngp$") then has_ngp = true end
-            -- Common color extensions seen in the wild include .ngc and .ngpc
-            if fl:match("%.ngc$") or fl:match("%.ngpc$") then has_ngpc_like = true end
-            if has_ngpc_like then break end
-          end
-          if has_ngp and not has_ngpc_like then
-            assignment = "ngp"
-          end
-        end
-        -- Heuristic override: SG-1000 vs Master System
-        -- If folder contains any .sg files, prefer sg-1000 platform for correct extension matching
-        if assignment == "mastersystem" then
-          local platform_path = string.format("%s/%s", rom_path, item)
-          local files = nativefs.getDirectoryItems(platform_path) or {}
-          for _, f in ipairs(files) do
-            if f:lower():match("%.sg$") then
-              assignment = "sg-1000"
-              break
-            end
-          end
-        end
-        -- Heuristic override: Umbrella 'coleco' (MSX-SVI-ColecoVision-SG1000) -> specialize based on files/folder
-        if assignment == "coleco" then
-          local platform_path = string.format("%s/%s", rom_path, item)
-          local files = nativefs.getDirectoryItems(platform_path) or {}
-          local has_msx_like, has_sg = false, false
-          for _, f in ipairs(files) do
-            local fl = f:lower()
-            if fl:match("%.mx1$") or fl:match("%.mx2$") or fl:match("%.dsk$") or fl:match("%.cas$") then
-              has_msx_like = true
-              break
-            end
-            if fl:match("%.sg$") then
-              has_sg = true
-            end
-          end
-          if tostring(item):lower() == "msx" or has_msx_like then
-            assignment = "msx"
-          elseif has_sg then
-            assignment = "sg-1000"
-          end
-        end
-        if assignment then
-          local key = item
-          if not inserted[key] then
-            self:insert("platforms", key, assignment)
-            self:insert("platformsSelected", key, 1)
-            inserted[key] = true
+        if not err and folder_name then
+          assignment = muos.assignment[folder_name]
+          -- Fallback for cores with different labels (e.g., DOSBox Pure, blueMSX)
+          if not assignment then
+            local fn = tostring(folder_name):lower()
+            if fn:find("dosbox") then assignment = "pc" end
+            if fn:find("msx") or fn:find("bluemsx") then assignment = "msx" end
           end
         else
-          log.write(string.format("Unable to find platform for %s", item))
-          local key = item
-          if not inserted[key] then
-            self:insert("platforms", key, "unmapped")
-            self:insert("platformsSelected", key, 0)
-            inserted[key] = true
-          end
+          if err then log.write(err) end
         end
       end
-    else
-      -- Fallback: infer assignment by matching LEAF folder name to muOS platform labels or keys (case-insensitive)
-      local inferred = nil
+    end
+
+    -- 2. Fallback: infer assignment by matching LEAF folder name to muOS platform labels or keys (case-insensitive)
+    if not assignment then
       local item_l = tostring(leaf):lower()
       -- Heuristic shortcuts and common aliases for folder names
       local alias = {
@@ -351,7 +260,7 @@ function user_config:load_platforms()
         ["sms"] = "mastersystem",
         ["mastersystem"] = "mastersystem",
         ["sg-1000"] = "sg-1000",
-        ["sg1000"] = "sg-1000",  -- legacy alias
+        ["sg1000"] = "sg-1000", -- legacy alias
         ["gg"] = "gamegear",
         ["gamegear"] = "gamegear",
         ["pce"] = "pcengine",
@@ -375,51 +284,131 @@ function user_config:load_platforms()
         ["megacd"] = "segacd",
         ["cd-i"] = "cdi",
       }
-      if alias[item_l] then inferred = alias[item_l] end
+      if alias[item_l] then assignment = alias[item_l] end
       -- Exact key/label match
-      if not inferred then
+      if not assignment then
         for key, label in pairs(muos.platforms or {}) do
           if type(label) == "string" then
             local key_l = tostring(key):lower()
             local label_l = label:lower()
             if label_l == item_l or key_l == item_l then
-              inferred = key
+              assignment = key
               break
             end
           end
         end
       end
       -- Partial label contains match (e.g., leaf "genesis" in label "Sega Mega Drive - Genesis")
-      if not inferred then
+      if not assignment then
         for key, label in pairs(muos.platforms or {}) do
           if type(label) == "string" then
             local label_l = label:lower()
             if label_l:find(item_l, 1, true) then
-              inferred = key
+              assignment = key
               break
             end
           end
         end
       end
-      if inferred then
-        local key = item
-        if not inserted[key] then
-          log.write(string.format("Inferred platform '%s' for folder '%s' via leaf label match", inferred, key))
-          self:insert("platforms", key, inferred)
-          self:insert("platformsSelected", key, 1)
-          inserted[key] = true
+      if assignment then
+        log.write(string.format("Inferred platform '%s' for folder '%s' via leaf label match", assignment, item))
+      end
+    end
+
+    -- 3. Refine assignment using file content heuristics
+    if assignment then
+      -- Heuristic override: if core assignment is GB but folder contains GBC roms, treat as GBC
+      if assignment == "gb" then
+        local platform_path = string.format("%s/%s", rom_path, item)
+        local files = nativefs.getDirectoryItems(platform_path) or {}
+        for _, f in ipairs(files) do
+          if f:lower():match("%.gbc$") then
+            assignment = "gbc"
+            break
+          end
         end
-      else
-        local key = item
-        if not inserted[key] then
-          log.write(string.format("Unable to find platform for %s", key))
-          self:insert("platforms", key, "unmapped")
-          self:insert("platformsSelected", key, 0)
-          inserted[key] = true
+      end
+      -- Heuristic override: Wonderswan vs Wonderswan Color
+      if assignment == "wonderswancolor" then
+        local platform_path = string.format("%s/%s", rom_path, item)
+        local files = nativefs.getDirectoryItems(platform_path) or {}
+        local has_ws, has_wsc = false, false
+        for _, f in ipairs(files) do
+          local fl = f:lower()
+          if fl:match("%.ws$") then has_ws = true end
+          if fl:match("%.wsc$") then has_wsc = true end
+          if has_wsc then break end
+        end
+        if has_ws and not has_wsc then
+          assignment = "wonderswan"
+        end
+      end
+      -- Heuristic override: Neo Geo Pocket vs Neo Geo Pocket Color
+      if assignment == "ngpc" then
+        local platform_path = string.format("%s/%s", rom_path, item)
+        local files = nativefs.getDirectoryItems(platform_path) or {}
+        local has_ngp, has_ngpc_like = false, false
+        for _, f in ipairs(files) do
+          local fl = f:lower()
+          if fl:match("%.ngp$") then has_ngp = true end
+          if fl:match("%.ngc$") or fl:match("%.ngpc$") then has_ngpc_like = true end
+          if has_ngpc_like then break end
+        end
+        if has_ngp and not has_ngpc_like then
+          assignment = "ngp"
+        end
+      end
+      -- Heuristic override: SG-1000 vs Master System
+      if assignment == "mastersystem" then
+        local platform_path = string.format("%s/%s", rom_path, item)
+        local files = nativefs.getDirectoryItems(platform_path) or {}
+        for _, f in ipairs(files) do
+          if f:lower():match("%.sg$") then
+            assignment = "sg-1000"
+            break
+          end
+        end
+      end
+      -- Heuristic override: Umbrella 'coleco' (MSX-SVI-ColecoVision-SG1000) -> specialize based on files/folder
+      if assignment == "coleco" then
+        local platform_path = string.format("%s/%s", rom_path, item)
+        local files = nativefs.getDirectoryItems(platform_path) or {}
+        local has_msx_like, has_sg = false, false
+        for _, f in ipairs(files) do
+          local fl = f:lower()
+          if fl:match("%.mx1$") or fl:match("%.mx2$") or fl:match("%.dsk$") or fl:match("%.cas$") then
+            has_msx_like = true
+            break
+          end
+          if fl:match("%.sg$") then
+            has_sg = true
+          end
+        end
+        if tostring(item):lower() == "msx" or has_msx_like then
+          assignment = "msx"
+        elseif has_sg then
+          assignment = "sg-1000"
         end
       end
     end
+
+    -- 4. Save to config
+    local key = item
+    if not inserted[key] then
+      if assignment then
+        self:insert("platforms", key, assignment)
+        self:insert("platformsSelected", key, 1)
+      else
+        log.write(string.format("Unable to find platform for %s", item))
+        self:insert("platforms", key, "unmapped")
+        self:insert("platformsSelected", key, 0)
+      end
+      inserted[key] = true
+    end
   end
+
+  -- Ensure selected flags are populated for any new platforms
+  self:fill_selected_platforms()
 end
 
 function user_config:fill_selected_platforms()
