@@ -5,6 +5,7 @@ local channels          = require("lib.backend.channels")
 local configs           = require("helpers.config")
 local utils             = require("helpers.utils")
 local artwork           = require("helpers.artwork")
+local muos              = require("helpers.muos")
 
 local component         = require 'lib.gui.badr'
 local label             = require 'lib.gui.label'
@@ -23,6 +24,53 @@ local theme = configs.theme
 local last_selected_platform = nil
 local last_selected_rom = nil
 local active_column = 1 -- 1 for platforms, 2 for ROMs
+local show_missing_only = false
+local missing_filter_item = nil
+
+local function set_rom_list_enabled(enabled)
+  if not rom_list or not rom_list.children then return end
+  for _, item in ipairs(rom_list.children) do
+    item.disabled = not enabled
+  end
+  if enabled then
+    rom_list:focusFirstElement()
+  end
+end
+
+local function get_required_output_types()
+  local p = artwork.get_artwork_path()
+  if not p then return { box = true, preview = true, splash = true } end
+  local output_types = artwork.get_output_types(p)
+  if not output_types then return { box = true, preview = true, splash = true } end
+  -- If the template declares no outputs, fall back to requiring boxart
+  if not output_types.box and not output_types.preview and not output_types.splash then
+    return { box = true, preview = false, splash = false }
+  end
+  return output_types
+end
+
+local function has_missing_media(dest_platform, rom)
+  if not dest_platform or not rom then return false end
+  local game_title = utils.get_filename(rom)
+  if not game_title or game_title == "" then return false end
+  local _, catalogue_path = user_config:get_paths()
+  if not catalogue_path or catalogue_path == "" then
+    return true
+  end
+  local platform_str = muos.platforms[dest_platform] or dest_platform
+  local base = string.format("%s/%s", catalogue_path, platform_str)
+  local required = get_required_output_types()
+
+  local function missing_for(output_type)
+    local fp = string.format("%s/%s/%s.png", base, output_type, game_title)
+    return nativefs.getInfo(fp) == nil
+  end
+
+  if required.box and missing_for("box") then return true end
+  if required.preview and missing_for("preview") then return true end
+  if required.splash and missing_for("splash") then return true end
+  return false
+end
 
 local function toggle_info()
   info_window.visible = not info_window.visible
@@ -39,10 +87,10 @@ local function on_select_platform(platform)
     item.disabled = true
     item.active = item.id == platform
   end
-  for _, item in ipairs(rom_list.children) do
-    item.disabled = false
+  if missing_filter_item then
+    missing_filter_item.disabled = false
   end
-  rom_list:focusFirstElement()
+  set_rom_list_enabled(true)
 end
 
 local function on_rom_press(rom)
@@ -80,9 +128,10 @@ local function on_return()
       item.disabled = false
       item.active = false
     end
-    for _, item in ipairs(rom_list.children) do
-      item.disabled = true
+    if missing_filter_item then
+      missing_filter_item.disabled = true
     end
+    set_rom_list_enabled(false)
     local active_element = platform_list % last_selected_platform
     platform_list:setFocus(active_element)
   else
@@ -106,6 +155,9 @@ local function load_rom_buttons(src_platform, dest_platform)
   for _, rom in ipairs(roms) do
     local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, rom))
     if file_info and file_info.type == "file" then
+      if show_missing_only and not has_missing_media(dest_platform, rom) then
+        goto continue
+      end
       local is_cached = artwork.cached_game_ids[dest_platform] and artwork.cached_game_ids[dest_platform][rom]
       rom_list = rom_list + listitem {
         text = rom,
@@ -117,6 +169,25 @@ local function load_rom_buttons(src_platform, dest_platform)
         active = true,
         indicator = is_cached and 2 or 3
       }
+    end
+    ::continue::
+  end
+end
+
+local function toggle_missing_filter()
+  show_missing_only = not show_missing_only
+  if missing_filter_item then
+    missing_filter_item.text = string.format("Show missing media only: %s", show_missing_only and "ON" or "OFF")
+    missing_filter_item.icon = show_missing_only and "square_check" or "square"
+  end
+  if last_selected_platform then
+    local rom_path, _ = user_config:get_paths()
+    local platforms = user_config:get().platforms
+    local dest_platform = platforms and platforms[last_selected_platform]
+    if dest_platform and dest_platform ~= "unmapped" then
+      load_rom_buttons(last_selected_platform, dest_platform)
+      active_column = 2
+      set_rom_list_enabled(true)
     end
   end
 end
@@ -171,6 +242,12 @@ local function update_scrape_state()
 end
 
 function single_scrape:load()
+  last_selected_platform = nil
+  last_selected_rom = nil
+  active_column = 1
+  show_missing_only = false
+  missing_filter_item = nil
+
   if #artwork.cached_game_ids == 0 then
     artwork.process_cached_data()
   end
@@ -194,12 +271,27 @@ function single_scrape:load()
 
   local right_column = component { column = true, gap = 10 }
       + label { id = "roms_label", text = 'ROMs', icon = "cd" }
+      + (listitem {
+        id = "missing_filter",
+        text = "Show missing media only: OFF",
+        icon = "square",
+        onClick = toggle_missing_filter,
+        disabled = true,
+        active = true,
+      })
       + (scroll_container {
           width = ((w_width - 30) / 3) * 2,
           height = w_height - 90,
           scroll_speed = 30,
         }
         + rom_list)
+
+  missing_filter_item = right_column % "missing_filter"
+  if missing_filter_item then
+    missing_filter_item.text = "Show missing media only: OFF"
+    missing_filter_item.icon = "square"
+    missing_filter_item.disabled = true
+  end
 
   menu = menu
       + (component { row = true, gap = 10 }
