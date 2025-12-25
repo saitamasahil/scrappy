@@ -660,7 +660,8 @@
     "easyrpg": {
         "aliases": [],
         "formats": [
-            "*.ini"
+            "*.ini",
+            "*.cfg"
         ],
         "scrapers": [
             "screenscraper"
