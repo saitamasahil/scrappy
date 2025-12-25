@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+    <output type="cover" width="640" height="480">
+        <layer resource="screenshot" height="340" align="right" valign="bottom" opacity="100" x="-20" y="-50">      
+            <rounded radius="20"/>
+            <stroke width="2" red="0" green="0" blue="0"/>
+            <shadow distance="6" softness="5" opacity="50"/>
+        </layer>
+         <layer resource="wheel" width="220" x="100" y="-50" align="center" valign="bottom">
+            <shadow distance="6" softness="5" opacity="50"/>
+        </layer> 
+    </output>
+</artwork>
