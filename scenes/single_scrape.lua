@@ -177,7 +177,7 @@ end
 local function toggle_missing_filter()
   show_missing_only = not show_missing_only
   if missing_filter_item then
-    missing_filter_item.text = string.format("Show missing media only: %s", show_missing_only and "ON" or "OFF")
+    missing_filter_item.text = string.format("Show only missing artwork: %s", show_missing_only and "ON" or "OFF")
     missing_filter_item.icon = show_missing_only and "square_check" or "square"
   end
   if last_selected_platform then
@@ -273,7 +273,7 @@ function single_scrape:load()
       + label { id = "roms_label", text = 'ROMs', icon = "cd" }
       + (listitem {
         id = "missing_filter",
-        text = "Show missing media only: OFF",
+        text = "Show only missing artwork: OFF",
         icon = "square",
         onClick = toggle_missing_filter,
         disabled = true,
@@ -288,7 +288,7 @@ function single_scrape:load()
 
   missing_filter_item = right_column % "missing_filter"
   if missing_filter_item then
-    missing_filter_item.text = "Show missing media only: OFF"
+    missing_filter_item.text = "Show only missing artwork: OFF"
     missing_filter_item.icon = "square"
     missing_filter_item.disabled = true
   end
