@@ -77,8 +77,14 @@ return function(props)
     end,
 
     draw = function(self)
-      -- Apply clipping for the scroll container viewport
-      love.graphics.setScissor(self.x, self.y, self.width, self.height)
+      -- Transform-aware scissor: setScissor uses screen coordinates, so we convert
+      -- the container bounds using the current transform.
+      local prevx, prevy, prevw, prevh = love.graphics.getScissor()
+      local x1, y1 = love.graphics.transformPoint(self.x, self.y)
+      local x2, y2 = love.graphics.transformPoint(self.x + self.width, self.y + self.height)
+      local sx, sy = math.min(x1, x2), math.min(y1, y2)
+      local sw, sh = math.abs(x2 - x1), math.abs(y2 - y1)
+      love.graphics.setScissor(sx, sy, sw, sh)
 
       -- Draw each child with adjusted position for scrolling
       love.graphics.push()
@@ -88,8 +94,7 @@ return function(props)
       end
       love.graphics.pop()
 
-      -- Remove clipping after drawing the children
-      love.graphics.setScissor()
+      love.graphics.setScissor(prevx, prevy, prevw, prevh)
 
       -- Draw the scroll bar
       love.graphics.push()

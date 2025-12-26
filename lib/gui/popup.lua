@@ -28,7 +28,7 @@ local function popup(props)
 
       if #self.children > 0 then
         content_width = math.min(self.children[1].width + self.padding * 2, self.width)
-        content_height = math.min(self.children[1].height + self.padding * 2, self.width)
+        content_height = math.min(self.children[1].height + self.padding * 2, self.height)
       else
         content_width = self.width - 150
         _, wrappedText = self._font:getWrap(self.content, content_width)
