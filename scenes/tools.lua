@@ -13,6 +13,7 @@ local listitem          = require 'lib.gui.listitem'
 local scroll_container  = require 'lib.gui.scroll_container'
 local output_log        = require 'lib.gui.output_log'
 local label             = require 'lib.gui.label'
+local icon              = require 'lib.gui.icon'
 
 local tools             = {}
 local theme             = configs.theme
@@ -306,10 +307,15 @@ local function open_region_editor()
   rebuild_region_list(1)
 
   region_menu = region_menu
-      + label {
-        text = "Up/Down: select • Left/Right: reorder • OK: activate",
-        icon = "info",
-      }
+      + (component { row = true, gap = 6 }
+        + icon { name = "info", size = 20, y = 6 }
+        + label {
+          text = "Up/Down: select • Left/Right: reorder •",
+          y = 6,
+        }
+        + icon { name = "button_a", size = 24, y = 8 }
+        + label { text = "Confirm", y = 6 }
+      )
       + (scroll_container { width = item_width, height = list_height, scroll_speed = 30 } + region_list)
       + listitem {
         id = "region_reset",
