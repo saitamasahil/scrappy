@@ -20,7 +20,7 @@ Please read the Wiki for more info on installation and configuration!
 ![image](https://github.com/user-attachments/assets/ac320ab1-30ed-459c-8b32-d0b201232b34)
 
 ## Caveats
-* Screenscraper credentials need to be added in setting
+* Screenscraper credentials need to be added in settings
 * First time scraping can be slow (this is expected, but worth noting)
 
 ## Resources
