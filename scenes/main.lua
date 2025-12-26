@@ -41,6 +41,10 @@ local preview_debounce = 0.6
 local scheduled_preview_at = nil
 local scheduled_template_index = nil
 
+local scrape_modes = { "Scrape all", "Scrape only missing artwork" }
+local current_scrape_mode = 1
+local scrape_missing_only = false
+
 -- Ensure sample media folders exist and remove stale fake-rom images
 local function prepare_sample_media()
   local base = WORK_DIR .. "/sample/media"
@@ -100,6 +104,37 @@ local function first_template_output(output_path, platform, game_title)
     end
   end
   return curr_output
+end
+
+local function get_required_output_types_for_current_template()
+  local curr_template_path = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
+  local output_types = artwork.get_output_types(curr_template_path)
+  if not output_types then return { box = true, preview = true, splash = true } end
+  if not output_types.box and not output_types.preview and not output_types.splash then
+    return { box = true, preview = false, splash = false }
+  end
+  return output_types
+end
+
+local function has_missing_catalogue_artwork(dest_platform, game_title)
+  if not dest_platform or not game_title or game_title == "" then return false end
+  local _, catalogue_path = user_config:get_paths()
+  if not catalogue_path or catalogue_path == "" then
+    return true
+  end
+  local platform_str = muos.platforms[dest_platform] or dest_platform
+  local base = string.format("%s/%s", catalogue_path, platform_str)
+  local required = get_required_output_types_for_current_template()
+
+  local function missing_for(output_type)
+    local fp = string.format("%s/%s/%s.png", base, output_type, game_title)
+    return nativefs.getInfo(fp) == nil
+  end
+
+  if required.box and missing_for("box") then return true end
+  if required.preview and missing_for("preview") then return true end
+  if required.splash and missing_for("splash") then return true end
+  return false
 end
 
 -- Internal: perform the actual preview generation now
@@ -238,11 +273,17 @@ local function scrape_platforms()
       -- Get the title without extension
       local game_title = utils.get_filename(rom)
 
+      if scrape_missing_only and not has_missing_catalogue_artwork(dest, game_title) then
+        goto continue_rom
+      end
+
       -- Save in reference map
       if game_file_map[dest] == nil then game_file_map[dest] = {} end
       if game_title then game_file_map[dest][game_title] = rom end
       state.tasks = state.tasks + 1
       table.insert(game_list, game_title)
+
+      ::continue_rom::
     end
 
     if uncached_games then
@@ -381,6 +422,11 @@ local function on_artwork_change(key)
     update_preview(1)
   end
   update_output_types()
+end
+
+local function on_scrape_mode_change(_, idx)
+  current_scrape_mode = idx
+  scrape_missing_only = current_scrape_mode == 2
 end
 
 -- Loads templates in the templates/ dir
@@ -541,6 +587,12 @@ function main:load()
         options = templates,
         startIndex = current_template,
         onChange = on_artwork_change
+      }
+      + select {
+        width = w_width * 0.5 - 30,
+        options = scrape_modes,
+        startIndex = current_scrape_mode,
+        onChange = on_scrape_mode_change
       }
       + button {
         text = "Start scraping",
