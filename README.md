@@ -17,7 +17,7 @@ Please read the Wiki for more info on installation and configuration!
 * Support for `arm64` devices with LOVE2d
 * OTA updates
 
-![image](https://github.com/user-attachments/assets/3f22110f-9df0-4ee6-80f5-e83f42dd1052)
+![image](https://github.com/user-attachments/assets/ac320ab1-30ed-459c-8b32-d0b201232b34)
 
 ## Caveats
 * Screenscraper credentials need to be added in setting
