@@ -140,17 +140,24 @@ function user_config:get_paths()
     return rom_path_override, catalogue_path_override
   end
 
-  -- Get paths
+  local catalogue_path = muos.CATALOGUE
+  local rom_path
+
+  -- Try MuOS union mount first (handles USB->SD2->SD1 priority automatically)
+  local union_roms_path = muos.UNION_PATH .. "/ROMS"
+  if nativefs.getInfo(union_roms_path) then
+    return union_roms_path, catalogue_path
+  end
+
+  -- Fallback to legacy SD detection for compatibility
   local sd = self:read("main", "sd")
-  local rom_path = sd == "1" and muos.SD1_PATH or muos.SD2_PATH
+  rom_path = sd == "1" and muos.SD1_PATH or muos.SD2_PATH
   for _, item in ipairs(nativefs.getDirectoryItems(rom_path) or {}) do
     if item:lower() == "roms" then
       rom_path = string.format("%s/%s", rom_path, item)
       break
     end
   end
-
-  local catalogue_path = muos.CATALOGUE
 
   return rom_path_override or rom_path, catalogue_path_override or catalogue_path
 end

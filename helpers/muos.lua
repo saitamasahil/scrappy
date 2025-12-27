@@ -1,6 +1,7 @@
 local muos = {
   SD1_PATH = "/mnt/mmc",
   SD2_PATH = "/mnt/sdcard",
+  UNION_PATH = "/mnt/union",
   CATALOGUE = "/run/muos/storage/info/catalogue",
   ASSIGN_JSON = "/opt/muos/share/info/assign/assign.json",
   ASSIGN_DIR = "/opt/muos/share/info/assign",
