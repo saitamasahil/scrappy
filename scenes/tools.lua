@@ -308,11 +308,10 @@ local function open_region_editor()
 
   region_menu = region_menu
       + (component { row = true, gap = 6 }
-        + icon { name = "info", size = 20, y = 6 }
-        + label {
-          text = "Up/Down: select • Left/Right: reorder •",
-          y = 6,
-        }
+        + icon { name = "dpad", size = 24, y = 6 }
+        + label { text = "Navigate •", y = 6 }
+        + icon { name = "dpad_horizontal", size = 24, y = 6 }
+        + label { text = "Reorder •", y = 6 }
         + icon { name = "button_a", size = 24, y = 8 }
         + label { text = "Confirm", y = 6 }
       )

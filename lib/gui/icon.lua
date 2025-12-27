@@ -25,6 +25,7 @@ local icons = {
   button_x     = love.graphics.newImage("assets/inputs/switch_button_x.png"),
   button_y     = love.graphics.newImage("assets/inputs/switch_button_y.png"),
   dpad         = love.graphics.newImage("assets/inputs/switch_dpad_vertical_outline.png"),
+  dpad_horizontal = love.graphics.newImage("assets/inputs/switch_dpad_horizontal_outline.png"),
   select       = love.graphics.newImage("assets/inputs/switch_button_sl.png"),
 }
 
