@@ -315,7 +315,22 @@ local function scrape_platforms()
       scraping_window.visible = true
     end
   else
-    show_info_window("No platforms to scrape", "Please select platforms for scraping in settings.")
+    -- Determine if platforms were actually selected
+    local any_platform_selected = false
+    for src, dest in pairs(platforms or {}) do
+      if selected_platforms[src] and selected_platforms[src] ~= "0" and dest ~= "unmapped" then
+        any_platform_selected = true
+        break
+      end
+    end
+    
+    if not any_platform_selected then
+      show_info_window("No platforms to scrape", "Please select platforms for scraping in settings.")
+    elseif scrape_missing_only then
+      show_info_window("No missing artwork", "All selected platforms already have complete artwork!")
+    else
+      show_info_window("No platforms to scrape", "Please select platforms for scraping in settings.")
+    end
   end
   log.write(string.format("Generated %d Skyscraper tasks", state.total))
 end
