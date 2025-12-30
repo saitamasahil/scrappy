@@ -21,6 +21,8 @@ local scraper_opts      = { "screenscraper", "thegamesdb" }
 local scraper_index     = 1
 
 local region_popup, region_menu, region_list
+local confirm_popup, confirm_popup_visible = nil, false
+local pending_region_prios = nil
 local selected_region_index = 1
 local region_prios = {}
 local default_region_prios = { "us", "wor", "eu", "jp", "ss", "uk", "au", "ame", "de", "cus", "cn", "kr", "asi", "br", "sp", "fr", "gr", "it", "no", "dk", "nz", "nl", "pl", "ru", "se", "tw", "ca" }
@@ -288,11 +290,74 @@ local function reset_region_prios()
   rebuild_region_list(1)
 end
 
-local function save_region_prios()
-  local joined = table.concat(region_prios, ", ")
-  skyscraper_config:insert("main", "regionPrios", string.format('"%s"', joined))
-  skyscraper_config:save()
+-- Recursively delete all contents of a directory
+local function clear_directory(path)
+  local items = nativefs.getDirectoryItems(path)
+  if not items then return end
+  for _, item in ipairs(items) do
+    local full_path = path .. "/" .. item
+    local info = nativefs.getInfo(full_path)
+    if info then
+      if info.type == "directory" then
+        clear_directory(full_path)
+        nativefs.remove(full_path)
+      else
+        nativefs.remove(full_path)
+      end
+    end
+  end
+end
+
+-- Get the cache folder path from config
+local function get_cache_path()
+  local cache_path = skyscraper_config:read("main", "cacheFolder")
+  cache_path = utils.strip_quotes(cache_path or "")
+  if cache_path == "" then
+    cache_path = WORK_DIR .. "/data/cache"
+  end
+  return cache_path
+end
+
+-- Called when user confirms cache deletion
+local function on_confirm_cache_clear()
+  -- Clear the cache
+  local cache_path = get_cache_path()
+  log.write("Clearing cache at: " .. cache_path)
+  clear_directory(cache_path)
+  
+  -- Save the pending region priorities
+  if pending_region_prios then
+    local joined = table.concat(pending_region_prios, ", ")
+    skyscraper_config:insert("main", "regionPrios", string.format('"%s"', joined))
+    skyscraper_config:save()
+    log.write("Region priorities saved")
+  end
+  
+  -- Close popups
+  confirm_popup_visible = false
+  pending_region_prios = nil
   if region_popup then region_popup.visible = false end
+  dispatch_info("Region Priorities Saved", "Cache has been cleared and region priorities updated.\nPlease restart Skyscraper for changes to take effect.")
+end
+
+-- Called when user cancels cache deletion
+local function on_cancel_cache_clear()
+  confirm_popup_visible = false
+  pending_region_prios = nil
+end
+
+-- Show the cache warning confirmation popup
+local function show_cache_warning()
+  confirm_popup_visible = true
+end
+
+local function save_region_prios()
+  -- Store pending changes and show confirmation
+  pending_region_prios = {}
+  for i, v in ipairs(region_prios) do
+    pending_region_prios[i] = v
+  end
+  show_cache_warning()
 end
 
 local function open_region_editor()
@@ -462,6 +527,74 @@ function tools:update(dt)
   update_task_state()
 end
 
+-- Load button icons
+local button_a_icon = love.graphics.newImage("assets/inputs/switch_button_a.png")
+local button_b_icon = love.graphics.newImage("assets/inputs/switch_button_b.png")
+
+-- Draw the confirmation popup
+local function draw_confirm_popup()
+  if not confirm_popup_visible then return end
+  
+  local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
+  local font = love.graphics.getFont()
+  local font_h = font:getHeight()
+  
+  -- Dim background
+  love.graphics.setColor(0, 0, 0, 0.8)
+  love.graphics.rectangle("fill", 0, 0, sw, sh)
+  
+  -- Popup box dimensions - taller to fit all content
+  local box_w = math.min(sw - 40, 340)
+  local box_h = 140
+  local box_x = (sw - box_w) / 2
+  local box_y = (sh - box_h) / 2
+  
+  -- Draw box background
+  love.graphics.setColor(0.18, 0.18, 0.18, 1)
+  love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8, 8)
+  
+  -- Draw border
+  love.graphics.setColor(0.4, 0.4, 0.4, 1)
+  love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8, 8)
+  
+  love.graphics.setColor(1, 1, 1, 1)
+  
+  -- Title
+  love.graphics.printf("Clear Cache?", box_x, box_y + 12, box_w, "center")
+  
+  -- Warning message (shorter, no overlap)
+  local msg = "Changing region priorities will delete cached artwork."
+  love.graphics.printf(msg, box_x + 15, box_y + 35, box_w - 30, "center")
+  
+  -- Button icons and labels
+  local icon_size = 24
+  local btn_y = box_y + box_h - 38
+  
+  -- Calculate button positions - centered in each half
+  local left_center = box_x + box_w * 0.25
+  local right_center = box_x + box_w * 0.75
+  
+  -- Proceed button (A) - icon and text side by side, centered
+  local proceed_total_w = icon_size + 6 + font:getWidth("Proceed")
+  local proceed_x = left_center - proceed_total_w / 2
+  if button_a_icon then
+    local iw, ih = button_a_icon:getDimensions()
+    local sx, sy = icon_size / iw, icon_size / ih
+    love.graphics.draw(button_a_icon, proceed_x, btn_y, 0, sx, sy)
+  end
+  love.graphics.print("Proceed", proceed_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+  
+  -- Cancel button (B) - icon and text side by side, centered
+  local cancel_total_w = icon_size + 6 + font:getWidth("Cancel")
+  local cancel_x = right_center - cancel_total_w / 2
+  if button_b_icon then
+    local iw, ih = button_b_icon:getDimensions()
+    local sx, sy = icon_size / iw, icon_size / ih
+    love.graphics.draw(button_b_icon, cancel_x, btn_y, 0, sx, sy)
+  end
+  love.graphics.print("Cancel", cancel_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+end
+
 function tools:draw()
   love.graphics.clear(theme:read_color("main", "BACKGROUND", "#000000"))
   menu:draw()
@@ -469,9 +602,23 @@ function tools:draw()
   if region_popup and region_popup.visible then
     region_popup:draw()
   end
+  -- Draw confirmation popup on top of everything
+  draw_confirm_popup()
 end
 
 function tools:keypressed(key)
+  -- Handle confirmation popup first (highest priority)
+  if confirm_popup_visible then
+    if key == "return" or key == "a" then
+      on_confirm_cache_clear()
+      return
+    elseif key == "escape" or key == "b" then
+      on_cancel_cache_clear()
+      return
+    end
+    return -- Block all other keys while confirmation is visible
+  end
+  
   if region_popup and region_popup.visible then
     if key == "escape" then
       region_popup.visible = false
