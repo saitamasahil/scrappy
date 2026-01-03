@@ -227,7 +227,7 @@ function skyscraper.fetch_artwork(rom_path, input_folder, platform)
     input = rom_path,
     fetch = true,
     module = get_default_module_for(platform),
-    flags = { "unattend", "onlymissing", "nobrackets" },
+    flags = { "unattend", "onlymissing" },
   })
   skyscraper.run(command, input_folder, platform, "update")
 end
@@ -244,7 +244,7 @@ function skyscraper.update_artwork(rom_path, rom, input_folder, platform, artwor
 end
 
 function skyscraper.fetch_single(rom_path, rom, input_folder, platform, ...)
-  local flags = select(1, ...) or { "unattend", "nobrackets" }
+  local flags = select(1, ...) or { "unattend" }
   local fetch_command = generate_command({
     platform = platform,
     input = rom_path,
