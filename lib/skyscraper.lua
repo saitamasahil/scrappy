@@ -26,7 +26,6 @@ require("globals")
 
 local json              = require("lib.json")
 local log               = require("lib.log")
-local log               = require("lib.log")
 local channels          = require("lib.backend.channels")
 local skyscraper_config = require("helpers.config").skyscraper_config
 
