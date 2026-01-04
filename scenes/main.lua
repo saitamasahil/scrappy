@@ -900,7 +900,7 @@ local function process_game_queue()
   local ready = channels.SKYSCRAPER_GAME_QUEUE:pop()
   if ready then
     local game, platform, input_folder, skipped = ready.game, ready.platform, ready.input_folder, ready.skipped
-    print("\\nReceived a ready signal, queuing update_artwork for " .. game)
+    print("\nReceived a ready signal, queuing update_artwork for " .. game)
     -- Immediately reflect current platform/game in the UI
     local ui_platform, ui_game = scraping_window ^ "platform", scraping_window ^ "game"
     if ui_platform then ui_platform.text = muos.platforms[platform] or platform or "N/A" end
