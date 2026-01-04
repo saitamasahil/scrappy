@@ -1,6 +1,7 @@
 local scenes            = require("lib.scenes")
 local skyscraper        = require("lib.skyscraper")
 local pprint            = require("lib.pprint")
+local log               = require("lib.log")
 local channels          = require("lib.backend.channels")
 local configs           = require("helpers.config")
 local utils             = require("helpers.utils")
@@ -12,12 +13,13 @@ local label             = require 'lib.gui.label'
 local popup             = require 'lib.gui.popup'
 local listitem          = require 'lib.gui.listitem'
 local scroll_container  = require 'lib.gui.scroll_container'
+local output_log        = require 'lib.gui.output_log'
 
 local w_width, w_height = love.window.getMode()
 local single_scrape     = {}
 
 
-local menu, info_window, platform_list, rom_list
+local menu, info_window, scraping_window, platform_list, rom_list
 local user_config = configs.user_config
 local theme = configs.theme
 
@@ -26,6 +28,55 @@ local last_selected_rom = nil
 local active_column = 1 -- 1 for platforms, 2 for ROMs
 local show_missing_only = false
 local missing_filter_item = nil
+
+local state = {
+  scraping = false,
+  fetch_stage = false,
+  generate_stage = false,
+  current_game = nil,
+  current_platform = nil,
+  log = {},
+}
+
+local function halt_scraping()
+  log.write("[single_scrape] Halting scraping operation")
+  channels.SKYSCRAPER_ABORT:push({ abort = true })
+  
+  -- Forcefully kill any running Skyscraper processes immediately
+  os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
+  
+  -- Give threads a moment to process abort signal
+  love.timer.sleep(0.2)
+  
+  -- Clear all channels to prevent stale data
+  channels.SKYSCRAPER_INPUT:clear()
+  channels.SKYSCRAPER_GEN_INPUT:clear()
+  channels.SKYSCRAPER_GAME_QUEUE:clear()
+  channels.SKYSCRAPER_OUTPUT:clear()
+  channels.SKYSCRAPER_GEN_OUTPUT:clear()
+  while channels.SKYSCRAPER_ABORT:pop() do end -- Clear abort signals
+  
+  -- Restart threads to ensure clean state
+  skyscraper.restart_threads()
+  
+  state.scraping = false
+  state.fetch_stage = false
+  state.generate_stage = false
+  state.current_game = nil
+  state.current_platform = nil
+  state.log = {}
+  
+  if scraping_window then
+    scraping_window.visible = false
+    -- Clear the log display
+    local scraping_log = scraping_window ^ "scraping_log"
+    if scraping_log then
+      scraping_log.text = ""
+    end
+  end
+  
+  log.write("[single_scrape] Scraping halted and state cleared")
+end
 
 local function set_rom_list_enabled(enabled)
   if not rom_list or not rom_list.children then return end
@@ -107,14 +158,38 @@ local function on_rom_press(rom)
     -- Prevent running Skyscraper with an unmapped platform
     if not platform_dest or platform_dest == "unmapped" then
       dispatch_info("Error", "Selected platform is not mapped to a muOS core. Open Settings and rescan/assign cores.")
+      toggle_info()
     else
-      dispatch_info(rom, "Scraping ROM, please wait...")
+      -- Clear any stale abort signals before starting
+      while channels.SKYSCRAPER_ABORT:pop() do end
+      
+      log.write(string.format("[single_scrape] Starting scrape for ROM: %s", rom))
+      log.write(string.format("[single_scrape] Platform: %s -> %s", last_selected_platform, platform_dest))
+      log.write(string.format("[single_scrape] ROM path: %s", rom_path))
+      
+      state.scraping = true
+      state.fetch_stage = true
+      state.generate_stage = false
+      state.current_game = utils.get_filename(rom)
+      state.current_platform = platform_dest
+      state.log = {}
+      
+      if scraping_window then
+        local ui_platform = scraping_window ^ "platform"
+        local ui_game = scraping_window ^ "game"
+        local ui_status = scraping_window ^ "status"
+        if ui_platform then ui_platform.text = muos.platforms[platform_dest] or platform_dest or "N/A" end
+        if ui_game then ui_game.text = state.current_game or "N/A" end
+        if ui_status then ui_status.text = "Fetching from server..." end
+        scraping_window.visible = true
+      end
+      
       skyscraper.fetch_single(rom_path, rom, last_selected_platform, platform_dest)
     end
   else
     dispatch_info("Error", "Artwork XML not found")
+    toggle_info()
   end
-  toggle_info()
 end
 
 local function on_return()
@@ -214,10 +289,20 @@ local function process_fetched_game()
   local t = channels.SKYSCRAPER_GAME_QUEUE:pop()
   if t then
     if t.skipped then
+      state.scraping = false
+      state.fetch_stage = false
+      scraping_window.visible = false
       dispatch_info("Error", "Unable to generate artwork for selected game [skipped]")
+      toggle_info()
       return
     end
-    dispatch_info("Fetched", "Game fetched. Generating artwork...")
+    
+    state.fetch_stage = false
+    state.generate_stage = true
+    
+    local ui_status = scraping_window ^ "status"
+    if ui_status then ui_status.text = "Generating artwork..." end
+    
     local rom_path, _ = user_config:get_paths()
     rom_path = string.format("%s/%s", rom_path, last_selected_platform)
     local artwork_name = artwork.get_artwork_name()
@@ -228,25 +313,72 @@ end
 local function update_scrape_state()
   local t = channels.SKYSCRAPER_OUTPUT:pop()
   if t then
-    if t.error and t.error ~= "" then
-      dispatch_info("Error", t.error)
+    if t.log then
+      table.insert(state.log, t.log)
+      if #state.log > 6 then
+        table.remove(state.log, 1)
+      end
+      local log_str = ""
+      for _, lstr in ipairs(state.log) do
+        log_str = log_str .. lstr .. "\n"
+      end
+      local scraping_log = scraping_window ^ "scraping_log"
+      if scraping_log then
+        scraping_log.text = log_str
+      end
     end
+    
+    if t.error and t.error ~= "" then
+      state.scraping = false
+      state.fetch_stage = false
+      state.generate_stage = false
+      scraping_window.visible = false
+      dispatch_info("Error", t.error)
+      toggle_info()
+    end
+    
     if t.title then
+      state.scraping = false
+      state.fetch_stage = false
+      state.generate_stage = false
+      scraping_window.visible = false
+      state.log = {}
+      
       dispatch_info("Finished", t.success and "Scraping finished successfully" or "Scraping failed or skipped")
-      artwork.copy_to_catalogue(t.platform, t.title)
-      artwork.process_cached_by_platform(t.platform)
-      load_rom_buttons(last_selected_platform)
-      rom_list:focusFirstElement()
+      toggle_info()
+      
+      if t.success then
+        artwork.copy_to_catalogue(t.platform, t.title)
+        artwork.process_cached_by_platform(t.platform)
+        load_rom_buttons(last_selected_platform)
+        rom_list:focusFirstElement()
+      end
     end
   end
 end
 
 function single_scrape:load()
+  -- Clear any leftover state from previous scraping sessions
+  channels.SKYSCRAPER_ABORT:push({ abort = true })
+  channels.SKYSCRAPER_INPUT:clear()
+  channels.SKYSCRAPER_GEN_INPUT:clear()
+  channels.SKYSCRAPER_GAME_QUEUE:clear()
+  channels.SKYSCRAPER_OUTPUT:clear()
+  channels.SKYSCRAPER_GEN_OUTPUT:clear()
+  while channels.SKYSCRAPER_ABORT:pop() do end
+  
   last_selected_platform = nil
   last_selected_rom = nil
   active_column = 1
   show_missing_only = false
   missing_filter_item = nil
+  
+  state.scraping = false
+  state.fetch_stage = false
+  state.generate_stage = false
+  state.current_game = nil
+  state.current_platform = nil
+  state.log = {}
 
   if #artwork.cached_game_ids == 0 then
     artwork.process_cached_data()
@@ -255,6 +387,7 @@ function single_scrape:load()
   menu = component:root { column = true, gap = 0 }
 
   info_window = popup { visible = false }
+  scraping_window = popup { visible = false, title = "Scraping in progress" }
   platform_list = component { column = true, gap = 0 }
   rom_list = component { column = true, gap = 0 }
 
@@ -300,6 +433,22 @@ function single_scrape:load()
 
   menu:updatePosition(10, 10)
   menu:focusFirstElement()
+  
+  -- Setup scraping window
+  local infoComponent = component { column = true, gap = 10 }
+      + label { id = "platform", text = "Platform: N/A", icon = "controller" }
+      + label { id = "game", text = "Game: N/A", icon = "cd" }
+      + label { id = "status", text = "Status: N/A", icon = "info" }
+  
+  scraping_window = scraping_window
+      + (component { column = true, gap = 15 }
+        + infoComponent
+        + output_log {
+          id = "scraping_log",
+          width = scraping_window.width,
+          height = 100,
+        }
+      )
 end
 
 function single_scrape:update(dt)
@@ -312,12 +461,43 @@ function single_scrape:draw()
   love.graphics.clear(theme:read_color("main", "BACKGROUND", "#000000"))
   menu:draw()
   info_window:draw()
+  scraping_window:draw()
 end
 
 function single_scrape:keypressed(key)
-  menu:keypressed(key)
-  if key == "escape" then on_return() end
-  if key == "lalt" then scenes:push("settings") end
+  if key == "escape" then
+    if state.scraping then
+      halt_scraping()
+      return
+    end
+    on_return()
+    return
+  end
+  
+  if not state.scraping then
+    menu:keypressed(key)
+  end
+  
+  if key == "lalt" and not state.scraping then
+    scenes:push("settings")
+  end
+end
+
+function single_scrape:gamepadpressed(joystick, button)
+  -- Map 'b' button to abort/back action
+  if button == "b" then
+    if state.scraping then
+      halt_scraping()
+      return
+    end
+    on_return()
+  end
+  
+  if not state.scraping then
+    if menu.gamepadpressed then
+      menu:gamepadpressed(joystick, button)
+    end
+  end
 end
 
 return single_scrape

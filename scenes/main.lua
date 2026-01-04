@@ -28,8 +28,10 @@ local loader = loading.new("highlight", 1)
 local w_width, w_height = love.window.getMode()
 local padding = 10
 local canvas = love.graphics.newCanvas(w_width, w_height)
-local default_cover_path = "sample/media/covers/fake-rom.png"
+local sample_media_root = "sample/media"
+local default_cover_path = sample_media_root .. "/covers/fake-rom.png"
 local cover_preview_path = default_cover_path
+local output_priority = { "box", "preview", "splash" }
 local cover_preview
 
 local main = {}
@@ -57,20 +59,96 @@ local function prepare_sample_media()
   end
 end
 
+-- Rename ROM file to official name and update all references
+local function rename_rom_file(platform, old_title, new_title, input_folder)
+  if old_title == new_title then
+    log.write(string.format("Skipping rename - titles match: %s", old_title))
+    return false
+  end
+  
+  -- Sanitize new title for filesystem
+  local safe_new_title = new_title:gsub('[<>:"/\\|?*]', '_')
+  
+  local rom_path, _ = user_config:get_paths()
+  local platform_path = string.format("%s/%s", rom_path, input_folder)
+  
+  -- Get the original ROM file from the map
+  if not game_file_map[platform] or not game_file_map[platform][old_title] then
+    log.write(string.format("Cannot find ROM file for %s in game_file_map", old_title))
+    return false
+  end
+  
+  local old_rom_file = game_file_map[platform][old_title]
+  local old_full_path = string.format("%s/%s", platform_path, old_rom_file)
+  
+  -- Get file extension
+  local extension = old_rom_file:match("%.([^%.]+)$")
+  if not extension then
+    log.write(string.format("Cannot determine extension for %s", old_rom_file))
+    return false
+  end
+  
+  -- Build new filename
+  local new_rom_file = safe_new_title .. "." .. extension
+  local new_full_path = string.format("%s/%s", platform_path, new_rom_file)
+  
+  -- Check if file already exists with new name
+  if nativefs.getInfo(new_full_path) and new_full_path ~= old_full_path then
+    log.write(string.format("Cannot rename - file already exists: %s", new_full_path))
+    return false
+  end
+  
+  -- Check if old file exists
+  if not nativefs.getInfo(old_full_path) then
+    log.write(string.format("Cannot rename - source file not found: %s", old_full_path))
+    return false
+  end
+  
+  -- Perform the rename
+  log.write(string.format("Renaming: %s -> %s", old_rom_file, new_rom_file))
+  local success, err = os.rename(old_full_path, new_full_path)
+  
+  if not success then
+    log.write(string.format("Failed to rename file: %s", err or "unknown error"))
+    return false
+  end
+  
+  -- Update game_file_map
+  game_file_map[platform][safe_new_title] = new_rom_file
+  game_file_map[platform][old_title] = nil
+  
+  -- Update cached_game_ids if it exists
+  if artwork.cached_game_ids[platform] then
+    local cache_entry = artwork.cached_game_ids[platform][old_rom_file]
+    if cache_entry then
+      artwork.cached_game_ids[platform][new_rom_file] = cache_entry
+      artwork.cached_game_ids[platform][old_rom_file] = nil
+      log.write(string.format("Updated cache reference: %s -> %s", old_rom_file, new_rom_file))
+    end
+  end
+  
+  log.write(string.format("Successfully renamed ROM file: %s -> %s", old_rom_file, new_rom_file))
+  return true, safe_new_title
+end
+
 -- TODO: Refactor
 local state = {
   error = "",
   loading = nil,
   scraping = false,
+  fetch_phase = true, -- true = fetching, false = generating
+  pending_platforms = 0, -- Number of platforms still fetching
   tasks = 0,
   failed_tasks = {},
   total = 0,
-  task_in_progress = nil,
-  task_started_at = nil,
+  tasks_in_progress = {},  -- Track multiple concurrent tasks
+  max_concurrent_tasks = 3,  -- Default, will be read from config
   task_timeout_secs = 120,
   task_meta = nil,
   log = {},
   sample_poll = nil,
+  queued_games = {}, -- Games waiting for artwork generation
+  selected_output = nil, -- Currently displayed artwork type (box/preview/splash)
 }
 
 --[[
@@ -90,22 +168,6 @@ local function show_info_window(title, content)
   info_window.content = content
 end
 
--- Finds first supported output type for a template
-local function first_template_output(output_path, platform, game_title)
-  local curr_template_path = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
-  -- Read supported output types
-  local output_types = artwork.get_output_types(curr_template_path)
-  local curr_output = "covers"
-  -- Find first supported output type
-  for key, supported in utils.orderedPairs(output_types) do
-    if supported then
-      curr_output = artwork.output_map[key]
-      break
-    end
-  end
-  return curr_output
-end
-
 local function get_required_output_types_for_current_template()
   local curr_template_path = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
   local output_types = artwork.get_output_types(curr_template_path)
@@ -114,6 +176,23 @@ local function get_required_output_types_for_current_template()
     return { box = true, preview = false, splash = false }
   end
   return output_types
+end
+
+local function resolve_preview_output(preferred_type)
+  local outputs = get_required_output_types_for_current_template()
+  if preferred_type and outputs[preferred_type] then
+    return artwork.output_map[preferred_type], preferred_type
+  end
+  for _, key in ipairs(output_priority) do
+    if outputs[key] then
+      return artwork.output_map[key], key
+    end
+  end
+  return artwork.output_map["box"], "box"
+end
+
+local function build_media_path(media_root, folder, game_title)
+  return string.format("%s/%s/%s.png", media_root, folder, game_title)
 end
 
 local function has_missing_catalogue_artwork(dest_platform, game_title)
@@ -144,8 +223,9 @@ local function generate_preview_now()
   prepare_sample_media()
   skyscraper.change_artwork(sample_artwork)
   skyscraper.update_sample(sample_artwork)
-  local output = first_template_output()
-  cover_preview_path = string.format("sample/media/%s/fake-rom.png", output)
+  local folder, resolved = resolve_preview_output(state.selected_output)
+  state.selected_output = resolved
+  cover_preview_path = build_media_path(sample_media_root, folder, "fake-rom")
   state.sample_poll = { path = cover_preview_path, t0 = love.timer.getTime(), timeout = 3.0 }
 end
 
@@ -177,6 +257,8 @@ local function update_output_types()
       output_item.focusable = false
     end
   end
+  local _, resolved = resolve_preview_output(state.selected_output)
+  state.selected_output = resolved
 end
 
 -- Main function to scrape selected platforms
@@ -215,6 +297,13 @@ local function scrape_platforms()
     local files = nativefs.getDirectoryItems(platform_path)
     if not files or #files == 0 then
       log.write("No roms found in " .. platform_path)
+      -- Check if path exists but is inaccessible
+      local path_info = nativefs.getInfo(platform_path)
+      if path_info then
+        log.write("Path exists but appears empty or inaccessible: " .. platform_path)
+      else
+        log.write("Path does not exist: " .. platform_path)
+      end
       goto skip
     end
 
@@ -224,7 +313,9 @@ local function scrape_platforms()
       -- Check if it's a file or directory
       local full_path = string.format("%s/%s", platform_path, file)
       local file_info = nativefs.getInfo(full_path)
-      if file_info then
+      if not file_info then
+        log.write(string.format("Unable to access file info for: %s", full_path))
+      elseif file_info then
         if file_info.type == "file" then
           -- Verify if extension matches peas file
           if skyscraper.filename_matches_extension(file, dest) then
@@ -287,14 +378,17 @@ local function scrape_platforms()
     end
 
     if uncached_games then
+      state.pending_platforms = state.pending_platforms + 1
       skyscraper.fetch_artwork(platform_path, src, dest)
     else
       print("ALL GAMES ARE CACHED FOR " .. src)
+      -- Queue cached games for generation phase instead of processing immediately
       for i = 1, #game_list do
-        channels.SKYSCRAPER_GAME_QUEUE:push({
+        table.insert(state.queued_games, {
           game = game_list[i],
           platform = dest,
           input_folder = src,
+          skipped = false
         })
       end
     end
@@ -307,6 +401,15 @@ local function scrape_platforms()
   state.total = state.tasks
   if state.total > 0 then
     state.scraping = true
+    state.fetch_phase = true
+    state.queued_games = {}
+    
+    -- If no platforms need fetching, go straight to generation
+    if state.pending_platforms == 0 then
+      log.write("All games cached, starting generation phase")
+      state.fetch_phase = false
+    end
+    
     if scraping_window then
       local ui_progress = scraping_window ^ "progress"
       if ui_progress then
@@ -338,12 +441,27 @@ end
 -- Stops all scraping and clears queue
 local function halt_scraping()
   channels.SKYSCRAPER_ABORT:push({ abort = true })
+  
+  -- Forcefully kill any running Skyscraper processes immediately
+  os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
+  
+  -- Give threads a moment to process abort signal
+  love.timer.sleep(0.2)
+  
   channels.SKYSCRAPER_INPUT:clear()
+  
+  -- Restart threads to ensure clean state
+  skyscraper.restart_threads()
+  
   state.scraping = false
   state.loading = false
+  state.fetch_phase = true
+  state.pending_platforms = 0
+  state.queued_games = {}
   state.failed_tasks = {}
   state.tasks = 0
   state.total = 0
+  state.tasks_in_progress = {}  -- Clear concurrent tasks
   if scraping_window then scraping_window.visible = false end
 end
 
@@ -365,6 +483,30 @@ local function update_state(t)
     end
     local scraping_log = scraping_window ^ "scraping_log"
     scraping_log.text = log_str
+    
+    -- Check if this is a fetch completion message
+    if t.log:find("%[fetch%]") and t.log:find("completed") then
+      state.pending_platforms = math.max(0, state.pending_platforms - 1)
+      print(string.format("Platform fetch completed. Pending: %d", state.pending_platforms))
+      
+      -- When all fetches complete, transition to generation phase
+      if state.pending_platforms == 0 and state.fetch_phase then
+        state.fetch_phase = false
+        print(string.format("==== FETCH PHASE COMPLETE ===="))
+        print(string.format("Transitioning to GENERATION PHASE with %d queued games", #state.queued_games))
+        
+        -- Start processing queued games by pushing them back to the queue
+        for i, game_info in ipairs(state.queued_games) do
+          print(string.format("[%d/%d] Queueing %s for generation", i, #state.queued_games, game_info.title))
+          channels.SKYSCRAPER_GAME_QUEUE:push({
+            game = game_info.title,
+            platform = game_info.platform,
+            input_folder = game_info.input_folder,
+            skipped = false
+          })
+        end
+      end
+    end
   end
   if t.title then
     state.loading = false
@@ -381,18 +523,30 @@ local function update_state(t)
       -- Remove task from tasks list
       state.tasks = state.tasks - 1
       if t.success then
-        -- Reload preview
-        -- Read output folder
+        -- Check if we should rename the ROM file
+        local rename_enabled = user_config:read("main", "renameToOfficialName") == "1"
+        local final_title = t.title
+        
+        if rename_enabled and t.original_filename and t.title ~= t.original_filename then
+          log.write(string.format("Attempting to rename: '%s' -> '%s'", t.original_filename, t.title))
+          local renamed, new_safe_title = rename_rom_file(t.platform, t.original_filename, t.title, t.input_folder)
+          if renamed then
+            final_title = new_safe_title
+            log.write(string.format("ROM renamed successfully, using: %s", final_title))
+          end
+        end
+        
+        -- Reload preview using the user's selected output type
         local output_path = skyscraper_config:read("main", "gameListFolder")
         output_path = output_path and utils.strip_quotes(output_path) or "data/output"
-        -- Get first supported output type
-        local curr_output = first_template_output()
-        -- Load cover preview art
         local normalized_platform = utils.normalize_platform(t.platform)
-        cover_preview_path = string.format("%s/%s/media/%s/%s.png", output_path, normalized_platform, curr_output, t.title)
+        local media_root = string.format("%s/%s/media", output_path, normalized_platform)
+        local folder, resolved = resolve_preview_output(state.selected_output)
+        state.selected_output = resolved
+        cover_preview_path = build_media_path(media_root, folder, final_title)
         state.reload_preview = true
-        -- Copy game artwork
-        artwork.copy_to_catalogue(t.platform, t.title)
+        -- Copy game artwork (use final_title which may be renamed)
+        artwork.copy_to_catalogue(t.platform, final_title)
       else
         state.failed_tasks[#state.failed_tasks + 1] = t.title
       end
@@ -422,8 +576,9 @@ local function update_state(t)
       end
     else
       -- Sample generation finished: reload preview
-      local output = first_template_output()
-      cover_preview_path = string.format("sample/media/%s/fake-rom.png", output)
+      local folder, resolved = resolve_preview_output(state.selected_output)
+      state.selected_output = resolved
+      cover_preview_path = build_media_path(sample_media_root, folder, "fake-rom")
       state.reload_preview = true
     end
   end
@@ -526,10 +681,11 @@ local function render_to_canvas()
   end)
 end
 
--- Triggered when one of the outputs item is focused
--- output_type: "covers" | "screenshots" | "wheels"
+-- Triggered when one of the outputs item is focused ("box" | "preview" | "splash")
 local function on_output_focus(output_type)
-  cover_preview_path = string.format("sample/media/%s/fake-rom.png", output_type)
+  local folder, resolved = resolve_preview_output(output_type)
+  state.selected_output = resolved
+  cover_preview_path = build_media_path(sample_media_root, folder, "fake-rom")
   state.reload_preview = true
 end
 
@@ -537,7 +693,18 @@ function main:load()
   loader:load()
 
   get_templates()
+  local initial_folder, resolved = resolve_preview_output()
+  state.selected_output = resolved
+  cover_preview_path = build_media_path(sample_media_root, initial_folder, "fake-rom")
   render_to_canvas()
+  
+  -- Load concurrent generation setting from config (1-8, default 3)
+  local concurrent_cfg = user_config:read("main", "concurrentGeneration")
+  local concurrent = tonumber(concurrent_cfg or "") or 3
+  if concurrent < 1 then concurrent = 1 end
+  if concurrent > 8 then concurrent = 8 end
+  state.max_concurrent_tasks = concurrent
+  log.write(string.format("Concurrent artwork generation tasks: %d", state.max_concurrent_tasks))
 
   menu = component:root { column = true, gap = 10 }
   info_window = popup { visible = false }
@@ -622,7 +789,7 @@ function main:load()
         text = "Boxart",
         icon = "square",
         onFocus = function()
-          on_output_focus("covers")
+          on_output_focus("box")
         end,
       }
       + listitem {
@@ -630,7 +797,7 @@ function main:load()
         text = "Preview",
         icon = "square",
         onFocus = function()
-          on_output_focus("screenshots")
+          on_output_focus("preview")
         end,
       }
       + listitem {
@@ -638,7 +805,7 @@ function main:load()
         text = "Splash",
         icon = "square",
         onFocus = function()
-          on_output_focus("wheels")
+          on_output_focus("splash")
         end,
       }
 
@@ -711,25 +878,29 @@ end
 
 -- Reads games from fetch queue and pushes "ready" games into generate queue
 local function process_game_queue()
-  -- If there's already a task in progress, wait for the finished signal
-  if state.task_in_progress then
-    -- Wait for the task to finish
-    local finished_signal = channels.SKYSCRAPER_GEN_OUTPUT:pop()
-    if finished_signal and finished_signal.finished then
-      -- Mark task as finished
-      print(string.format("Finished task \"%s\"", state.task_in_progress))
-      state.task_in_progress = nil
-      state.task_started_at = nil
-      state.task_meta = nil
+  -- Check for finished tasks
+  local finished_signal = channels.SKYSCRAPER_GEN_OUTPUT:pop()
+  if finished_signal and finished_signal.finished then
+    -- Find and remove the finished task by matching game and platform
+    for i, task in ipairs(state.tasks_in_progress) do
+      if task.title == finished_signal.game and task.platform == finished_signal.platform then
+        print(string.format("Finished task \"%s\" on platform %s", task.game_file, task.platform))
+        table.remove(state.tasks_in_progress, i)
+        break
+      end
     end
-    return -- Don't process anything further until the current task is done
+  end
+
+  -- If we're at max capacity, wait before processing more
+  if #state.tasks_in_progress >= state.max_concurrent_tasks then
+    return
   end
 
   -- Wait for a ready signal from the Skyscraper backend
   local ready = channels.SKYSCRAPER_GAME_QUEUE:pop()
   if ready then
     local game, platform, input_folder, skipped = ready.game, ready.platform, ready.input_folder, ready.skipped
-    print("\nReceived a ready signal, queuing update_artwork for " .. game)
+    print("\\nReceived a ready signal, queuing update_artwork for " .. game)
     -- Immediately reflect current platform/game in the UI
     local ui_platform, ui_game = scraping_window ^ "platform", scraping_window ^ "game"
     if ui_platform then ui_platform.text = muos.platforms[platform] or platform or "N/A" end
@@ -747,16 +918,47 @@ local function process_game_queue()
     local platform_path = string.format("%s/%s", rom_path, input_folder)
     if not input_folder then
       log.write("No valid platform found")
+      -- Send finished signal to prevent blocking
+      channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true })
       return
     end
     if game_file_map[platform] and game_file_map[platform][game] then
       local game_file = game_file_map[platform][game]
-      state.task_in_progress = game_file
-      state.task_started_at = love.timer.getTime()
-      state.task_meta = { title = game, platform = platform }
-      print(string.format("Task in progress: %s", game_file))
-      skyscraper.update_artwork(platform_path, game_file, input_folder,
-        platform, templates[current_template])
+      
+      -- Two-phase logic: queue during fetch, process during generation
+      if state.fetch_phase then
+        -- FETCH PHASE: queue the game for later processing
+        print(string.format("Fetched: %s/%s - queuing for generation phase", platform, game))
+        table.insert(state.queued_games, {
+          platform = platform,
+          game_file = game_file,
+          platform_path = platform_path,
+          input_folder = input_folder,
+          title = game
+        })
+      else
+        -- GENERATION PHASE: process immediately
+        print(string.format("Processing queued game: %s/%s", platform, game))
+        table.insert(state.tasks_in_progress, {
+          game_file = game_file,
+          started_at = love.timer.getTime(),
+          title = game,
+          platform = platform,
+          input_folder = input_folder
+        })
+        print(string.format("Task in progress: %s (Total concurrent: %d)", game_file, #state.tasks_in_progress))
+        skyscraper.update_artwork(platform_path, game_file, input_folder,
+          platform, templates[current_template])
+      end
+    else
+      log.write(string.format("Game file not found in map for %s on platform %s", game, platform))
+      -- Send finished signal to prevent blocking
+      channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true })
+      update_state({
+        title = game,
+        platform = platform,
+        success = false,
+      })
     end
   end
 end

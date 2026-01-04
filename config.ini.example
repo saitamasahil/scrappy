@@ -2,6 +2,7 @@
 filterTemplates=1
 parseCache=1
 sd=1
+concurrentGeneration=3
 [overrides]
 [platforms]
 [platformsSelected]
