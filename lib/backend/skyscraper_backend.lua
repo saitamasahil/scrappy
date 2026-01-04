@@ -171,8 +171,8 @@ while true do
     
     -- Log completion details
     local total_time = socket.gettime() - last_output_time
-    log.write(string.format("[fetch] Process ended. Lines received: %d, Aborted: %s, Retriable error: %s", 
-      line_count, tostring(aborted), tostring(retriable_error)))
+    log.write(string.format("[fetch] Process ended. Lines received: %d, Aborted: %s, Retriable error: %s, Total time: %.2fs", 
+      line_count, tostring(aborted), tostring(retriable_error), total_time))
 
     if aborted then
       -- graceful stop
