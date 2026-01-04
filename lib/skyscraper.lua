@@ -19,6 +19,7 @@ local function escape_shell_arg(arg)
   escaped = escaped:gsub('"', '\\"')      -- Double quotes
   escaped = escaped:gsub('%$', '\\$')     -- Dollar signs
   escaped = escaped:gsub('`', '\\`')      -- Backticks
+  escaped = escaped:gsub('\n', '\\n')     -- Newlines
   return escaped
 end
 
