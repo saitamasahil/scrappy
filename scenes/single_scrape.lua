@@ -6,6 +6,7 @@ local configs           = require("helpers.config")
 local utils             = require("helpers.utils")
 local artwork           = require("helpers.artwork")
 local muos              = require("helpers.muos")
+local wifi              = require("helpers.wifi")
 
 local component         = require 'lib.gui.badr'
 local label             = require 'lib.gui.label'
@@ -99,6 +100,13 @@ local function on_rom_press(rom)
   local platforms = user_config:get().platforms
 
   rom_path = string.format("%s/%s", rom_path, last_selected_platform)
+
+  -- Check WiFi connection before scraping
+  if not wifi.is_connected() then
+    dispatch_info("No WiFi Connection", "Please connect to WiFi and try again.")
+    toggle_info()
+    return
+  end
 
   local artwork_name = artwork.get_artwork_name()
 

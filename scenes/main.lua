@@ -9,6 +9,7 @@ local configs    = require("helpers.config")
 local utils      = require("helpers.utils")
 local artwork    = require("helpers.artwork")
 local muos       = require("helpers.muos")
+local wifi       = require("helpers.wifi")
 
 local component  = require "lib.gui.badr"
 local button     = require "lib.gui.button"
@@ -182,6 +183,14 @@ end
 -- Main function to scrape selected platforms
 local function scrape_platforms()
   log.write("Scraping artwork")
+  
+  -- Check WiFi connection before starting
+  if not wifi.is_connected() then
+    log.write("WiFi not connected, aborting scrape")
+    show_info_window("No WiFi Connection", "Please connect to WiFi and try again.")
+    return
+  end
+  
   -- Load platforms from config
   local platforms = user_config:get().platforms
   if not platforms then

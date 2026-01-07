@@ -4,6 +4,7 @@ local log      = require("lib.log")
 local channels = require("lib.backend.channels")
 local pprint   = require("lib.pprint")
 local utils    = require("helpers.utils")
+local wifi     = require("helpers.wifi")
 local socket   = require("socket")
 
 local function log_version(output)
@@ -46,6 +47,17 @@ while true do
 
   log.write("Starting Skyscraper, please wait...")
 
+  -- Check WiFi before starting command
+  if not wifi.is_connected() then
+    log.write("WiFi disconnected, aborting scrape")
+    channels.SKYSCRAPER_OUTPUT:push({
+      log = "[fetch] WiFi disconnected. Please connect to WiFi and try again.",
+      error = "WiFi not connected",
+      loading = false
+    })
+    goto continue
+  end
+
   if current_platform then
     channels.SKYSCRAPER_OUTPUT:push({
       log = "[fetch] Starting Skyscraper for \"" .. current_platform .. "\", please wait..."
@@ -85,6 +97,18 @@ while true do
       if abort_sig and abort_sig.abort then
         aborted = true
         channels.SKYSCRAPER_OUTPUT:push({ log = "[fetch] Aborted by user" })
+        break
+      end
+      
+      -- WiFi check during scraping
+      if not wifi.is_connected() then
+        aborted = true
+        log.write("WiFi disconnected during scraping")
+        channels.SKYSCRAPER_OUTPUT:push({
+          log = "[fetch] WiFi disconnected. Stopping scrape.",
+          error = "WiFi disconnected",
+          loading = false
+        })
         break
       end
 
