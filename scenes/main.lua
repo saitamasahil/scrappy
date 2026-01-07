@@ -60,77 +60,6 @@ local function prepare_sample_media()
   end
 end
 
--- Rename ROM file to official name and update all references
-local function rename_rom_file(platform, old_title, new_title, input_folder)
-  if old_title == new_title then
-    log.write(string.format("Skipping rename - titles match: %s", old_title))
-    return false
-  end
-  
-  -- Sanitize new title for filesystem
-  local safe_new_title = new_title:gsub('[<>:"/\\|?*]', '_')
-  
-  local rom_path, _ = user_config:get_paths()
-  local platform_path = string.format("%s/%s", rom_path, input_folder)
-  
-  -- Get the original ROM file from the map
-  if not game_file_map[platform] or not game_file_map[platform][old_title] then
-    log.write(string.format("Cannot find ROM file for %s in game_file_map", old_title))
-    return false
-  end
-  
-  local old_rom_file = game_file_map[platform][old_title]
-  local old_full_path = string.format("%s/%s", platform_path, old_rom_file)
-  
-  -- Get file extension
-  local extension = old_rom_file:match("%.([^%.]+)$")
-  if not extension then
-    log.write(string.format("Cannot determine extension for %s", old_rom_file))
-    return false
-  end
-  
-  -- Build new filename
-  local new_rom_file = safe_new_title .. "." .. extension
-  local new_full_path = string.format("%s/%s", platform_path, new_rom_file)
-  
-  -- Check if file already exists with new name
-  if nativefs.getInfo(new_full_path) and new_full_path ~= old_full_path then
-    log.write(string.format("Cannot rename - file already exists: %s", new_full_path))
-    return false
-  end
-  
-  -- Check if old file exists
-  if not nativefs.getInfo(old_full_path) then
-    log.write(string.format("Cannot rename - source file not found: %s", old_full_path))
-    return false
-  end
-  
-  -- Perform the rename
-  log.write(string.format("Renaming: %s -> %s", old_rom_file, new_rom_file))
-  local success, err = os.rename(old_full_path, new_full_path)
-  
-  if not success then
-    log.write(string.format("Failed to rename file: %s", err or "unknown error"))
-    return false
-  end
-  
-  -- Update game_file_map
-  game_file_map[platform][safe_new_title] = new_rom_file
-  game_file_map[platform][old_title] = nil
-  
-  -- Update cached_game_ids if it exists
-  if artwork.cached_game_ids[platform] then
-    local cache_entry = artwork.cached_game_ids[platform][old_rom_file]
-    if cache_entry then
-      artwork.cached_game_ids[platform][new_rom_file] = cache_entry
-      artwork.cached_game_ids[platform][old_rom_file] = nil
-      log.write(string.format("Updated cache reference: %s -> %s", old_rom_file, new_rom_file))
-    end
-  end
-  
-  log.write(string.format("Successfully renamed ROM file: %s -> %s", old_rom_file, new_rom_file))
-  return true, safe_new_title
-end
 
 -- TODO: Refactor
 local state = {
@@ -532,19 +461,6 @@ local function update_state(t)
       -- Remove task from tasks list
       state.tasks = state.tasks - 1
       if t.success then
-        -- Check if we should rename the ROM file
-        local rename_enabled = user_config:read("main", "renameToOfficialName") == "1"
-        local final_title = t.title
-        
-        if rename_enabled and t.original_filename and t.title ~= t.original_filename then
-          log.write(string.format("Attempting to rename: '%s' -> '%s'", t.original_filename, t.title))
-          local renamed, new_safe_title = rename_rom_file(t.platform, t.original_filename, t.title, t.input_folder)
-          if renamed then
-            final_title = new_safe_title
-            log.write(string.format("ROM renamed successfully, using: %s", final_title))
-          end
-        end
-        
         -- Reload preview using the user's selected output type
         local output_path = skyscraper_config:read("main", "gameListFolder")
         output_path = output_path and utils.strip_quotes(output_path) or "data/output"
@@ -552,10 +468,10 @@ local function update_state(t)
         local media_root = string.format("%s/%s/media", output_path, normalized_platform)
         local folder, resolved = resolve_preview_output(state.selected_output)
         state.selected_output = resolved
-        cover_preview_path = build_media_path(media_root, folder, final_title)
+        cover_preview_path = build_media_path(media_root, folder, t.title)
         state.reload_preview = true
-        -- Copy game artwork (use final_title which may be renamed)
-        artwork.copy_to_catalogue(t.platform, final_title)
+        -- Copy game artwork
+        artwork.copy_to_catalogue(t.platform, t.title)
       else
         state.failed_tasks[#state.failed_tasks + 1] = t.title
       end

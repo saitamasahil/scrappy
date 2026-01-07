@@ -505,10 +505,7 @@ local function on_concurrent_change(_, idx)
   user_config:save()
 end
 
-local function on_rename_files_toggle(checked)
-  user_config:insert("main", "renameToOfficialName", checked and "1" or "0")
-  user_config:save()
-end
+
 
 local function on_change_platform(platform)
   local selected_platforms = user_config:get().platformsSelected
@@ -611,12 +608,6 @@ function settings:load()
         options = {"1", "2", "3", "4", "5", "6", "7", "8"},
         startIndex = tonumber(user_config:read("main", "concurrentGeneration") or "3"),
         onChange = on_concurrent_change
-      }
-      + label { text = 'Files', icon = "file" }
-      + checkbox {
-        text = 'Rename ROM files to official name',
-        onToggle = on_rename_files_toggle,
-        checked = user_config:read("main", "renameToOfficialName") == "1"
       }
       + label { text = 'Platforms', icon = "folder" }
       + (component { row = true, gap = 10 }
