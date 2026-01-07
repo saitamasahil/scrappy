@@ -97,14 +97,15 @@ while true do
     end
 
     local parsed = false
+
     local retriable_error = false
     local last_output_time = socket.gettime()
     local last_log_time = socket.gettime()
-    local no_output_timeout = 120 -- 120 seconds without output = hung
-    local log_interval = 10 -- Log waiting status every 10 seconds
+    local no_output_timeout = 600 -- Start with 10 min timeout for initialization/connection
+    local scraping_started = false
     local line_count = 0
     
-    log.write(string.format("[fetch] Starting to read output from Skyscraper (timeout: %ds)", no_output_timeout))
+    log.write(string.format("[fetch] Reading output from Skyscraper (init timeout: %ds)", no_output_timeout))
     
     for line in output:lines() do
       line_count = line_count + 1
@@ -113,18 +114,23 @@ while true do
       -- Calculate time since last output BEFORE checking abort/timeout
       local elapsed_since_output = current_time - last_output_time
       
+      -- Check for scraping start to reduce timeout
+      if not scraping_started and (line:find("Fetching limits") or line:find("Starting scraping run") or line:find("Game '")) then
+        scraping_started = true
+        no_output_timeout = 120 -- Reduce to 120s once scraping begins
+        log.write(string.format("[fetch] Scraping started, reducing timeout to %ds", no_output_timeout))
+      end
+      
       -- Abort check every line
       local abort_sig = channels.SKYSCRAPER_ABORT:pop()
       if abort_sig and abort_sig.abort then
         aborted = true
         log.write("[fetch] Abort signal received, killing process")
         channels.SKYSCRAPER_OUTPUT:push({ log = "[fetch] Aborted by user" })
-        -- Try to close the output handle to terminate the process
         if output then
           pcall(output.close, output)
           output = nil
         end
-        -- Kill any Skyscraper processes
         os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
         break
       end
@@ -145,7 +151,7 @@ while true do
         os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
         break
       end
-      
+
       -- Check if process is hung (no output for extended period)
       if elapsed_since_output > no_output_timeout then
         log.write(string.format("[fetch] No output for %ds, process appears hung (line #%d: '%s')", 
@@ -159,6 +165,11 @@ while true do
         aborted = true
         break
       end
+      
+      -- Update last output time since we got a line
+      last_output_time = current_time
+      
+
       
       -- Log long delays between lines (internal log only; keep UI quiet)
       if elapsed_since_output > 15 then
