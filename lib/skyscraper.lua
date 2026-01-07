@@ -76,6 +76,25 @@ function skyscraper.init(config_path, binary)
   push_cache_command({ command = string.format("%s -v", skyscraper.base_command) })
 end
 
+-- Shutdown function to clean up backend processes on app exit
+function skyscraper.shutdown()
+  log.write("Shutting down Skyscraper backend")
+  
+  -- Send abort signal to threads
+  channels.SKYSCRAPER_ABORT:push({ abort = true })
+  
+  -- Kill any running Skyscraper processes
+  os.execute("killall -9 Skyscraper.aarch64 2>/dev/null")
+  os.execute("killall -9 Skyscraper 2>/dev/null")
+  
+  -- Clear all channels to unblock threads
+  channels.SKYSCRAPER_INPUT:clear()
+  channels.SKYSCRAPER_GEN_INPUT:clear()
+  channels.SKYSCRAPER_GAME_QUEUE:clear()
+  channels.SKYSCRAPER_OUTPUT:clear()
+  channels.SKYSCRAPER_GEN_OUTPUT:clear()
+end
+
 function skyscraper.filename_matches_extension(filename, platform)
   local pea_key = normalize_platform(platform)
   local formats = skyscraper.peas_json[pea_key] and skyscraper.peas_json[pea_key].formats

@@ -75,3 +75,9 @@ function love.draw()
     end
   end
 end
+
+-- Cleanup when app quits
+function love.quit()
+  skyscraper.shutdown()
+  return false -- Allow quit to proceed
+end
