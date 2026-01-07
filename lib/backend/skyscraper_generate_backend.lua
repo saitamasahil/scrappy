@@ -22,6 +22,8 @@ while true do
   local command = input_data.command
   local current_platform = input_data.platform
   local game = utils.get_filename(input_data.game)
+  local original_game = input_data.game  -- Keep original for rename tracking
+  local input_folder = input_data.input_folder  -- Needed for rename
 
   channels.SKYSCRAPER_OUTPUT:push({ log = string.format("[gen] Queued \"%s\"", game) })
 
@@ -37,6 +39,7 @@ while true do
   if not output then
     log.write("Failed to run Skyscraper")
     channels.SKYSCRAPER_OUTPUT:push({ error = "Failed to run Skyscraper" })
+    channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true, game = game, platform = current_platform })
     goto continue
   end
 
@@ -48,14 +51,26 @@ while true do
   local sent_title = false
   local had_error = false
   local aborted = false
+  local last_output_time = socket.gettime()
+  
   for line in output:lines() do
+    local current_time = socket.gettime()
+    
     -- Abort check
     local abort_sig = channels.SKYSCRAPER_ABORT:pop()
     if abort_sig and abort_sig.abort then
       aborted = true
+      log.write(string.format("[gen] Abort signal received for %s, killing process", game))
       channels.SKYSCRAPER_OUTPUT:push({ log = string.format("[gen] Aborted \"%s\"", game) })
-      break
+      if output then output:close() end
+      -- Kill any Skyscraper processes
+      os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
+      channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true, game = game, platform = current_platform })
+      goto continue
     end
+    
+    -- Update last output time since we got a line
+    last_output_time = current_time
     line = utils.strip_ansi_colors(line)
     if game ~= "fake-rom" then log.write(line, "skyscraper") end
     local res, error, skipped, rtype = parser.parse(line)
@@ -66,12 +81,16 @@ while true do
         platform = current_platform,
         success = not skipped,
         error = error,
+        original_filename = game,
+        input_folder = input_folder,
       })
       channels.SKYSCRAPER_OUTPUT:push({
         title = res,
         platform = current_platform,
         success = not skipped,
         error = error,
+        original_filename = game,
+        input_folder = input_folder,
       })
       sent_title = true
     end
@@ -80,7 +99,9 @@ while true do
       log.write("ERROR: " .. error, "skyscraper")
       channels.SKYSCRAPER_OUTPUT:push({ error = error })
       had_error = true
-      break
+      if output then output:close() end
+      channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true, game = game, platform = current_platform })
+      goto continue
     end
   end
   if output then output:close() end
@@ -94,14 +115,16 @@ while true do
       title = game,
       platform = current_platform,
       error = aborted and "Operation aborted" or ((not parsed) and "Failed to parse Skyscraper output" or nil),
-      success = (not had_error) and (not aborted)
+      success = (not had_error) and (not aborted),
+      original_filename = game,
+      input_folder = input_folder,
     })
   end
 
   -- channels.SKYSCRAPER_OUTPUT:push({ command_finished = true })
 
   channels.SKYSCRAPER_OUTPUT:push({ log = string.format("[gen] Finished \"%s\"", game) })
-  channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true })
+  channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true, game = game, platform = current_platform })
 end
 
 function love.threaderror(thread, errorstr)

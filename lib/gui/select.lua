@@ -103,7 +103,32 @@ return function(props)
 
 
       local contentX = self.x + iconSize + self.leftPadding * 0.5
-      love.graphics.setScissor(contentX, self.y, contentWidth, self.height) -- Clip text to button bounds
+      local prevScissorX, prevScissorY, prevScissorW, prevScissorH = love.graphics.getScissor()
+      local clipX1, clipY1 = love.graphics.transformPoint(contentX, self.y)
+      local clipX2, clipY2 = love.graphics.transformPoint(contentX + contentWidth, self.y + self.height)
+      local clipX = math.min(clipX1, clipX2)
+      local clipY = math.min(clipY1, clipY2)
+      local clipW = math.abs(clipX2 - clipX1)
+      local clipH = math.abs(clipY2 - clipY1)
+      local targetX, targetY, targetW, targetH = clipX, clipY, clipW, clipH
+      if prevScissorX then
+        local prevRight = prevScissorX + prevScissorW
+        local prevBottom = prevScissorY + prevScissorH
+        local clipRight = clipX + clipW
+        local clipBottom = clipY + clipH
+        targetX = math.max(prevScissorX, clipX)
+        targetY = math.max(prevScissorY, clipY)
+        targetW = math.min(prevRight, clipRight) - targetX
+        targetH = math.min(prevBottom, clipBottom) - targetY
+      end
+      local appliedScissor = false
+      local skipText = false
+      if targetW > 0 and targetH > 0 then
+        love.graphics.setScissor(targetX, targetY, targetW, targetH)
+        appliedScissor = true
+      else
+        skipText = true
+      end
 
       -- Draw the current option text, centered between the icons
       local currentOption = self.options[self.currentIndex] or ""
@@ -113,21 +138,29 @@ return function(props)
 
       local textWidth = font:getWidth(currentOption)
 
-      if textWidth <= contentWidth then
-        -- Center the text if it fits within the button
-        love.graphics.printf(currentOption, contentX, textY, contentWidth, 'center')
-      else
-        -- Scroll the text if it's longer than the button width
-        local textX = contentX - scrollOffset
-        love.graphics.print(currentOption, textX, self.y + self.topPadding)
+      if not skipText then
+        if textWidth <= contentWidth then
+          -- Center the text if it fits within the button
+          love.graphics.printf(currentOption, contentX, textY, contentWidth, 'center')
+        else
+          -- Scroll the text if it's longer than the button width
+          local textX = contentX - scrollOffset
+          love.graphics.print(currentOption, textX, self.y + self.topPadding)
 
-        -- Draw the wrapped text with a spacer to the right of the first text
-        if scrollOffset > textWidth - (contentWidth) then
-          love.graphics.print(spacer .. currentOption, textX + textWidth, self.y + self.topPadding)
+          -- Draw the wrapped text with a spacer to the right of the first text
+          if scrollOffset > textWidth - (contentWidth) then
+            love.graphics.print(spacer .. currentOption, textX + textWidth, self.y + self.topPadding)
+          end
         end
       end
 
-      love.graphics.setScissor()
+      if appliedScissor then
+        if prevScissorX then
+          love.graphics.setScissor(prevScissorX, prevScissorY, prevScissorW, prevScissorH)
+        else
+          love.graphics.setScissor()
+        end
+      end
       love.graphics.pop()
     end
   }

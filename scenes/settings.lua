@@ -6,6 +6,7 @@ local component         = require 'lib.gui.badr'
 local button            = require 'lib.gui.button'
 local label             = require 'lib.gui.label'
 local checkbox          = require 'lib.gui.checkbox'
+local select            = require 'lib.gui.select'
 local scroll_container  = require 'lib.gui.scroll_container'
 
 -- Virtual keyboard layout for gamepad input
@@ -498,6 +499,17 @@ local function on_filter_resolution(index)
   user_config:save()
 end
 
+local function on_concurrent_change(_, idx)
+  -- idx is 1-based (1-8), save it directly
+  user_config:insert("main", "concurrentGeneration", tostring(idx))
+  user_config:save()
+end
+
+local function on_rename_files_toggle(checked)
+  user_config:insert("main", "renameToOfficialName", checked and "1" or "0")
+  user_config:save()
+end
+
 local function on_change_platform(platform)
   local selected_platforms = user_config:get().platformsSelected
   local checked = tonumber(selected_platforms[platform]) == 1
@@ -591,6 +603,20 @@ function settings:load()
         text = 'Filter templates for my resolution',
         onToggle = on_filter_resolution,
         checked = user_config:read("main", "filterTemplates") == "1"
+      }
+      + label { text = 'Performance', icon = "wrench" }
+      + label { text = 'Concurrent artwork generation (1-8):' }
+      + select {
+        width = w_width - 20,
+        options = {"1", "2", "3", "4", "5", "6", "7", "8"},
+        startIndex = tonumber(user_config:read("main", "concurrentGeneration") or "3"),
+        onChange = on_concurrent_change
+      }
+      + label { text = 'Files', icon = "file" }
+      + checkbox {
+        text = 'Rename ROM files to official name',
+        onToggle = on_rename_files_toggle,
+        checked = user_config:read("main", "renameToOfficialName") == "1"
       }
       + label { text = 'Platforms', icon = "folder" }
       + (component { row = true, gap = 10 }

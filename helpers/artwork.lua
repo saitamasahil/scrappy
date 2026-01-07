@@ -95,9 +95,24 @@ function artwork.copy_artwork_type(platform, game, media_path, copy_path, output
 
   -- Find scraped artwork in output folder
   local scraped_art_path = string.format("%s/%s/%s.png", media_path, artwork.output_map[output_type], game)
-  local scraped_art = nativefs.newFileData(scraped_art_path)
+  
+  -- Wait a bit for file to be fully written (sometimes filesystem is slow)
+  local max_retries = 5
+  local retry_delay = 0.2 -- 200ms
+  local scraped_art = nil
+  
+  for i = 1, max_retries do
+    scraped_art = nativefs.newFileData(scraped_art_path)
+    if scraped_art then
+      break
+    end
+    if i < max_retries then
+      love.timer.sleep(retry_delay)
+    end
+  end
+  
   if not scraped_art then
-    log.write(string.format("Scraped artwork not found for output '%s'", artwork.output_map[output_type]))
+    log.write(string.format("Scraped artwork not found for output '%s' at path: %s", artwork.output_map[output_type], scraped_art_path))
     return
   end
 
@@ -107,9 +122,17 @@ function artwork.copy_artwork_type(platform, game, media_path, copy_path, output
     nativefs.createDirectory(dest_dir)
   end
   -- Copy to catalogue
-  local _, err = nativefs.write(string.format("%s/%s/%s.png", copy_path, output_type, game), scraped_art)
+  local dest_file = string.format("%s/%s/%s.png", copy_path, output_type, game)
+  local success, err = nativefs.write(dest_file, scraped_art)
   if err then
-    log.write(err)
+    log.write(string.format("Failed to write artwork to %s: %s", dest_file, err))
+  else
+    log.write(string.format("Successfully copied %s artwork to %s", output_type, dest_file))
+    -- Verify file was written
+    local verify = nativefs.getInfo(dest_file)
+    if not verify then
+      log.write(string.format("Warning: File write reported success but file not found: %s", dest_file))
+    end
   end
 end
 
@@ -124,13 +147,16 @@ function artwork.copy_to_catalogue(platform, game)
   output_path = utils.strip_quotes(output_path)
   local platform_str = muos.platforms[platform]
   if not platform_str then
-    log.write("Catalogue destination folder not found")
+    log.write(string.format("Catalogue destination folder not found for platform: %s", platform))
     return
   end
 
   local pea_key = normalize_platform(platform)
   local media_path = string.format("%s/%s/media", output_path, pea_key)
   local copy_path = string.format("%s/%s", catalogue_path, platform_str)
+  
+  log.write(string.format("Source media path: %s", media_path))
+  log.write(string.format("Destination catalogue path: %s", copy_path))
 
   -- Create platform directory and common subfolders if missing
   if not nativefs.getInfo(copy_path) then

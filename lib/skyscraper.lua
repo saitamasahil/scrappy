@@ -8,6 +8,21 @@ local function normalize_platform(platform)
   }
   return map[platform] or platform
 end
+
+-- Escape special shell characters in filenames
+-- This is critical for games with parentheses, apostrophes, etc.
+local function escape_shell_arg(arg)
+  if not arg then return arg end
+  -- For use with double quotes: escape backslash, double quote, dollar, backtick, and newline
+  -- Parentheses don't need escaping inside double quotes
+  local escaped = arg:gsub('\\', '\\\\')  -- Backslash first
+  escaped = escaped:gsub('"', '\\"')      -- Double quotes
+  escaped = escaped:gsub('%$', '\\$')     -- Dollar signs
+  escaped = escaped:gsub('`', '\\`')      -- Backticks
+  escaped = escaped:gsub('\n', '\\n')     -- Newlines
+  return escaped
+end
+
 require("globals")
 
 local json              = require("lib.json")
@@ -30,6 +45,41 @@ local function push_cache_command(command)
   end
 end
 
+local function push_gen_command(command)
+  if channels.SKYSCRAPER_GEN_INPUT then
+    channels.SKYSCRAPER_GEN_INPUT:push(command)
+  end
+end
+
+local function create_threads()
+  log.write("Creating Skyscraper threads")
+  cache_thread = love.thread.newThread("lib/backend/skyscraper_backend.lua")
+  gen_thread = love.thread.newThread("lib/backend/skyscraper_generate_backend.lua")
+  cache_thread:start()
+  gen_thread:start()
+  log.write("Skyscraper threads started")
+end
+
+function skyscraper.restart_threads()
+  log.write("Restarting Skyscraper threads after abort")
+  
+  -- Clear all channels to ensure clean state
+  channels.SKYSCRAPER_ABORT:clear()
+  channels.SKYSCRAPER_INPUT:clear()
+  channels.SKYSCRAPER_GEN_INPUT:clear()
+  channels.SKYSCRAPER_GAME_QUEUE:clear()
+  channels.SKYSCRAPER_OUTPUT:clear()
+  channels.SKYSCRAPER_GEN_OUTPUT:clear()
+  
+  -- Small delay to ensure threads fully terminate
+  love.timer.sleep(0.1)
+  
+  -- Create and start new threads
+  create_threads()
+  
+  log.write("Skyscraper threads restarted successfully")
+end
+
 -- Returns the preferred module for a given platform using peas.json
 local function get_default_module_for(platform)
   local pea_key = normalize_platform(platform)
@@ -48,20 +98,14 @@ local function get_default_module_for(platform)
   -- Global default module fallback
   return skyscraper.module
 end
-local function push_command(command)
-  if channels.SKYSCRAPER_GEN_INPUT then
-    channels.SKYSCRAPER_GEN_INPUT:push(command)
-  end
-end
 
 function skyscraper.init(config_path, binary)
   log.write("Initializing Skyscraper")
   skyscraper.config_path = WORK_DIR .. "/" .. config_path
   skyscraper.base_command = "./" .. binary
 
-  -- Create threads for cache and generate commands
-  cache_thread = love.thread.newThread("lib/backend/skyscraper_backend.lua")
-  gen_thread = love.thread.newThread("lib/backend/skyscraper_generate_backend.lua")
+  -- Create and start threads
+  create_threads()
 
   -- Load peas.json file
   local peas_file = nativefs.read(string.format("%s/static/.skyscraper/peas.json", WORK_DIR))
@@ -71,8 +115,6 @@ function skyscraper.init(config_path, binary)
     log.write("Unable to load peas.json file")
   end
 
-  cache_thread:start()
-  gen_thread:start()
   push_cache_command({ command = string.format("%s -v", skyscraper.base_command) })
 end
 
@@ -160,7 +202,13 @@ local function generate_command(config)
     command = string.format('%s -i "%s"', command, config.input)
   end
   if config.rom then
-    command = string.format('%s --startat "%s" --endat "%s"', command, config.rom, config.rom)
+    -- Escape special characters for ROM filenames to handle characters
+    -- like parentheses, which are common in ROM names (e.g., "Super Metroid (USA).sfc")
+    log.write(string.format("[DEBUG] Original ROM filename: %s", config.rom))
+    local escaped_rom = escape_shell_arg(config.rom)
+    log.write(string.format("[DEBUG] Escaped ROM filename: %s", escaped_rom))
+    -- Use double quotes since other paths in the command use double quotes
+    command = string.format('%s --startat "%s" --endat "%s"', command, escaped_rom, escaped_rom)
   end
   if config.artwork then
     command = string.format('%s -a "%s"', command, config.artwork)
@@ -176,13 +224,10 @@ local function generate_command(config)
     command = string.format('%s -o "%s"', command, config.output)
   end
 
-  -- Threads: read from config [main] threads, default 8
-  local threads_cfg = skyscraper_config:read("main", "threads")
-  local threads = tonumber(threads_cfg or "") or 8
-  if threads < 1 then threads = 1 end
-  command = string.format('%s -t %d', command, threads)
   -- Use 'pegasus' frontend for simpler gamelist generation
   command = string.format('%s -f pegasus', command)
+  -- Log the command for debugging
+  log.write(string.format("Generated command: %s", command))
   return command
 end
 
@@ -191,7 +236,7 @@ function skyscraper.run(command, input_folder, platform, op, game)
   op = op or "generate"
   game = game or "none"
   if op == "generate" then
-    push_command({
+    push_gen_command({
       command = skyscraper.base_command .. command,
       platform = platform,
       op = op,
