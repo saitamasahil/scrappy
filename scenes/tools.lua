@@ -491,7 +491,7 @@ function tools:load()
             text = "Edit region priorities",
             width = item_width,
             onClick = open_region_editor,
-            icon = "info"
+            icon = "region"
           }
           + listitem {
             text = "Update cache (uses threads, doesn't generate artwork)",
@@ -521,7 +521,7 @@ function tools:load()
             text = "Clear Skyscraper cache (can't be undone!)",
             width = item_width,
             onClick = on_clear_cache_press,
-            icon = "trash"
+            icon = "cache_clean"
           }
         )
       )

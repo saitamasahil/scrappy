@@ -601,7 +601,7 @@ function settings:load()
         onToggle = on_filter_resolution,
         checked = user_config:read("main", "filterTemplates") == "1"
       }
-      + label { text = 'Performance', icon = "wrench" }
+      + label { text = 'Performance', icon = "performance" }
       + label { text = 'Concurrent artwork generation (1-8):' }
       + select {
         width = w_width - 20,
