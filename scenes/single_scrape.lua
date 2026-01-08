@@ -241,7 +241,8 @@ local function load_rom_buttons(src_platform, dest_platform)
       if show_missing_only and not has_missing_media(dest_platform, rom) then
         goto continue
       end
-      local is_cached = artwork.cached_game_ids[dest_platform] and artwork.cached_game_ids[dest_platform][rom]
+      -- Green (2) if artwork exists, Red (3) if missing
+      local has_artwork = not has_missing_media(dest_platform, rom)
       rom_list = rom_list + listitem {
         text = rom,
         width = ((w_width - 30) / 3) * 2,
@@ -250,7 +251,7 @@ local function load_rom_buttons(src_platform, dest_platform)
         end,
         disabled = true,
         active = true,
-        indicator = is_cached and 2 or 3
+        indicator = has_artwork and 2 or 3
       }
     end
     ::continue::
