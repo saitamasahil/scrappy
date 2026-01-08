@@ -1,7 +1,7 @@
 ![scrappy](https://github.com/user-attachments/assets/78e48f14-45a8-427d-99ba-80f20ba018dd)
 # Scrappy
 > Maintained fork by **saitamasahil** · Original author **gabrielfvale** · Original repo: https://github.com/gabrielfvale/scrappy
-Scrappy is an art scraper for muOS, with the standout feature of incorporating a fully-fledged **Skyscraper** app under the hood. This integration enables near-complete support for artwork XML layouts, allowing Scrappy to scrape, cache assets, and generate artwork using XML mixes with ease.
+Scrappy is an artwork scraper for muOS, with the standout feature of incorporating a fully-fledged **Skyscraper** app under the hood. This integration enables near-complete support for artwork XML layouts, allowing Scrappy to scrape, cache assets, and generate artwork using XML mixes with ease. This fork of Scrappy is maintained to improve compatibility with muOS, add new features, provide ongoing updates, and ensure long-term support while staying true to the original vision of the project.
 
 Please read the Wiki for more info on installation and configuration!
 * [Getting started](https://github.com/saitamasahil/scrappy/wiki/Getting-Started)
@@ -18,6 +18,13 @@ Please read the Wiki for more info on installation and configuration!
 * OTA updates
 
 ![image](https://github.com/user-attachments/assets/ac320ab1-30ed-459c-8b32-d0b201232b34)
+
+## Installation
+To install Scrappy, follow these steps:
+1. Download the [latest release](https://github.com/saitamasahil/scrappy/releases) (not the update package - that's for OTA!).
+2. Move the downloaded file to the `/mnt/mmc/MUOS/ARCHIVE` folder.
+3. Open **Archive Manager** and select the file to install.
+4. After installation, you’ll find an entry called "Scrappy" in the **Applications** section.
 
 ## Caveats
 * Screenscraper credentials need to be added in settings
@@ -37,13 +44,15 @@ Please read the Wiki for more info on installation and configuration!
 
 - **Snow (snowram)** - for the huge undertaking of compiling Qt5 and sharing with this project [Kofi](https://ko-fi.com/snowram)
 - **Portmaster and their devs** - for great documentation on porting games/software for Linux handhelds [Portmaster](https://portmaster.games/porting.html)
+- **Scrappy's original developer [Gabriel Freire](https://github.com/gabrielfvale)** - for creating Scrappy and laying the foundation for this project. Support their work at [Kofi](https://ko-fi.com/gabrielfvale)
 - Testers and many other contributors
 
 ## Supporting the project
-- **Testing and feedback:** The most valuable support for this maintained fork is testing new builds, reporting issues, and submitting improvements via pull requests.
-- **Donations to the original author:** Financial contributions via Ko‑fi support the original creator of Scrappy.
+If you find this project useful, please consider leaving a [star on GitHub](https://github.com/saitamasahil/scrappy)
 
-[![Ko-Fi](https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/gabrielfvale)
+If you would like to support my work & this fork further, you can donate here:
+
+[![Ko-Fi](https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/saitamasahil)
 
 ## Contributing
 
