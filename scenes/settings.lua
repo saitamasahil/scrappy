@@ -597,7 +597,7 @@ function settings:load()
       + label { text = function() return ss_status end }
       + label { text = 'Resolution', icon = "display" }
       + checkbox {
-        text = 'Filter templates for my resolution',
+        text = 'Filter templates for my resolution (Restart required)',
         onToggle = on_filter_resolution,
         checked = user_config:read("main", "filterTemplates") == "1"
       }
