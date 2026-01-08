@@ -290,6 +290,9 @@ function user_config:load_platforms()
         ["segacd"] = "segacd",
         ["megacd"] = "segacd",
         ["cd-i"] = "cdi",
+        ["gamecube"] = "gc",
+        ["gc"] = "gc",
+        ["nintendo gamecube"] = "gc",
       }
       if alias[item_l] then assignment = alias[item_l] end
       -- Exact key/label match
