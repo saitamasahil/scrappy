@@ -22,6 +22,7 @@ local scraper_index     = 1
 
 local region_popup, region_menu, region_list
 local confirm_popup, confirm_popup_visible = nil, false
+local clear_cache_popup_visible = false
 local pending_region_prios = nil
 local selected_region_index = 1
 local region_prios = {}
@@ -351,6 +352,23 @@ local function show_cache_warning()
   confirm_popup_visible = true
 end
 
+-- Standalone clear cache functions
+local function on_confirm_clear_cache_standalone()
+  local cache_path = get_cache_path()
+  log.write("Clearing cache at: " .. cache_path)
+  clear_directory(cache_path)
+  clear_cache_popup_visible = false
+  dispatch_info("Cache Cleared", "Skyscraper cache has been cleared.\nYou will need to re-scrape your ROMs.")
+end
+
+local function on_cancel_clear_cache_standalone()
+  clear_cache_popup_visible = false
+end
+
+local function on_clear_cache_press()
+  clear_cache_popup_visible = true
+end
+
 local function save_region_prios()
   -- Store pending changes and show confirmation
   pending_region_prios = {}
@@ -499,6 +517,12 @@ function tools:load()
             onClick = on_reset_configs,
             icon = "refresh"
           }
+          + listitem {
+            text = "Clear Skyscraper cache (can't be undone!)",
+            width = item_width,
+            onClick = on_clear_cache_press,
+            icon = "trash"
+          }
         )
       )
 
@@ -595,6 +619,70 @@ local function draw_confirm_popup()
   love.graphics.print("Cancel", cancel_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
 end
 
+-- Draw the standalone clear cache popup
+local function draw_clear_cache_popup()
+  if not clear_cache_popup_visible then return end
+  
+  local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
+  local font = love.graphics.getFont()
+  local font_h = font:getHeight()
+  
+  -- Dim background
+  love.graphics.setColor(0, 0, 0, 0.8)
+  love.graphics.rectangle("fill", 0, 0, sw, sh)
+  
+  -- Popup box dimensions - taller for more content
+  local box_w = math.min(sw - 40, 380)
+  local box_h = 180
+  local box_x = (sw - box_w) / 2
+  local box_y = (sh - box_h) / 2
+  
+  -- Draw box background
+  love.graphics.setColor(0.18, 0.18, 0.18, 1)
+  love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8, 8)
+  
+  -- Draw border
+  love.graphics.setColor(0.4, 0.4, 0.4, 1)
+  love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8, 8)
+  
+  love.graphics.setColor(1, 1, 1, 1)
+  
+  -- Title
+  love.graphics.printf("Clear Cache?", box_x, box_y + 15, box_w, "center")
+  
+  -- Warning message
+  local msg = "This clears the cache. Re-scrape ROMs to rebuild.\nExisting artwork will not be deleted."
+  love.graphics.printf(msg, box_x + 15, box_y + 45, box_w - 30, "center")
+  
+  -- Button icons and labels - positioned below text
+  local icon_size = 24
+  local btn_y = box_y + box_h - 45
+  
+  -- Calculate button positions
+  local left_center = box_x + box_w * 0.25
+  local right_center = box_x + box_w * 0.75
+  
+  -- Clear button (A)
+  local proceed_total_w = icon_size + 6 + font:getWidth("Clear")
+  local proceed_x = left_center - proceed_total_w / 2
+  if button_a_icon then
+    local iw, ih = button_a_icon:getDimensions()
+    local sx, sy = icon_size / iw, icon_size / ih
+    love.graphics.draw(button_a_icon, proceed_x, btn_y, 0, sx, sy)
+  end
+  love.graphics.print("Clear", proceed_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+  
+  -- Cancel button (B)
+  local cancel_total_w = icon_size + 6 + font:getWidth("Cancel")
+  local cancel_x = right_center - cancel_total_w / 2
+  if button_b_icon then
+    local iw, ih = button_b_icon:getDimensions()
+    local sx, sy = icon_size / iw, icon_size / ih
+    love.graphics.draw(button_b_icon, cancel_x, btn_y, 0, sx, sy)
+  end
+  love.graphics.print("Cancel", cancel_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+end
+
 function tools:draw()
   love.graphics.clear(theme:read_color("main", "BACKGROUND", "#000000"))
   menu:draw()
@@ -604,10 +692,23 @@ function tools:draw()
   end
   -- Draw confirmation popup on top of everything
   draw_confirm_popup()
+  draw_clear_cache_popup()
 end
 
 function tools:keypressed(key)
-  -- Handle confirmation popup first (highest priority)
+  -- Handle clear cache popup first (highest priority)
+  if clear_cache_popup_visible then
+    if key == "return" or key == "a" then
+      on_confirm_clear_cache_standalone()
+      return
+    elseif key == "escape" or key == "b" then
+      on_cancel_clear_cache_standalone()
+      return
+    end
+    return -- Block all other keys while popup is visible
+  end
+  
+  -- Handle confirmation popup (region priorities)
   if confirm_popup_visible then
     if key == "return" or key == "a" then
       on_confirm_cache_clear()
