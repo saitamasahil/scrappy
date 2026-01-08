@@ -97,29 +97,13 @@ while true do
     end
 
     local parsed = false
-
     local retriable_error = false
-    local last_output_time = socket.gettime()
-    local last_log_time = socket.gettime()
-    local no_output_timeout = 600 -- Start with 10 min timeout for initialization/connection
-    local scraping_started = false
     local line_count = 0
     
-    log.write(string.format("[fetch] Reading output from Skyscraper (init timeout: %ds)", no_output_timeout))
+    log.write("[fetch] Reading output from Skyscraper...")
     
     for line in output:lines() do
       line_count = line_count + 1
-      local current_time = socket.gettime()
-      
-      -- Calculate time since last output BEFORE checking abort/timeout
-      local elapsed_since_output = current_time - last_output_time
-      
-      -- Check for scraping start to reduce timeout
-      if not scraping_started and (line:find("Fetching limits") or line:find("Starting scraping run") or line:find("Game '")) then
-        scraping_started = true
-        no_output_timeout = 120 -- Reduce to 120s once scraping begins
-        log.write(string.format("[fetch] Scraping started, reducing timeout to %ds", no_output_timeout))
-      end
       
       -- Abort check every line
       local abort_sig = channels.SKYSCRAPER_ABORT:pop()
@@ -152,33 +136,6 @@ while true do
         break
       end
 
-      -- Check if process is hung (no output for extended period)
-      if elapsed_since_output > no_output_timeout then
-        log.write(string.format("[fetch] No output for %ds, process appears hung (line #%d: '%s')", 
-          math.floor(elapsed_since_output), line_count, line:sub(1, 80)))
-        channels.SKYSCRAPER_OUTPUT:push({ log = string.format("[fetch] Timeout after %ds - killing process", math.floor(elapsed_since_output)) })
-        if output then
-          pcall(output.close, output)
-          output = nil
-        end
-        os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
-        aborted = true
-        break
-      end
-      
-      -- Update last output time since we got a line
-      last_output_time = current_time
-      
-
-      
-      -- Log long delays between lines (internal log only; keep UI quiet)
-      if elapsed_since_output > 15 then
-        log.write(string.format("[fetch] Long delay: %ds since last output (line #%d)", math.floor(elapsed_since_output), line_count))
-      end
-      
-      -- Update last output time since we got a line
-      last_output_time = current_time
-
       line = utils.strip_ansi_colors(line)
       -- RUNNING TASK; PUSH OUTPUT
       if op == "update" or op == "import" then
@@ -210,9 +167,8 @@ while true do
     end
     
     -- Log completion details
-    local total_time = socket.gettime() - last_output_time
-    log.write(string.format("[fetch] Process ended. Lines received: %d, Aborted: %s, Retriable error: %s, Total time: %.2fs", 
-      line_count, tostring(aborted), tostring(retriable_error), total_time))
+    log.write(string.format("[fetch] Process ended. Lines received: %d, Aborted: %s, Retriable error: %s", 
+      line_count, tostring(aborted), tostring(retriable_error)))
 
     if aborted then
       -- graceful stop
