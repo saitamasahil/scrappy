@@ -6,6 +6,7 @@ local muos = {
   ASSIGN_JSON = "/opt/muos/share/info/assign/assign.json",
   ASSIGN_DIR = "/opt/muos/share/info/assign",
   CORE_DIR = "/opt/muos/share/info/core",
+  USER_CORE_DIR = "/run/muos/storage/info/core",
   platforms = {
     ["amstradcpc"] = "Amstrad",
     ["arcade"] = "Arcade",

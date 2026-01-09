@@ -226,27 +226,49 @@ function user_config:load_platforms()
   for _, item in ipairs(platforms) do
     -- Use leaf folder for core assignment (so nested like "Consoles/nes" resolves to "nes")
     local leaf = tostring(item):match("[^/]+$") or tostring(item)
+    -- Also get parent folder for inheritance (e.g., "GBA" from "GBA/Homebrew")
+    local parent = tostring(item):match("^([^/]+)/") or nil
     local assignment = nil
 
-    -- 1. Attempt to resolve via muOS core.cfg
-    local core_path = muos.CORE_DIR .. "/" .. leaf .. "/core.cfg"
-    local muos_core_info = nativefs.getInfo(core_path)
-
-    if muos_core_info then
-      local file = nativefs.read(core_path)
-      if file then
-        local folder_name, err = parse_dir(file)
-        if not err and folder_name then
-          assignment = muos.assignment[folder_name]
-          -- Fallback for cores with different labels (e.g., DOSBox Pure, blueMSX)
-          if not assignment then
-            local fn = tostring(folder_name):lower()
-            if fn:find("dosbox") then assignment = "pc" end
-            if fn:find("msx") or fn:find("bluemsx") then assignment = "msx" end
+    -- Helper function to try reading core.cfg from a path and get assignment
+    local function try_core_cfg(core_base_path, folder_name_to_check)
+      local core_path = core_base_path .. "/" .. folder_name_to_check .. "/core.cfg"
+      local core_info = nativefs.getInfo(core_path)
+      if core_info then
+        local file = nativefs.read(core_path)
+        if file then
+          local folder_name, err = parse_dir(file)
+          if not err and folder_name then
+            local result = muos.assignment[folder_name]
+            -- Fallback for cores with different labels (e.g., DOSBox Pure, blueMSX)
+            if not result then
+              local fn = tostring(folder_name):lower()
+              if fn:find("dosbox") then result = "pc" end
+              if fn:find("msx") or fn:find("bluemsx") then result = "msx" end
+            end
+            return result
           end
-        else
-          if err then log.write(err) end
         end
+      end
+      return nil
+    end
+
+    -- 1. Attempt to resolve via muOS core.cfg for LEAF folder
+    -- Check user-specific core path first (user assignments), then system path
+    assignment = try_core_cfg(muos.USER_CORE_DIR, leaf)
+    if not assignment then
+      assignment = try_core_cfg(muos.CORE_DIR, leaf)
+    end
+
+    -- 1b. If leaf has no core.cfg and this is a subfolder, try PARENT folder's core.cfg
+    if not assignment and parent then
+      -- Check user-specific path first, then system path
+      assignment = try_core_cfg(muos.USER_CORE_DIR, parent)
+      if not assignment then
+        assignment = try_core_cfg(muos.CORE_DIR, parent)
+      end
+      if assignment then
+        log.write(string.format("Inherited platform '%s' for '%s' from parent folder '%s'", assignment, item, parent))
       end
     end
 
@@ -322,6 +344,44 @@ function user_config:load_platforms()
       end
       if assignment then
         log.write(string.format("Inferred platform '%s' for folder '%s' via leaf label match", assignment, item))
+      end
+    end
+
+    -- 2b. Fallback: if still no assignment and has parent, try parent folder name against aliases
+    if not assignment and parent then
+      local parent_l = tostring(parent):lower()
+      local alias = {
+        ["gba"] = "gba",
+        ["gbc"] = "gbc",
+        ["gb"] = "gb",
+        ["nes"] = "nes",
+        ["snes"] = "snes",
+        ["n64"] = "n64",
+        ["nds"] = "nds",
+        ["psx"] = "psx",
+        ["psp"] = "psp",
+        ["genesis"] = "megadrive",
+        ["megadrive"] = "megadrive",
+        ["arcade"] = "arcade",
+        ["mame"] = "arcade",
+      }
+      if alias[parent_l] then
+        assignment = alias[parent_l]
+        log.write(string.format("Inherited platform '%s' for '%s' from parent folder alias", assignment, item))
+      end
+      -- Also try muos.platforms lookup for parent
+      if not assignment then
+        for key, label in pairs(muos.platforms or {}) do
+          if type(label) == "string" then
+            local key_l = tostring(key):lower()
+            local label_l = label:lower()
+            if label_l:find(parent_l, 1, true) or key_l == parent_l then
+              assignment = key
+              log.write(string.format("Inherited platform '%s' for '%s' from parent folder '%s'", assignment, item, parent))
+              break
+            end
+          end
+        end
       end
     end
 
