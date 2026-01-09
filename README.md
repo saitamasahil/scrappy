@@ -23,7 +23,9 @@ Please read the Wiki for more info on installation and configuration!
 ## What’s Different in This Fork
 1. Supports the latest version of muOS Goose.
 2. You can add your ScreenScraper account within the settings using the on-screen keyboard.
-3. Concurrent artwork generation which controls how many ROMs are processed at the same time during the artwork generation step. Faster scraping, but uses more CPU/memory.
+3. Concurrent artwork generation which controls how many ROMs are processed at the same time during the artwork generation step.
+   * Example: If set to 4, Scrappy generates artwork for 4 ROMs simultaneously instead of one at a time.
+   * Result: Faster scraping, but uses more CPU/memory.
 4. Smooth scrolling - hold navigation buttons to scroll continuously instead of pressing repeatedly.
 5. Scrape only missing artwork.
 6. Option to show only missing artwork in Scrape single rom.
