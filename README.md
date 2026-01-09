@@ -1,6 +1,7 @@
 ![scrappy](https://github.com/user-attachments/assets/78e48f14-45a8-427d-99ba-80f20ba018dd)
 # Scrappy
 > Maintained fork by **saitamasahil** · Original author **gabrielfvale** · Original repo: https://github.com/gabrielfvale/scrappy
+
 Scrappy is an artwork scraper for muOS, with the standout feature of incorporating a fully-fledged **Skyscraper** app under the hood. This integration enables near-complete support for artwork XML layouts, allowing Scrappy to scrape, cache assets, and generate artwork using XML mixes with ease. This fork of Scrappy is maintained to improve compatibility with muOS, add new features, provide ongoing updates, and ensure long-term support while staying true to the original vision of the project.
 
 Please read the Wiki for more info on installation and configuration!
@@ -18,6 +19,17 @@ Please read the Wiki for more info on installation and configuration!
 * OTA updates
 
 ![image](https://github.com/user-attachments/assets/ac320ab1-30ed-459c-8b32-d0b201232b34)
+
+## What’s Different in This Fork
+1. Supports the latest version of muOS Goose.
+2. You can add your ScreenScraper account within the settings using the on-screen keyboard.
+3. Concurrent artwork generation which controls how many ROMs are processed at the same time during the artwork generation step. Faster scraping, but uses more CPU/memory.
+4. Smooth scrolling - hold navigation buttons to scroll continuously instead of pressing repeatedly.
+5. Scrape only missing artwork.
+6. Option to show only missing artwork in Scrape single rom.
+7. Option to edit region priorities in Advanced tools.
+8. Option to clear cache in Advanced tools.
+9. Many new templates.
 
 ## Installation
 To install Scrappy, follow these steps:
