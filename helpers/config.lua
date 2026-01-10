@@ -253,20 +253,19 @@ function user_config:load_platforms()
       return nil
     end
 
-    -- 1. Attempt to resolve via muOS core.cfg for LEAF folder
-    -- Check user-specific core path first (user assignments), then system path
-    assignment = try_core_cfg(muos.USER_CORE_DIR, leaf)
+    -- 1. Attempt to resolve via muOS core.cfg
+    -- MuOS stores core assignments at /opt/muos/share/info/core/ with full folder path
+    -- e.g., /opt/muos/share/info/core/Atari Collection/Atari 5200/core.cfg
+    -- Check FULL folder path first (for nested folders like "Atari Collection/Atari 5200")
+    assignment = try_core_cfg(muos.CORE_DIR, item)
+    -- Then try just the leaf folder name (for simple folders like "NES")
     if not assignment then
       assignment = try_core_cfg(muos.CORE_DIR, leaf)
     end
 
-    -- 1b. If leaf has no core.cfg and this is a subfolder, try PARENT folder's core.cfg
+    -- 1b. If still no assignment and this is a subfolder, try PARENT folder's core.cfg
     if not assignment and parent then
-      -- Check user-specific path first, then system path
-      assignment = try_core_cfg(muos.USER_CORE_DIR, parent)
-      if not assignment then
-        assignment = try_core_cfg(muos.CORE_DIR, parent)
-      end
+      assignment = try_core_cfg(muos.CORE_DIR, parent)
       if assignment then
         log.write(string.format("Inherited platform '%s' for '%s' from parent folder '%s'", assignment, item, parent))
       end
