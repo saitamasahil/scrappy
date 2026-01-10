@@ -803,15 +803,20 @@ end
 
 -- Reads games from fetch queue and pushes "ready" games into generate queue
 local function process_game_queue()
-  -- Check for finished tasks
-  local finished_signal = channels.SKYSCRAPER_GEN_OUTPUT:pop()
-  if finished_signal and finished_signal.finished then
-    -- Find and remove the finished task by matching game and platform
-    for i, task in ipairs(state.tasks_in_progress) do
-      if task.title == finished_signal.game and task.platform == finished_signal.platform then
-        print(string.format("Finished task \"%s\" on platform %s", task.game_file, task.platform))
-        table.remove(state.tasks_in_progress, i)
-        break
+  -- Drain ALL finished signals (not just one per frame)
+  -- This fixes the issue where scraping gets stuck near the end with concurrent tasks
+  while true do
+    local finished_signal = channels.SKYSCRAPER_GEN_OUTPUT:pop()
+    if not finished_signal then break end
+    
+    if finished_signal.finished then
+      -- Find and remove the finished task by matching game and platform
+      for i, task in ipairs(state.tasks_in_progress) do
+        if task.title == finished_signal.game and task.platform == finished_signal.platform then
+          print(string.format("Finished task \"%s\" on platform %s", task.game_file, task.platform))
+          table.remove(state.tasks_in_progress, i)
+          break
+        end
       end
     end
   end
