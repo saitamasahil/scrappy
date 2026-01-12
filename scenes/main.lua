@@ -894,9 +894,12 @@ local function process_game_queue()
 end
 
 function main:update(dt)
-  local t = channels.SKYSCRAPER_OUTPUT:pop()
-  if t then
-    update_state(t) -- TODO: Refactor
+  -- Drain ALL output messages from Skyscraper (not just one per frame)
+  -- This prevents message pile-up when multiple concurrent tasks finish
+  while true do
+    local t = channels.SKYSCRAPER_OUTPUT:pop()
+    if not t then break end
+    update_state(t)
   end
   -- If a preview was scheduled and the user paused, generate it now
   if scheduled_preview_at and love.timer.getTime() >= scheduled_preview_at then

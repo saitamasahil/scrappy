@@ -204,9 +204,7 @@ local function generate_command(config)
   if config.rom then
     -- Escape special characters for ROM filenames to handle characters
     -- like parentheses, which are common in ROM names (e.g., "Super Metroid (USA).sfc")
-    log.write(string.format("[DEBUG] Original ROM filename: %s", config.rom))
     local escaped_rom = escape_shell_arg(config.rom)
-    log.write(string.format("[DEBUG] Escaped ROM filename: %s", escaped_rom))
     -- Use double quotes since other paths in the command use double quotes
     command = string.format('%s --startat "%s" --endat "%s"', command, escaped_rom, escaped_rom)
   end
