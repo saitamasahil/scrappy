@@ -810,9 +810,9 @@ local function process_game_queue()
     if not finished_signal then break end
     
     if finished_signal.finished then
-      -- Find and remove the finished task by matching game and platform
+      -- Find and remove the finished task by matching game_file and platform
       for i, task in ipairs(state.tasks_in_progress) do
-        if task.title == finished_signal.game and task.platform == finished_signal.platform then
+        if task.game_file == finished_signal.game and task.platform == finished_signal.platform then
           print(string.format("Finished task \"%s\" on platform %s", task.game_file, task.platform))
           table.remove(state.tasks_in_progress, i)
           break

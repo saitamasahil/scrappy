@@ -100,7 +100,7 @@ while true do
       channels.SKYSCRAPER_OUTPUT:push({ error = error })
       had_error = true
       if output then output:close() end
-      channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true, game = game, platform = current_platform })
+      channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true, game = original_game, platform = current_platform })
       goto continue
     end
   end
@@ -124,7 +124,7 @@ while true do
   -- channels.SKYSCRAPER_OUTPUT:push({ command_finished = true })
 
   channels.SKYSCRAPER_OUTPUT:push({ log = string.format("[gen] Finished \"%s\"", game) })
-  channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true, game = game, platform = current_platform })
+  channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true, game = original_game, platform = current_platform })
 end
 
 function love.threaderror(thread, errorstr)
