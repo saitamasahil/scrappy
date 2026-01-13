@@ -97,7 +97,15 @@ while true do
 
     if error ~= nil and error ~= "" then
       log.write("ERROR: " .. error, "skyscraper")
-      channels.SKYSCRAPER_OUTPUT:push({ error = error })
+      -- IMPORTANT: Include title so state.tasks gets decremented in main.lua
+      channels.SKYSCRAPER_OUTPUT:push({
+        title = game,
+        platform = current_platform,
+        success = false,
+        error = error,
+        original_filename = game,
+        input_folder = input_folder,
+      })
       had_error = true
       if output then output:close() end
       channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true, game = original_game, platform = current_platform })

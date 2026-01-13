@@ -211,9 +211,11 @@ local function scrape_platforms()
   -- Load selected platforms
   local selected_platforms = user_config:get().platformsSelected
   local rom_path, _ = user_config:get_paths()
-  -- Reset tasks
+  -- Reset tasks and clear any stale queued games from previous runs
   state.tasks = 0
   state.failed_tasks = {}
+  state.queued_games = {}
+  state.tasks_in_progress = {}
   -- Process cached data from quickid and db
   if user_config:read("main", "parseCache") == "1" then
     artwork.process_cached_data()
@@ -323,7 +325,7 @@ local function scrape_platforms()
       -- Queue cached games for generation phase instead of processing immediately
       for i = 1, #game_list do
         table.insert(state.queued_games, {
-          game = game_list[i],
+          title = game_list[i],
           platform = dest,
           input_folder = src,
           skipped = false
@@ -340,7 +342,7 @@ local function scrape_platforms()
   if state.total > 0 then
     state.scraping = true
     state.fetch_phase = true
-    state.queued_games = {}
+    -- NOTE: Do NOT clear queued_games here - it may have been populated above for cached platforms
     
     -- If no platforms need fetching, go straight to generation
     if state.pending_platforms == 0 then
@@ -456,14 +458,17 @@ local function update_state(t)
         
         -- Start processing queued games by pushing them back to the queue
         for i, game_info in ipairs(state.queued_games) do
-          print(string.format("[%d/%d] Queueing %s for generation", i, #state.queued_games, game_info.title))
+          local game_title = game_info.title or game_info.game  -- Support both keys for backward compatibility
+          print(string.format("[%d/%d] Queueing %s for generation", i, #state.queued_games, game_title))
           channels.SKYSCRAPER_GAME_QUEUE:push({
-            game = game_info.title,
+            game = game_title,
             platform = game_info.platform,
             input_folder = game_info.input_folder,
             skipped = false
           })
         end
+        -- Clear queued_games after processing to prevent reprocessing
+        state.queued_games = {}
       end
     end
   end
@@ -832,12 +837,34 @@ local function process_game_queue()
     
     if finished_signal.finished then
       -- Find and remove the finished task by matching game_file and platform
+      local found = false
       for i, task in ipairs(state.tasks_in_progress) do
         if task.game_file == finished_signal.game and task.platform == finished_signal.platform then
           print(string.format("Finished task \"%s\" on platform %s", task.game_file, task.platform))
           table.remove(state.tasks_in_progress, i)
+          found = true
           break
         end
+      end
+      
+      -- Fallback: if no exact match found but we have tasks for this platform, remove the oldest one
+      -- This prevents stuck states when game file names don't match exactly
+      if not found and #state.tasks_in_progress > 0 then
+        for i, task in ipairs(state.tasks_in_progress) do
+          if task.platform == finished_signal.platform then
+            print(string.format("Fallback: removing task \"%s\" on platform %s (signal game: %s)", 
+              task.game_file, task.platform, finished_signal.game or "nil"))
+            table.remove(state.tasks_in_progress, i)
+            found = true
+            break
+          end
+        end
+      end
+      
+      -- Last resort: just remove the oldest task to prevent permanent stuck state
+      if not found and #state.tasks_in_progress > 0 then
+        print(string.format("Last resort: removing oldest task \"%s\"", state.tasks_in_progress[1].game_file or "unknown"))
+        table.remove(state.tasks_in_progress, 1)
       end
     end
   end
