@@ -82,10 +82,14 @@ local state = {
 }
 
 --[[
+  Map of games, used to look up game files and their source folders for each platform
   Format:
   {
     "platform": {
-      "game title": "game file"
+      "game title": {
+        file = "game file",
+        input_folder = "source folder path"
+      }
     }
   }
 --]]
@@ -308,9 +312,14 @@ local function scrape_platforms()
         goto continue_rom
       end
 
-      -- Save in reference map
+      -- Save in reference map (store both file and input_folder for each game)
       if game_file_map[dest] == nil then game_file_map[dest] = {} end
-      if game_title then game_file_map[dest][game_title] = rom end
+      if game_title then
+        game_file_map[dest][game_title] = {
+          file = rom,
+          input_folder = src
+        }
+      end
       state.tasks = state.tasks + 1
       table.insert(game_list, game_title)
 
@@ -351,20 +360,12 @@ local function scrape_platforms()
       
       -- Push all games directly to the generation queue since we're skipping fetch
       for platform, games in pairs(game_file_map) do
-        for game_title, game_file in pairs(games) do
-          -- Find the input_folder for this platform
-          local input_folder = nil
-          for src, dest in pairs(platforms or {}) do
-            if dest == platform then
-              input_folder = src
-              break
-            end
-          end
-          
+        for game_title, game_info in pairs(games) do
+          -- Use the input_folder stored per-game (fixes bug where multiple folders map to same platform)
           channels.SKYSCRAPER_GAME_QUEUE:push({
             game = game_title,
             platform = platform,
-            input_folder = input_folder,
+            input_folder = game_info.input_folder,
             skipped = false
           })
         end
@@ -901,7 +902,12 @@ local function process_game_queue()
       return
     end
     if game_file_map[platform] and game_file_map[platform][game] then
-      local game_file = game_file_map[platform][game]
+      local game_info = game_file_map[platform][game]
+      local game_file = game_info.file
+      -- Use the stored input_folder if available (fixes multi-folder platform bug)
+      if not input_folder then
+        input_folder = game_info.input_folder
+      end
       
       -- Two-phase logic: queue during fetch, process during generation
       if state.fetch_phase then
