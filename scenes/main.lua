@@ -346,6 +346,27 @@ local function scrape_platforms()
     if state.pending_platforms == 0 then
       log.write("All games cached, starting generation phase")
       state.fetch_phase = false
+      
+      -- Push all games directly to the generation queue since we're skipping fetch
+      for platform, games in pairs(game_file_map) do
+        for game_title, game_file in pairs(games) do
+          -- Find the input_folder for this platform
+          local input_folder = nil
+          for src, dest in pairs(platforms or {}) do
+            if dest == platform then
+              input_folder = src
+              break
+            end
+          end
+          
+          channels.SKYSCRAPER_GAME_QUEUE:push({
+            game = game_title,
+            platform = platform,
+            input_folder = input_folder,
+            skipped = false
+          })
+        end
+      end
     end
     
     if scraping_window then
