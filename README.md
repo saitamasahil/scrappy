@@ -1,4 +1,6 @@
-![scrappy](https://github.com/user-attachments/assets/78e48f14-45a8-427d-99ba-80f20ba018dd)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/78e48f14-45a8-427d-99ba-80f20ba018dd" alt="scrappy">
+</p>
 # Scrappy
 > Maintained fork by **saitamasahil** · Original author **gabrielfvale** · Original repo: https://github.com/gabrielfvale/scrappy
 
@@ -23,17 +25,27 @@ Please read the Wiki for more info on installation and configuration!
 ## What’s Different in This Fork
 1. Supports the latest version of muOS Goose.
 2. You can add your ScreenScraper account within the settings using the on-screen keyboard.
+   <img width="640" height="480" alt="image" src="https://github.com/user-attachments/assets/497d59d8-cd4a-437d-aae2-ce5ecaacf533" />
+   <img width="640" height="480" alt="image" src="https://github.com/user-attachments/assets/43457fac-c3f7-4785-8ae4-94fd463cec81" />
 3. Concurrent artwork generation which controls how many ROMs are processed at the same time during the artwork generation step.
    * Example: If set to 4, Scrappy generates artwork for 4 ROMs simultaneously instead of one at a time.
    * Result: Faster scraping, but uses more CPU/memory.
 4. Smooth scrolling - hold navigation buttons to scroll continuously instead of pressing repeatedly.
 5. Scrape only missing artwork.
+   <img width="640" height="480" alt="image" src="https://github.com/user-attachments/assets/c951caeb-accb-40ba-be44-0a0dc08afa79" />
 6. Option to show only missing artwork in Scrape single rom.
+   <img width="640" height="480" alt="image" src="https://github.com/user-attachments/assets/99b0357d-6bb7-414e-8989-a9322119c412" />
+   <img width="640" height="480" alt="image" src="https://github.com/user-attachments/assets/33a907b1-8743-4fc9-a63e-b9735c6796d0" />
 7. Option to edit region priorities in Advanced tools.
+   <img width="640" height="480" alt="image" src="https://github.com/user-attachments/assets/53b70037-f8e7-48ea-bf3f-a478b686a2f5" />
 8. Option to clear cache in Advanced tools.
+    <img width="640" height="480" alt="image" src="https://github.com/user-attachments/assets/0d1692ad-93cd-4784-9270-a2c75d08bb24" />
 9. Refined Search (Fallback for Missing Box Art).
    * If scraping fails or no box art is found (common with ROM hacks like “The Legend of Zelda: Link’s Awakening Redux”), the scraper now shows a “Refine Search” option while doing single scrape.
    * It opens an on-screen keyboard so you can manually edit the search query . This helps fetch the correct box art even when the hack name has no results.
+     <img width="640" height="480" alt="image" src="https://github.com/user-attachments/assets/b2921612-7c5b-46d5-afcb-71e76a30a4fa" />
+     <img width="640" height="480" alt="image" src="https://github.com/user-attachments/assets/0b4c818d-f7d8-4fa3-8d83-b5fb7a1fb50d" />
+     <img width="640" height="480" alt="image" src="https://github.com/user-attachments/assets/8b89d670-0ae5-4ecb-99c9-9a91fa71c6e2" />
 10. Many new templates.
 
 ## Installation
