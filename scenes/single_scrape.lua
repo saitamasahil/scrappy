@@ -430,6 +430,7 @@ local function load_rom_buttons(src_platform, dest_platform)
       -- Green (2) if artwork exists, Red (3) if missing
       local has_artwork = not has_missing_media(dest_platform, rom)
       rom_list = rom_list + listitem {
+        id = rom,  -- Add id for lookup after scraping
         text = rom,
         width = ((w_width - 30) / 3) * 2,
         onClick = function()
@@ -562,8 +563,25 @@ local function update_scrape_state()
       if t.success then
         artwork.copy_to_catalogue(t.platform, t.title)
         artwork.process_cached_by_platform(t.platform)
-        load_rom_buttons(last_selected_platform)
-        rom_list:focusFirstElement()
+        -- Reload ROM buttons with proper platform mapping to refresh artwork indicators
+        local platforms = user_config:get().platforms
+        local dest_platform = platforms and platforms[last_selected_platform]
+        if dest_platform then
+          load_rom_buttons(last_selected_platform, dest_platform)
+          -- Re-enable the ROM list after reloading
+          set_rom_list_enabled(true)
+          -- Focus on the last scraped ROM instead of first element
+          if last_selected_rom and rom_list then
+            local target_item = rom_list % last_selected_rom
+            if target_item then
+              rom_list:setFocus(target_item)
+            else
+              rom_list:focusFirstElement()
+            end
+          else
+            rom_list:focusFirstElement()
+          end
+        end
       end
     end
   end
