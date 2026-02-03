@@ -215,6 +215,10 @@ local function on_change_scraper()
   skyscraper.module = scraper_opts[index]
   scraper_index = index
   item.text = "Change Skyscraper module (current: " .. scraper_opts[scraper_index] .. ")"
+  
+  -- Persist the selection to config
+  user_config:insert("main", "scraperModule", scraper_opts[index])
+  user_config:save()
 end
 
 local function trim(s)
@@ -450,6 +454,18 @@ local function on_app_update()
 end
 
 function tools:load()
+  -- Restore saved scraper module from config
+  local saved_scraper = user_config:read("main", "scraperModule")
+  if saved_scraper then
+    for i, opt in ipairs(scraper_opts) do
+      if opt == saved_scraper then
+        scraper_index = i
+        skyscraper.module = saved_scraper
+        break
+      end
+    end
+  end
+  
   menu = component:root { column = true, gap = 10 }
   info_window = popup { visible = false }
   local item_width = w_width - 20
