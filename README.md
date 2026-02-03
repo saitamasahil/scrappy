@@ -95,7 +95,7 @@ To install Scrappy, follow these steps:
 
 ## Special thanks
 
-- **Snow (snowram)** - for the huge undertaking of compiling Qt5 and sharing with this project [Kofi](https://ko-fi.com/snowram)
+- **Snow (snowram)** - for the initial Qt5 build work that inspired the Qt6 upgrade [Kofi](https://ko-fi.com/snowram)
 - **Portmaster and their devs** - for great documentation on porting games/software for Linux handhelds [Portmaster](https://portmaster.games/porting.html)
 - **Scrappy's original developer [Gabriel Freire](https://github.com/gabrielfvale)** - for creating Scrappy and laying the foundation for this project. Support their work at [Kofi](https://ko-fi.com/gabrielfvale)
 - Testers and many other contributors

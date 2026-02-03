@@ -20,12 +20,14 @@ cp $(which Skyscraper) /skysource/output/
 
 # Copy shared libraries needed by Skyscraper
 ldd $(which Skyscraper) | grep "=>" | awk '{print $3}' | xargs -I '{}' cp '{}' /skysource/output/
-cp /usr/lib/aarch64-linux-gnu/libssl.so.1.1 /skysource/output/
-cp /usr/lib/aarch64-linux-gnu/libcrypto.so.1.1 /skysource/output/
 
-# Copy Qt plugins
+# Copy OpenSSL 3.0 libraries (Ubuntu 22.04)
+cp /usr/lib/aarch64-linux-gnu/libssl.so.3 /skysource/output/
+cp /usr/lib/aarch64-linux-gnu/libcrypto.so.3 /skysource/output/
+
+# Copy Qt6 plugins
 mkdir -p /skysource/output/plugins
-cp -r /usr/lib/aarch64-linux-gnu/qt5/plugins/* /skysource/output/plugins/
+cp -r /usr/lib/aarch64-linux-gnu/qt6/plugins/* /skysource/output/plugins/
 
 # Package the binary and libraries into a .zip file
 cd /skysource/output

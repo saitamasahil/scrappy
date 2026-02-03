@@ -1,11 +1,11 @@
-FROM docker.io/arm64v8/ubuntu:20.04
+FROM docker.io/arm64v8/ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Skyscraper version to build
 ARG VERSION=3.18.3
 
-# Toolchain and runtime deps (Qt5, OpenSSL 1.1, etc.)
+# Toolchain and runtime deps (Qt6, OpenSSL 3.0, etc.)
 RUN apt-get update && \
   apt-get install -y \
   build-essential \
@@ -22,11 +22,11 @@ RUN apt-get update && \
   p7zip-full \
   libgles2-mesa-dev \
   libgl1-mesa-dev \
-  # Qt5 toolchain
-  qtbase5-dev \
-  qtbase5-dev-tools \
-  qt5-qmake \
-  # OpenSSL 1.1 for Ubuntu 20.04
+  # Qt6 toolchain
+  qt6-base-dev \
+  qt6-base-dev-tools \
+  qmake6 \
+  # OpenSSL 3.0 (Ubuntu 22.04 default)
   libssl-dev \
   && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
