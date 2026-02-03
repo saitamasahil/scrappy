@@ -15,6 +15,7 @@ local popup             = require 'lib.gui.popup'
 local listitem          = require 'lib.gui.listitem'
 local scroll_container  = require 'lib.gui.scroll_container'
 local output_log        = require 'lib.gui.output_log'
+local virtual_keyboard  = require 'lib.gui.virtual_keyboard'
 
 local w_width, w_height = love.window.getMode()
 local single_scrape     = {}
@@ -37,7 +38,23 @@ local state = {
   current_game = nil,
   current_platform = nil,
   log = {},
+  -- Refine search state
+  refine_search_active = false,
+  refine_query = "",
+  last_failed_rom = nil,
+  last_failed_platform = nil,
+  refine_attempted = false,  -- Track if we've already tried a refine search
+  refine_confirm_visible = false,  -- Confirmation popup before showing VK
 }
+
+-- Virtual keyboard for refine search
+local vk = nil
+
+-- Load button icons for confirmation popup
+local button_a_icon = nil
+local button_b_icon = nil
+pcall(function() button_a_icon = love.graphics.newImage("assets/inputs/switch_button_a.png") end)
+pcall(function() button_b_icon = love.graphics.newImage("assets/inputs/switch_button_b.png") end)
 
 local function halt_scraping()
   log.write("[single_scrape] Halting scraping operation")
@@ -77,6 +94,175 @@ local function halt_scraping()
   end
   
   log.write("[single_scrape] Scraping halted and state cleared")
+  
+  -- Also reset refine search state
+  state.refine_search_active = false
+  state.refine_query = ""
+  state.last_failed_rom = nil
+  state.last_failed_platform = nil
+  if vk then vk.visible = false end
+end
+
+-- Handle refine search submission from virtual keyboard
+local function on_refine_search_done(query, target)
+  if not query or query == "" then
+    -- Empty query, treat as cancel
+    state.refine_search_active = false
+    return
+  end
+  
+  state.refine_query = query
+  state.refine_search_active = false
+  
+  -- Retry scraping with the custom query
+  local rom = state.last_failed_rom
+  local platform_dest = state.last_failed_platform
+  
+  if not rom or not platform_dest then
+    log.write("[single_scrape] Refine search failed: missing ROM or platform info")
+    return
+  end
+  
+  local rom_path, _ = user_config:get_paths()
+  rom_path = string.format("%s/%s", rom_path, last_selected_platform)
+  
+  log.write(string.format("[single_scrape] Retrying scrape with query: %s", query))
+  
+  -- Clear any stale abort signals
+  while channels.SKYSCRAPER_ABORT:pop() do end
+  
+  state.scraping = true
+  state.fetch_stage = true
+  state.generate_stage = false
+  state.current_game = utils.get_filename(rom)
+  state.current_platform = platform_dest
+  state.log = {}
+  
+  if scraping_window then
+    local ui_platform = scraping_window ^ "platform"
+    local ui_game = scraping_window ^ "game"
+    local ui_status = scraping_window ^ "status"
+    if ui_platform then ui_platform.text = muos.platforms[platform_dest] or platform_dest or "N/A" end
+    if ui_game then ui_game.text = state.current_game .. " (refine: " .. query .. ")" end
+    if ui_status then ui_status.text = "Fetching from server..." end
+    scraping_window.visible = true
+  end
+  
+  -- Mark that we've attempted a refine search
+  state.refine_attempted = true
+  
+  -- Call fetch_single with custom query
+  skyscraper.fetch_single(rom_path, rom, last_selected_platform, platform_dest, { "unattend" }, query)
+end
+
+local function on_refine_search_cancel(target)
+  state.refine_search_active = false
+  state.last_failed_rom = nil
+  state.last_failed_platform = nil
+  state.refine_attempted = false
+end
+
+local function show_refine_search(rom, platform)
+  state.refine_search_active = true
+  state.refine_confirm_visible = false
+  
+  -- Use filename without extension as initial search term
+  local initial_query = utils.get_filename(rom) or ""
+  
+  if not vk then
+    vk = virtual_keyboard.create({
+      on_done = on_refine_search_done,
+      on_cancel = on_refine_search_cancel,
+      placeholder = "Enter game name...",
+      title = "Refine Search",
+    })
+  end
+  
+  vk:show(initial_query, "refine")
+end
+
+-- Show confirmation popup asking if user wants to refine search
+local function show_refine_confirm(rom, platform)
+  state.last_failed_rom = rom
+  state.last_failed_platform = platform
+  state.refine_confirm_visible = true
+end
+
+-- User confirmed they want to refine search
+local function on_confirm_refine()
+  state.refine_confirm_visible = false
+  show_refine_search(state.last_failed_rom, state.last_failed_platform)
+end
+
+-- User declined refine search
+local function on_cancel_refine()
+  state.refine_confirm_visible = false
+  state.last_failed_rom = nil
+  state.last_failed_platform = nil
+  state.refine_attempted = false
+end
+
+-- Draw the refine search confirmation popup
+local function draw_refine_confirm_popup()
+  if not state.refine_confirm_visible then return end
+  
+  local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
+  local font = love.graphics.getFont()
+  local font_h = font:getHeight()
+  
+  -- Dim background
+  love.graphics.setColor(0, 0, 0, 0.8)
+  love.graphics.rectangle("fill", 0, 0, sw, sh)
+  
+  -- Popup box dimensions
+  local box_w = math.min(sw - 40, 340)
+  local box_h = 130
+  local box_x = (sw - box_w) / 2
+  local box_y = (sh - box_h) / 2
+  
+  -- Draw box background
+  love.graphics.setColor(0.18, 0.18, 0.18, 1)
+  love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8, 8)
+  
+  -- Draw border
+  love.graphics.setColor(0.4, 0.4, 0.4, 1)
+  love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8, 8)
+  
+  love.graphics.setColor(1, 1, 1, 1)
+  
+  -- Title
+  love.graphics.printf("Game Not Found", box_x, box_y + 12, box_w, "center")
+  
+  -- Message
+  local msg = "Would you like to refine your search?"
+  love.graphics.printf(msg, box_x + 15, box_y + 40, box_w - 30, "center")
+  
+  -- Button icons and labels
+  local icon_size = 24
+  local btn_y = box_y + box_h - 38
+  
+  local left_center = box_x + box_w * 0.25
+  local right_center = box_x + box_w * 0.75
+  
+  -- Yes button (A)
+  local yes_total_w = icon_size + 6 + font:getWidth("Yes")
+  local yes_x = left_center - yes_total_w / 2
+  if button_a_icon then
+    local iw, ih = button_a_icon:getDimensions()
+    local sx, sy = icon_size / iw, icon_size / ih
+    love.graphics.draw(button_a_icon, yes_x, btn_y, 0, sx, sy)
+  end
+  love.graphics.print("Yes", yes_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+  
+  -- No button (B)
+  local no_total_w = icon_size + 6 + font:getWidth("No")
+  local no_x = right_center - no_total_w / 2
+  if button_b_icon then
+    local iw, ih = button_b_icon:getDimensions()
+    local sx, sy = icon_size / iw, icon_size / ih
+    love.graphics.draw(button_b_icon, no_x, btn_y, 0, sx, sy)
+  end
+  love.graphics.print("No", no_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
 end
 
 local function set_rom_list_enabled(enabled)
@@ -301,13 +487,30 @@ local function process_fetched_game()
       state.scraping = false
       state.fetch_stage = false
       scraping_window.visible = false
-      dispatch_info("Error", "Unable to generate artwork for selected game [skipped]")
-      toggle_info()
+      
+      -- Check if we've already tried a refine search
+      if state.refine_attempted then
+        -- Refine search also failed - show error message instead of looping
+        log.write("[single_scrape] Refine search also failed, showing error")
+        state.refine_attempted = false
+        state.last_failed_rom = nil
+        state.last_failed_platform = nil
+        dispatch_info("Game Not Found", "Could not find game even with refined search. Try a different search term or check if the game exists in ScreenScraper database.")
+        toggle_info()
+        return
+      end
+      
+      -- First failure - show confirmation popup asking if user wants to refine search
+      log.write("[single_scrape] Game not found or match too low, showing refine confirmation")
+      local platforms = user_config:get().platforms
+      local platform_dest = platforms and platforms[last_selected_platform]
+      show_refine_confirm(last_selected_rom, platform_dest)
       return
     end
     
     state.fetch_stage = false
     state.generate_stage = true
+    state.refine_attempted = false  -- Reset on successful scrape
     
     local ui_status = scraping_window ^ "status"
     if ui_status then ui_status.text = "Generating artwork..." end
@@ -464,6 +667,11 @@ function single_scrape:update(dt)
   menu:update(dt)
   update_scrape_state()
   process_fetched_game()
+  
+  -- Update virtual keyboard if active
+  if vk and vk.visible then
+    vk:update(dt)
+  end
 end
 
 function single_scrape:draw()
@@ -471,9 +679,42 @@ function single_scrape:draw()
   menu:draw()
   info_window:draw()
   scraping_window:draw()
+  
+  -- Draw confirmation popup on top
+  draw_refine_confirm_popup()
+  
+  -- Draw virtual keyboard on top of everything
+  if vk and vk.visible then
+    vk:draw()
+  end
 end
 
 function single_scrape:keypressed(key)
+  -- Handle confirmation popup first
+  if state.refine_confirm_visible then
+    if key == 'return' or key == 'a' then
+      on_confirm_refine()
+      return
+    elseif key == 'escape' or key == 'b' then
+      on_cancel_refine()
+      return
+    end
+    return  -- Block all other keys while popup is visible
+  end
+  
+  -- Handle virtual keyboard input first if visible
+  if vk and vk.visible then
+    local mapped = nil
+    if key == 'up' or key == 'down' or key == 'left' or key == 'right' then mapped = key end
+    if key == 'return' then mapped = 'confirm' end
+    if key == 'escape' then mapped = 'cancel' end
+    if mapped then
+      vk:handle_key(mapped)
+      return
+    end
+    return
+  end
+  
   if key == "escape" then
     if state.scraping then
       halt_scraping()
@@ -493,6 +734,37 @@ function single_scrape:keypressed(key)
 end
 
 function single_scrape:gamepadpressed(joystick, button)
+  -- Handle confirmation popup first
+  if state.refine_confirm_visible then
+    if button == 'a' then
+      on_confirm_refine()
+      return
+    elseif button == 'b' then
+      on_cancel_refine()
+      return
+    end
+    return  -- Block all other buttons while popup is visible
+  end
+  
+  -- Handle virtual keyboard input first if visible
+  if vk and vk.visible then
+    local map = {
+      dpup = 'up', dpdown = 'down', dpleft = 'left', dpright = 'right',
+      a = 'confirm', b = 'cancel'
+    }
+    local btn = type(button) == 'string' and button:lower() or button
+    local m = map[btn] or map[button]
+    if m then
+      if m == 'up' or m == 'down' or m == 'left' or m == 'right' then
+        -- D-pad handled in update for hold repeat
+        return
+      end
+      vk:handle_key(m)
+      return
+    end
+    return
+  end
+  
   -- Map 'b' button to abort/back action
   if button == "b" then
     if state.scraping then

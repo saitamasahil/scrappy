@@ -214,6 +214,13 @@ local function generate_command(config)
   if config.flags and next(config.flags) then
     command = string.format('%s --flags %s', command, table.concat(config.flags, ","))
   end
+  -- Custom query for refine search feature (Skyscraper --query option)
+  if config.query and config.query ~= "" then
+    -- Convert spaces to + for URL-style query, escape special characters
+    local query_str = config.query:gsub(" ", "+")
+    query_str = escape_shell_arg(query_str)
+    command = string.format('%s --query "%s"', command, query_str)
+  end
   -- Force regeneration of media even if it already exists
   if config.refresh then
     command = string.format('%s --refresh', command)
@@ -224,6 +231,15 @@ local function generate_command(config)
 
   -- Use 'pegasus' frontend for simpler gamelist generation
   command = string.format('%s -f pegasus', command)
+  
+  -- When using --query, Skyscraper requires the filename as a positional argument at the end
+  -- Otherwise the query is ignored. See: https://gemba.github.io/skyscraper/CLIHELP/#-query-string
+  if config.query and config.query ~= "" and config.input and config.rom then
+    local full_rom_path = string.format('%s/%s', config.input, config.rom)
+    local escaped_path = escape_shell_arg(full_rom_path)
+    command = string.format('%s "%s"', command, escaped_path)
+  end
+  
   -- Log the command for debugging
   log.write(string.format("Generated command: %s", command))
   return command
@@ -305,15 +321,19 @@ function skyscraper.update_artwork(rom_path, rom, input_folder, platform, artwor
   skyscraper.run(update_command, input_folder, platform, "generate", rom)
 end
 
-function skyscraper.fetch_single(rom_path, rom, input_folder, platform, ...)
-  local flags = select(1, ...) or { "unattend" }
+function skyscraper.fetch_single(rom_path, rom, input_folder, platform, flags, query)
+  flags = flags or { "unattend" }
+  -- Use the globally selected module (from Advanced Tools) so user's scraper choice is respected
+  -- Falls back to get_default_module_for if skyscraper.module is not set
+  local module = skyscraper.module or get_default_module_for(platform)
   local fetch_command = generate_command({
     platform = platform,
     input = rom_path,
     fetch = true,
-    module = get_default_module_for(platform),
+    module = module,
     rom = rom,
     flags = flags,
+    query = query,  -- Custom search query for refine search
   })
   skyscraper.run(fetch_command, input_folder, platform, "fetch", rom)
 end

@@ -52,13 +52,13 @@ local function popup(props)
         width = content_width,
         height = 30,
         draw = function(self)
-          local _, wrappedtext = self.font:getWrap(self.text, self.width - 10)
+          local _, wrappedtext = self.font:getWrap(self.text, self.width - 20)
           love.graphics.push()
           love.graphics.translate(center_width, center_height)
           love.graphics.setColor(boxColor)
           love.graphics.rectangle("fill", self.x, self.y, self.width, #wrappedtext * self.height + 10)
           love.graphics.setColor(1, 1, 1)
-          love.graphics.printf(wrappedtext, self.x + 10, self.y + 5, self.width - 10, "left")
+          love.graphics.printf(wrappedtext, self.x + 10, self.y + 5, self.width - 20, "left")
           love.graphics.pop()
         end
       }
