@@ -80,9 +80,22 @@ function skyscraper.restart_threads()
   log.write("Skyscraper threads restarted successfully")
 end
 
--- Returns the preferred module for a given platform using peas.json
+-- Returns the preferred module for a given platform
+-- Ports always use TheGamesDB, other platforms respect Advanced Tools selection
 local function get_default_module_for(platform)
   local pea_key = normalize_platform(platform)
+  
+  -- Ports always use TheGamesDB (not available in ScreenScraper)
+  if pea_key == "ports" or pea_key == "PORTS" then
+    return "thegamesdb"
+  end
+  
+  -- Use user's Advanced Tools selection if set
+  if skyscraper.module and skyscraper.module ~= "" then
+    return skyscraper.module
+  end
+  
+  -- Fall back to peas.json scraper list
   local entry = skyscraper.peas_json[pea_key]
   local scrapers = entry and entry.scrapers
   if scrapers and #scrapers > 0 then
@@ -95,8 +108,8 @@ local function get_default_module_for(platform)
     -- Fallback to the first declared scraper for the platform
     return scrapers[1]
   end
-  -- Global default module fallback
-  return skyscraper.module
+  -- Global default fallback
+  return "screenscraper"
 end
 
 function skyscraper.init(config_path, binary)
@@ -323,14 +336,11 @@ end
 
 function skyscraper.fetch_single(rom_path, rom, input_folder, platform, flags, query)
   flags = flags or { "unattend" }
-  -- Use the globally selected module (from Advanced Tools) so user's scraper choice is respected
-  -- Falls back to get_default_module_for if skyscraper.module is not set
-  local module = skyscraper.module or get_default_module_for(platform)
   local fetch_command = generate_command({
     platform = platform,
     input = rom_path,
     fetch = true,
-    module = module,
+    module = get_default_module_for(platform),
     rom = rom,
     flags = flags,
     query = query,  -- Custom search query for refine search
