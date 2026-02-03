@@ -31,7 +31,10 @@ Please read the Wiki for more info on installation and configuration!
 6. Option to show only missing artwork in Scrape single rom.
 7. Option to edit region priorities in Advanced tools.
 8. Option to clear cache in Advanced tools.
-9. Many new templates.
+9. Refined Search (Fallback for Missing Box Art).
+   * If scraping fails or no box art is found (common with ROM hacks like “The Legend of Zelda: Link’s Awakening Redux”), the scraper now shows a “Refine Search” option while doing single scrape.
+   * It opens an on-screen keyboard so you can manually edit the search query . This helps fetch the correct box art even when the hack name has no results.
+10. Many new templates.
 
 ## Installation
 To install Scrappy, follow these steps:
