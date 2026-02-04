@@ -573,13 +573,24 @@ end
 local theme   = setmetatable({}, { __index = config })
 theme.__index = theme
 
--- Current active theme name
+-- Current active theme name and muOS accent state
 local current_theme_name = "dark"
+local muos_accent_enabled = true
 
-function theme.create(theme_name)
+function theme.create(theme_name, muos_accent)
   theme_name = theme_name or "dark"
+  muos_accent = muos_accent ~= false  -- default to true
   current_theme_name = theme_name
-  local filename = theme_name == "light" and "theme_light.ini" or "theme.ini"
+  muos_accent_enabled = muos_accent
+  
+  -- Select theme file based on dark/light and muOS accent on/off
+  local filename
+  if theme_name == "light" then
+    filename = muos_accent and "theme_light.ini" or "theme_light_classic.ini"
+  else
+    filename = muos_accent and "theme.ini" or "theme_classic.ini"
+  end
+  
   local self = config.new("theme", filename)
   setmetatable(self, theme)
   self:init()
@@ -588,7 +599,7 @@ end
 
 function theme:init()
   if self:load() then
-    log.write("Loaded theme config: " .. current_theme_name)
+    log.write("Loaded theme config: " .. current_theme_name .. " (muOS accent: " .. tostring(muos_accent_enabled) .. ")")
   else
     log.write("Failed to load theme config")
   end
@@ -609,20 +620,26 @@ function theme:get_current_name()
   return current_theme_name
 end
 
+function theme:is_muos_accent()
+  return muos_accent_enabled
+end
+
 -- Singleton instances
 local user_config_instance = user_config.create("config.ini")
 local skyscraper_config_instance = skyscraper_config.create("skyscraper_config.ini")
 
--- Load theme based on saved preference
+-- Load theme based on saved preferences
 local saved_theme = user_config_instance:read("main", "theme") or "dark"
-local theme_instance = theme.create(saved_theme)
+local saved_muos = user_config_instance:read("main", "muosAccent")
+local muos_on = saved_muos ~= "0"  -- default to true (ON)
+local theme_instance = theme.create(saved_theme, muos_on)
 
 return {
   user_config = user_config_instance,
   skyscraper_config = skyscraper_config_instance,
   theme = theme_instance,
-  reload_theme = function(theme_name)
-    theme_instance = theme.create(theme_name)
+  reload_theme = function(theme_name, muos_accent)
+    theme_instance = theme.create(theme_name, muos_accent)
     return theme_instance
   end
 }

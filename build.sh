@@ -53,6 +53,8 @@ cp "$PROJECT_ROOT/config.ini.example" "$WORKDIR/Scrappy/.scrappy/"
 cp "$PROJECT_ROOT/skyscraper_config.ini.example" "$WORKDIR/Scrappy/.scrappy/"
 cp "$PROJECT_ROOT/theme.ini" "$WORKDIR/Scrappy/.scrappy/"
 cp "$PROJECT_ROOT/theme_light.ini" "$WORKDIR/Scrappy/.scrappy/"
+cp "$PROJECT_ROOT/theme_classic.ini" "$WORKDIR/Scrappy/.scrappy/"
+cp "$PROJECT_ROOT/theme_light_classic.ini" "$WORKDIR/Scrappy/.scrappy/"
 
 # Copy assets and ensure the directory exists
 mkdir -p "$WORKDIR/Scrappy/.scrappy/assets"

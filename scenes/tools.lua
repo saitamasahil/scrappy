@@ -21,6 +21,7 @@ local scraper_opts      = { "screenscraper", "thegamesdb" }
 local scraper_index     = 1
 local theme_opts        = { "dark", "light" }
 local theme_index       = 1
+local muos_accent       = true  -- default ON
 
 local region_popup, region_menu, region_list
 local confirm_popup, confirm_popup_visible = nil, false
@@ -236,6 +237,20 @@ local function on_change_theme()
   user_config:save()
   
   dispatch_info("Theme Changed", "Theme set to '" .. theme_opts[index] .. "'. Please restart Scrappy.")
+end
+
+local function on_toggle_muos_accent()
+  muos_accent = not muos_accent
+  local item = menu ^ "muos_toggle"
+  
+  local status = muos_accent and "ON" or "OFF"
+  item.text = "muOS Accent (current: " .. status .. ") - restart required"
+  
+  -- Persist the selection to config (store as "1" or "0")
+  user_config:insert("main", "muosAccent", muos_accent and "1" or "0")
+  user_config:save()
+  
+  dispatch_info("muOS Accent", "muOS accent colors " .. (muos_accent and "enabled" or "disabled") .. ". Please restart Scrappy.")
 end
 
 local function trim(s)
@@ -494,6 +509,12 @@ function tools:load()
     end
   end
   
+  -- Restore saved muOS accent from config
+  local saved_muos = user_config:read("main", "muosAccent")
+  if saved_muos then
+    muos_accent = saved_muos ~= "0"  -- "0" = OFF, anything else = ON
+  end
+  
   menu = component:root { column = true, gap = 10 }
   info_window = popup { visible = false }
   local item_width = w_width - 20
@@ -536,6 +557,13 @@ function tools:load()
             text = "Change theme (current: " .. theme_opts[theme_index] .. ") - restart required",
             width = item_width,
             onClick = on_change_theme,
+            icon = "canvas"
+          }
+          + listitem {
+            id = "muos_toggle",
+            text = "muOS Accent (current: " .. (muos_accent and "ON" or "OFF") .. ") - restart required",
+            width = item_width,
+            onClick = on_toggle_muos_accent,
             icon = "canvas"
           }
           + listitem {
