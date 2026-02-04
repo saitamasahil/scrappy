@@ -347,12 +347,26 @@ local function vk_draw()
   -- Keyboard height ~30% of screen and lifted higher to avoid any footer/help bar
   local kb_h = math.floor(h * 0.30)
   local y0 = h - kb_h - 68
+
+  local overlay_color = theme:read_color("keyboard", "OVERLAY_COLOR", "#000000")
+  local overlay_opacity = theme:read_number("keyboard", "OVERLAY_OPACITY", 0.78)
+  local panel_bg = theme:read_color("keyboard", "PANEL_BG", "#000000")
+  local panel_opacity = theme:read_number("keyboard", "PANEL_OPACITY", 0.85)
+  local preview_bg = theme:read_color("keyboard", "PREVIEW_BG", "#292929")
+  local key_bg = theme:read_color("keyboard", "KEY_BG", "#333333")
+  local key_text = theme:read_color("keyboard", "KEY_TEXT", "#ffffff")
+  local key_focus = theme:read_color("keyboard", "KEY_FOCUS", "#4d4dcc")
+  local prompt_panel_bg = theme:read_color("keyboard", "PROMPT_PANEL_BG", "#1f1f1f")
+
   -- Dim the entire screen so VK stands out
-  love.graphics.setColor(0, 0, 0, 0.78)
+  overlay_color[4] = overlay_opacity
+  love.graphics.setColor(overlay_color)
   love.graphics.rectangle('fill', 0, 0, w, h)
+
   -- Keyboard panel background
-  love.graphics.setColor(0, 0, 0, 0.85)
-  love.graphics.rectangle('fill', 0, y0, w, kb_h)
+  panel_bg[4] = panel_opacity
+  love.graphics.setColor(panel_bg)
+  love.graphics.rectangle('fill', 0, y0, w, h - y0)
   -- Message box just above keys to preview input
   local layout = vk_current_layout()
   local key_w, key_h, margin = 30, 30, 4
@@ -365,9 +379,9 @@ local function vk_draw()
   local box_y = y0 + 6
   local box_x = area_x0
   local box_w = area_w
-  love.graphics.setColor(0.16, 0.16, 0.16, 1)
+  love.graphics.setColor(preview_bg)
   love.graphics.rectangle('fill', box_x, box_y, box_w, box_h, 12, 12)
-  love.graphics.setColor(1, 1, 1, 1)
+  love.graphics.setColor(key_text)
   local preview
   if vk_target == 'pass' then
     local now = love.timer.getTime()
@@ -420,12 +434,12 @@ local function vk_draw()
       local kw = key_w * mult
       local rx, ry = cx, ypos + (r - 1) * (key_h + margin)
       if r == vk_row and c == vk_col then
-        love.graphics.setColor(0.3, 0.3, 0.8, 1)
+        love.graphics.setColor(key_focus)
         love.graphics.rectangle('fill', rx - 3, ry - 3, kw + 6, key_h + 6, 6, 6)
       end
-      love.graphics.setColor(0.2, 0.2, 0.2, 1)
+      love.graphics.setColor(key_bg)
       love.graphics.rectangle('fill', rx, ry, kw, key_h, 4, 4)
-      love.graphics.setColor(1, 1, 1, 1)
+      love.graphics.setColor(key_text)
       if type(k)=='table' then
         if k.t=='toggle' then draw_label(rx, ry, kw, key_h, k.label)
         elseif k.t=='space' then draw_label(rx, ry, kw, key_h, '')
@@ -437,7 +451,7 @@ local function vk_draw()
             local box = math.min(kw * 0.65, key_h * 0.65)
             local sx, sy = box / iw, box / ih
             local mx, my = rx + kw/2, ry + key_h/2
-            love.graphics.setColor(1,1,1,1)
+            love.graphics.setColor(key_text)
             love.graphics.draw(img, mx - (iw * sx) / 2, my - (ih * sy) / 2, 0, sx, sy)
           else
             draw_label(rx, ry, kw, key_h, '⌫')
@@ -462,13 +476,13 @@ local function vk_draw()
   local px = area_x0 + area_w + panel_gap - right_margin
   -- Center within the space below the preview box; bias slightly lower
   local avail_top = box_y + box_h + 6
-  local avail_bottom = y0 + kb_h - 6
+  local avail_bottom = h - 6
   local centered_py = math.floor((avail_top + avail_bottom - ph) / 2)
   local py = math.max(avail_top, centered_py + 6)
   if py + ph > avail_bottom then py = avail_bottom - ph end
-  love.graphics.setColor(0.12,0.12,0.12,0.9)
+  love.graphics.setColor(prompt_panel_bg)
   love.graphics.rectangle('fill', px, py, pw, ph, 12, 12)
-  love.graphics.setColor(1,1,1,1)
+  love.graphics.setColor(key_text)
 
   local function draw_prompt(row_i, icon_key, text)
     local ly = py + 8 + (row_i-1) * (line_h + gap_h)

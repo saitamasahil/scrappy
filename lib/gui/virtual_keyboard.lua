@@ -2,6 +2,7 @@
 -- Extracted from settings.lua for reuse across scenes
 
 local w_width, w_height = love.window.getMode()
+ local theme = require("helpers.config").theme
 
 -- Virtual keyboard layout
 local MASK_CHAR = "*"
@@ -335,22 +336,31 @@ local function create_vk(config)
       self.hold_acc = 0
     end
   end
-  
+
   function vk:draw()
     if not self.visible then return end
     local w, h = w_width, w_height
     local kb_h = math.floor(h * 0.30)
     local y0 = h - kb_h - 68
-    
-    -- Dim the entire screen
-    love.graphics.setColor(0, 0, 0, 0.78)
+
+    local overlay_color = theme:read_color("keyboard", "OVERLAY_COLOR", "#000000")
+    local overlay_opacity = theme:read_number("keyboard", "OVERLAY_OPACITY", 0.78)
+    local panel_bg = theme:read_color("keyboard", "PANEL_BG", "#000000")
+    local panel_opacity = theme:read_number("keyboard", "PANEL_OPACITY", 0.85)
+    local preview_bg = theme:read_color("keyboard", "PREVIEW_BG", "#292929")
+    local key_bg = theme:read_color("keyboard", "KEY_BG", "#333333")
+    local key_text = theme:read_color("keyboard", "KEY_TEXT", "#ffffff")
+    local key_focus = theme:read_color("keyboard", "KEY_FOCUS", "#4d4dcc")
+    local prompt_panel_bg = theme:read_color("keyboard", "PROMPT_PANEL_BG", "#1f1f1f")
+
+    overlay_color[4] = overlay_opacity
+    love.graphics.setColor(overlay_color)
     love.graphics.rectangle('fill', 0, 0, w, h)
-    
-    -- Keyboard panel background
-    love.graphics.setColor(0, 0, 0, 0.85)
-    love.graphics.rectangle('fill', 0, y0, w, kb_h)
-    
-    -- Layout and sizing
+
+    panel_bg[4] = panel_opacity
+    love.graphics.setColor(panel_bg)
+    love.graphics.rectangle('fill', 0, y0, w, h - y0)
+
     local layout = self:get_layout()
     local key_w, key_h, margin = 30, 30, 4
     if h >= 720 then key_w, key_h, margin = 38, 38, 6 end
@@ -362,12 +372,11 @@ local function create_vk(config)
     local box_y = y0 + 6
     local box_x = area_x0
     local box_w = area_w
-    
-    -- Preview box
-    love.graphics.setColor(0.16, 0.16, 0.16, 1)
+
+    love.graphics.setColor(preview_bg)
     love.graphics.rectangle('fill', box_x, box_y, box_w, box_h, 12, 12)
-    love.graphics.setColor(1, 1, 1, 1)
-    
+    love.graphics.setColor(key_text)
+
     local preview
     if self.mask_input then
       local now = love.timer.getTime()
@@ -385,14 +394,13 @@ local function create_vk(config)
     else
       preview = (self.buffer == '' and self.placeholder or self.buffer)
     end
-    
+
     love.graphics.printf(preview, box_x + 12, box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2), box_w - 24, 'left')
-    
-    -- Keys
+
     local ypos = box_y + box_h + 10
     local prev_font = love.graphics.getFont()
     love.graphics.setFont(vk_font)
-    
+
     local function draw_label(cx, cy, kw, kh, text)
       local desired = math.max(14, math.floor(key_h * 0.70))
       if desired ~= self.char_font_size then
@@ -406,7 +414,7 @@ local function create_vk(config)
       love.graphics.printf(text, cx, ty, kw, 'center')
       love.graphics.setFont(prev)
     end
-    
+
     for r = 1, #layout do
       local row = layout[r]
       local row_w = 0
@@ -423,12 +431,12 @@ local function create_vk(config)
         local kw = key_w * mult
         local rx, ry = cx, ypos + (r - 1) * (key_h + margin)
         if r == self.row and c == self.col then
-          love.graphics.setColor(0.3, 0.3, 0.8, 1)
+          love.graphics.setColor(key_focus)
           love.graphics.rectangle('fill', rx - 3, ry - 3, kw + 6, key_h + 6, 6, 6)
         end
-        love.graphics.setColor(0.2, 0.2, 0.2, 1)
+        love.graphics.setColor(key_bg)
         love.graphics.rectangle('fill', rx, ry, kw, key_h, 4, 4)
-        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.setColor(key_text)
         if type(k)=='table' then
           if k.t=='toggle' then draw_label(rx, ry, kw, key_h, k.label)
           elseif k.t=='space' then draw_label(rx, ry, kw, key_h, '')
@@ -440,12 +448,14 @@ local function create_vk(config)
               local box = math.min(kw * 0.65, key_h * 0.65)
               local sx, sy = box / iw, box / ih
               local mx, my = rx + kw/2, ry + key_h/2
-              love.graphics.setColor(1,1,1,1)
+              love.graphics.setColor(key_text)
               love.graphics.draw(img, mx - (iw * sx) / 2, my - (ih * sy) / 2, 0, sx, sy)
             else
               draw_label(rx, ry, kw, key_h, '⌫')
             end
-          else draw_label(rx, ry, kw, key_h, '?') end
+          else
+            draw_label(rx, ry, kw, key_h, '?')
+          end
         else
           draw_label(rx, ry, kw, key_h, tostring(k))
         end
@@ -453,8 +463,7 @@ local function create_vk(config)
       end
     end
     love.graphics.setFont(prev_font)
-    
-    -- Button prompts panel (right side)
+
     local pw = prompt_w
     local line_h = math.floor(key_h * 0.9)
     local gap_h = 6
@@ -463,14 +472,14 @@ local function create_vk(config)
     local right_margin = 36
     local px = area_x0 + area_w + panel_gap - right_margin
     local avail_top = box_y + box_h + 6
-    local avail_bottom = y0 + kb_h - 6
+    local avail_bottom = h - 6
     local centered_py = math.floor((avail_top + avail_bottom - ph) / 2)
     local py = math.max(avail_top, centered_py + 6)
     if py + ph > avail_bottom then py = avail_bottom - ph end
-    love.graphics.setColor(0.12,0.12,0.12,0.9)
+    love.graphics.setColor(prompt_panel_bg)
     love.graphics.rectangle('fill', px, py, pw, ph, 12, 12)
-    love.graphics.setColor(1,1,1,1)
-    
+    love.graphics.setColor(key_text)
+
     local function draw_prompt(row_i, icon_key, text)
       local ly = py + 8 + (row_i-1) * (line_h + gap_h)
       local icon = load_input_icon(icon_key)
@@ -488,7 +497,7 @@ local function create_vk(config)
       end
       love.graphics.printf(text, ix + iw + 10, iy + math.floor((ih - love.graphics.getFont():getHeight())/2), pw - (iw + 20), 'left')
     end
-    
+
     draw_prompt(1, 'a', 'Confirm')
     draw_prompt(2, 'b', 'Close')
   end
