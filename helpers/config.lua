@@ -573,8 +573,14 @@ end
 local theme   = setmetatable({}, { __index = config })
 theme.__index = theme
 
-function theme.create()
-  local self = config.new("theme", "theme.ini")
+-- Current active theme name
+local current_theme_name = "dark"
+
+function theme.create(theme_name)
+  theme_name = theme_name or "dark"
+  current_theme_name = theme_name
+  local filename = theme_name == "light" and "theme_light.ini" or "theme.ini"
+  local self = config.new("theme", filename)
   setmetatable(self, theme)
   self:init()
   return self
@@ -582,7 +588,7 @@ end
 
 function theme:init()
   if self:load() then
-    log.write("Loaded theme config")
+    log.write("Loaded theme config: " .. current_theme_name)
   else
     log.write("Failed to load theme config")
   end
@@ -599,13 +605,25 @@ function theme:read_number(section, key, fallback)
   return number and tonumber(number) or fallback
 end
 
+function theme:get_current_name()
+  return current_theme_name
+end
+
 -- Singleton instances
 local user_config_instance = user_config.create("config.ini")
 local skyscraper_config_instance = skyscraper_config.create("skyscraper_config.ini")
-local theme_instance = theme.create()
+
+-- Load theme based on saved preference
+local saved_theme = user_config_instance:read("main", "theme") or "dark"
+local theme_instance = theme.create(saved_theme)
 
 return {
   user_config = user_config_instance,
   skyscraper_config = skyscraper_config_instance,
-  theme = theme_instance
+  theme = theme_instance,
+  reload_theme = function(theme_name)
+    theme_instance = theme.create(theme_name)
+    return theme_instance
+  end
 }
+

@@ -1,4 +1,6 @@
 local component = require 'lib.gui.badr'
+local configs = require 'helpers.config'
+local theme = configs.theme
 
 -- Icons table
 local icons = {
@@ -33,6 +35,9 @@ local icons = {
   select       = love.graphics.newImage("assets/inputs/switch_button_sl.png"),
 }
 
+-- Get icon tint color from theme (uses label text color)
+local icon_color = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
+
 return function(props)
   local name = props.name
   local icon = icons[name]
@@ -63,11 +68,12 @@ return function(props)
       love.graphics.setColor(1, 1, 1, 0) -- Fully transparent background
       love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
 
-      -- Draw the icon centered within the box
-      love.graphics.setColor(1, 1, 1, 1) -- Reset color to opaque for the icon
+      -- Draw the icon with theme-based tint color
+      love.graphics.setColor(icon_color)
       love.graphics.draw(icon, self.x + offsetX, self.y + offsetY, 0, sx, sy)
 
       love.graphics.pop()
     end,
   }
 end
+

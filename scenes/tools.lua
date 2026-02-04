@@ -19,6 +19,8 @@ local tools             = {}
 local theme             = configs.theme
 local scraper_opts      = { "screenscraper", "thegamesdb" }
 local scraper_index     = 1
+local theme_opts        = { "dark", "light" }
+local theme_index       = 1
 
 local region_popup, region_menu, region_list
 local confirm_popup, confirm_popup_visible = nil, false
@@ -219,6 +221,21 @@ local function on_change_scraper()
   -- Persist the selection to config
   user_config:insert("main", "scraperModule", scraper_opts[index])
   user_config:save()
+end
+
+local function on_change_theme()
+  local index = theme_index + 1
+  if index > #theme_opts then index = 1 end
+  local item = menu ^ "theme_toggle"
+
+  theme_index = index
+  item.text = "Change theme (current: " .. theme_opts[theme_index] .. ") - restart required"
+  
+  -- Persist the selection to config
+  user_config:insert("main", "theme", theme_opts[index])
+  user_config:save()
+  
+  dispatch_info("Theme Changed", "Theme set to '" .. theme_opts[index] .. "'. Please restart Scrappy.")
 end
 
 local function trim(s)
@@ -466,6 +483,17 @@ function tools:load()
     end
   end
   
+  -- Restore saved theme from config
+  local saved_theme = user_config:read("main", "theme")
+  if saved_theme then
+    for i, opt in ipairs(theme_opts) do
+      if opt == saved_theme then
+        theme_index = i
+        break
+      end
+    end
+  end
+  
   menu = component:root { column = true, gap = 10 }
   info_window = popup { visible = false }
   local item_width = w_width - 20
@@ -501,6 +529,13 @@ function tools:load()
             text = "Change Skyscraper module (current: " .. scraper_opts[scraper_index] .. ")",
             width = item_width,
             onClick = on_change_scraper,
+            icon = "canvas"
+          }
+          + listitem {
+            id = "theme_toggle",
+            text = "Change theme (current: " .. theme_opts[theme_index] .. ") - restart required",
+            width = item_width,
+            onClick = on_change_theme,
             icon = "canvas"
           }
           + listitem {

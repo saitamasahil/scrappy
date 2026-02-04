@@ -30,9 +30,14 @@ end
 local logo = love.graphics.newImage("assets/scrappy_logo.png")
 local anim = { value = 0 }
 
+local configs = require("helpers.config")
+local theme = configs.theme
+local bg_color = theme:read_color("main", "BACKGROUND", "#000000")
+local text_color = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
+
 local colors = {
-  main = { 1, 1, 1 },
-  background = { 0, 0, 0 },
+  main = text_color,
+  background = bg_color,
 }
 
 function splash.load(delay)
@@ -64,14 +69,14 @@ function splash.draw()
     logo_scale,
     logo:getWidth() * 0.5,
     half_logo_height)
-  love.graphics.setColor(1, 1, 1, anim.value)
+  love.graphics.setColor(colors.main[1], colors.main[2], colors.main[3], anim.value)
   love.graphics.push()
   love.graphics.translate(0, half_logo_height)
   love.graphics.draw(app_name, -app_name:getWidth() * 0.5,
     -anim.value * app_name:getHeight())
   love.graphics.pop()
   love.graphics.push()
-  love.graphics.setColor(1, 1, 1, 0.5)
+  love.graphics.setColor(colors.main[1], colors.main[2], colors.main[3], 0.5)
   love.graphics.translate(0, height * 0.5 - 20)
   local v_h = app_version_text:getHeight()
   local ca_h = credits_author:getHeight()
