@@ -644,7 +644,7 @@ function settings:load()
   scroller = scroll_container {
     width = w_width - 20,
     -- Subtract footer/help area so the bar isn't covered by the scroller
-    height = w_height - 78,
+    height = w_height - 50,
     scroll_speed = 30,
   } + content
 

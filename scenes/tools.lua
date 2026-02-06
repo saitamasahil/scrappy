@@ -787,7 +787,7 @@ function tools:load()
   menu = menu
       + (scroll_container {
           width = w_width,
-          height = w_height - 60,
+          height = w_height - 20,
           scroll_speed = 30,
         }
         + (component { column = true, gap = 10 }

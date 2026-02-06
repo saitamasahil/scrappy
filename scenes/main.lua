@@ -18,6 +18,7 @@ local select     = require "lib.gui.select"
 local listitem   = require "lib.gui.listitem"
 local popup      = require "lib.gui.popup"
 local output_log = require "lib.gui.output_log"
+local scroll_container = require "lib.gui.scroll_container"
 
 local menu, info_window, scraping_window
 
@@ -722,10 +723,11 @@ function main:load()
       love.graphics.rectangle("fill", 0, 0, cw, ch)
       loader:draw(cw * scale, ch * scale, 1)
       love.graphics.setColor(utils.hex("#EDD113"))
-      love.graphics.rectangle("line", 0, 0, cw, ch)
+        love.graphics.rectangle("line", 0, 0, cw, ch)
       love.graphics.pop()
     end
   }
+
 
   local selectionComponent = component { column = true, gap = 10 }
       + select {

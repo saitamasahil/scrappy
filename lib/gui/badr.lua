@@ -44,7 +44,7 @@ function badr:createRoot(t)
 end
 
 function badr.__add(self, component)
-  if type(component) ~= "table" or component == nil then return end
+  if type(component) ~= "table" or component == nil then return self end
 
   component.parent = self
   component.x = self.x + component.x

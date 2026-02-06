@@ -21,7 +21,7 @@ local w_width, w_height = love.window.getMode()
 local single_scrape     = {}
 
 
-local menu, info_window, scraping_window, platform_list, rom_list
+local menu, info_window, scraping_window, platform_list, rom_list, rom_scroll
 local user_config = configs.user_config
 local theme = configs.theme
 
@@ -411,18 +411,25 @@ end
 local function load_rom_buttons(src_platform, dest_platform)
   rom_list.children = {} -- Clear existing ROM items
   rom_list.height = 0
+  
+  -- Reset scroll position to top
+  if rom_scroll then
+    rom_scroll:scrollTo(0)
+  end
 
   -- Set label
-  (menu ^ "roms_label").text = string.format("%s (%s)", src_platform, dest_platform)
+  local label_item = menu ^ "roms_label"
+  if label_item then
+      label_item.text = string.format("%s (%s)", src_platform, dest_platform)
+  end
 
   local rom_path, _ = user_config:get_paths()
   local platform_path = string.format("%s/%s", rom_path, src_platform)
   local roms = nativefs.getDirectoryItems(platform_path)
 
-  -- pprint(dest_platform, artwork.cached_game_ids[dest_platform])
-
   for _, rom in ipairs(roms) do
-    local file_info = nativefs.getInfo(string.format("%s/%s", platform_path, rom))
+    local file_path = string.format("%s/%s", platform_path, rom)
+    local file_info = nativefs.getInfo(file_path)
     if file_info and file_info.type == "file" then
       if show_missing_only and not has_missing_media(dest_platform, rom) then
         goto continue
@@ -627,10 +634,17 @@ function single_scrape:load()
       + label { text = 'Platforms', icon = "folder" }
       + (scroll_container {
           width = (w_width - 30) / 3,
-          height = w_height - 90,
+          height = w_height - 60,
           scroll_speed = 30,
         }
         + platform_list)
+
+  -- Create scroll container for ROMs so we can control it (reset scroll)
+  rom_scroll = scroll_container {
+    width = ((w_width - 30) / 3) * 2,
+    height = w_height - 110,
+    scroll_speed = 30,
+  }
 
   local right_column = component { column = true, gap = 10 }
       + label { id = "roms_label", text = 'ROMs', icon = "cd" }
@@ -642,12 +656,7 @@ function single_scrape:load()
         disabled = true,
         active = true,
       })
-      + (scroll_container {
-          width = ((w_width - 30) / 3) * 2,
-          height = w_height - 90,
-          scroll_speed = 30,
-        }
-        + rom_list)
+      + (rom_scroll + rom_list)
 
   missing_filter_item = right_column % "missing_filter"
   if missing_filter_item then
