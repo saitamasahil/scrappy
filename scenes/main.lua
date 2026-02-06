@@ -1041,6 +1041,59 @@ function main:draw()
     local margin = 10
     love.graphics.draw(wifi_icon, w_width - icon_width - margin, margin, 0, icon_width / wifi_icon:getWidth(), icon_height / wifi_icon:getHeight())
   end
+
+  -- Draw Clock
+  if user_config:read("main", "clockEnabled") == "1" then
+    local cw, ch = love.window.getMode()
+    local format = user_config:read("main", "clockFormat") == "12h" and "%I:%M %p" or "%H:%M"
+    local time_str = os.date(format)
+    
+    local font = love.graphics.getFont()
+    local parts = utils.split(time_str, ":")
+    
+    -- Helper for faux-bold
+    local function print_bold(text, x, y)
+      love.graphics.print(text, x + 1, y)
+      love.graphics.print(text, x, y + 1)
+      love.graphics.print(text, x + 1, y + 1)
+      love.graphics.print(text, x, y)
+    end
+
+    local margin = 10
+    local colon_pad = 2 -- Extra padding around colon
+    local t_width = 0
+    
+    if #parts == 2 then
+       -- Calculate custom width with padding
+       t_width = font:getWidth(parts[1]) + font:getWidth(":") + font:getWidth(parts[2]) + (colon_pad * 2)
+    else
+       -- Fallback for safety
+       t_width = font:getWidth(time_str)
+    end
+
+    -- Calculate position (Top-Right)
+    local x_pos = cw - t_width - margin
+    local y_pos = margin
+
+    -- Shift left if "No WiFi" icon is visible
+    if not wifi_connected and wifi_icon then
+       x_pos = x_pos - 24 - 10 -- icon_width (24) + padding (10)
+    end
+    
+    -- Draw text in Accent Color
+    love.graphics.setColor(theme:read_color("button", "BUTTON_FOCUS"))
+    
+    if #parts == 2 then
+       local x_cursor = x_pos
+       print_bold(parts[1], x_cursor, y_pos)
+       x_cursor = x_cursor + font:getWidth(parts[1]) + colon_pad
+       print_bold(":", x_cursor, y_pos)
+       x_cursor = x_cursor + font:getWidth(":") + colon_pad
+       print_bold(parts[2], x_cursor, y_pos)
+    else
+       print_bold(time_str, x_pos, y_pos)
+    end
+  end
 end
 
 function main:keypressed(key)

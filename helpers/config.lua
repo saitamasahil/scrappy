@@ -99,6 +99,13 @@ function user_config:fill_defaults()
   if not self:read("main", "filterTemplates") then
     self:insert("main", "filterTemplates", 1)
   end
+  
+  if not self:read("main", "clockEnabled") then
+    self:insert("main", "clockEnabled", "1")
+  end
+  if not self:read("main", "clockFormat") then
+    self:insert("main", "clockFormat", "12h")
+  end
 
   if not self:read("main", "accentSource") then
     self:insert("main", "accentSource", "muos")

@@ -37,6 +37,8 @@ local icons = {
   dpad         = love.graphics.newImage("assets/inputs/switch_dpad_vertical_outline.png"),
   dpad_horizontal = love.graphics.newImage("assets/inputs/switch_dpad_horizontal_outline.png"),
   select       = love.graphics.newImage("assets/inputs/switch_button_sl.png"),
+  clock        = love.graphics.newImage("assets/icons/clock.png"),
+  time         = love.graphics.newImage("assets/icons/time.png"),
 }
 
 return function(props)

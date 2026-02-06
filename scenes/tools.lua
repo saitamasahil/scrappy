@@ -832,6 +832,39 @@ function tools:load()
             icon = "accent"
           }
           + listitem {
+            id = "clock_toggle",
+            text = "Show Clock: " .. (user_config:read("main", "clockEnabled") == "1" and "ON" or "OFF"),
+            width = item_width,
+            icon = "clock",
+            onClick = function()
+              local current = user_config:read("main", "clockEnabled") or "1"
+              local new_val = (current == "1") and "0" or "1"
+              user_config:insert("main", "clockEnabled", new_val)
+              user_config:save()
+              local item = menu ^ "clock_toggle"
+              if item then
+                item.text = "Show Clock: " .. (new_val == "1" and "ON" or "OFF")
+                -- icon remains "clock"
+              end
+            end
+          }
+          + listitem {
+            id = "clock_format",
+            text = "Time Format: " .. (user_config:read("main", "clockFormat") or "12h"),
+            width = item_width,
+            icon = "time",
+            onClick = function()
+              local current = user_config:read("main", "clockFormat") or "12h"
+              local new_val = (current == "12h") and "24h" or "12h"
+              user_config:insert("main", "clockFormat", new_val)
+              user_config:save()
+              local item = menu ^ "clock_format"
+              if item then
+                item.text = "Time Format: " .. new_val
+              end
+            end
+          }
+          + listitem {
             text = "Edit region priorities",
             width = item_width,
             onClick = open_region_editor,
