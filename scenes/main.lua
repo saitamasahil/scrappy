@@ -34,6 +34,9 @@ local default_cover_path = sample_media_root .. "/covers/fake-rom.png"
 local cover_preview_path = default_cover_path
 local output_priority = { "box", "preview", "splash" }
 local cover_preview
+local wifi_icon
+local wifi_connected = true
+local wifi_check_timer = 0
 
 local main = {}
 
@@ -643,6 +646,13 @@ end
 
 function main:load()
   loader:load()
+  if not wifi_icon then
+    if nativefs.getInfo("assets/icons/wifi.png") then
+      wifi_icon = love.graphics.newImage("assets/icons/wifi.png")
+    end
+  end
+  wifi_connected = wifi.is_connected()
+  wifi_check_timer = 0
 
   get_templates()
   local initial_folder, resolved = resolve_preview_output()
@@ -951,6 +961,12 @@ local function process_game_queue()
 end
 
 function main:update(dt)
+  -- Periodically check wifi status (every 5 seconds)
+  wifi_check_timer = wifi_check_timer + dt
+  if wifi_check_timer > 5 then
+    wifi_check_timer = 0
+    wifi_connected = wifi.is_connected()
+  end
   -- Drain ALL output messages from Skyscraper (not just one per frame)
   -- This prevents message pile-up when multiple concurrent tasks finish
   while true do
@@ -1015,6 +1031,14 @@ function main:draw()
   menu:draw()
   info_window:draw()
   scraping_window:draw()
+
+  if not wifi_connected and wifi_icon then
+    love.graphics.setColor(1, 1, 1, 1)
+    local icon_width = 24
+    local icon_height = 24
+    local margin = 10
+    love.graphics.draw(wifi_icon, w_width - icon_width - margin, margin, 0, icon_width / wifi_icon:getWidth(), icon_height / wifi_icon:getHeight())
+  end
 end
 
 function main:keypressed(key)
