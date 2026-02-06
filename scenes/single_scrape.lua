@@ -430,7 +430,10 @@ local function load_rom_buttons(src_platform, dest_platform)
   for _, rom in ipairs(roms) do
     local file_path = string.format("%s/%s", platform_path, rom)
     local file_info = nativefs.getInfo(file_path)
-    if file_info and file_info.type == "file" then
+    -- Skip if file info could not be retrieved
+    if not file_info then goto continue end
+
+    if file_info.type == "file" then
       if show_missing_only and not has_missing_media(dest_platform, rom) then
         goto continue
       end
