@@ -99,6 +99,24 @@ function user_config:fill_defaults()
   if not self:read("main", "filterTemplates") then
     self:insert("main", "filterTemplates", 1)
   end
+
+  if not self:read("main", "accentSource") then
+    self:insert("main", "accentSource", "muos")
+  end
+  if not self:read("main", "customAccent") then
+    self:insert("main", "customAccent", "cbaa0f")
+  end
+
+  if not self:read("main", "accentMode") then
+    local saved_muos = self:read("main", "muosAccent")
+    local muos_on = (saved_muos == nil) or (saved_muos ~= "0")
+    if not muos_on then
+      self:insert("main", "accentMode", "off")
+    else
+      local src = tostring(self:read("main", "accentSource") or "muos"):lower()
+      self:insert("main", "accentMode", (src == "custom") and "custom" or "muos")
+    end
+  end
   self:save()
 end
 
@@ -577,6 +595,112 @@ theme.__index = theme
 local current_theme_name = "dark"
 local muos_accent_enabled = true
 
+-- Singleton instances (must be initialized before theme.create uses them)
+local user_config_instance
+local skyscraper_config_instance
+
+local function clamp01(x)
+  if x < 0 then return 0 end
+  if x > 1 then return 1 end
+  return x
+end
+
+local function hex_to_rgb01(hex)
+  local h = tostring(hex or ""):gsub("#", "")
+  if #h == 3 then
+    h = h:sub(1,1)..h:sub(1,1)..h:sub(2,2)..h:sub(2,2)..h:sub(3,3)..h:sub(3,3)
+  end
+  if #h ~= 6 then return nil end
+  local r = tonumber(h:sub(1,2), 16)
+  local g = tonumber(h:sub(3,4), 16)
+  local b = tonumber(h:sub(5,6), 16)
+  if not r or not g or not b then return nil end
+  return r/255, g/255, b/255
+end
+
+local function rgb01_to_hsl(r, g, b)
+  local maxc = math.max(r, g, b)
+  local minc = math.min(r, g, b)
+  local l = (maxc + minc) / 2
+  if maxc == minc then
+    return 0, 0, l
+  end
+  local d = maxc - minc
+  local s
+  if l > 0.5 then s = d / (2 - maxc - minc) else s = d / (maxc + minc) end
+  local h
+  if maxc == r then
+    h = (g - b) / d + (g < b and 6 or 0)
+  elseif maxc == g then
+    h = (b - r) / d + 2
+  else
+    h = (r - g) / d + 4
+  end
+  h = h / 6
+  return h, s, l
+end
+
+local function hue2rgb(p, q, t)
+  if t < 0 then t = t + 1 end
+  if t > 1 then t = t - 1 end
+  if t < 1/6 then return p + (q - p) * 6 * t end
+  if t < 1/2 then return q end
+  if t < 2/3 then return p + (q - p) * (2/3 - t) * 6 end
+  return p
+end
+
+local function hsl_to_rgb01(h, s, l)
+  if s == 0 then
+    return l, l, l
+  end
+  local q
+  if l < 0.5 then q = l * (1 + s) else q = l + s - l * s end
+  local p = 2 * l - q
+  local r = hue2rgb(p, q, h + 1/3)
+  local g = hue2rgb(p, q, h)
+  local b = hue2rgb(p, q, h - 1/3)
+  return r, g, b
+end
+
+local function mk_color(r, g, b)
+  return { clamp01(r), clamp01(g), clamp01(b), 1 }
+end
+
+local function build_material_overrides(seed_hex, theme_name)
+  local r, g, b = hex_to_rgb01(seed_hex)
+  if not r then return nil end
+  local h, s, l = rgb01_to_hsl(r, g, b)
+  s = clamp01(math.max(0.45, math.min(s, 0.65)))
+
+  local focus_l = (theme_name == "light") and 0.72 or 0.30
+  local container_l = (theme_name == "light") and 0.88 or 0.24
+
+  local fr, fg, fb = hsl_to_rgb01(h, s, focus_l)
+  local cr, cg, cb = hsl_to_rgb01(h, s * 0.40, container_l)
+
+  local focus = mk_color(fr, fg, fb)
+  local container = mk_color(cr, cg, cb)
+
+  return {
+    button = {
+      BUTTON_FOCUS = focus,
+    },
+    select = {
+      SELECT_FOCUS = focus,
+    },
+    listitem = {
+      ITEM_FOCUS = focus,
+    },
+    checkbox = {
+      CHECKBOX_FOCUS = focus,
+      CHECKBOX_INDICATOR_BG = focus,
+    },
+    keyboard = {
+      KEY_FOCUS = focus,
+    },
+  }
+end
+
 function theme.create(theme_name, muos_accent)
   theme_name = theme_name or "dark"
   muos_accent = muos_accent ~= false  -- default to true
@@ -594,6 +718,20 @@ function theme.create(theme_name, muos_accent)
   local self = config.new("theme", filename)
   setmetatable(self, theme)
   self:init()
+
+  self._material_overrides = nil
+  if muos_accent_enabled then
+    local mode = tostring(user_config_instance:read("main", "accentMode") or "muos"):lower()
+    local src = user_config_instance:read("main", "accentSource") or "muos"
+    local custom = user_config_instance:read("main", "customAccent") or "cbaa0f"
+    local seed
+    if mode == "custom" or tostring(src):lower() == "custom" then
+      seed = custom
+    else
+      seed = self:read("button", "BUTTON_FOCUS") or self:read("listitem", "ITEM_FOCUS") or "cbaa0f"
+    end
+    self._material_overrides = build_material_overrides(seed, theme_name)
+  end
   return self
 end
 
@@ -606,6 +744,9 @@ function theme:init()
 end
 
 function theme:read_color(section, key, fallback)
+  if self._material_overrides and self._material_overrides[section] and self._material_overrides[section][key] then
+    return self._material_overrides[section][key]
+  end
   local color = self:read(section, key)
   if not color then return utils.hex(fallback) end
   return utils.hex_v(color)
@@ -625,13 +766,21 @@ function theme:is_muos_accent()
 end
 
 -- Singleton instances
-local user_config_instance = user_config.create("config.ini")
-local skyscraper_config_instance = skyscraper_config.create("skyscraper_config.ini")
+user_config_instance = user_config.create("config.ini")
+skyscraper_config_instance = skyscraper_config.create("skyscraper_config.ini")
 
 -- Load theme based on saved preferences
 local saved_theme = user_config_instance:read("main", "theme") or "dark"
-local saved_muos = user_config_instance:read("main", "muosAccent")
-local muos_on = saved_muos ~= "0"  -- default to true (ON)
+local saved_mode = tostring(user_config_instance:read("main", "accentMode") or ""):lower()
+local muos_on
+if saved_mode == "off" then
+  muos_on = false
+elseif saved_mode == "muos" or saved_mode == "custom" then
+  muos_on = true
+else
+  local saved_muos = user_config_instance:read("main", "muosAccent")
+  muos_on = saved_muos ~= "0"  -- default to true (ON)
+end
 local theme_instance = theme.create(saved_theme, muos_on)
 
 return {

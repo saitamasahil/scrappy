@@ -3,6 +3,9 @@ filterTemplates=1
 parseCache=1
 sd=1
 concurrentGeneration=3
+accentMode=muos
+accentSource=muos
+customAccent=cbaa0f
 [overrides]
 [platforms]
 [platformsSelected]

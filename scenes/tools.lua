@@ -14,6 +14,7 @@ local scroll_container  = require 'lib.gui.scroll_container'
 local output_log        = require 'lib.gui.output_log'
 local label             = require 'lib.gui.label'
 local icon              = require 'lib.gui.icon'
+local virtual_keyboard  = require 'lib.gui.virtual_keyboard'
 
 local tools             = {}
 local theme             = configs.theme
@@ -21,11 +22,24 @@ local scraper_opts      = { "screenscraper", "thegamesdb" }
 local scraper_index     = 1
 local theme_opts        = { "dark", "light" }
 local theme_index       = 1
-local muos_accent       = true  -- default ON
+local muos_accent       = true  -- legacy (derived from accent_mode)
+
+local accent_mode = "muos" -- off | muos | custom
+local custom_accent = "cbaa0f"
+local vk = nil
+
+local w_width, w_height = love.window.getMode()
+
+local menu, info_window
+
+local user_config, skyscraper_config
+
+local dispatch_info
 
 local region_popup, region_menu, region_list
 local confirm_popup, confirm_popup_visible = nil, false
 local clear_cache_popup_visible = false
+local accent_popup, accent_menu
 local pending_region_prios = nil
 local selected_region_index = 1
 local region_prios = {}
@@ -80,16 +94,236 @@ local function set_region_action_active(id)
   end
 end
 
-local w_width, w_height = love.window.getMode()
+local function accent_status_text()
+  if accent_mode == "off" then return "Off" end
+  if accent_mode == "custom" then return "Custom #" .. tostring(custom_accent or "") end
+  return "muOS"
+end
 
-local menu, info_window
+-- Preset accent colors (alternatives to muOS default)
+local accent_presets = {
+  { name = "Blue",        hex = "3498db" },
+  { name = "Green",       hex = "27ae60" },
+  { name = "Purple",      hex = "9b59b6" },
+  { name = "Red",         hex = "e74c3c" },
+}
 
+local function get_active_accent_hex()
+  if accent_mode == "off" then return nil end
+  if accent_mode == "custom" then return custom_accent end
+  return "cbaa0f" -- muOS default
+end
 
-local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
+local function sanitize_hex(s)
+  local raw = tostring(s or "")
+  raw = raw:gsub("#", ""):gsub("%s+", "")
+  raw = raw:lower()
+  return raw
+end
+
+local function is_hex6(s)
+  return type(s) == "string" and #s == 6 and s:match("^[0-9a-f]+$") ~= nil
+end
+
+local function sync_accent_to_config()
+  if not user_config then return end
+  user_config:insert("main", "accentMode", accent_mode)
+  user_config:insert("main", "customAccent", custom_accent)
+  user_config:insert("main", "muosAccent", (accent_mode ~= "off") and "1" or "0")
+  user_config:insert("main", "accentSource", (accent_mode == "custom") and "custom" or "muos")
+  user_config:save()
+end
+
+local function update_accent_menu_text()
+  if not menu then return end
+  local item = menu ^ "accent_settings"
+  if item then
+    item.text = "Accent (current: " .. accent_status_text() .. ") - restart required"
+  end
+end
+
+local function update_accent_popup_text()
+  if not accent_menu then return end
+  local it_mode = accent_menu ^ "accent_mode"
+  if it_mode then
+    local label = (accent_mode == "off") and "Off" or ((accent_mode == "custom") and "Custom" or "muOS")
+    it_mode.text = "Mode (current: " .. label .. ")"
+  end
+  local it_edit = accent_menu ^ "accent_custom"
+  if it_edit then
+    it_edit.disabled = accent_mode ~= "custom"
+    it_edit.text = "Custom accent (current: #" .. tostring(custom_accent or "") .. ")"
+  end
+end
+
+local function cycle_accent_mode()
+  if accent_mode == "off" then
+    accent_mode = "muos"
+  elseif accent_mode == "muos" then
+    accent_mode = "custom"
+  else
+    accent_mode = "off"
+  end
+  sync_accent_to_config()
+  update_accent_popup_text()
+  update_accent_menu_text()
+  dispatch_info("Accent", "Accent settings saved. Please restart Scrappy.")
+end
+
+local function on_edit_custom_accent()
+  if not user_config then return end
+  if not vk then
+    vk = virtual_keyboard.create({
+      title = "Custom Accent",
+      placeholder = "RRGGBB",
+      on_done = function(text)
+        local hex = sanitize_hex(text)
+        if not is_hex6(hex) then
+          dispatch_info("Invalid color", "Enter a 6-digit hex color like c29f0c")
+          return
+        end
+        custom_accent = hex
+        sync_accent_to_config()
+        update_accent_popup_text()
+        update_accent_menu_text()
+        dispatch_info("Accent", "Accent settings saved. Please restart Scrappy.")
+      end,
+      on_cancel = function() end,
+    })
+  end
+  vk:show(custom_accent or "", "custom_accent")
+end
+
+local function close_accent_popup()
+  if accent_popup then
+    accent_popup.visible = false
+  end
+end
+
+local function open_accent_settings()
+  if not menu or not user_config then return end
+  local item_width = math.min(w_width - 120, 560)
+  
+  -- Helper to apply a preset color
+  local function apply_preset(hex)
+    custom_accent = hex
+    accent_mode = "custom"
+    sync_accent_to_config()
+    update_accent_popup_text()
+    update_accent_menu_text()
+    dispatch_info("Accent", "Applied preset #" .. hex .. ". Please restart Scrappy.")
+  end
+  
+  accent_menu = component:root { column = true, gap = 8, width = item_width }
+  
+  -- Color swatch display component (shows current accent color)
+  local swatch_component = component {
+    id = "color_swatch",
+    width = item_width,
+    height = 40,
+    draw = function(self)
+      local active_hex = get_active_accent_hex()
+      local swatch_size = 28
+      local padding = 10
+      
+      -- Draw background
+      love.graphics.setColor(theme:read_color("button", "BUTTON_BACKGROUND", "#2d3436"))
+      love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, 6, 6)
+      
+      -- Draw color swatch
+      if active_hex then
+        local r = tonumber(active_hex:sub(1, 2), 16) / 255
+        local g = tonumber(active_hex:sub(3, 4), 16) / 255
+        local b = tonumber(active_hex:sub(5, 6), 16) / 255
+        love.graphics.setColor(r, g, b, 1)
+        love.graphics.rectangle("fill", self.x + padding, self.y + 6, swatch_size, swatch_size, 4, 4)
+        -- Border
+        love.graphics.setColor(1, 1, 1, 0.5)
+        love.graphics.rectangle("line", self.x + padding, self.y + 6, swatch_size, swatch_size, 4, 4)
+      else
+        -- No accent (off mode)
+        love.graphics.setColor(0.3, 0.3, 0.3, 1)
+        love.graphics.rectangle("fill", self.x + padding, self.y + 6, swatch_size, swatch_size, 4, 4)
+        love.graphics.setColor(1, 1, 1, 0.3)
+        love.graphics.line(self.x + padding, self.y + 6, self.x + padding + swatch_size, self.y + 6 + swatch_size)
+      end
+      
+      -- Draw label - show "muOS accent" for muOS mode, hex for custom
+      love.graphics.setColor(theme:read_color("label", "LABEL_TEXT", "#dfe6e9"))
+      local label_text
+      if accent_mode == "off" then
+        label_text = "Accent: Off"
+      elseif accent_mode == "muos" then
+        label_text = "Current: muOS accent"
+      else
+        label_text = "Current: #" .. (custom_accent or "cbaa0f")
+      end
+      love.graphics.print(label_text, self.x + padding + swatch_size + 12, self.y + 12)
+    end
+  }
+  
+  accent_menu = accent_menu + swatch_component
+  
+  -- Mode toggle
+  accent_menu = accent_menu + listitem {
+    id = "accent_mode",
+    text = "Mode: " .. ((accent_mode == "off") and "Off" or ((accent_mode == "custom") and "Custom" or "muOS")),
+    width = item_width,
+    onClick = cycle_accent_mode,
+    icon = "mode",
+  }
+  
+  -- Presets header
+  accent_menu = accent_menu + listitem {
+    id = "accent_presets",
+    text = "Presets",
+    width = item_width,
+    focusable = false,
+    disabled = true,
+    icon = "presets",
+  }
+  
+  -- Preset color buttons (using indicator style like region priorities)
+  for i, preset in ipairs(accent_presets) do
+    local is_active = (accent_mode == "custom" and custom_accent == preset.hex)
+    accent_menu = accent_menu + listitem {
+      id = "preset_" .. i,
+      text = preset.name,
+      width = item_width,
+      onClick = function() apply_preset(preset.hex) end,
+    }
+  end
+  
+  -- Custom color editor
+  accent_menu = accent_menu + listitem {
+    id = "accent_custom",
+    text = "Custom accent (current: #" .. tostring(custom_accent or "cbaa0f") .. ")",
+    width = item_width,
+    onClick = on_edit_custom_accent,
+    icon = "custom",
+  }
+  
+  -- Close button
+  accent_menu = accent_menu + listitem {
+    id = "accent_close",
+    text = "Close",
+    width = item_width,
+    onClick = close_accent_popup,
+    icon = "refresh",
+  }
+
+  accent_menu:updatePosition(0, 0)
+  accent_menu:focusFirstElement()
+  accent_popup = popup { visible = true, title = "Accent Settings", id = "accent_popup" }
+  accent_popup.children = { accent_menu }
+  update_accent_popup_text()
+end
+
+user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 local finished_tasks = 0
 local command_output = ""
 
-local function dispatch_info(title, content)
+dispatch_info = function(title, content)
   if title then info_window.title = title end
   if content then
     local scraping_log = info_window ^ "scraping_log"
@@ -239,18 +473,8 @@ local function on_change_theme()
   dispatch_info("Theme Changed", "Theme set to '" .. theme_opts[index] .. "'. Please restart Scrappy.")
 end
 
-local function on_toggle_muos_accent()
-  muos_accent = not muos_accent
-  local item = menu ^ "muos_toggle"
-  
-  local status = muos_accent and "ON" or "OFF"
-  item.text = "muOS Accent (current: " .. status .. ") - restart required"
-  
-  -- Persist the selection to config (store as "1" or "0")
-  user_config:insert("main", "muosAccent", muos_accent and "1" or "0")
-  user_config:save()
-  
-  dispatch_info("muOS Accent", "muOS accent colors " .. (muos_accent and "enabled" or "disabled") .. ". Please restart Scrappy.")
+local function on_open_accent_settings()
+  open_accent_settings()
 end
 
 local function trim(s)
@@ -509,11 +733,28 @@ function tools:load()
     end
   end
   
-  -- Restore saved muOS accent from config
-  local saved_muos = user_config:read("main", "muosAccent")
-  if saved_muos then
-    muos_accent = saved_muos ~= "0"  -- "0" = OFF, anything else = ON
+  local saved_custom = sanitize_hex(user_config:read("main", "customAccent") or "cbaa0f")
+  if is_hex6(saved_custom) then custom_accent = saved_custom else custom_accent = "cbaa0f" end
+
+  local saved_mode = user_config:read("main", "accentMode")
+  if saved_mode then
+    saved_mode = tostring(saved_mode):lower()
+    if saved_mode ~= "off" and saved_mode ~= "muos" and saved_mode ~= "custom" then
+      saved_mode = "muos"
+    end
+    accent_mode = saved_mode
+  else
+    local saved_muos = user_config:read("main", "muosAccent")
+    local muos_on = (saved_muos == nil) or (saved_muos ~= "0")
+    if not muos_on then
+      accent_mode = "off"
+    else
+      local src = tostring(user_config:read("main", "accentSource") or "muos"):lower()
+      accent_mode = (src == "custom") and "custom" or "muos"
+    end
   end
+
+  muos_accent = accent_mode ~= "off"
   
   menu = component:root { column = true, gap = 10 }
   info_window = popup { visible = false }
@@ -557,14 +798,14 @@ function tools:load()
             text = "Change theme (current: " .. theme_opts[theme_index] .. ") - restart required",
             width = item_width,
             onClick = on_change_theme,
-            icon = "canvas"
+            icon = "theme"
           }
           + listitem {
-            id = "muos_toggle",
-            text = "muOS Accent (current: " .. (muos_accent and "ON" or "OFF") .. ") - restart required",
+            id = "accent_settings",
+            text = "Accent (current: " .. accent_status_text() .. ") - restart required",
             width = item_width,
-            onClick = on_toggle_muos_accent,
-            icon = "canvas"
+            onClick = on_open_accent_settings,
+            icon = "accent"
           }
           + listitem {
             text = "Edit region priorities",
@@ -621,8 +862,13 @@ function tools:load()
 end
 
 function tools:update(dt)
+  if vk and vk.visible then
+    vk:update(dt)
+  end
   if region_popup and region_popup.visible and region_menu then
     region_menu:update(dt)
+  elseif accent_popup and accent_popup.visible and accent_menu then
+    accent_menu:update(dt)
   else
     menu:update(dt)
   end
@@ -769,12 +1015,40 @@ function tools:draw()
   if region_popup and region_popup.visible then
     region_popup:draw()
   end
+  if accent_popup and accent_popup.visible then
+    accent_popup:draw()
+  end
   -- Draw confirmation popup on top of everything
   draw_confirm_popup()
   draw_clear_cache_popup()
+
+  if vk and vk.visible then
+    vk:draw()
+  end
 end
 
 function tools:keypressed(key)
+  if vk and vk.visible then
+    local mapped = nil
+    if key == 'up' or key == 'down' or key == 'left' or key == 'right' then mapped = key end
+    if key == 'return' then mapped = 'confirm' end
+    if key == 'escape' then mapped = 'cancel' end
+    if mapped then
+      vk:handle_key(mapped)
+      return
+    end
+    return
+  end
+
+  if accent_popup and accent_popup.visible then
+    if key == "escape" then
+      accent_popup.visible = false
+      return
+    end
+    if accent_menu then accent_menu:keypressed(key) end
+    return
+  end
+
   -- Handle clear cache popup first (highest priority)
   if clear_cache_popup_visible then
     if key == "return" or key == "a" then
@@ -825,6 +1099,32 @@ function tools:keypressed(key)
     else
       scenes:pop()
     end
+  end
+end
+
+function tools:gamepadpressed(joystick, button)
+  local btn = type(button) == 'string' and button:lower() or button
+
+  if vk and vk.visible then
+    local map = {
+      dpup = 'up', dpdown = 'down', dpleft = 'left', dpright = 'right',
+      a = 'confirm', b = 'cancel'
+    }
+    local m = map[btn] or map[button]
+    if m then
+      vk:handle_key(m)
+      return
+    end
+    return
+  end
+
+  local key_map = {
+    dpup = 'up', dpdown = 'down', dpleft = 'left', dpright = 'right',
+    a = 'return', b = 'escape'
+  }
+  local k = key_map[btn] or key_map[button]
+  if k then
+    tools:keypressed(k)
   end
 end
 
