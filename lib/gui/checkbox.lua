@@ -1,8 +1,9 @@
 local component = require('lib.gui.badr')
 local icon      = require('lib.gui.icon')
-local theme     = require('helpers.config').theme
+local configs   = require('helpers.config')
 
 return function(props)
+  local theme = configs.theme
   local font = props.font or love.graphics.getFont()
   local padding = {
     horizontal = (props.leftPadding or 8) + (props.rightPadding or 8),
@@ -27,11 +28,12 @@ return function(props)
     height = height,
     focusable = props.focusable or true,
     -- Colors and styles
-    backgroundColor = theme:read_color("checkbox", "CHECKBOX_BACKGROUND", "#000000"),
-    focusColor = theme:read_color("checkbox", "CHECKBOX_FOCUS", "#2d3436"),
-    checkColor = theme:read_color("checkbox", "CHECKBOX_INDICATOR", "#dfe6e9"),
-    checkBg = theme:read_color("checkbox", "CHECKBOX_INDICATOR_BG", "#636e72"),
-    textColor = theme:read_color("checkbox", "CHECKBOX_TEXT", "#dfe6e9"),
+    -- Colors and styles (explicit overrides only)
+    backgroundColor = props.backgroundColor,
+    focusColor = props.focusColor,
+    checkColor = props.checkColor,
+    checkBg = props.checkBg,
+    textColor = props.textColor,
     borderWidth = props.borderWidth or 2,
     -- Events
     onToggle = props.onToggle,
@@ -47,9 +49,16 @@ return function(props)
       love.graphics.push()
       love.graphics.setFont(font)
 
+      -- Resolve colors dynamically
+      local backgroundColor = self.backgroundColor or theme:read_color("checkbox", "CHECKBOX_BACKGROUND", "#000000")
+      local focusColor = self.focusColor or theme:read_color("checkbox", "CHECKBOX_FOCUS", "#2d3436")
+      local checkColor = self.checkColor or theme:read_color("checkbox", "CHECKBOX_INDICATOR", "#dfe6e9")
+      local checkBg = self.checkBg or theme:read_color("checkbox", "CHECKBOX_INDICATOR_BG", "#636e72")
+      local textColor = self.textColor or theme:read_color("checkbox", "CHECKBOX_TEXT", "#dfe6e9")
+
       -- Background and focus styling
       if self.focused then
-        love.graphics.setColor(self.focused and self.focusColor or self.backgroundColor)
+        love.graphics.setColor(self.focused and focusColor or backgroundColor)
         love.graphics.rectangle("fill", self.x, self.y, self.parent.width or self.width, self.height)
       end
 
@@ -68,17 +77,17 @@ return function(props)
       }
 
       -- Inner box for the checkbox background
-      love.graphics.setColor(self.checkBg)
+      love.graphics.setColor(checkBg)
       bgIcon:draw()
 
       -- Checkbox mark if checked
       if self.checked then
-        love.graphics.setColor(self.checkColor)
+        love.graphics.setColor(checkColor)
         fgIcon:draw()
       end
 
       -- Draw the label next to the checkbox
-      love.graphics.setColor(self.textColor)
+      love.graphics.setColor(textColor)
       love.graphics.draw(t, self.x + checkboxSize + padding.horizontal, self.y + height / 2 - labelHeight / 2)
 
       love.graphics.pop()

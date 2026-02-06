@@ -1,8 +1,9 @@
 local component = require("lib.gui.badr")
 local label     = require("lib.gui.label")
-local theme     = require("helpers.config").theme
+local configs   = require("helpers.config")
 
 local function popup(props)
+  local theme = configs.theme
   local backgroundColor = theme:read_color("popup", "POPUP_BACKGROUND", "#000000")
   local opacity = theme:read_number("popup", "POPUP_OPACITY", 0.75)
   local boxColor = theme:read_color("popup", "POPUP_BOX", "#2d3436")

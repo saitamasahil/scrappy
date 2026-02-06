@@ -1,10 +1,10 @@
 local component = require("lib.gui.badr")
 local icon      = require("lib.gui.icon")
-local theme     = require("helpers.config").theme
+local configs   = require("helpers.config")
 
 local function label(props)
   local _font = props.font or love.graphics.getFont()
-  local color = props.color or theme:read_color("label", "LABEL_TEXT")
+  local color = props.color
   local iconSize = 20
   local padding = props.iconPadding or 4
   -- Support dynamic labels: if props.text is a function, call it on draw; otherwise use self.text
@@ -52,7 +52,8 @@ local function label(props)
       end
 
       -- Draw the label text
-      love.graphics.setColor(color)
+      local c = color or configs.theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
+      love.graphics.setColor(c)
       local txt = (self.get_text and self.get_text()) or self.text or ""
       love.graphics.print(txt, textX, self.y)
       love.graphics.setColor({ 1, 1, 1 }) -- Reset color to white

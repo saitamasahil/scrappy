@@ -30,7 +30,6 @@ local w_width, w_height = love.window.getMode()
 local padding = 10
 local canvas = love.graphics.newCanvas(w_width, w_height)
 local sample_media_root = "sample/media"
-local preview_bg = theme:read_color("button", "BUTTON_BACKGROUND", "#2d3436")
 local default_cover_path = sample_media_root .. "/covers/fake-rom.png"
 local cover_preview_path = default_cover_path
 local output_priority = { "box", "preview", "splash" }
@@ -674,6 +673,7 @@ function main:load()
       love.graphics.translate(self.x, self.y)
       love.graphics.scale(scale)
       -- Background (uses theme color)
+      local preview_bg = theme:read_color("button", "BUTTON_BACKGROUND", "#2d3436")
       love.graphics.setColor(preview_bg)
       love.graphics.rectangle("fill", 0, 0, cw, ch)
       love.graphics.setColor(1, 1, 1);
@@ -702,6 +702,7 @@ function main:load()
       love.graphics.translate(self.x, self.y)
       love.graphics.scale(scale)
       -- Background (uses theme color)
+      local preview_bg = theme:read_color("button", "BUTTON_BACKGROUND", "#2d3436")
       love.graphics.setColor(preview_bg)
       love.graphics.rectangle("fill", 0, 0, cw, ch)
       love.graphics.setColor(1, 1, 1);

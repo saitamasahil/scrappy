@@ -2,7 +2,7 @@
 -- Extracted from settings.lua for reuse across scenes
 
 local w_width, w_height = love.window.getMode()
- local theme = require("helpers.config").theme
+local configs = require("helpers.config")
 
 -- Virtual keyboard layout
 local MASK_CHAR = "*"
@@ -342,6 +342,8 @@ local function create_vk(config)
     local w, h = w_width, w_height
     local kb_h = math.floor(h * 0.30)
     local y0 = h - kb_h - 68
+
+    local theme = configs.theme
 
     local overlay_color = theme:read_color("keyboard", "OVERLAY_COLOR", "#000000")
     local overlay_opacity = theme:read_number("keyboard", "OVERLAY_OPACITY", 0.78)

@@ -14,26 +14,32 @@ return function(props)
     height = height,
     progress = progress,
     -- colors
-    backgroundColor = theme:read_color("progress", "BAR_BACKGROUND", "#2d3436"),
-    barColor = theme:read_color("progress", "BAR_COLOR", "#ffffff"),
-    borderColor = theme:read_color("progress", "BAR_BORDER", "#636e72"),
+    -- colors (explicit overrides only)
+    backgroundColor = props.backgroundColor,
+    barColor = props.barColor,
+    borderColor = props.borderColor,
     borderWidth = props.borderWidth or 2,
     -- draw function
     draw = function(self)
       if not self.visible then return end
       love.graphics.push()
 
+      -- Resolve colors dynamically
+      local backgroundColor = self.backgroundColor or theme:read_color("progress", "BAR_BACKGROUND", "#2d3436")
+      local barColor = self.barColor or theme:read_color("progress", "BAR_COLOR", "#ffffff")
+      local borderColor = self.borderColor or theme:read_color("progress", "BAR_BORDER", "#636e72")
+
       -- Draw background
-      love.graphics.setColor(self.backgroundColor)
+      love.graphics.setColor(backgroundColor)
       love.graphics.rectangle('fill', self.x, self.y, self.width, self.height)
 
       -- Draw progress bar
-      love.graphics.setColor(self.barColor)
+      love.graphics.setColor(barColor)
       love.graphics.rectangle('fill', self.x, self.y, self.width * self.progress, self.height)
 
       -- Draw border if specified
       if self.borderWidth > 0 then
-        love.graphics.setColor(self.borderColor)
+        love.graphics.setColor(borderColor)
         love.graphics.setLineWidth(self.borderWidth)
         love.graphics.rectangle('line', self.x, self.y, self.width, self.height)
       end

@@ -1,7 +1,8 @@
 local component = require('lib.gui.badr')
-local theme     = require('helpers.config').theme
+local configs   = require('helpers.config')
 
 return function(props)
+  local theme = configs.theme
   local height = props.height or
       200                                                                  -- Height of the scroll container viewport
   local width = props.width or 200
@@ -18,7 +19,7 @@ return function(props)
     children = props.children or {},
     focusable = false,
 
-    barColor = theme:read_color("scroll", "SCROLLBAR_COLOR", "#636e72"),
+    barColor = props.barColor,
 
     -- Scroll control methods
     scrollTo = function(self, position)
@@ -71,8 +72,11 @@ return function(props)
       local scrollbarHeight = (self.height / contentHeight) * self.height
       local scrollbarY = (scrollY / contentHeight) * self.height
 
+      -- Resolve colors dynamically
+      local barColor = self.barColor or theme:read_color("scroll", "SCROLLBAR_COLOR", "#636e72")
+
       -- Draw the scroll bar on the left of the container
-      love.graphics.setColor(self.barColor) -- Set the scrollbar color (light gray)
+      love.graphics.setColor(barColor) -- Set the scrollbar color (light gray)
       love.graphics.rectangle("fill", self.x - scrollbarWidth - 2, self.y + scrollbarY, scrollbarWidth, scrollbarHeight)
     end,
 

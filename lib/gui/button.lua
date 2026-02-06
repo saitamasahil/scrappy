@@ -36,9 +36,10 @@ return function(props)
     font = font,
     focusable = props.focusable or true,
     -- styles
-    backgroundColor = theme:read_color("button", "BUTTON_BACKGROUND", "#2d3436"),
-    focusColor = theme:read_color("button", "BUTTON_FOCUS", "#636e72"),
-    textColor = theme:read_color("button", "BUTTON_TEXT", "#dfe6e9"),
+    -- styles (explicit overrides only)
+    backgroundColor = props.backgroundColor,
+    focusColor = props.focusColor,
+    textColor = props.textColor,
     leftPadding = props.leftPadding or 8,
     rightPadding = props.rightPadding or 4,
     topPadding = props.topPadding or 4,
@@ -72,11 +73,16 @@ return function(props)
       love.graphics.push()
       love.graphics.setFont(font)
 
+      -- Resolve colors dynamically
+      local backgroundColor = self.backgroundColor or theme:read_color("button", "BUTTON_BACKGROUND", "#2d3436")
+      local focusColor = self.focusColor or theme:read_color("button", "BUTTON_FOCUS", "#636e72")
+      local textColor = self.textColor or theme:read_color("button", "BUTTON_TEXT", "#dfe6e9")
+
       -- Set color based on focus
       if self.focused then
-        love.graphics.setColor(self.focusColor)
+        love.graphics.setColor(focusColor)
       else
-        love.graphics.setColor(self.backgroundColor)
+        love.graphics.setColor(backgroundColor)
       end
 
       -- Draw button background
@@ -93,7 +99,7 @@ return function(props)
       end
 
       -- Draw button text
-      love.graphics.setColor(self.textColor)
+      love.graphics.setColor(textColor)
       -- Avoid setScissor here because absolute scissor conflicts with parent scroll translate.
 
       local currentText = (self.get_text and self.get_text()) or self.text or ""

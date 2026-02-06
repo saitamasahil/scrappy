@@ -38,9 +38,10 @@ return function(props)
     font = font,
     focusable = props.focusable or true,
     -- styles
-    backgroundColor = theme:read_color("select", "SELECT_BACKGROUND", "#2d3436"),
-    focusColor = theme:read_color("select", "SELECT_FOCUS", "#636e72"),
-    textColor = theme:read_color("select", "SELECT_TEXT", "#dfe6e9"),
+    -- styles (explicit overrides only)
+    backgroundColor = props.backgroundColor,
+    focusColor = props.focusColor,
+    textColor = props.textColor,
     leftPadding = props.leftPadding or 4,
     rightPadding = props.rightPadding or 4,
     topPadding = props.topPadding or 4,
@@ -74,11 +75,16 @@ return function(props)
       love.graphics.push()
       love.graphics.setFont(font)
 
+      -- Resolve colors dynamically
+      local backgroundColor = self.backgroundColor or theme:read_color("select", "SELECT_BACKGROUND", "#2d3436")
+      local focusColor = self.focusColor or theme:read_color("select", "SELECT_FOCUS", "#636e72")
+      local textColor = self.textColor or theme:read_color("select", "SELECT_TEXT", "#dfe6e9")
+
       -- Set color based on focus
       if self.focused then
-        love.graphics.setColor(self.focusColor)
+        love.graphics.setColor(focusColor)
       else
-        love.graphics.setColor(self.backgroundColor)
+        love.graphics.setColor(backgroundColor)
       end
 
       -- Draw background rectangle
@@ -134,7 +140,7 @@ return function(props)
       local currentOption = self.options[self.currentIndex] or ""
       local textY = self.y + self.height * 0.5 - font:getHeight() * 0.5
 
-      love.graphics.setColor(self.textColor)
+      love.graphics.setColor(textColor)
 
       local textWidth = font:getWidth(currentOption)
 

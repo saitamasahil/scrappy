@@ -1,8 +1,9 @@
 local component = require('lib.gui.badr')
 local icon      = require("lib.gui.icon")
-local theme     = require('helpers.config').theme
+local configs   = require('helpers.config')
 
 return function(props)
+  local theme = configs.theme
   local font = props.font or love.graphics.getFont()
   local padding = {
     horizontal = (props.leftPadding or 4) + (props.rightPadding or 4),
@@ -39,11 +40,11 @@ return function(props)
     disabled = props.disabled or false,
     active = props.active or false,
     icon = props.icon or nil,
-    -- Colors and styles
-    backgroundColor = theme:read_color("listitem", "ITEM_BACKGROUND", "#000000"),
-    focusColor = theme:read_color("listitem", "ITEM_FOCUS", "#2d3436"),
-    indicatorColor = indicators[props.indicator or 1],
-    textColor = theme:read_color("listitem", "ITEM_TEXT", "#dfe6e9"),
+    -- Colors and styles (explicit overrides only, otherwise dynamic in draw)
+    backgroundColor = props.backgroundColor,
+    focusColor = props.focusColor,
+    indicatorColor = nil, -- Resolved in draw
+    textColor = props.textColor,
     -- Focus state
     last_focused = false,
     -- Events
@@ -90,14 +91,26 @@ return function(props)
       local topPadding = self.height * 0.5 - labelHeight * 0.5
       local leftPadding = (props.leftPadding or 4)
 
+      -- Resolve colors dynamically (fixes caching issue)
+      local backgroundColor = self.backgroundColor or theme:read_color("listitem", "ITEM_BACKGROUND", "#000000")
+      local focusColor = self.focusColor or theme:read_color("listitem", "ITEM_FOCUS", "#2d3436")
+      local textColor = self.textColor or theme:read_color("listitem", "ITEM_TEXT", "#dfe6e9")
+      
+      local indicators = {
+        theme:read_color("listitem", "ITEM_INDICATOR_DEFAULT", "#dfe6e9"),
+        theme:read_color("listitem", "ITEM_INDICATOR_SUCCESS", "#2ecc71"),
+        theme:read_color("listitem", "ITEM_INDICATOR_ERROR", "#e74c3c"),
+      }
+      local indicatorColor = indicators[props.indicator or 1]
+
       -- Background and focus styling
       if self.focused then
-        love.graphics.setColor(self.focusColor)
+        love.graphics.setColor(focusColor)
         love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
       end
 
       if self.active then
-        love.graphics.setColor(self.indicatorColor)
+        love.graphics.setColor(indicatorColor)
         love.graphics.rectangle("fill", self.x, self.y + self.height * 0.25, 4, self.height * 0.5)
       end
 
@@ -120,7 +133,7 @@ return function(props)
         "replace", 1
       )
       love.graphics.setStencilTest("greater", 0)
-      love.graphics.setColor(self.textColor)
+      love.graphics.setColor(textColor)
 
       local textX = self.x + 2 * leftPadding + iconSize
       local textWidth = font:getWidth(self.text)

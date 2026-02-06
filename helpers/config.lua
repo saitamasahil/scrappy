@@ -783,13 +783,24 @@ else
 end
 local theme_instance = theme.create(saved_theme, muos_on)
 
-return {
+-- Proxy object that always points to the current theme_instance
+local proxy_theme = setmetatable({}, {
+  __index = function(t, k)
+    return theme_instance[k]
+  end
+})
+
+local exports = {
   user_config = user_config_instance,
   skyscraper_config = skyscraper_config_instance,
-  theme = theme_instance,
-  reload_theme = function(theme_name, muos_accent)
-    theme_instance = theme.create(theme_name, muos_accent)
-    return theme_instance
-  end
+  theme = proxy_theme, -- Export the proxy instead of the instance
 }
+
+function exports.reload_theme(theme_name, muos_accent)
+  -- Update the internal instance; the proxy will see the new one
+  theme_instance = theme.create(theme_name, muos_accent)
+  return theme_instance
+end
+
+return exports
 

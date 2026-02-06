@@ -134,11 +134,28 @@ local function sync_accent_to_config()
   user_config:save()
 end
 
+local function apply_theme_now()
+  local theme_name = theme_opts[theme_index] or "dark"
+  local muos_on = accent_mode ~= "off"
+  configs.reload_theme(theme_name, muos_on)
+  theme = configs.theme
+
+  if accent_popup then accent_popup.visible = false end
+  if region_popup then region_popup.visible = false end
+  if vk and vk.visible then
+    vk.visible = false
+    _G.ui_overlay_active = false
+  end
+  vk = nil
+
+  tools:load()
+end
+
 local function update_accent_menu_text()
   if not menu then return end
   local item = menu ^ "accent_settings"
   if item then
-    item.text = "Accent (current: " .. accent_status_text() .. ") - restart required"
+    item.text = "Accent (current: " .. accent_status_text() .. ")"
   end
 end
 
@@ -164,10 +181,8 @@ local function cycle_accent_mode()
   else
     accent_mode = "off"
   end
-  sync_accent_to_config()
   update_accent_popup_text()
   update_accent_menu_text()
-  dispatch_info("Accent", "Accent settings saved. Please restart Scrappy.")
 end
 
 local function on_edit_custom_accent()
@@ -186,7 +201,9 @@ local function on_edit_custom_accent()
         sync_accent_to_config()
         update_accent_popup_text()
         update_accent_menu_text()
-        dispatch_info("Accent", "Accent settings saved. Please restart Scrappy.")
+        if accent_popup then accent_popup.visible = false end
+        apply_theme_now()
+        dispatch_info("Accent", "Changes saved.")
       end,
       on_cancel = function() end,
     })
@@ -195,8 +212,12 @@ local function on_edit_custom_accent()
 end
 
 local function close_accent_popup()
-  if accent_popup then
+  if accent_popup and accent_popup.visible then
     accent_popup.visible = false
+    sync_accent_to_config()
+    update_accent_menu_text()
+    apply_theme_now()
+    dispatch_info("Accent", "Changes saved.")
   end
 end
 
@@ -211,7 +232,9 @@ local function open_accent_settings()
     sync_accent_to_config()
     update_accent_popup_text()
     update_accent_menu_text()
-    dispatch_info("Accent", "Applied preset #" .. hex .. ". Please restart Scrappy.")
+    if accent_popup then accent_popup.visible = false end
+    apply_theme_now()
+    dispatch_info("Accent", "Changes saved.")
   end
   
   accent_menu = component:root { column = true, gap = 8, width = item_width }
@@ -464,13 +487,14 @@ local function on_change_theme()
   local item = menu ^ "theme_toggle"
 
   theme_index = index
-  item.text = "Change theme (current: " .. theme_opts[theme_index] .. ") - restart required"
+  item.text = "Change theme (current: " .. theme_opts[theme_index] .. ")"
   
   -- Persist the selection to config
   user_config:insert("main", "theme", theme_opts[index])
   user_config:save()
-  
-  dispatch_info("Theme Changed", "Theme set to '" .. theme_opts[index] .. "'. Please restart Scrappy.")
+
+  apply_theme_now()
+  dispatch_info("Theme Changed", "Theme applied.")
 end
 
 local function on_open_accent_settings()
@@ -598,7 +622,7 @@ local function on_confirm_cache_clear()
   confirm_popup_visible = false
   pending_region_prios = nil
   if region_popup then region_popup.visible = false end
-  dispatch_info("Region Priorities Saved", "Cache has been cleared and region priorities updated.\nPlease restart Skyscraper for changes to take effect.")
+  dispatch_info("Region Priorities Saved", "Cache has been cleared and region priorities updated.")
 end
 
 -- Called when user cancels cache deletion
@@ -795,14 +819,14 @@ function tools:load()
           }
           + listitem {
             id = "theme_toggle",
-            text = "Change theme (current: " .. theme_opts[theme_index] .. ") - restart required",
+            text = "Change theme (current: " .. theme_opts[theme_index] .. ")",
             width = item_width,
             onClick = on_change_theme,
             icon = "theme"
           }
           + listitem {
             id = "accent_settings",
-            text = "Accent (current: " .. accent_status_text() .. ") - restart required",
+            text = "Accent (current: " .. accent_status_text() .. ")",
             width = item_width,
             onClick = on_open_accent_settings,
             icon = "accent"
@@ -1042,7 +1066,7 @@ function tools:keypressed(key)
 
   if accent_popup and accent_popup.visible then
     if key == "escape" then
-      accent_popup.visible = false
+      close_accent_popup()
       return
     end
     if accent_menu then accent_menu:keypressed(key) end
