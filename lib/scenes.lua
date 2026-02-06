@@ -30,6 +30,11 @@ function scenes:pop()
       self.states[cfocus]:close()
     end
     self.focus[#self.focus] = nil
+    
+    local new_focus_id = self:currentFocus()
+    if new_focus_id and self.states[new_focus_id].resume then
+      self.states[new_focus_id]:resume()
+    end
   end
 end
 

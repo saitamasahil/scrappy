@@ -575,7 +575,7 @@ local function on_save_ss()
   if ss_username ~= '' and ss_password ~= '' then
     sk:insert('screenscraper', 'userCreds', string.format('"%s:%s"', ss_username, ss_password))
     sk:save()
-    ss_status = "Saved credentials. Restart Scrappy to apply"
+    ss_status = "Saved credentials."
   else
     ss_status = "Enter both username and password."
   end

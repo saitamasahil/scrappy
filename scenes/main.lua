@@ -816,6 +816,7 @@ function main:load()
   menu:focusFirstElement()
   if not skyscraper_config:has_credentials() then
     menu = menu + label {
+      id = "ss_warning",
       text = "Open Settings and add your ScreenScraper credentials.",
       icon = "warn",
     }
@@ -1051,6 +1052,24 @@ function main:gamepadpressed(joystick, button)
   
   if not state.scraping and not info_window.visible then
     if menu.gamepadpressed then menu:gamepadpressed(joystick, button) end
+  end
+end
+
+function main:resume()
+  -- If we have credentials now, remove the warning if it exists
+  if skyscraper_config:has_credentials() then
+    local warning = menu ^ "ss_warning"
+    if warning then
+      -- Find and remove the warning component
+      for i, child in ipairs(menu.children) do
+        if child.id == "ss_warning" then
+          table.remove(menu.children, i)
+          break
+        end
+      end
+      -- Recalculate layout
+      menu:updatePosition(10, 10)
+    end
   end
 end
 
