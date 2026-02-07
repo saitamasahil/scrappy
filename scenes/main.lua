@@ -1035,7 +1035,8 @@ function main:draw()
   scraping_window:draw()
 
   if not wifi_connected and wifi_icon then
-    love.graphics.setColor(1, 1, 1, 1)
+    local icon_color = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
+    love.graphics.setColor(icon_color)
     local icon_width = 24
     local icon_height = 24
     local margin = 10
