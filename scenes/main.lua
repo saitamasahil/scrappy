@@ -953,11 +953,9 @@ local function process_game_queue()
       log.write(string.format("Game file not found in map for %s on platform %s", game, platform))
       -- Send finished signal to prevent blocking
       channels.SKYSCRAPER_GEN_OUTPUT:push({ finished = true })
-      update_state({
-        title = game,
-        platform = platform,
-        success = false,
-      })
+      -- Do NOT call update_state here - this game was never added to state.tasks
+      -- (filtered out by scrape_missing_only or other conditions)
+      print(string.format("Skipping game %s (not in game_file_map, likely filtered)", game))
     end
   end
 end
