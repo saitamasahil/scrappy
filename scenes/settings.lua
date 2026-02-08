@@ -506,10 +506,11 @@ local function vk_draw()
   -- Draw blinking cursor at the correct position
   local cursor_blink = math.floor(love.timer.getTime() / 0.53) % 2 == 0
   if cursor_blink or vk_text_field_focused then
-    -- Calculate cursor X based on cursor position, not end of text
+    -- Calculate cursor X based on cursor position, using actual preview text
     local text_before_cursor
     if vk_target == 'pass' and #vk_buffer > 0 then
-      text_before_cursor = string.rep(MASK_CHAR, math.min(cursor_display_pos, #vk_buffer))
+      -- Use the actual preview text up to cursor position for accurate width
+      text_before_cursor = preview:sub(1, math.min(cursor_display_pos, #preview))
     else
       text_before_cursor = vk_buffer:sub(1, cursor_display_pos)
     end
