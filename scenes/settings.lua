@@ -62,6 +62,8 @@ local vk_last_char_time = 0
 local vk_last_char_window = 0.8
 local vk_move_lock_until = 0 -- time until which dpad movement is ignored after confirm
 local vk_opened_at = 0       -- timestamp when VK opened; brief grace to ignore movement
+local vk_cursor_pos = 0      -- cursor position within text (0 = before first char)
+local vk_text_field_focused = false  -- whether text field is focused for cursor movement
 
 -- Optional button prompt icons (A/B)
 local INPUT_ICONS = {}
@@ -145,6 +147,8 @@ local function vk_show(target, initial)
   vk_shift = false
   vk_visible = true
   vk_opened_at = love.timer.getTime()
+  vk_cursor_pos = #vk_buffer  -- Start cursor at end of text
+  vk_text_field_focused = false
   _G.ui_overlay_active = true -- hide global footer while VK is open
 end
 
@@ -159,6 +163,7 @@ local function vk_hide(apply)
   vk_hold_time = 0
   vk_repeat_started = false
   vk_hold_acc = 0
+  vk_text_field_focused = false
   _G.ui_overlay_active = false -- restore footer when VK closes
 end
 
@@ -199,6 +204,27 @@ local function vk_handle_key(key)
     if vk_opened_at > 0 and (now - vk_opened_at) < 0.12 then return true end
     return false
   end
+  
+  -- Helper: insert character at cursor position
+  local function insert_at_cursor(char)
+    local before = vk_buffer:sub(1, vk_cursor_pos)
+    local after = vk_buffer:sub(vk_cursor_pos + 1)
+    vk_buffer = before .. char .. after
+    vk_cursor_pos = vk_cursor_pos + 1
+    if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
+  end
+  
+  -- Helper: delete character before cursor position
+  local function delete_at_cursor()
+    if vk_cursor_pos > 0 then
+      local before = vk_buffer:sub(1, vk_cursor_pos - 1)
+      local after = vk_buffer:sub(vk_cursor_pos + 1)
+      vk_buffer = before .. after
+      vk_cursor_pos = vk_cursor_pos - 1
+      if vk_target=='pass' then vk_last_char_time = 0 end
+    end
+  end
+  
   -- Helper: compute nearest column in target row by comparing visual X centers
   local function nearest_col_by_x(src_row_idx, src_col_idx, dst_row_idx)
     local w, h = w_width, w_height
@@ -251,19 +277,60 @@ local function vk_handle_key(key)
     end
     return best_col
   end
+  
+  -- Handle text field focus mode
+  if vk_text_field_focused then
+    if key == 'left' then
+      if movement_locked() then return true end
+      if vk_cursor_pos > 0 then
+        vk_cursor_pos = vk_cursor_pos - 1
+      end
+      vk_move_lock_until = love.timer.getTime() + 0.06
+      return true
+    elseif key == 'right' then
+      if movement_locked() then return true end
+      if vk_cursor_pos < #vk_buffer then
+        vk_cursor_pos = vk_cursor_pos + 1
+      end
+      vk_move_lock_until = love.timer.getTime() + 0.06
+      return true
+    elseif key == 'down' then
+      if movement_locked() then return true end
+      -- Exit text field focus, go to keyboard row 1
+      vk_text_field_focused = false
+      vk_row = 1
+      vk_move_lock_until = love.timer.getTime() + 0.06
+      return true
+    elseif key == 'up' then
+      if movement_locked() then return true end
+      -- Wrap to bottom row of keyboard
+      vk_text_field_focused = false
+      local layout = vk_current_layout()
+      vk_row = #layout
+      vk_col = math.min(vk_col, #layout[vk_row])
+      vk_move_lock_until = love.timer.getTime() + 0.06
+      return true
+    elseif key == 'confirm' then
+      -- Exit text field focus, go back to keyboard
+      vk_text_field_focused = false
+      vk_move_lock_until = love.timer.getTime() + 0.08
+      return true
+    elseif key == 'cancel' then
+      vk_hide(false)
+      return true
+    elseif key == 'backspace' then
+      delete_at_cursor()
+      return true
+    end
+    return true
+  end
+  
+  -- Normal keyboard navigation
   if key == 'up' then
     if movement_locked() then return true end
-    -- Vertical wrap: from top row, Up wraps to bottom row
     if vk_row == 1 then
-      if vk_col == 1 then
-        -- Special wrap from '1' to bottom-right
-        vk_row = #layout
-        vk_col = #layout[vk_row]
-      else
-        vk_row = #layout
-        vk_col = math.min(vk_col, #layout[vk_row])
-      end
-      -- brief movement lock to stabilize selection for quick confirm
+      -- From top row, go to text field
+      vk_text_field_focused = true
       vk_move_lock_until = love.timer.getTime() + 0.06
       return true
     end
@@ -279,7 +346,6 @@ local function vk_handle_key(key)
     end
   elseif key == 'down' then
     if movement_locked() then return true end
-    -- Vertical wrap: from bottom row, Down wraps to top row
     if vk_row == #layout then
       vk_row = 1
       vk_col = math.min(vk_col, #layout[vk_row])
@@ -305,12 +371,10 @@ local function vk_handle_key(key)
     vk_col = vk_col < #layout[vk_row] and (vk_col + 1) or 1
     vk_move_lock_until = love.timer.getTime() + 0.06
   elseif key == 'space' then
-    vk_buffer = vk_buffer .. ' '
-    if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
+    insert_at_cursor(' ')
     return true
   elseif key == 'backspace' then
-    vk_buffer = vk_buffer:sub(1, -2)
-    if vk_target=='pass' then vk_last_char_time = 0 end
+    delete_at_cursor()
     return true
   elseif key == 'ok_now' then
     vk_hide(true)
@@ -318,8 +382,8 @@ local function vk_handle_key(key)
   elseif key == 'confirm' then
     local keydef = layout[vk_row][vk_col]
     if type(keydef) == 'table' then
-      if keydef.t == 'space' then vk_buffer = vk_buffer .. ' ' ; if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
-      elseif keydef.t == 'back' then vk_buffer = vk_buffer:sub(1, -2) ; if vk_target=='pass' then vk_last_char_time = 0 end
+      if keydef.t == 'space' then insert_at_cursor(' ')
+      elseif keydef.t == 'back' then delete_at_cursor()
       elseif keydef.t == 'ok' then vk_hide(true)
       elseif keydef.t == 'toggle' then
         if vk_mode == 'lower' then vk_mode = 'upper'
@@ -327,8 +391,7 @@ local function vk_handle_key(key)
         else vk_mode = 'lower' end
       end
     else
-      vk_buffer = vk_buffer .. tostring(keydef)
-      if vk_target=='pass' then vk_last_char_time = love.timer.getTime() end
+      insert_at_cursor(tostring(keydef))
     end
     -- Short debounce to avoid movement mixing with confirm
     vk_move_lock_until = love.timer.getTime() + 0.08
@@ -379,10 +442,18 @@ local function vk_draw()
   local box_y = y0 + 6
   local box_x = area_x0
   local box_w = area_w
+  -- Draw text field focus highlight
+  if vk_text_field_focused then
+    love.graphics.setColor(key_focus)
+    love.graphics.rectangle('line', box_x - 2, box_y - 2, box_w + 4, box_h + 4, 14, 14)
+  end
+
   love.graphics.setColor(preview_bg)
   love.graphics.rectangle('fill', box_x, box_y, box_w, box_h, 12, 12)
   love.graphics.setColor(key_text)
+
   local preview
+  local cursor_display_pos = vk_cursor_pos  -- Position for cursor drawing
   if vk_target == 'pass' then
     local now = love.timer.getTime()
     local n = #vk_buffer
@@ -395,20 +466,33 @@ local function vk_draw()
       end
     else
       preview = '(enter)'
+      cursor_display_pos = 0
     end
   else
-    preview = (vk_buffer == '' and '(enter)' or vk_buffer)
+    if vk_buffer == '' then
+      preview = '(enter)'
+      cursor_display_pos = 0
+    else
+      preview = vk_buffer
+    end
   end
   love.graphics.printf(preview, box_x + 12, box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2), box_w - 24, 'left')
 
-  -- Draw blinking cursor
+  -- Draw blinking cursor at the correct position
   local cursor_blink = math.floor(love.timer.getTime() / 0.53) % 2 == 0
-  if cursor_blink then
-    local cursor_x = box_x + 12 + love.graphics.getFont():getWidth(preview)
+  if cursor_blink or vk_text_field_focused then
+    -- Calculate cursor X based on cursor position, not end of text
+    local text_before_cursor
+    if vk_target == 'pass' and #vk_buffer > 0 then
+      text_before_cursor = string.rep(MASK_CHAR, math.min(cursor_display_pos, #vk_buffer))
+    else
+      text_before_cursor = vk_buffer:sub(1, cursor_display_pos)
+    end
+    local cursor_x = box_x + 12 + love.graphics.getFont():getWidth(text_before_cursor)
     local cursor_y = box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2)
     local cursor_h = love.graphics.getFont():getHeight()
     love.graphics.setColor(key_text)
-    love.graphics.rectangle('fill', cursor_x + 2, cursor_y, 2, cursor_h)
+    love.graphics.rectangle('fill', cursor_x, cursor_y, 2, cursor_h)
   end
 
   -- Keys
@@ -444,7 +528,7 @@ local function vk_draw()
       local mult = (type(k)=='table' and k.w) or 1
       local kw = key_w * mult
       local rx, ry = cx, ypos + (r - 1) * (key_h + margin)
-      if r == vk_row and c == vk_col then
+      if r == vk_row and c == vk_col and not vk_text_field_focused then
         love.graphics.setColor(key_focus)
         love.graphics.rectangle('fill', rx - 3, ry - 3, kw + 6, key_h + 6, 6, 6)
       end
