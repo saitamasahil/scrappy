@@ -400,6 +400,17 @@ local function vk_draw()
     preview = (vk_buffer == '' and '(enter)' or vk_buffer)
   end
   love.graphics.printf(preview, box_x + 12, box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2), box_w - 24, 'left')
+
+  -- Draw blinking cursor
+  local cursor_blink = math.floor(love.timer.getTime() / 0.53) % 2 == 0
+  if cursor_blink then
+    local cursor_x = box_x + 12 + love.graphics.getFont():getWidth(preview)
+    local cursor_y = box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2)
+    local cursor_h = love.graphics.getFont():getHeight()
+    love.graphics.setColor(key_text)
+    love.graphics.rectangle('fill', cursor_x + 2, cursor_y, 2, cursor_h)
+  end
+
   -- Keys
   local ypos = box_y + box_h + 10
   local prev_font = love.graphics.getFont()
