@@ -768,12 +768,12 @@ function single_scrape:gamepadpressed(joystick, button)
   if state.refine_confirm_visible then
     if button == 'a' then
       on_confirm_refine()
-      return
+      return true
     elseif button == 'b' then
       on_cancel_refine()
-      return
+      return true
     end
-    return  -- Block all other buttons while popup is visible
+    return true  -- Block all other buttons while popup is visible
   end
   
   -- Handle virtual keyboard input first if visible
@@ -799,9 +799,10 @@ function single_scrape:gamepadpressed(joystick, button)
   if button == "b" then
     if state.scraping then
       halt_scraping()
-      return
+      return true  -- Handled, don't let global input also process
     end
     on_return()
+    return true  -- Handled, don't let global input also process
   end
   
   if not state.scraping then
@@ -809,6 +810,7 @@ function single_scrape:gamepadpressed(joystick, button)
       menu:gamepadpressed(joystick, button)
     end
   end
+  return false  -- Not handled by VK or B button, allow global input
 end
 
 return single_scrape
