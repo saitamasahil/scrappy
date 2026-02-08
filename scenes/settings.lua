@@ -499,7 +499,9 @@ local function vk_draw()
   local preview_font = (vk_target == 'pass' and vk_buffer ~= '') and vk_password_font or love.graphics.getFont()
   local prev_font = love.graphics.getFont()
   love.graphics.setFont(preview_font)
-  love.graphics.printf(preview, box_x + 12, box_y + math.floor((box_h - preview_font:getHeight())/2), box_w - 24, 'left')
+  -- Asterisk has high baseline, so add offset for password to center it visually
+  local y_offset = (vk_target == 'pass' and vk_buffer ~= '') and math.floor(preview_font:getHeight() * 0.15) or 0
+  love.graphics.printf(preview, box_x + 12, box_y + math.floor((box_h - preview_font:getHeight())/2) + y_offset, box_w - 24, 'left')
 
   -- Draw blinking cursor at the correct position
   local cursor_blink = math.floor(love.timer.getTime() / 0.53) % 2 == 0
@@ -512,7 +514,7 @@ local function vk_draw()
       text_before_cursor = vk_buffer:sub(1, cursor_display_pos)
     end
     local cursor_x = box_x + 12 + preview_font:getWidth(text_before_cursor)
-    local cursor_y = box_y + math.floor((box_h - preview_font:getHeight())/2)
+    local cursor_y = box_y + math.floor((box_h - preview_font:getHeight())/2) + y_offset
     local cursor_h = preview_font:getHeight()
     love.graphics.setColor(key_text)
     love.graphics.rectangle('fill', cursor_x, cursor_y, 2, cursor_h)
