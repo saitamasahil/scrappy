@@ -1175,14 +1175,8 @@ function tools:gamepadpressed(joystick, button)
     return true
   end
 
-  local key_map = {
-    dpup = 'up', dpdown = 'down', dpleft = 'left', dpright = 'right',
-    a = 'return', b = 'escape'
-  }
-  local k = key_map[btn] or key_map[button]
-  if k then
-    tools:keypressed(k)
-  end
+  -- Rely on global input handling for D-Pad (to support hold-repeat) and standard keys
+  return false
 end
 
 return tools
