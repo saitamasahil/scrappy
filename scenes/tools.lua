@@ -1165,14 +1165,14 @@ function tools:gamepadpressed(joystick, button)
   if vk and vk.visible then
     local map = {
       dpup = 'up', dpdown = 'down', dpleft = 'left', dpright = 'right',
-      a = 'confirm', b = 'cancel'
+      a = 'confirm', b = 'cancel', x = 'x', y = 'y'
     }
     local m = map[btn] or map[button]
     if m then
       vk:handle_key(m)
-      return
+      return true
     end
-    return
+    return true
   end
 
   local key_map = {

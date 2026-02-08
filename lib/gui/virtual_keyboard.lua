@@ -267,8 +267,15 @@ local function create_vk(config)
       elseif key == 'cancel' then
         self:hide(false)
         return true
-      elseif key == 'backspace' then
+      elseif key == 'backspace' or key == 'y' then
+        -- Y button or backspace deletes character at cursor
         delete_at_cursor()
+        return true
+      elseif key == 'x' then
+        -- X button cycles keyboard layout even when text field is focused
+        if self.mode == 'lower' then self.mode = 'upper'
+        elseif self.mode == 'upper' then self.mode = 'symbol'
+        else self.mode = 'lower' end
         return true
       end
       return true
@@ -322,8 +329,15 @@ local function create_vk(config)
     elseif key == 'space' then
       insert_at_cursor(' ')
       return true
-    elseif key == 'backspace' then
+    elseif key == 'backspace' or key == 'y' then
+      -- Y button or backspace deletes character at cursor
       delete_at_cursor()
+      return true
+    elseif key == 'x' then
+      -- X button cycles keyboard layout: lower → upper → symbol → lower
+      if self.mode == 'lower' then self.mode = 'upper'
+      elseif self.mode == 'upper' then self.mode = 'symbol'
+      else self.mode = 'lower' end
       return true
     elseif key == 'ok_now' then
       self:hide(true)
@@ -567,7 +581,7 @@ local function create_vk(config)
     local pw = prompt_w
     local line_h = math.floor(key_h * 0.9)
     local gap_h = 6
-    local rows = 2
+    local rows = 4  -- A, B, X, Y
     local ph = 8 + rows * line_h + (rows - 1) * gap_h + 8
     local right_margin = 36
     local px = area_x0 + area_w + panel_gap - right_margin
@@ -600,6 +614,8 @@ local function create_vk(config)
 
     draw_prompt(1, 'a', 'Confirm')
     draw_prompt(2, 'b', 'Close')
+    draw_prompt(3, 'x', 'Layout')
+    draw_prompt(4, 'y', 'Delete')
   end
   
   return vk

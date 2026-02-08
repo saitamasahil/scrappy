@@ -129,17 +129,29 @@ function love.keyreleased(key)
 end
 
 function love.gamepadpressed(js, button)
-  -- Use mapping table to trigger events
-  local event = input.joystick_mapping[button]
-  if event then
-    emit(event, false)
-    -- Start hold for directional and paging (shoulder) gamepad events
-    if event == input.events.LEFT or event == input.events.RIGHT or event == input.events.UP or event == input.events.DOWN
-      or event == input.events.PREV or event == input.events.NEXT then
-      holding.dir = event
-      holding.start_time = love.timer.getTime()
-      holding.started = false
-      holding.last_fire = holding.start_time
+  -- Forward all button presses to the current scene's gamepadpressed handler
+  local scenes = require("lib.scenes")
+  local focus = scenes:currentFocus()
+  local handled = false
+  if focus and scenes.states[focus] and scenes.states[focus].gamepadpressed then
+    handled = scenes.states[focus]:gamepadpressed(js, button)
+  end
+  
+  -- Only emit global events if scene didn't handle the button
+  -- This prevents double-processing of input
+  if not handled then
+    -- Use mapping table to trigger events (for global input handling)
+    local event = input.joystick_mapping[button]
+    if event then
+      emit(event, false)
+      -- Start hold for directional and paging (shoulder) gamepad events
+      if event == input.events.LEFT or event == input.events.RIGHT or event == input.events.UP or event == input.events.DOWN
+        or event == input.events.PREV or event == input.events.NEXT then
+        holding.dir = event
+        holding.start_time = love.timer.getTime()
+        holding.started = false
+        holding.last_fire = holding.start_time
+      end
     end
   end
 end

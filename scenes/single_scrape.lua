@@ -780,19 +780,19 @@ function single_scrape:gamepadpressed(joystick, button)
   if vk and vk.visible then
     local map = {
       dpup = 'up', dpdown = 'down', dpleft = 'left', dpright = 'right',
-      a = 'confirm', b = 'cancel'
+      a = 'confirm', b = 'cancel', x = 'x', y = 'y'
     }
     local btn = type(button) == 'string' and button:lower() or button
     local m = map[btn] or map[button]
     if m then
       if m == 'up' or m == 'down' or m == 'left' or m == 'right' then
         -- D-pad handled in update for hold repeat
-        return
+        return true
       end
       vk:handle_key(m)
-      return
+      return true
     end
-    return
+    return true
   end
   
   -- Map 'b' button to abort/back action

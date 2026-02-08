@@ -320,8 +320,15 @@ local function vk_handle_key(key)
     elseif key == 'cancel' then
       vk_hide(false)
       return true
-    elseif key == 'backspace' then
+    elseif key == 'backspace' or key == 'y' then
+      -- Y button or backspace deletes character at cursor
       delete_at_cursor()
+      return true
+    elseif key == 'x' then
+      -- X button cycles keyboard layout even when text field is focused
+      if vk_mode == 'lower' then vk_mode = 'upper'
+      elseif vk_mode == 'upper' then vk_mode = 'symbol'
+      else vk_mode = 'lower' end
       return true
     end
     return true
@@ -375,8 +382,15 @@ local function vk_handle_key(key)
   elseif key == 'space' then
     insert_at_cursor(' ')
     return true
-  elseif key == 'backspace' then
+  elseif key == 'backspace' or key == 'y' then
+    -- Y button or backspace deletes character at cursor
     delete_at_cursor()
+    return true
+  elseif key == 'x' then
+    -- X button cycles keyboard layout: lower → upper → symbol → lower
+    if vk_mode == 'lower' then vk_mode = 'upper'
+    elseif vk_mode == 'upper' then vk_mode = 'symbol'
+    else vk_mode = 'lower' end
     return true
   elseif key == 'ok_now' then
     vk_hide(true)
@@ -575,7 +589,7 @@ local function vk_draw()
   -- Compact panel sized for two lines (A/B)
   local line_h = math.floor(key_h * 0.9)
   local gap_h = 6
-  local rows = 2
+  local rows = 4  -- A, B, X, Y
   local ph = 8 + rows * line_h + (rows - 1) * gap_h + 8
   local right_margin = 36
   local px = area_x0 + area_w + panel_gap - right_margin
@@ -609,6 +623,8 @@ local function vk_draw()
 
   draw_prompt(1, 'a', 'Confirm')
   draw_prompt(2, 'b', 'Close')
+  draw_prompt(3, 'x', 'Layout')
+  draw_prompt(4, 'y', 'Delete')
 end
 
 
@@ -837,23 +853,24 @@ function settings:keypressed(key)
 end
 
 function settings:gamepadpressed(joystick, button)
-  -- Map gamepad to VK (A/B and D-Pad only)
+  -- Map gamepad to VK (A/B/X/Y and D-Pad)
   local map = {
     dpup = 'up', dpdown = 'down', dpleft = 'left', dpright = 'right',
-    a = 'confirm', b = 'cancel'
+    a = 'confirm', b = 'cancel', x = 'x', y = 'y'
   }
   local btn = type(button) == 'string' and button:lower() or button
   local m = map[btn] or map[button]
   if m then
     if vk_visible then
       if m == 'up' or m == 'down' or m == 'left' or m == 'right' then
-        return
+        return true  -- VK will handle D-pad via update()
       else
-        if vk_handle_key(m) then return end
+        if vk_handle_key(m) then return true end
       end
     end
   end
   if menu.gamepadpressed then return menu:gamepadpressed(joystick, button) end
+  return false
 end
 
 return settings
