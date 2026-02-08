@@ -31,6 +31,8 @@ local theme             = configs.theme
 local w_width, w_height = love.window.getMode()
 -- Smaller font for virtual keyboard labels
 local vk_font = love.graphics.newFont(12)
+-- Larger font for password preview (bigger asterisks)
+local vk_password_font = love.graphics.newFont(18)
 
 local settings          = {}
 
@@ -458,9 +460,12 @@ local function vk_draw()
     local now = love.timer.getTime()
     local n = #vk_buffer
     if n > 0 then
-      if vk_last_char_time > 0 and (now - vk_last_char_time) <= vk_last_char_window then
-        local visible = vk_buffer:sub(-1)
-        preview = string.rep(MASK_CHAR, math.max(0, n-1)) .. visible
+      if vk_last_char_time > 0 and (now - vk_last_char_time) <= vk_last_char_window and vk_cursor_pos > 0 then
+        -- Show visible character at cursor position (the character just typed)
+        local before_cursor = string.rep(MASK_CHAR, vk_cursor_pos - 1)
+        local visible = vk_buffer:sub(vk_cursor_pos, vk_cursor_pos)
+        local after_cursor = string.rep(MASK_CHAR, n - vk_cursor_pos)
+        preview = before_cursor .. visible .. after_cursor
       else
         preview = string.rep(MASK_CHAR, n)
       end
@@ -476,7 +481,11 @@ local function vk_draw()
       preview = vk_buffer
     end
   end
-  love.graphics.printf(preview, box_x + 12, box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2), box_w - 24, 'left')
+  -- For password, use larger font for better asterisk visibility
+  local preview_font = (vk_target == 'pass' and vk_buffer ~= '') and vk_password_font or love.graphics.getFont()
+  local prev_font = love.graphics.getFont()
+  love.graphics.setFont(preview_font)
+  love.graphics.printf(preview, box_x + 12, box_y + math.floor((box_h - preview_font:getHeight())/2), box_w - 24, 'left')
 
   -- Draw blinking cursor at the correct position
   local cursor_blink = math.floor(love.timer.getTime() / 0.53) % 2 == 0
@@ -488,12 +497,13 @@ local function vk_draw()
     else
       text_before_cursor = vk_buffer:sub(1, cursor_display_pos)
     end
-    local cursor_x = box_x + 12 + love.graphics.getFont():getWidth(text_before_cursor)
-    local cursor_y = box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2)
-    local cursor_h = love.graphics.getFont():getHeight()
+    local cursor_x = box_x + 12 + preview_font:getWidth(text_before_cursor)
+    local cursor_y = box_y + math.floor((box_h - preview_font:getHeight())/2)
+    local cursor_h = preview_font:getHeight()
     love.graphics.setColor(key_text)
     love.graphics.rectangle('fill', cursor_x, cursor_y, 2, cursor_h)
   end
+  love.graphics.setFont(prev_font)
 
   -- Keys
   local ypos = box_y + box_h + 10

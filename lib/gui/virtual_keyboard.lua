@@ -456,9 +456,12 @@ local function create_vk(config)
       local now = love.timer.getTime()
       local n = #self.buffer
       if n > 0 then
-        if self.last_char_time > 0 and (now - self.last_char_time) <= self.last_char_window then
-          local visible = self.buffer:sub(-1)
-          preview = string.rep(MASK_CHAR, math.max(0, n-1)) .. visible
+        if self.last_char_time > 0 and (now - self.last_char_time) <= self.last_char_window and self.cursor_pos > 0 then
+          -- Show visible character at cursor position (the character just typed)
+          local before_cursor = string.rep(MASK_CHAR, self.cursor_pos - 1)
+          local visible = self.buffer:sub(self.cursor_pos, self.cursor_pos)
+          local after_cursor = string.rep(MASK_CHAR, n - self.cursor_pos)
+          preview = before_cursor .. visible .. after_cursor
         else
           preview = string.rep(MASK_CHAR, n)
         end
