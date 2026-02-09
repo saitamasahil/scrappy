@@ -26,6 +26,7 @@ local muos_accent       = true  -- legacy (derived from accent_mode)
 
 local accent_mode = "muos" -- off | muos | custom
 local custom_accent = "cbaa0f"
+local offline_mode = false  -- Offline mode setting
 local vk = nil
 
 local w_width, w_height = love.window.getMode()
@@ -39,6 +40,7 @@ local dispatch_info
 local region_popup, region_menu, region_list
 local confirm_popup, confirm_popup_visible = nil, false
 local clear_cache_popup_visible = false
+local offline_popup_visible = false  -- Offline mode confirmation popup
 local accent_popup, accent_menu
 local pending_region_prios = nil
 local selected_region_index = 1
@@ -501,6 +503,39 @@ local function on_open_accent_settings()
   open_accent_settings()
 end
 
+local function on_toggle_offline_mode()
+  if offline_mode then
+    -- Already ON, disable directly
+    offline_mode = false
+    local item = menu ^ "offline_toggle"
+    if item then
+      item.text = "Offline Mode: OFF"
+    end
+    user_config:insert("main", "offlineMode", "0")
+    user_config:save()
+    dispatch_info("Offline Mode", "Offline mode has been disabled. \nPlease restart the application for the changes to take effect.")
+  else
+    -- Show confirmation popup before enabling
+    offline_popup_visible = true
+  end
+end
+
+local function on_confirm_offline_mode()
+  offline_popup_visible = false
+  offline_mode = true
+  local item = menu ^ "offline_toggle"
+  if item then
+    item.text = "Offline Mode: ON"
+  end
+  user_config:insert("main", "offlineMode", "1")
+  user_config:save()
+  dispatch_info("Offline Mode", "Offline mode has been enabled. \nPlease restart the application for the changes to take effect.")
+end
+
+local function on_cancel_offline_mode()
+  offline_popup_visible = false
+end
+
 local function trim(s)
   return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
 end
@@ -780,6 +815,10 @@ function tools:load()
 
   muos_accent = accent_mode ~= "off"
   
+  -- Restore offline mode setting from config
+  local saved_offline = user_config:read("main", "offlineMode")
+  offline_mode = (saved_offline == "1")
+  
   menu = component:root { column = true, gap = 10 }
   info_window = popup { visible = false }
   local item_width = w_width - 20
@@ -830,6 +869,13 @@ function tools:load()
             width = item_width,
             onClick = on_open_accent_settings,
             icon = "accent"
+          }
+          + listitem {
+            id = "offline_toggle",
+            text = "Offline Mode: " .. (offline_mode and "ON" or "OFF"),
+            width = item_width,
+            onClick = on_toggle_offline_mode,
+            icon = "offline"
           }
           + listitem {
             id = "clock_toggle",
@@ -1065,6 +1111,73 @@ local function draw_clear_cache_popup()
   love.graphics.print("Cancel", cancel_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
 end
 
+-- Draw the offline mode confirmation popup
+local function draw_offline_popup()
+  if not offline_popup_visible then return end
+  
+  local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
+  local font = love.graphics.getFont()
+  local font_h = font:getHeight()
+  
+  -- Dim background
+  love.graphics.setColor(0, 0, 0, 0.8)
+  love.graphics.rectangle("fill", 0, 0, sw, sh)
+  
+  -- Popup box dimensions - taller for more content
+  local box_w = math.min(sw - 40, 420)
+  local box_h = 280
+  local box_x = (sw - box_w) / 2
+  local box_y = (sh - box_h) / 2
+  
+  -- Draw box background
+  love.graphics.setColor(0.18, 0.18, 0.18, 1)
+  love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8, 8)
+  
+  -- Draw border
+  love.graphics.setColor(0.4, 0.4, 0.4, 1)
+  love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8, 8)
+  
+  love.graphics.setColor(1, 1, 1, 1)
+  
+  -- Title
+  love.graphics.printf("Enable Offline Mode?", box_x, box_y + 15, box_w, "center")
+  
+  -- Explanation message
+  local msg = "Offline Mode allows scraping using cached data without internet.\n\n" ..
+              "• Works only with Batch Scraping (Scrape All, Missing Artwork)\n" ..
+              "• Single ROM scraping requires internet\n" ..
+              "• WiFi warnings will be suppressed"
+  love.graphics.printf(msg, box_x + 15, box_y + 45, box_w - 30, "left")
+  
+  -- Button icons and labels
+  local icon_size = 24
+  local btn_y = box_y + box_h - 45
+  
+  -- Calculate button positions
+  local left_center = box_x + box_w * 0.25
+  local right_center = box_x + box_w * 0.75
+  
+  -- Enable button (A)
+  local proceed_total_w = icon_size + 6 + font:getWidth("Enable")
+  local proceed_x = left_center - proceed_total_w / 2
+  if button_a_icon then
+    local iw, ih = button_a_icon:getDimensions()
+    local sx, sy = icon_size / iw, icon_size / ih
+    love.graphics.draw(button_a_icon, proceed_x, btn_y, 0, sx, sy)
+  end
+  love.graphics.print("Enable", proceed_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+  
+  -- Cancel button (B)
+  local cancel_total_w = icon_size + 6 + font:getWidth("Cancel")
+  local cancel_x = right_center - cancel_total_w / 2
+  if button_b_icon then
+    local iw, ih = button_b_icon:getDimensions()
+    local sx, sy = icon_size / iw, icon_size / ih
+    love.graphics.draw(button_b_icon, cancel_x, btn_y, 0, sx, sy)
+  end
+  love.graphics.print("Cancel", cancel_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+end
+
 function tools:draw()
   love.graphics.clear(theme:read_color("main", "BACKGROUND", "#000000"))
   menu:draw()
@@ -1078,6 +1191,7 @@ function tools:draw()
   -- Draw confirmation popup on top of everything
   draw_confirm_popup()
   draw_clear_cache_popup()
+  draw_offline_popup()
 
   if vk and vk.visible then
     vk:draw()
@@ -1130,6 +1244,18 @@ function tools:keypressed(key)
     return -- Block all other keys while confirmation is visible
   end
   
+  -- Handle offline mode popup
+  if offline_popup_visible then
+    if key == "return" or key == "a" then
+      on_confirm_offline_mode()
+      return
+    elseif key == "escape" or key == "b" then
+      on_cancel_offline_mode()
+      return
+    end
+    return -- Block all other keys while popup is visible
+  end
+  
   if region_popup and region_popup.visible then
     if key == "escape" then
       region_popup.visible = false
@@ -1161,6 +1287,18 @@ end
 
 function tools:gamepadpressed(joystick, button)
   local btn = type(button) == 'string' and button:lower() or button
+
+  -- Handle offline mode popup
+  if offline_popup_visible then
+    if btn == 'a' then
+      on_confirm_offline_mode()
+      return true
+    elseif btn == 'b' then
+      on_cancel_offline_mode()
+      return true
+    end
+    return true -- Block all buttons while popup is visible
+  end
 
   if vk and vk.visible then
     local map = {

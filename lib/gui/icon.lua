@@ -39,6 +39,7 @@ local icons = {
   select       = love.graphics.newImage("assets/inputs/switch_button_sl.png"),
   clock        = love.graphics.newImage("assets/icons/clock.png"),
   time         = love.graphics.newImage("assets/icons/time.png"),
+  offline      = love.graphics.newImage("assets/icons/offline.png"),
 }
 
 return function(props)

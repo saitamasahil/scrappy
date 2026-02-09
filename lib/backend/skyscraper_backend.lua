@@ -6,6 +6,13 @@ local pprint   = require("lib.pprint")
 local utils    = require("helpers.utils")
 local wifi     = require("helpers.wifi")
 local socket   = require("socket")
+local configs  = require("helpers.config")
+local user_config = configs.user_config
+
+-- Helper to check if offline mode is enabled
+local function is_offline_mode()
+  return (user_config:read("main", "offlineMode") == "1")
+end
 
 local function log_version(output)
   if not output then
@@ -47,8 +54,8 @@ while true do
 
   log.write("Starting Skyscraper, please wait...")
 
-  -- Check WiFi before starting command
-  if not wifi.is_connected() then
+  -- Check WiFi before starting command (skip in offline mode)
+  if not is_offline_mode() and not wifi.is_connected() then
     log.write("WiFi disconnected, aborting scrape")
     channels.SKYSCRAPER_OUTPUT:push({
       log = "[fetch] WiFi disconnected. Please connect to WiFi and try again.",
@@ -119,8 +126,8 @@ while true do
         break
       end
       
-      -- WiFi check during scraping
-      if not wifi.is_connected() then
+      -- WiFi check during scraping (skip in offline mode)
+      if not is_offline_mode() and not wifi.is_connected() then
         aborted = true
         log.write("WiFi disconnected during scraping")
         channels.SKYSCRAPER_OUTPUT:push({

@@ -36,7 +36,9 @@ local cover_preview_path = default_cover_path
 local output_priority = { "box", "preview", "splash" }
 local cover_preview
 local wifi_icon
+local offline_icon
 local wifi_connected = true
+local offline_mode = false  -- Offline mode setting (disables WiFi checks)
 local wifi_check_timer = 0
 
 local main = {}
@@ -203,8 +205,8 @@ end
 local function scrape_platforms()
   log.write("Scraping artwork")
   
-  -- Check WiFi connection before starting
-  if not wifi.is_connected() then
+  -- Check WiFi connection before starting (skip in offline mode)
+  if not offline_mode and not wifi.is_connected() then
     log.write("WiFi not connected, aborting scrape")
     show_info_window("No WiFi Connection", "Please connect to WiFi and try again.")
     return
@@ -652,6 +654,15 @@ function main:load()
       wifi_icon = love.graphics.newImage("assets/icons/wifi.png")
     end
   end
+  if not offline_icon then
+    if nativefs.getInfo("assets/icons/offline.png") then
+      offline_icon = love.graphics.newImage("assets/icons/offline.png")
+    end
+  end
+  -- Load offline mode setting from config
+  local saved_offline = user_config:read("main", "offlineMode")
+  offline_mode = (saved_offline == "1")
+  
   wifi_connected = wifi.is_connected()
   wifi_check_timer = 0
 
@@ -1032,13 +1043,21 @@ function main:draw()
   info_window:draw()
   scraping_window:draw()
 
-  if not wifi_connected and wifi_icon then
+  -- Show status icon: offline icon when in offline mode, wifi icon when disconnected
+  local status_icon = nil
+  if offline_mode and offline_icon then
+    status_icon = offline_icon
+  elseif not wifi_connected and wifi_icon then
+    status_icon = wifi_icon
+  end
+  
+  if status_icon then
     local icon_color = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
     love.graphics.setColor(icon_color)
     local icon_width = 24
     local icon_height = 24
     local margin = 10
-    love.graphics.draw(wifi_icon, w_width - icon_width - margin, margin, 0, icon_width / wifi_icon:getWidth(), icon_height / wifi_icon:getHeight())
+    love.graphics.draw(status_icon, w_width - icon_width - margin, margin, 0, icon_width / status_icon:getWidth(), icon_height / status_icon:getHeight())
   end
 
   -- Draw Clock
@@ -1074,8 +1093,8 @@ function main:draw()
     local x_pos = cw - t_width - margin
     local y_pos = margin
 
-    -- Shift left if "No WiFi" icon is visible
-    if not wifi_connected and wifi_icon then
+    -- Shift left if status icon (offline or no-WiFi) is visible
+    if (offline_mode and offline_icon) or (not wifi_connected and wifi_icon) then
        x_pos = x_pos - 24 - 10 -- icon_width (24) + padding (10)
     end
     

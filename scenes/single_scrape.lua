@@ -338,6 +338,14 @@ local function on_rom_press(rom)
 
   rom_path = string.format("%s/%s", rom_path, last_selected_platform)
 
+  -- Check if offline mode is enabled - single scrape always fetches new data
+  local offline_mode = (user_config:read("main", "offlineMode") == "1")
+  if offline_mode then
+    dispatch_info("Offline Mode Active", "Single ROM scraping requires internet to fetch new data. Please disable Offline Mode in Advanced Tools.")
+    toggle_info()
+    return
+  end
+  
   -- Check WiFi connection before scraping
   if not wifi.is_connected() then
     dispatch_info("No WiFi Connection", "Please connect to WiFi and try again.")
