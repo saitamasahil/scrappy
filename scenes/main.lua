@@ -1126,11 +1126,13 @@ function main:gamepadpressed(joystick, button)
     else
        love.event.quit()
     end
+    return true  -- Handled, prevent global input from double-processing
   end
   
   if not state.scraping and not info_window.visible then
     if menu.gamepadpressed then menu:gamepadpressed(joystick, button) end
   end
+  return false  -- Let global input handle D-pad navigation
 end
 
 function main:resume()
