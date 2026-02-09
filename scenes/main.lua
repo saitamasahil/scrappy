@@ -408,17 +408,12 @@ end
 
 -- Stops all scraping and clears queue
 local function halt_scraping()
-  channels.SKYSCRAPER_ABORT:push({ abort = true })
+  -- Clear UI output channel (restart_threads handles backend channels)
+  channels.TASK_OUTPUT:clear()
   
-  -- Forcefully kill any running Skyscraper processes immediately
-  os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
+  log.write("Halting scraping...")
   
-  -- Give threads a moment to process abort signal
-  love.timer.sleep(0.2)
-  
-  channels.SKYSCRAPER_INPUT:clear()
-  
-  -- Restart threads to ensure clean state
+  -- Restart threads to ensure clean state (handles killing processes and clearing channels)
   skyscraper.restart_threads()
   
   state.scraping = false

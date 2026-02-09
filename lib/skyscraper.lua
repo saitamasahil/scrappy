@@ -61,9 +61,60 @@ local function create_threads()
 end
 
 function skyscraper.restart_threads()
-  log.write("Restarting Skyscraper threads after abort")
+  log.write("Restarting Skyscraper threads")
   
-  -- Clear all channels to ensure clean state
+  -- CRITICAL: Kill any running Skyscraper processes FIRST
+  -- This forces io.popen() to return in threads that are blocked on it
+  os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
+  
+  -- Set abort flag so threads know to stop
+  channels.SKYSCRAPER_ABORT:push(true)
+  
+  -- Clear all channels to remove any pending work
+  channels.SKYSCRAPER_INPUT:clear()
+  channels.SKYSCRAPER_GEN_INPUT:clear()
+  channels.SKYSCRAPER_GAME_QUEUE:clear()
+  channels.SKYSCRAPER_OUTPUT:clear()
+  channels.SKYSCRAPER_GEN_OUTPUT:clear()
+  
+  -- Send exit signals to both threads to make them terminate gracefully
+  channels.SKYSCRAPER_INPUT:push({ exit = true })
+  channels.SKYSCRAPER_GEN_INPUT:push({ exit = true })
+  
+  -- Wait for threads to actually terminate (up to 3 seconds - io.popen may take time)
+  local timeout = 3.0
+  local start_time = love.timer.getTime()
+  while love.timer.getTime() - start_time < timeout do
+    local cache_running = cache_thread and cache_thread:isRunning()
+    local gen_running = gen_thread and gen_thread:isRunning()
+    
+    if not cache_running and not gen_running then
+      log.write("Both threads terminated successfully")
+      break
+    end
+    
+    -- Keep pushing exit signals in case old threads are consuming them
+    if cache_running then
+      channels.SKYSCRAPER_INPUT:push({ exit = true })
+    end
+    if gen_running then
+      channels.SKYSCRAPER_GEN_INPUT:push({ exit = true })
+    end
+    
+    love.timer.sleep(0.1)
+  end
+  
+  -- Check for errors
+  if cache_thread then
+    local err = cache_thread:getError()
+    if err then log.write("Cache thread error: " .. err) end
+  end
+  if gen_thread then
+    local err = gen_thread:getError()
+    if err then log.write("Gen thread error: " .. err) end
+  end
+  
+  -- Clear ALL channels again (completely clean state)
   channels.SKYSCRAPER_ABORT:clear()
   channels.SKYSCRAPER_INPUT:clear()
   channels.SKYSCRAPER_GEN_INPUT:clear()
@@ -71,12 +122,8 @@ function skyscraper.restart_threads()
   channels.SKYSCRAPER_OUTPUT:clear()
   channels.SKYSCRAPER_GEN_OUTPUT:clear()
   
-  -- Small delay to ensure threads fully terminate
-  love.timer.sleep(0.1)
-  
   -- Create and start new threads
   create_threads()
-  
   log.write("Skyscraper threads restarted successfully")
 end
 

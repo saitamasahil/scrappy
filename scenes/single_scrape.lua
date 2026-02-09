@@ -606,14 +606,12 @@ local function update_scrape_state()
 end
 
 function single_scrape:load()
-  -- Clear any leftover state from previous scraping sessions
-  channels.SKYSCRAPER_ABORT:push({ abort = true })
-  channels.SKYSCRAPER_INPUT:clear()
-  channels.SKYSCRAPER_GEN_INPUT:clear()
-  channels.SKYSCRAPER_GAME_QUEUE:clear()
-  channels.SKYSCRAPER_OUTPUT:clear()
-  channels.SKYSCRAPER_GEN_OUTPUT:clear()
-  while channels.SKYSCRAPER_ABORT:pop() do end
+  -- Clear UI output channel
+  channels.TASK_OUTPUT:clear()
+  
+  -- Restart threads to ensure clean state after any previous scraping
+  skyscraper.restart_threads()
+  log.write("[single_scrape] Loaded - threads restarted")
   
   last_selected_platform = nil
   last_selected_rom = nil

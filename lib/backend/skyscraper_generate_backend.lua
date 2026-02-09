@@ -13,6 +13,12 @@ while true do
   ::continue::
   -- Demand a table with command, platform, type, and game from SKYSCRAPER_INPUT
   local input_data = channels.SKYSCRAPER_GEN_INPUT:demand()
+  
+  -- Check for exit signal to terminate thread gracefully
+  if input_data.exit then
+    log.write("[gen] Exit signal received, terminating thread")
+    break
+  end
 
   print("\nSkyscraper received input data:")
   pprint(input_data)
@@ -58,7 +64,7 @@ while true do
     
     -- Abort check
     local abort_sig = channels.SKYSCRAPER_ABORT:pop()
-    if abort_sig and abort_sig.abort then
+    if abort_sig and (abort_sig == true or abort_sig.abort) then
       aborted = true
       log.write(string.format("[gen] Abort signal received for %s, killing process", game))
       channels.SKYSCRAPER_OUTPUT:push({ log = string.format("[gen] Aborted \"%s\"", game) })
