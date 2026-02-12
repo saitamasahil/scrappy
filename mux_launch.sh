@@ -3,7 +3,7 @@
 # ICON: scrappy
 # GRID: Scrappy
 
-. /opt/muos/script/var/func.sh
+STAGE_OVERLAY=0 . /opt/muos/script/var/func.sh
 
 # Check for SETUP_APP (Jacaranda or newer)
 if command -v SETUP_APP >/dev/null 2>&1; then
@@ -35,6 +35,8 @@ if command -v SETUP_APP >/dev/null 2>&1; then
     $GPTOKEYB "love" &
     ./bin/love . "${SCREEN_RESOLUTION}"
     kill -9 "$(pidof gptokeyb2.armhf)" 2>/dev/null || true
+
+
 
 else
     # --- Legacy Logic (Loose Goose / Older) ---
