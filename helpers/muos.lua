@@ -98,6 +98,8 @@ local muos = {
         ["uzebox"] = "Uzebox",
         -- "VeMUlator",
         ["vircon32"] = "Vircon32",
+        ["videopac"] = "Magnavox Odyssey - VideoPac",
+        ["odyssey2"] = "Magnavox Odyssey 2",
         ["wasm4"] = "WASM-4",
         ["supervision"] = "Watara Supervision"
         -- "Wolfenstein 3D",
@@ -173,6 +175,8 @@ local muos = {
         ["Uzebox"] = "uzebox",
         ["Vircon32"] = "vircon32",
         ["WASM-4"] = "wasm4",
+        ["Magnavox Odyssey - VideoPac"] = "videopac",
+        ["Magnavox Odyssey 2"] = "videopac",
         ["Watara Supervision"] = "supervision"
     }
 }
