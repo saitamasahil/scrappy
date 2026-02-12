@@ -147,7 +147,16 @@ local function has_missing_catalogue_artwork(dest_platform, game_title)
 
   local function missing_for(output_type)
     local fp = string.format("%s/%s/%s.png", base, output_type, game_title)
-    return nativefs.getInfo(fp) == nil
+    if nativefs.getInfo(fp) then return false end
+    
+    -- Check sanitized version (exFAT/sanitized filesystem support)
+    local sanitized_title = game_title:gsub(":", "_")
+    if sanitized_title ~= game_title then
+      local fp_sanitized = string.format("%s/%s/%s.png", base, output_type, sanitized_title)
+      if nativefs.getInfo(fp_sanitized) then return false end
+    end
+    
+    return true
   end
 
   if required.box and missing_for("box") then return true end

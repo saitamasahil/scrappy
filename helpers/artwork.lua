@@ -94,7 +94,14 @@ function artwork.copy_artwork_type(platform, game, media_path, copy_path, output
   --]]
 
   -- Find scraped artwork in output folder
+  local sanitized_game = game:gsub(":", "_")
   local scraped_art_path = string.format("%s/%s/%s.png", media_path, artwork.output_map[output_type], game)
+  if not nativefs.getInfo(scraped_art_path) and sanitized_game ~= game then
+    local alt_path = string.format("%s/%s/%s.png", media_path, artwork.output_map[output_type], sanitized_game)
+    if nativefs.getInfo(alt_path) then
+      scraped_art_path = alt_path
+    end
+  end
   
   -- Wait a bit for file to be fully written (sometimes filesystem is slow)
   local max_retries = 5
