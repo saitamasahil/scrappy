@@ -61,7 +61,10 @@ mkdir -p "$WORKDIR/Scrappy/.scrappy/assets"
 if [ -d "$PROJECT_ROOT/assets" ]; then
     echo "Copying assets..."
     # Copy all contents of assets, including hidden files
-    (shopt -s dotglob; cp -r "$PROJECT_ROOT/assets/"* "$WORKDIR/Scrappy/.scrappy/assets/" 2>/dev/null || true)
+    (
+        shopt -s dotglob
+        cp -r "$PROJECT_ROOT/assets/"* "$WORKDIR/Scrappy/.scrappy/assets/" 2>/dev/null || true
+    )
 fi
 
 # Ensure glyph directory exists in the root of the app and copy scrappy.png
@@ -98,7 +101,10 @@ cp -r "$PROJECT_ROOT/static" "$WORKDIR/Scrappy/.scrappy/"
 # Copy any additional glyph files from assets/glyph if they exist
 if [ -d "$PROJECT_ROOT/assets/glyph" ]; then
     echo "Copying additional glyph files from assets..."
-    (shopt -s dotglob; cp -r "$PROJECT_ROOT/assets/glyph/"* "$WORKDIR/Scrappy/glyph/" 2>/dev/null || true)
+    (
+        shopt -s dotglob
+        cp -r "$PROJECT_ROOT/assets/glyph/"* "$WORKDIR/Scrappy/glyph/" 2>/dev/null || true
+    )
 fi
 
 # Create full package

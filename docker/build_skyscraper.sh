@@ -20,8 +20,8 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 podman build --arch=arm64 -t scrappy-skyscraper:"$VERSION" \
-  --build-arg VERSION="$VERSION" \
-  -f docker/Dockerfile docker
+    --build-arg VERSION="$VERSION" \
+    -f docker/Dockerfile docker
 
 mkdir -p docker_out
 podman run --rm -v "$PWD/docker_out:/output:Z" localhost/scrappy-skyscraper:"$VERSION"

@@ -36,11 +36,9 @@ if command -v SETUP_APP >/dev/null 2>&1; then
     ./bin/love . "${SCREEN_RESOLUTION}"
     kill -9 "$(pidof gptokeyb2.armhf)" 2>/dev/null || true
 
-
-
 else
     # --- Legacy Logic (Loose Goose / Older) ---
-    
+
     SCREEN_WIDTH=$(GET_VAR device mux/width)
     SCREEN_HEIGHT=$(GET_VAR device mux/height)
     SCREEN_RESOLUTION="${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
@@ -69,13 +67,13 @@ else
     SRC_GLYPH_DIR="$APP_DIR/glyph"
     DEST_APP_DIR="$PRIMARY_APP_DIR/Scrappy"
     DEST_GLYPH_DIR="$DEST_APP_DIR/glyph"
-    
+
     case "$APP_DIR/" in
-      "$PRIMARY_APP_DIR"/*) : ;;
-      *)
+    "$PRIMARY_APP_DIR"/*) : ;;
+    *)
         if [ -d "$SRC_GLYPH_DIR" ]; then
-          mkdir -p "$DEST_GLYPH_DIR" 2>/dev/null || true
-          cp -rf "$SRC_GLYPH_DIR"/. "$DEST_GLYPH_DIR"/ 2>/dev/null || true
+            mkdir -p "$DEST_GLYPH_DIR" 2>/dev/null || true
+            cp -rf "$SRC_GLYPH_DIR"/. "$DEST_GLYPH_DIR"/ 2>/dev/null || true
         fi
         ;;
     esac

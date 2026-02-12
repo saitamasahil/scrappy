@@ -1,68 +1,73 @@
 local nativefs = require("lib.nativefs")
 
 local scenes = {
-  states = {},
-  focus = {},
-  action = { switch = false, push = false, pop = false, newid = 0 }
+    states = {},
+    focus = {},
+    action = {
+        switch = false,
+        push = false,
+        pop = false,
+        newid = 0
+    }
 }
 scenes.__index = scenes
 
 function scenes:load(initial_state)
-  for _, file in ipairs(nativefs.getDirectoryItems("scenes")) do
-    if string.find(file, ".lua") then
-      self.states[string.gsub(file, ".lua", "")] = require("scenes." .. string.gsub(file, ".lua", ""))
+    for _, file in ipairs(nativefs.getDirectoryItems("scenes")) do
+        if string.find(file, ".lua") then
+            self.states[string.gsub(file, ".lua", "")] = require("scenes." .. string.gsub(file, ".lua", ""))
+        end
     end
-  end
-  if initial_state then
-    self:push(initial_state)
-  end
+    if initial_state then
+        self:push(initial_state)
+    end
 end
 
 function scenes:push(state)
-  self.states[state]:load()
-  self.focus[#self.focus + 1] = state
+    self.states[state]:load()
+    self.focus[#self.focus + 1] = state
 end
 
 function scenes:pop()
-  local cfocus = self:currentFocus()
-  if #self.focus > 1 then
-    if (self.states[cfocus].close ~= nil) then
-      self.states[cfocus]:close()
+    local cfocus = self:currentFocus()
+    if #self.focus > 1 then
+        if (self.states[cfocus].close ~= nil) then
+            self.states[cfocus]:close()
+        end
+        self.focus[#self.focus] = nil
+
+        local new_focus_id = self:currentFocus()
+        if new_focus_id and self.states[new_focus_id].resume then
+            self.states[new_focus_id]:resume()
+        end
     end
-    self.focus[#self.focus] = nil
-    
-    local new_focus_id = self:currentFocus()
-    if new_focus_id and self.states[new_focus_id].resume then
-      self.states[new_focus_id]:resume()
-    end
-  end
 end
 
 function scenes:switch(state)
-  for i, _ in ipairs(self.focus) do
-    self.focus[i] = nil
-  end
-  self.focus = {}
-  self:push(state)
+    for i, _ in ipairs(self.focus) do
+        self.focus[i] = nil
+    end
+    self.focus = {}
+    self:push(state)
 end
 
 function scenes:currentFocus()
-  return self.focus[#self.focus]
+    return self.focus[#self.focus]
 end
 
 function scenes:keypressed(key)
-  self.states[self:currentFocus()]:keypressed(key)
+    self.states[self:currentFocus()]:keypressed(key)
 end
 
 function scenes:update(dt)
-  self.states[self:currentFocus()]:update(dt)
+    self.states[self:currentFocus()]:update(dt)
 end
 
 function scenes:draw()
-  local top = self:currentFocus()
-  if top then
-    self.states[top]:draw()
-  end
+    local top = self:currentFocus()
+    if top then
+        self.states[top]:draw()
+    end
 end
 
 return scenes

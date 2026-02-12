@@ -24,7 +24,7 @@ cd "$PROJECT_ROOT"
 
 # Optionally remove the specific image tag we built
 if [ -n "$VERSION" ]; then
-  podman rmi "localhost/scrappy-skyscraper:${VERSION}" || true
+    podman rmi "localhost/scrappy-skyscraper:${VERSION}" || true
 fi
 
 # Prune all unused images (safe if you don't use Podman for other projects)

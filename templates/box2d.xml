@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <artwork>
-  <output type="cover" width="220">
-    <layer resource="cover" width="200" x="0" y="0" valign="center">
-      <shadow distance="5" softness="5" opacity="70"/>
-    </layer>
-  </output>
+    <output type="cover" width="220">
+        <layer resource="cover" width="200" x="0" y="0" valign="center">
+            <shadow distance="5" softness="5" opacity="70"/>
+        </layer>
+    </output>
 </artwork>

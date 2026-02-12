@@ -4,7 +4,7 @@
 /skysource/update_skyscraper.sh
 
 # Check if the Skyscraper binary was built successfully
-if ! command -v Skyscraper &> /dev/null; then
+if ! command -v Skyscraper &>/dev/null; then
     echo "Skyscraper binary not found. Build may have failed."
     exit 1
 fi
