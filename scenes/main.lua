@@ -1022,9 +1022,17 @@ local function process_game_queue()
         return
     end
 
-    -- Wait for a ready signal from the Skyscraper backend
-    local ready = channels.SKYSCRAPER_GAME_QUEUE:pop()
-    if ready then
+    -- Drain ALL game events from Skyscraper (not just one per frame)
+    -- This prevents race conditions where "fetch completed" arrives before all "game found" events are processed
+    while true do
+        -- Check if we're at max concurrent capacity (only relevant for Generation Phase)
+        if not state.fetch_phase and #state.tasks_in_progress >= state.max_concurrent_tasks then
+            break
+        end
+
+        local ready = channels.SKYSCRAPER_GAME_QUEUE:pop()
+        if not ready then break end
+
         local game, platform, input_folder, skipped = ready.game, ready.platform, ready.input_folder, ready.skipped
         print("\nReceived a ready signal, queuing update_artwork for " .. game)
         -- Immediately reflect current platform/game in the UI
@@ -1042,59 +1050,61 @@ local function process_game_queue()
                 success = false
             })
             print("Skipping game " .. game)
-            return
-        end
-        local rom_path, _ = user_config:get_paths()
-        local platform_path = string.format("%s/%s", rom_path, input_folder)
-        if not input_folder then
-            log.write("No valid platform found")
-            -- Send finished signal to prevent blocking
-            channels.SKYSCRAPER_GEN_OUTPUT:push({
-                finished = true
-            })
-            return
-        end
-        if game_file_map[platform] and game_file_map[platform][game] then
-            local game_info = game_file_map[platform][game]
-            local game_file = game_info.file
-            -- Use the stored input_folder if available (fixes multi-folder platform bug)
-            if not input_folder then
-                input_folder = game_info.input_folder
-            end
-
-            -- Two-phase logic: queue during fetch, process during generation
-            if state.fetch_phase then
-                -- FETCH PHASE: queue the game for later processing
-                print(string.format("Fetched: %s/%s - queuing for generation phase", platform, game))
-                table.insert(state.queued_games, {
-                    platform = platform,
-                    game_file = game_file,
-                    platform_path = platform_path,
-                    input_folder = input_folder,
-                    title = game
-                })
-            else
-                -- GENERATION PHASE: process immediately
-                print(string.format("Processing queued game: %s/%s", platform, game))
-                table.insert(state.tasks_in_progress, {
-                    game_file = game_file,
-                    started_at = love.timer.getTime(),
-                    title = game,
-                    platform = platform,
-                    input_folder = input_folder
-                })
-                print(string.format("Task in progress: %s (Total concurrent: %d)", game_file, #state.tasks_in_progress))
-                skyscraper.update_artwork(platform_path, game_file, input_folder, platform, templates[current_template])
-            end
+            -- continue to next item in loop
         else
-            log.write(string.format("Game file not found in map for %s on platform %s", game, platform))
-            -- Send finished signal to prevent blocking
-            channels.SKYSCRAPER_GEN_OUTPUT:push({
-                finished = true
-            })
-            -- Do NOT call update_state here - this game was never added to state.tasks
-            -- (filtered out by scrape_missing_only or other conditions)
-            print(string.format("Skipping game %s (not in game_file_map, likely filtered)", game))
+            local rom_path, _ = user_config:get_paths()
+            local platform_path = string.format("%s/%s", rom_path, input_folder)
+            if not input_folder then
+                log.write("No valid platform found")
+                -- Send finished signal to prevent blocking
+                channels.SKYSCRAPER_GEN_OUTPUT:push({
+                    finished = true
+                })
+                -- continue
+            elseif game_file_map[platform] and game_file_map[platform][game] then
+                local game_info = game_file_map[platform][game]
+                local game_file = game_info.file
+                -- Use the stored input_folder if available (fixes multi-folder platform bug)
+                if not input_folder then
+                    input_folder = game_info.input_folder
+                end
+
+                -- Two-phase logic: queue during fetch, process during generation
+                if state.fetch_phase then
+                    -- FETCH PHASE: queue the game for later processing
+                    print(string.format("Fetched: %s/%s - queuing for generation phase", platform, game))
+                    table.insert(state.queued_games, {
+                        platform = platform,
+                        game_file = game_file,
+                        platform_path = platform_path,
+                        input_folder = input_folder,
+                        title = game
+                    })
+                else
+                    -- GENERATION PHASE: process immediately
+                    print(string.format("Processing queued game: %s/%s", platform, game))
+                    table.insert(state.tasks_in_progress, {
+                        game_file = game_file,
+                        started_at = love.timer.getTime(),
+                        title = game,
+                        platform = platform,
+                        input_folder = input_folder
+                    })
+                    print(string.format("Task in progress: %s (Total concurrent: %d)", game_file,
+                        #state.tasks_in_progress))
+                    skyscraper.update_artwork(platform_path, game_file, input_folder, platform,
+                        templates[current_template])
+                end
+            else
+                log.write(string.format("Game file not found in map for %s on platform %s", game, platform))
+                -- Send finished signal to prevent blocking
+                channels.SKYSCRAPER_GEN_OUTPUT:push({
+                    finished = true
+                })
+                -- Do NOT call update_state here - this game was never added to state.tasks
+                -- (filtered out by scrape_missing_only or other conditions)
+                print(string.format("Skipping game %s (not in game_file_map, likely filtered)", game))
+            end
         end
     end
 end
@@ -1106,14 +1116,21 @@ function main:update(dt)
         wifi_check_timer = 0
         wifi_connected = wifi.is_connected()
     end
-    -- Drain ALL output messages from Skyscraper (not just one per frame)
-    -- This prevents message pile-up when multiple concurrent tasks finish
-    while true do
+
+    -- Process game queue FIRST to ensure all "found" games are registered 
+    -- before we process any "completed" signals in the output loop below.
+    process_game_queue()
+
+    -- Drain output messages from Skyscraper (limited to 50 per frame)
+    -- This prevents message pile-up while avoiding UI freeze if volume is high
+    local processed_count = 0
+    while processed_count < 50 do
         local t = channels.SKYSCRAPER_OUTPUT:pop()
         if not t then
             break
         end
         update_state(t)
+        processed_count = processed_count + 1
     end
     -- If a preview was scheduled and the user paused, generate it now
     if scheduled_preview_at and love.timer.getTime() >= scheduled_preview_at then
@@ -1163,8 +1180,6 @@ function main:update(dt)
             -- give up silently; user can change template again
         end
     end
-
-    process_game_queue()
 end
 
 function main:draw()
