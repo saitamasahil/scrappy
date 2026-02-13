@@ -507,7 +507,7 @@ local function update_state(t)
             if current and total then
                 local ui_fetch_progress = scraping_window ^ "fetch_progress"
                 if ui_fetch_progress then
-                    ui_fetch_progress.text = string.format("Downloading: %s / %s", current, total)
+                    ui_fetch_progress.text = string.format("Fetching: %s / %s", current, total)
                 end
             end
         end
@@ -870,7 +870,7 @@ function main:load()
         icon = "cd"
     } + label {
         id = "fetch_progress",
-        text = "Downloading: 0 / 0",
+        text = "Fetching: 0 / 0",
         icon = "downloading"
     } + label {
         id = "progress",
