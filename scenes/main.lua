@@ -528,7 +528,23 @@ local function update_state(t)
             if state.pending_platforms == 0 and state.fetch_phase then
                 state.fetch_phase = false
                 print(string.format("==== FETCH PHASE COMPLETE ===="))
-                print(string.format("Transitioning to GENERATION PHASE with %d queued games", #state.queued_games))
+                
+                -- SYNC TASK COUNT:
+                -- Skyscraper fetch might ignore some files (e.g. unrecognized extension, read error)
+                -- so we must update our task count to match what was ACTUALLY queued for generation.
+                -- Otherwise, we might wait forever for tasks that will never start.
+                local old_total = state.total
+                state.total = #state.queued_games
+                state.tasks = #state.queued_games
+                
+                print(string.format("Transitioning to GENERATION PHASE with %d queued games (was expecting %d)", state.total, old_total))
+                log.write(string.format("Syncing task count: %d -> %d to match queued games", old_total, state.total))
+
+                -- Update UI to reflect new total
+                local ui_progress = scraping_window ^ "progress"
+                if ui_progress then
+                    ui_progress.text = string.format("Generating: %d / %d", (state.total - state.tasks), state.total)
+                end
 
                 -- Start processing queued games by pushing them back to the queue
                 for i, game_info in ipairs(state.queued_games) do
