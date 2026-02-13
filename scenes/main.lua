@@ -267,6 +267,7 @@ local function scrape_platforms()
     state.failed_tasks = {}
     state.queued_games = {}
     state.tasks_in_progress = {}
+    state.pending_platforms = 0
     -- Process cached data from quickid and db
     if user_config:read("main", "parseCache") == "1" then
         artwork.process_cached_data()
@@ -355,14 +356,20 @@ local function scrape_platforms()
 
         -- Iterate over ROMs
         for _, rom in pairs(roms) do
+            -- Get the title without extension
+            local game_title = utils.get_filename(rom)
+
             -- Verify if game is cached
             if not uncached_games then
                 local res_cache_id = artwork.cached_game_ids[dest] and artwork.cached_game_ids[dest][rom]
-                uncached_games = res_cache_id == nil
+                if res_cache_id == nil then
+                    -- Check if artwork already exists in catalogue to avoid redundant fetches
+                    -- Skyscraper with 'onlymissing' flag skips existing artwork anyway, so match that logic
+                    if has_missing_catalogue_artwork(dest, game_title) then
+                        uncached_games = true
+                    end
+                end
             end
-
-            -- Get the title without extension
-            local game_title = utils.get_filename(rom)
 
             if scrape_missing_only and not has_missing_catalogue_artwork(dest, game_title) then
                 goto continue_rom
