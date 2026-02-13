@@ -40,6 +40,8 @@ local icons = {
   clock        = love.graphics.newImage("assets/icons/clock.png"),
   time         = love.graphics.newImage("assets/icons/time.png"),
   offline      = love.graphics.newImage("assets/icons/offline.png"),
+  downloading  = love.graphics.newImage("assets/icons/download-solid.png"),
+  generating   = love.graphics.newImage("assets/icons/generate.png"),
 }
 
 return function(props)

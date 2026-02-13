@@ -433,7 +433,7 @@ local function scrape_platforms()
         if scraping_window then
             local ui_progress = scraping_window ^ "progress"
             if ui_progress then
-                ui_progress.text = string.format("Progress: %d / %d", (state.total - state.tasks), state.total)
+                ui_progress.text = string.format("Generating: %d / %d", (state.total - state.tasks), state.total)
             end
             scraping_window.visible = true
         end
@@ -501,6 +501,17 @@ local function update_state(t)
         local scraping_log = scraping_window ^ "scraping_log"
         scraping_log.text = log_str
 
+        -- Parse fetch progress from Skyscraper output (e.g., "#26/761 (T2) Pass 1")
+        if t.log then
+            local current, total = t.log:match("#(%d+)/(%d+)")
+            if current and total then
+                local ui_fetch_progress = scraping_window ^ "fetch_progress"
+                if ui_fetch_progress then
+                    ui_fetch_progress.text = string.format("Downloading: %s / %s", current, total)
+                end
+            end
+        end
+
         -- Check if this is a fetch completion message
         if t.log:find("%[fetch%]") and t.log:find("completed") then
             state.pending_platforms = math.max(0, state.pending_platforms - 1)
@@ -533,6 +544,7 @@ local function update_state(t)
         -- Menu UI elements
         local ui_platform, ui_game = scraping_window ^ "platform", scraping_window ^ "game"
         local ui_progress = scraping_window ^ "progress"
+        local ui_fetch_progress = scraping_window ^ "fetch_progress"
         -- Update UI
         if ui_platform then
             ui_platform.text = muos.platforms[t.platform] or t.platform or "N/A"
@@ -564,7 +576,7 @@ local function update_state(t)
 
             -- Update UI
             if ui_progress then
-                ui_progress.text = string.format("Game %d of %d", (state.total - state.tasks), state.total)
+                ui_progress.text = string.format("Generating: %d / %d", (state.total - state.tasks), state.total)
             end
 
             -- Check if finished
@@ -857,9 +869,13 @@ function main:load()
         text = "Game: N/A",
         icon = "cd"
     } + label {
+        id = "fetch_progress",
+        text = "Downloading: 0 / 0",
+        icon = "downloading"
+    } + label {
         id = "progress",
-        text = "Progress: 0 / 0",
-        icon = "info"
+        text = "Generating: 0 / 0",
+        icon = "generating"
     }
     -- + progress { id = "progress_bar", width = w_width * 0.5 - 30 }
 
