@@ -180,6 +180,17 @@ function skyscraper.init(config_path, binary)
     skyscraper.config_path = WORK_DIR .. "/" .. config_path
     skyscraper.base_command = "./" .. binary
 
+    -- Load saved scraper module from config
+    local configs = require("helpers.config")
+    local user_config = configs.user_config
+    if user_config then
+        local saved_module = user_config:read("main", "scraperModule")
+        if saved_module and saved_module ~= "" then
+            skyscraper.module = saved_module
+            log.write("Loaded scraper module preference: " .. saved_module)
+        end
+    end
+
     -- Create and start threads
     create_threads()
 
