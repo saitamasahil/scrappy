@@ -806,8 +806,10 @@ function main:load()
                 loader:draw(cw * scale, ch * scale, 1)
                 love.graphics.setColor(1, 1, 1);
             end
-            love.graphics.setColor(utils.hex("#EDD113"))
+            love.graphics.setColor(theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f"))
+            love.graphics.setLineWidth(2)
             love.graphics.rectangle("line", 0, 0, cw, ch)
+            love.graphics.setLineWidth(1)
             love.graphics.pop()
         end
     }
@@ -832,8 +834,10 @@ function main:load()
             love.graphics.setColor(0, 0, 0, 0.5);
             love.graphics.rectangle("fill", 0, 0, cw, ch)
             loader:draw(cw * scale, ch * scale, 1)
-            love.graphics.setColor(utils.hex("#EDD113"))
+            love.graphics.setColor(theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f"))
+            love.graphics.setLineWidth(2)
             love.graphics.rectangle("line", 0, 0, cw, ch)
+            love.graphics.setLineWidth(1)
             love.graphics.pop()
         end
     }
