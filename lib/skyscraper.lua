@@ -41,7 +41,9 @@ local skyscraper = {
     peas_json = {}
 }
 
-local cache_thread, gen_thread
+local cache_thread
+local gen_threads = {}  -- Pool of generation threads for true parallel artwork generation
+local gen_thread_count = 1  -- Will be updated from config
 
 local function push_cache_command(command)
     if channels.SKYSCRAPER_INPUT then
@@ -56,12 +58,17 @@ local function push_gen_command(command)
 end
 
 local function create_threads()
-    log.write("Creating Skyscraper threads")
+    log.write(string.format("Creating Skyscraper threads (%d generation workers)", gen_thread_count))
     cache_thread = love.thread.newThread("lib/backend/skyscraper_backend.lua")
-    gen_thread = love.thread.newThread("lib/backend/skyscraper_generate_backend.lua")
+    gen_threads = {}
+    for i = 1, gen_thread_count do
+        gen_threads[i] = love.thread.newThread("lib/backend/skyscraper_generate_backend.lua")
+    end
     cache_thread:start()
-    gen_thread:start()
-    log.write("Skyscraper threads started")
+    for i = 1, #gen_threads do
+        gen_threads[i]:start()
+    end
+    log.write(string.format("Skyscraper threads started (%d generation workers)", #gen_threads))
 end
 
 function skyscraper.restart_threads()
@@ -81,36 +88,35 @@ function skyscraper.restart_threads()
     channels.SKYSCRAPER_OUTPUT:clear()
     channels.SKYSCRAPER_GEN_OUTPUT:clear()
 
-    -- Send exit signals to both threads to make them terminate gracefully
+    -- Send exit signals to cache thread and ALL gen threads
     channels.SKYSCRAPER_INPUT:push({
         exit = true
     })
-    channels.SKYSCRAPER_GEN_INPUT:push({
-        exit = true
-    })
+    for i = 1, #gen_threads do
+        channels.SKYSCRAPER_GEN_INPUT:push({
+            exit = true
+        })
+    end
 
     -- Wait for threads to actually terminate (up to 3 seconds - io.popen may take time)
     local timeout = 3.0
     local start_time = love.timer.getTime()
     while love.timer.getTime() - start_time < timeout do
-        local cache_running = cache_thread and cache_thread:isRunning()
-        local gen_running = gen_thread and gen_thread:isRunning()
+        local all_stopped = true
+        if cache_thread and cache_thread:isRunning() then
+            all_stopped = false
+            channels.SKYSCRAPER_INPUT:push({ exit = true })
+        end
+        for i = 1, #gen_threads do
+            if gen_threads[i] and gen_threads[i]:isRunning() then
+                all_stopped = false
+                channels.SKYSCRAPER_GEN_INPUT:push({ exit = true })
+            end
+        end
 
-        if not cache_running and not gen_running then
-            log.write("Both threads terminated successfully")
+        if all_stopped then
+            log.write("All threads terminated successfully")
             break
-        end
-
-        -- Keep pushing exit signals in case old threads are consuming them
-        if cache_running then
-            channels.SKYSCRAPER_INPUT:push({
-                exit = true
-            })
-        end
-        if gen_running then
-            channels.SKYSCRAPER_GEN_INPUT:push({
-                exit = true
-            })
         end
 
         love.timer.sleep(0.1)
@@ -123,10 +129,12 @@ function skyscraper.restart_threads()
             log.write("Cache thread error: " .. err)
         end
     end
-    if gen_thread then
-        local err = gen_thread:getError()
-        if err then
-            log.write("Gen thread error: " .. err)
+    for i = 1, #gen_threads do
+        if gen_threads[i] then
+            local err = gen_threads[i]:getError()
+            if err then
+                log.write(string.format("Gen thread %d error: %s", i, err))
+            end
         end
     end
 
@@ -189,9 +197,16 @@ function skyscraper.init(config_path, binary)
             skyscraper.module = saved_module
             log.write("Loaded scraper module preference: " .. saved_module)
         end
+
+        -- Read concurrency setting to determine how many generation threads to spawn
+        local concurrent_cfg = user_config:read("main", "concurrentGeneration")
+        local concurrent = tonumber(concurrent_cfg or "") or 3
+        if concurrent < 1 then concurrent = 1 end
+        if concurrent > 8 then concurrent = 8 end
+        gen_thread_count = concurrent
     end
 
-    -- Create and start threads
+    -- Create and start threads (spawns gen_thread_count generation workers)
     create_threads()
 
     -- Load peas.json file
@@ -211,10 +226,10 @@ end
 function skyscraper.shutdown()
     log.write("Shutting down Skyscraper backend")
 
-    -- Send abort signal to threads
-    channels.SKYSCRAPER_ABORT:push({
-        abort = true
-    })
+    -- Send abort signal to each generation thread
+    for i = 1, #gen_threads do
+        channels.SKYSCRAPER_ABORT:push({ abort = true })
+    end
 
     -- Kill any running Skyscraper processes
     os.execute("killall -9 Skyscraper.aarch64 2>/dev/null")

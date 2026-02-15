@@ -740,7 +740,7 @@ function settings:load()
         checked = user_config:read("main", "filterTemplates") == "1"
       }
       + label { text = 'Performance', icon = "performance" }
-      + label { text = 'Concurrent artwork generation (1-8):' }
+      + label { text = 'Concurrent artwork generation (1-8) (Restart required):' }
       + select {
         width = w_width - 20,
         options = {"1", "2", "3", "4", "5", "6", "7", "8"},
