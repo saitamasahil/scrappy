@@ -1227,7 +1227,7 @@ local function draw_offline_popup()
 
     -- Popup box dimensions - taller for more content
     local box_w = math.min(sw - 40, 420)
-    local box_h = 280
+    local box_h = 330
     local box_x = (sw - box_w) / 2
     local box_y = (sh - box_h) / 2
 
@@ -1246,7 +1246,8 @@ local function draw_offline_popup()
 
     -- Explanation message
     local msg = "Offline Mode allows scraping using cached data without internet.\n\n" ..
-                    "• Works only with Batch Scraping (Scrape All, Missing Artwork)\n" ..
+                    "• Works only with 'Scrape All' (uses cached data)\n" ..
+                    "• 'Scrape only missing artwork' requires internet\n" ..
                     "• Single ROM scraping requires internet\n" .. "• WiFi warnings will be suppressed"
     love.graphics.printf(msg, box_x + 15, box_y + 45, box_w - 30, "left")
 

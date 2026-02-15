@@ -253,6 +253,12 @@ local function scrape_platforms()
         return
     end
 
+    -- Offline mode only works with "Scrape all" (cached data); missing artwork needs internet
+    if offline_mode and scrape_missing_only then
+        show_info_window("Offline Mode Active", "Scraping missing artwork requires an internet connection. Use 'Scrape all' in offline mode.")
+        return
+    end
+
     -- Load platforms from config
     local platforms = user_config:get().platforms
     if not platforms then
