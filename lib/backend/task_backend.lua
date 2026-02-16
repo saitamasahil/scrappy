@@ -42,18 +42,21 @@ end
 
 local function migrate_cache()
     log.write("Migrating cache to SD2")
-    base_task_command("migrate", string.format("cp -r \"%s\" /mnt/sdcard/scrappy_cache/", CACHE_DIR))
+    base_task_command("migrate", string.format("LD_LIBRARY_PATH= cp -r \"%s\" /mnt/sdcard/scrappy_cache/", CACHE_DIR))
 end
 
 local function backup_cache()
     log.write("Starting Zip to compress and move cache folder")
     base_task_command("backup", string.format(
-        'zip -r /mnt/sdcard/ARCHIVE/scrappy_cache-$(date +"%%Y-%%m-%%d-%%H-%%M-%%S").zip "%s"', CACHE_DIR))
+        'LD_LIBRARY_PATH= zip -rq /mnt/sdcard/ARCHIVE/scrappy_cache-$(date +"%%Y-%%m-%%d-%%H-%%M-%%S").zip "%s"', CACHE_DIR))
 end
 
 local function update_app()
-    log.write("Updating app")
-    base_task_command("update_app", "sh scripts/update.sh")
+    -- IMPORTANT: Unset LD_LIBRARY_PATH so curl/wget use system libraries
+    -- instead of Scrappy's bundled LÖVE libraries from bin/libs
+    local cmd = string.format("cd \"%s\" && LD_LIBRARY_PATH= sh scripts/update.sh", APP_ROOT)
+    log.write("Updating app with command: " .. cmd)
+    base_task_command("update_app", cmd)
 end
 
 while running do
