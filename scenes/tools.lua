@@ -31,8 +31,7 @@ local vk = nil
 
 local w_width, w_height = love.window.getMode()
 
-local menu, info_window
-
+local menu, info_window, footer
 local user_config, skyscraper_config
 
 local dispatch_info
@@ -938,7 +937,7 @@ function tools:load()
 
     menu = menu + (scroll_container {
         width = w_width,
-        height = w_height - 20,
+        height = w_height - 60, -- Reduced to prevent footer overlap (was -20)
         scroll_speed = 30
     } + (component {
         column = true,
@@ -1058,6 +1057,12 @@ function tools:load()
 
     menu:updatePosition(10, 10)
     menu:focusFirstElement()
+    -- Create help footer
+    footer = component { row = true, gap = 40 }
+        + label { text = "Select", icon = "button_a" }
+        + label { text = "Back", icon = "button_b" }
+        + label { text = "Navigate", icon = "dpad" }
+    footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - 20, w_height - footer.height - 10)
 end
 
 function tools:update(dt)
@@ -1294,6 +1299,17 @@ function tools:draw()
     draw_confirm_popup()
     draw_clear_cache_popup()
     draw_offline_popup()
+
+    -- Draw footer (hidden if any popup/VK is visible)
+    local popup_active = (region_popup and region_popup.visible) or 
+                         (accent_popup and accent_popup.visible) or 
+                         confirm_popup_visible or 
+                         clear_cache_popup_visible or 
+                         offline_popup_visible
+    
+    if footer and not (vk and vk.visible) and not popup_active and not info_window.visible then
+        footer:draw()
+    end
 
     if vk and vk.visible then
         vk:draw()

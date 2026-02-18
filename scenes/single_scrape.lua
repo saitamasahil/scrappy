@@ -20,12 +20,13 @@ local virtual_keyboard = require 'lib.gui.virtual_keyboard'
 local w_width, w_height = love.window.getMode()
 local single_scrape = {}
 
-local menu, info_window, scraping_window, platform_list, rom_list, rom_scroll
+local menu, info_window, scraping_window, platform_list, rom_list, rom_scroll, footer
 local user_config = configs.user_config
 local theme = configs.theme
 
 local last_selected_platform = nil
 local last_selected_rom = nil
+local focused_rom = nil -- Tracks currently focused ROM for X button manual scraping
 local active_column = 1 -- 1 for platforms, 2 for ROMs
 local show_missing_only = false
 local missing_filter_item = nil
@@ -34,6 +35,7 @@ local state = {
     scraping = false,
     fetch_stage = false,
     generate_stage = false,
+    manual_mode = false,
     current_game = nil,
     current_platform = nil,
     log = {},
@@ -86,6 +88,7 @@ local function halt_scraping()
     state.scraping = false
     state.fetch_stage = false
     state.generate_stage = false
+    state.manual_mode = false
     state.current_game = nil
     state.current_platform = nil
     state.log = {}
@@ -448,6 +451,70 @@ local function on_rom_press(rom)
     end
 end
 
+local function on_manual_scrape(rom)
+    last_selected_rom = rom
+    local rom_path, _ = user_config:get_paths()
+    local platforms = user_config:get().platforms
+
+    rom_path = string.format("%s/%s", rom_path, last_selected_platform)
+
+    -- Check if offline mode is enabled
+    local offline_mode = (user_config:read("main", "offlineMode") == "1")
+    if offline_mode then
+        dispatch_info("Offline Mode Active",
+            "Scraping game manuals requires an internet connection. Please disable Offline Mode in Advanced Tools.")
+        toggle_info()
+        return
+    end
+
+    -- Check WiFi
+    if not wifi.is_connected() then
+        dispatch_info("No WiFi Connection", "Please connect to WiFi and try again.")
+        toggle_info()
+        return
+    end
+
+    local platform_dest = platforms[last_selected_platform]
+    if not platform_dest or platform_dest == "unmapped" then
+        dispatch_info("Error",
+            "Selected platform is not mapped to a muOS core. Open Settings and rescan/assign cores.")
+        toggle_info()
+        return
+    end
+
+    -- Clear stale abort signals
+    while channels.SKYSCRAPER_ABORT:pop() do
+    end
+
+    log.write(string.format("[single_scrape] Starting manual scrape for ROM: %s", rom))
+
+    state.scraping = true
+    state.fetch_stage = true
+    state.generate_stage = false
+    state.manual_mode = true
+    state.current_game = utils.get_filename(rom)
+    state.current_platform = platform_dest
+    state.log = {}
+
+    if scraping_window then
+        local ui_platform = scraping_window ^ "platform"
+        local ui_game = scraping_window ^ "game"
+        local ui_status = scraping_window ^ "status"
+        if ui_platform then
+            ui_platform.text = muos.platforms[platform_dest] or platform_dest or "N/A"
+        end
+        if ui_game then
+            ui_game.text = state.current_game or "N/A"
+        end
+        if ui_status then
+            ui_status.text = "Fetching manual..."
+        end
+        scraping_window.visible = true
+    end
+
+    skyscraper.fetch_single_manual(rom_path, rom, last_selected_platform, platform_dest)
+end
+
 local function on_return()
     if info_window.visible then
         toggle_info()
@@ -509,6 +576,9 @@ local function load_rom_buttons(src_platform, dest_platform)
                 width = ((w_width - 30) / 3) * 2,
                 onClick = function()
                     on_rom_press(rom)
+                end,
+                onFocus = function()
+                    focused_rom = rom
                 end,
                 disabled = true,
                 active = true,
@@ -589,8 +659,34 @@ local function process_fetched_game()
         end
 
         state.fetch_stage = false
-        state.generate_stage = true
         state.refine_attempted = false -- Reset on successful scrape
+
+        -- Manual mode: extract PDF from cache and finish (no artwork generation)
+        if state.manual_mode then
+            local ui_status = scraping_window ^ "status"
+            if ui_status then
+                ui_status.text = "Extracting manual..."
+            end
+
+            local copied, skipped = artwork.extract_manuals(t.platform)
+
+            state.scraping = false
+            state.manual_mode = false
+            scraping_window.visible = false
+            state.log = {}
+
+            if copied > 0 then
+                dispatch_info("Manual Downloaded", string.format("Game manual saved for %s.\nUse KOReader via PortMaster to read it.", state.current_game))
+            elseif skipped > 0 then
+                dispatch_info("Manual Exists", string.format("Manual already exists for %s.", state.current_game))
+            else
+                dispatch_info("No Manual Found", string.format("No manual available for %s on ScreenScraper.", state.current_game))
+            end
+            toggle_info()
+            return
+        end
+
+        state.generate_stage = true
 
         local ui_status = scraping_window ^ "status"
         if ui_status then
@@ -678,6 +774,7 @@ function single_scrape:load()
 
     last_selected_platform = nil
     last_selected_rom = nil
+    focused_rom = nil
     active_column = 1
     show_missing_only = false
     missing_filter_item = nil
@@ -724,14 +821,14 @@ function single_scrape:load()
         icon = "folder"
     } + (scroll_container {
         width = (w_width - 30) / 3,
-        height = w_height - 60,
+        height = w_height - 100, -- Reduced to prevent footer overlap (was -60)
         scroll_speed = 30
     } + platform_list)
 
     -- Create scroll container for ROMs so we can control it (reset scroll)
     rom_scroll = scroll_container {
         width = ((w_width - 30) / 3) * 2,
-        height = w_height - 110,
+        height = w_height - 150, -- Reduced to prevent footer overlap (was -110)
         scroll_speed = 30
     }
 
@@ -765,6 +862,15 @@ function single_scrape:load()
 
     menu:updatePosition(10, 10)
     menu:focusFirstElement()
+
+    -- Create footer with button hints
+    footer = component { row = true, gap = 40 }
+        + label { text = "Select", icon = "button_a" }
+        + label { text = "Back", icon = "button_b" }
+        + label { text = "Get Manual", icon = "button_x" }
+        + label { text = "Navigate", icon = "dpad" }
+        + label { text = "Settings", icon = "select" }
+    footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - 20, w_height - footer.height - 10)
 
     -- Setup scraping window
     local infoComponent = component {
@@ -813,6 +919,11 @@ function single_scrape:draw()
 
     -- Draw confirmation popup on top
     draw_refine_confirm_popup()
+
+    -- Draw footer (hidden during VK, scraping, or info overlays)
+    if footer and not (vk and vk.visible) and not scraping_window.visible and not info_window.visible then
+        footer:draw()
+    end
 
     -- Draw virtual keyboard on top of everything
     if vk and vk.visible then
@@ -868,6 +979,10 @@ function single_scrape:keypressed(key)
     if key == "lalt" and not state.scraping then
         scenes:push("settings")
     end
+    -- X button for manual scraping
+    if key == "x" and not state.scraping and active_column == 2 and focused_rom then
+        on_manual_scrape(focused_rom)
+    end
 end
 
 function single_scrape:gamepadpressed(joystick, button)
@@ -921,6 +1036,11 @@ function single_scrape:gamepadpressed(joystick, button)
     if not state.scraping then
         if menu.gamepadpressed then
             menu:gamepadpressed(joystick, button)
+        end
+        -- X button for manual scraping
+        if button == "x" and active_column == 2 and focused_rom then
+            on_manual_scrape(focused_rom)
+            return true
         end
     end
     return false -- Not handled by VK or B button, allow global input

@@ -220,8 +220,8 @@ function user_config:load_platforms()
             local item_path = base_path .. "/" .. item
             local file_info = nativefs.getInfo(item_path)
 
-            -- Ignore hidden folders and files
-            if file_info and file_info.type == "directory" and item:sub(1, 1) ~= "." then
+            -- Ignore hidden folders, files, and the Game Manuals folder
+            if file_info and file_info.type == "directory" and item:sub(1, 1) ~= "." and item ~= "Game Manuals" then
                 -- Construct the relative path for the current directory
                 local current_relative_path = relative_path and (relative_path .. "/" .. item) or item
 

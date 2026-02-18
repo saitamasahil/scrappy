@@ -451,4 +451,18 @@ function skyscraper.custom_import(rom_path, platform)
     skyscraper.run(command, "N/A", platform, "import")
 end
 
+-- Fetch game manual (PDF) for a single ROM from ScreenScraper
+function skyscraper.fetch_single_manual(rom_path, rom, input_folder, platform)
+    local command = generate_command({
+        platform = platform,
+        input = rom_path,
+        fetch = true,
+        module = "screenscraper",
+        refresh = true,
+        rom = rom,
+        flags = {"unattend", "manuals"}
+    })
+    skyscraper.run(command, input_folder, platform, "fetch", rom)
+end
+
 return skyscraper

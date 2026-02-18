@@ -259,6 +259,7 @@ local function scrape_platforms()
         return
     end
 
+
     -- Load platforms from config
     local platforms = user_config:get().platforms
     if not platforms then
@@ -274,6 +275,7 @@ local function scrape_platforms()
     state.queued_games = {}
     state.tasks_in_progress = {}
     state.pending_platforms = 0
+
     -- Process cached data from quickid and db
     if user_config:read("main", "parseCache") == "1" then
         artwork.process_cached_data()
@@ -534,6 +536,8 @@ local function update_state(t)
             if state.pending_platforms == 0 and state.fetch_phase then
                 state.fetch_phase = false
                 print(string.format("==== FETCH PHASE COMPLETE ===="))
+
+
                 
                 -- SYNC TASK COUNT:
                 -- Skyscraper fetch might ignore some files (e.g. unrecognized extension, read error)

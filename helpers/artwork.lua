@@ -293,4 +293,115 @@ function artwork.process_cached_data()
     log.write("Finished processing cached data")
 end
 
+-- Extract manual PDFs from cache and copy them to Game Manuals folder
+-- Skyscraper stores manuals in cache/<platform>/manuals/<source>/<cache_id>.pdf
+-- platform: Skyscraper platform ID (e.g., "nds")
+-- Returns: number of manuals copied, number skipped
+function artwork.extract_manuals(platform)
+    local copied = 0
+    local skipped = 0
+
+    -- Get cache folder from Skyscraper config
+    local cache_folder = skyscraper_config:read("main", "cacheFolder")
+    if not cache_folder or cache_folder == "\"\"" then
+        return copied, skipped
+    end
+    cache_folder = utils.strip_quotes(cache_folder)
+
+    -- Build destination: /mnt/union/ROMS/Game Manuals/
+    local rom_base, _ = config.user_config:get_paths()
+    local dest_folder = string.format("%s/Game Manuals", rom_base)
+    nativefs.createDirectory(dest_folder)
+
+    -- Check if manuals subfolder exists in cache
+    local manuals_cache_dir = string.format("%s/%s/manuals", cache_folder, platform)
+    local manuals_dir_info = nativefs.getInfo(manuals_cache_dir)
+    if not manuals_dir_info then
+        return copied, skipped
+    end
+
+    -- Collect all manual files from source subdirectories (screenscraper/, thegamesdb/, etc.)
+    local all_manual_files = {}
+    local source_dirs = nativefs.getDirectoryItems(manuals_cache_dir)
+    if not source_dirs then
+        return copied, skipped
+    end
+
+    for _, source_dir in ipairs(source_dirs) do
+        local source_path = string.format("%s/%s", manuals_cache_dir, source_dir)
+        local source_info = nativefs.getInfo(source_path)
+        if source_info and source_info.type == "directory" then
+            local files = nativefs.getDirectoryItems(source_path)
+            if files then
+                for _, f in ipairs(files) do
+                    table.insert(all_manual_files, {
+                        path = string.format("%s/%s", source_path, f),
+                        filename = f
+                    })
+                end
+            end
+        end
+    end
+
+    if #all_manual_files == 0 then
+        return copied, skipped
+    end
+
+    -- Parse quickid.xml: map cache IDs -> ROM filenames
+    local quickid_path = string.format("%s/%s/quickid.xml", cache_folder, platform)
+    local quickid = nativefs.read(quickid_path)
+    if not quickid then
+        log.write(string.format("Missing quickid.xml for %s, cannot map manuals to ROMs", platform))
+        return copied, skipped
+    end
+
+    local id_to_rom = {}
+    for _, line in ipairs(utils.split(quickid, "\n")) do
+        if line:find("<quickid%s") then
+            local filepath = line:match('filepath="([^"]+)"')
+            if filepath then
+                local filename = filepath:match("([^/]+)$")
+                local id = line:match('id="([^"]+)"')
+                if filename and id then
+                    id_to_rom[id] = filename
+                end
+            end
+        end
+    end
+
+    -- For each manual file in cache, match its ID to a ROM and copy
+    for _, manual in ipairs(all_manual_files) do
+        local cache_id = manual.filename:match("^(.+)%.[^.]+$") or manual.filename
+        local rom_filename = id_to_rom[cache_id]
+
+        if rom_filename then
+            local rom_name = utils.get_filename(rom_filename)
+            local dest_path = string.format("%s/%s.pdf", dest_folder, rom_name)
+
+            local exists = nativefs.getInfo(dest_path)
+            if exists then
+                skipped = skipped + 1
+            else
+                local content = nativefs.read(manual.path)
+                if content then
+                    local ok, err = nativefs.write(dest_path, content)
+                    if ok then
+                        copied = copied + 1
+                        log.write(string.format("Copied manual to %s", dest_path))
+                    else
+                        log.write(string.format("Failed to write manual to %s: %s", dest_path, err or "unknown"))
+                    end
+                else
+                    log.write(string.format("Failed to read manual cache file: %s", manual.path))
+                end
+            end
+        end
+    end
+
+    log.write(string.format("Manual extraction for %s: %d copied, %d skipped", platform, copied, skipped))
+    return copied, skipped
+end
+
 return artwork
+
+

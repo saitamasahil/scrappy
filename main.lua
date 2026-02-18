@@ -71,6 +71,11 @@ function love.draw()
         -- Draw footer on main scene; also on settings when no overlay (VK) is active
         local focus = scenes:currentFocus()
         if focus == "main" or (focus == "settings" and not (_G.ui_overlay_active or false)) then
+            -- Update Select button label based on current scene
+            local select_label = footer.children[4]
+            if select_label then
+                select_label.text = (focus == "settings") and "Home" or "Settings"
+            end
             footer:draw()
         end
     end
