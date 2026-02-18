@@ -444,6 +444,10 @@ local function update_task_state()
                 dispatch_info("Backed up cache",
                     "Cache has been backed up to SD2/ARCHIVE.\nYou can restore it using the muOS Archive Manager")
                 log.write("Cache backed up successfully")
+            elseif t.command == "backup_sd1" then
+                dispatch_info("Backed up cache",
+                    "Cache has been backed up to SD1/ARCHIVE.\nYou can restore it using the muOS Archive Manager")
+                log.write("Cache backed up successfully to SD1")
             elseif t.command == "migrate" then
                 dispatch_info("Migrated cache", "Cache has been migrated to SD2.")
                 skyscraper_config:insert("main", "cacheFolder", "\"/mnt/sdcard/scrappy_cache/\"")
@@ -857,6 +861,13 @@ local function on_backup_cache()
     thread:start("backup")
 end
 
+local function on_backup_cache_sd1()
+    log.write("Backing up cache to SD1/ARCHIVE folder")
+    dispatch_info("Backing up cache to SD1/ARCHIVE folder", "Please wait...")
+    local thread = love.thread.newThread("lib/backend/task_backend.lua")
+    thread:start("backup_sd1")
+end
+
 local function on_migrate_cache()
     log.write("Migrating cache to SD2")
     dispatch_info("Migrating cache to SD2", "Please wait...")
@@ -952,6 +963,11 @@ function tools:load()
         text = "Migrate cache to SD2",
         width = item_width,
         onClick = on_migrate_cache,
+        icon = "sd_card"
+    } + listitem {
+        text = "Backup cache to SD1/ARCHIVE folder",
+        width = item_width,
+        onClick = on_backup_cache_sd1,
         icon = "sd_card"
     } + listitem {
         text = "Backup cache to SD2/ARCHIVE folder",

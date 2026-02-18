@@ -47,8 +47,30 @@ end
 
 local function backup_cache()
     log.write("Starting Zip to compress and move cache folder")
-    base_task_command("backup", string.format(
-        'LD_LIBRARY_PATH= zip -rq /mnt/sdcard/ARCHIVE/scrappy_cache-$(date +"%%Y-%%m-%%d-%%H-%%M-%%S").zip "%s"', CACHE_DIR))
+    local ts = os.date("%Y-%m-%d-%H-%M-%S")
+    local zip_file = string.format("/mnt/sdcard/ARCHIVE/scrappy_cache-%s.zip", ts)
+    local mux_file = string.format("/mnt/sdcard/ARCHIVE/scrappy_cache-%s.muxzip", ts)
+    
+    -- Ensure relative path structure for MuOS Archive Manager (starts with 'application')
+    local relative_cache = CACHE_DIR:gsub(STORAGE_ROOT .. "/", ""):gsub("/$", "")
+    
+    -- cd to STORAGE_ROOT so zip captures 'application/...' structure
+    local cmd = string.format('mkdir -p /mnt/sdcard/ARCHIVE && cd "%s" && LD_LIBRARY_PATH= zip -rq "%s" "%s" && mv "%s" "%s"', STORAGE_ROOT, zip_file, relative_cache, zip_file, mux_file)
+    base_task_command("backup", cmd)
+end
+
+local function backup_cache_sd1()
+    log.write("Starting Zip to compress and move cache folder to SD1")
+    local ts = os.date("%Y-%m-%d-%H-%M-%S")
+    local zip_file = string.format("/mnt/mmc/ARCHIVE/scrappy_cache-%s.zip", ts)
+    local mux_file = string.format("/mnt/mmc/ARCHIVE/scrappy_cache-%s.muxzip", ts)
+    
+    -- Ensure relative path structure for MuOS Archive Manager (starts with 'application')
+    local relative_cache = CACHE_DIR:gsub(STORAGE_ROOT .. "/", ""):gsub("/$", "")
+    
+    -- cd to STORAGE_ROOT so zip captures 'application/...' structure
+    local cmd = string.format('mkdir -p /mnt/mmc/ARCHIVE && cd "%s" && LD_LIBRARY_PATH= zip -rq "%s" "%s" && mv "%s" "%s"', STORAGE_ROOT, zip_file, relative_cache, zip_file, mux_file)
+    base_task_command("backup_sd1", cmd)
 end
 
 local function update_app()
@@ -62,6 +84,10 @@ end
 while running do
     if task == "backup" then
         backup_cache()
+    end
+
+    if task == "backup_sd1" then
+        backup_cache_sd1()
     end
 
     if task == "migrate" then
