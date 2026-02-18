@@ -1317,6 +1317,18 @@ function tools:draw()
 end
 
 function tools:keypressed(key)
+    -- Handle info scraping log/error popup first (highest priority)
+    if info_window.visible then
+        if key == "escape" or key == "return" or key == "a" or key == "b" then
+            info_window.visible = false
+            command_output = ""
+            local scraping_log = info_window ^ "scraping_log"
+            scraping_log.text = ""
+            return
+        end
+        return -- Block all other keys
+    end
+
     if vk and vk.visible then
         local mapped = nil
         if key == 'up' or key == 'down' or key == 'left' or key == 'right' then
@@ -1403,10 +1415,7 @@ function tools:keypressed(key)
     menu:keypressed(key)
     if key == "escape" then
         if info_window.visible then
-            info_window.visible = false
-            command_output = ""
-            local scraping_log = info_window ^ "scraping_log"
-            scraping_log.text = ""
+            -- Already handled above
         else
             scenes:pop()
         end
@@ -1415,6 +1424,89 @@ end
 
 function tools:gamepadpressed(joystick, button)
     local btn = type(button) == 'string' and button:lower() or button
+
+    -- Handle info popup first
+    if info_window.visible then
+        if btn == "a" or btn == "b" then
+            info_window.visible = false
+            command_output = ""
+            local scraping_log = info_window ^ "scraping_log"
+            scraping_log.text = ""
+            return true
+        end
+        return true -- Block all buttons
+    end
+
+    -- Handle region popup
+    if region_popup and region_popup.visible then
+        if btn == "b" then
+            region_popup.visible = false
+            return true
+        elseif btn == "dpup" or btn == "dpdown" then
+            if region_menu then
+               -- Navigate region list
+               local direction = (btn == "dpup") and "up" or "down"
+               region_menu:keypressed(direction)
+            end
+            return true
+        elseif btn == "dpleft" or btn == "dpright" then
+            if region_menu then
+                local focused = region_menu:getRoot().focusedElement
+                if focused and type(focused.id) == "string" and focused.id:match("^region_%d+$") then
+                    move_region(btn == "dpleft" and -1 or 1)
+                    return true
+                end
+            end
+            return true
+        end
+         -- Handle A/Select/Start if needed for reordering logic
+         if region_menu then
+            -- simplistic mapping for now
+             local map = {a='return'}
+             if map[btn] then region_menu:keypressed(map[btn]) end
+         end
+        return true
+    end
+
+    -- Handle accent popup
+    if accent_popup and accent_popup.visible then
+        if btn == "b" then
+            close_accent_popup()
+            return true
+        elseif btn == "dpup" or btn == "dpdown" or btn == "dpleft" or btn == "dpright" then
+             local dir_map = {dpup='up', dpdown='down', dpleft='left', dpright='right'}
+             if accent_menu then accent_menu:keypressed(dir_map[btn]) end
+             return true
+        elseif btn == "a" then
+             if accent_menu then accent_menu:keypressed('return') end
+             return true
+        end
+        return true
+    end
+
+    -- Handle clear cache popup
+    if clear_cache_popup_visible then
+        if btn == "a" then
+             on_confirm_clear_cache_standalone()
+             return true
+        elseif btn == "b" then
+             on_cancel_clear_cache_standalone()
+             return true
+        end
+        return true
+    end
+
+    -- Handle confirm popup
+    if confirm_popup_visible then
+        if btn == "a" then
+             on_confirm_cache_clear()
+             return true
+        elseif btn == "b" then
+             on_cancel_cache_clear()
+             return true
+        end
+        return true
+    end
 
     -- Handle offline mode popup
     if offline_popup_visible then

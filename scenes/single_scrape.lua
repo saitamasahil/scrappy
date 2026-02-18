@@ -932,7 +932,16 @@ function single_scrape:draw()
 end
 
 function single_scrape:keypressed(key)
-    -- Handle confirmation popup first
+    -- Handle info popup first (highest priority)
+    if info_window.visible then
+        if key == "escape" or key == "return" or key == "a" or key == "b" then
+            toggle_info()
+            return
+        end
+        return -- Block all other keys
+    end
+
+    -- Handle confirmation popup
     if state.refine_confirm_visible then
         if key == 'return' or key == 'a' then
             on_confirm_refine()
@@ -986,6 +995,15 @@ function single_scrape:keypressed(key)
 end
 
 function single_scrape:gamepadpressed(joystick, button)
+    -- Handle info popup first
+    if info_window.visible then
+        if button == "a" or button == "b" then
+            toggle_info()
+            return true
+        end
+        return true -- Block all other buttons
+    end
+
     -- Handle confirmation popup first
     if state.refine_confirm_visible then
         if button == 'a' then
