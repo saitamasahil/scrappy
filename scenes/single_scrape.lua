@@ -170,7 +170,11 @@ local function on_refine_search_done(query, target)
     state.refine_attempted = true
 
     -- Call fetch_single with custom query
-    skyscraper.fetch_single(rom_path, rom, last_selected_platform, platform_dest, {"unattend"}, query)
+    if state.manual_mode then
+        skyscraper.fetch_single_manual(rom_path, rom, last_selected_platform, platform_dest, query)
+    else
+        skyscraper.fetch_single(rom_path, rom, last_selected_platform, platform_dest, {"unattend"}, query)
+    end
 end
 
 local function on_refine_search_cancel(target)
