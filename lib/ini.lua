@@ -20,7 +20,7 @@ function ini.load(filePath)
             local isComment = string.match(line, "^%s*;.*$")
             if line ~= "" and isComment == nil then
                 -- Get section name (if section)
-                local section = string.match(line, "%[%s*(.*)%s*%]")
+                local section = string.match(line, "^%s*%[%s*(.*)%s*%]%s*$")
                 if section ~= nil then
                     currentSection = section
                     iniTable[section] = {}

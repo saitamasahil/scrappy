@@ -463,7 +463,7 @@ end
 local function on_refresh_press()
     user_config:load_platforms()
     user_config:save()
-    dispatch_info("Refreshed platforms", "Platforms have been refreshed.")
+    dispatch_info("Refreshed platforms", "Platforms have been refreshed. \nPlease return to Settings to select them.")
 end
 
 local function on_update_press()

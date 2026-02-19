@@ -668,9 +668,26 @@ local function update_checkboxes()
 end
 
 local function on_refresh_press()
+  local btn = menu ^ "rescan_btn"
+  if btn then btn.text = "Scanning..." end
+  -- Force a slight delay or draw to let UI update? (Not easily possible in blocking sync)
+  
   user_config:load_platforms()
   user_config:save()
   update_checkboxes()
+  if content and content.recalculateSize then
+    content:recalculateSize()
+  end
+  
+  if btn then btn.text = "Rescan folders" end
+  
+  -- Show completion message (User Suggestion)
+  if info_window then
+      info_window.title = "Scan Complete"
+      local scraping_log = info_window ^ "scraping_log"
+      if scraping_log then scraping_log.text = "Folder scan finished.\nPlatform list updated." end
+      info_window.visible = true
+  end
 end
 
 local on_check_all_press = function()
@@ -749,7 +766,7 @@ function settings:load()
       }
       + label { text = 'Platforms', icon = "folder" }
       + (component { row = true, gap = 10 }
-        + button { text = 'Rescan folders', width = 200, onClick = on_refresh_press }
+        + button { id = 'rescan_btn', text = 'Rescan folders', width = 200, onClick = on_refresh_press }
         + button { text = 'Un/check all', width = 200, onClick = on_check_all_press })
 
   -- Populate platforms list

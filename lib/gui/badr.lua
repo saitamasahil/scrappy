@@ -60,20 +60,17 @@ function badr.__add(self, component)
   local lastChild = self.children[#self.children] or {}
 
   if self.column then
+    -- Initial positioning logic (preserved for performance on first add)
     component.y = (lastChild.height or 0) + (lastChild.y or self.y)
     if #self.children > 0 then
       component.y = component.y + gap
     end
-    self.height = math.max(self.height, childrenSize.height + component.height + gap * #self.children)
-    self.width = math.max(self.width, component.width)
   end
   if self.row then
     component.x = (lastChild.width or 0) + (lastChild.x or self.x)
     if #self.children > 0 then
       component.x = component.x + gap
     end
-    self.width = math.max(self.width, childrenSize.width + component.width + gap * #self.children)
-    self.height = math.max(self.height, component.height)
   end
 
   if #component.children > 0 then
@@ -82,7 +79,65 @@ function badr.__add(self, component)
     end
   end
   table.insert(self.children, component)
+  
+  -- Recalculate size to ensure container grows
+  self:recalculateSize()
+  
   return self
+end
+
+function badr:recalculateSize()
+    local childrenSize = { width = 0, height = 0 }
+    local gap = self.gap or 0
+    
+    if self.column then
+        local totalHeight = 0
+        local maxWidth = 0
+        for i, child in ipairs(self.children) do
+            -- Update child Y position based on previous siblings
+            if i > 1 then
+                local prev = self.children[i-1]
+                child.y = prev.y + prev.height + gap
+                -- Recursive update of child's children
+                if #child.children > 0 then
+                    child:updatePosition(0, 0) -- optimization: simplistic reflow
+                end
+            elseif i == 1 then
+                child.y = self.y -- Reset first child to top
+            end
+
+            totalHeight = totalHeight + child.height
+            maxWidth = math.max(maxWidth, child.width)
+        end
+        -- Add gaps
+        if #self.children > 1 then
+            totalHeight = totalHeight + (gap * (#self.children - 1))
+        end
+        self.height = math.max(self.height, totalHeight)
+        self.width = math.max(self.width, maxWidth)
+    end
+
+    if self.row then
+        local totalWidth = 0
+        local maxHeight = 0
+        for i, child in ipairs(self.children) do
+             -- Update child X position based on previous siblings
+             if i > 1 then
+                local prev = self.children[i-1]
+                child.x = prev.x + prev.width + gap
+            elseif i == 1 then
+                child.x = self.x
+            end
+
+            totalWidth = totalWidth + child.width
+            maxHeight = math.max(maxHeight, child.height)
+        end
+        if #self.children > 1 then
+            totalWidth = totalWidth + (gap * (#self.children - 1))
+        end
+        self.width = math.max(self.width, totalWidth)
+        self.height = math.max(self.height, maxHeight)
+    end
 end
 
 -- Remove child
