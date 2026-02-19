@@ -327,6 +327,11 @@ local function generate_command(config)
         query_str = escape_shell_arg(query_str)
         command = string.format('%s --query "%s"', command, query_str)
     end
+    -- Add startat flag for resuming
+    if config.start_at then
+        local escaped_start = escape_shell_arg(config.start_at)
+        command = string.format('%s --startat "%s"', command, escaped_start)
+    end
     -- Force regeneration of media even if it already exists
     if config.refresh then
         command = string.format('%s --refresh', command)
@@ -405,13 +410,14 @@ function skyscraper.custom_update_artwork(platform, cache, input, artwork)
     skyscraper.run(command)
 end
 
-function skyscraper.fetch_artwork(rom_path, input_folder, platform)
+function skyscraper.fetch_artwork(rom_path, input_folder, platform, start_at)
     local command = generate_command({
         platform = platform,
         input = rom_path,
         fetch = true,
         module = get_default_module_for(platform),
-        flags = {"unattend", "onlymissing"}
+        flags = {"unattend", "onlymissing"},
+        start_at = start_at
     })
     skyscraper.run(command, input_folder, platform, "update")
 end

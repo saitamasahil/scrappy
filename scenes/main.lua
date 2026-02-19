@@ -274,6 +274,7 @@ local function scrape_platforms()
     state.failed_tasks = {}
     state.queued_games = {}
     state.tasks_in_progress = {}
+    state.platform_context = {}
     state.pending_platforms = 0
 
     -- Process cached data from quickid and db
@@ -363,7 +364,8 @@ local function scrape_platforms()
         end
 
         -- Iterate over ROMs
-        for _, rom in pairs(roms) do
+        table.sort(roms)
+        for _, rom in ipairs(roms) do
             -- Get the title without extension
             local game_title = utils.get_filename(rom)
 
@@ -400,6 +402,12 @@ local function scrape_platforms()
         end
 
         if uncached_games then
+            state.platform_context[dest] = {
+                games = game_list, -- Sorted game titles matching execution order
+                source = src,
+                last_seen_game = nil,
+                rom_path = platform_path
+            }
             state.pending_platforms = state.pending_platforms + 1
             skyscraper.fetch_artwork(platform_path, src, dest)
         else
@@ -492,6 +500,7 @@ local function halt_scraping()
     state.tasks = 0
     state.total = 0
     state.tasks_in_progress = {} -- Clear concurrent tasks
+    state.platform_context = {} -- Clear platform context
     if scraping_window then
         scraping_window.visible = false
     end
@@ -514,7 +523,9 @@ local function update_state(t)
             log_str = log_str .. lstr .. "\n"
         end
         local scraping_log = scraping_window ^ "scraping_log"
-        scraping_log.text = log_str
+        if scraping_log then
+            scraping_log.text = log_str
+        end
 
         -- Parse fetch progress from Skyscraper output (e.g., "#26/761 (T2) Pass 1")
         if t.log then
@@ -527,48 +538,113 @@ local function update_state(t)
             end
         end
 
+        -- Track the last processed game for the current platform
+        -- Log patterns: "Game 'Title' found!", "Game 'Title' not found", etc.
+        local game_title_pats = {
+            "Game '(.-)' found!", "Game '(.-)' not found", "Game '(.-)' match too low", "Skipping game '(.-)' since"
+        }
+        for _, pat in ipairs(game_title_pats) do
+            local game = t.log:match(pat)
+            if game then
+                local platform_context_map = state.platform_context or {}
+                for plat, context in pairs(platform_context_map) do
+                    -- Check if game is in this platform's game list
+                    if game_file_map[plat] and game_file_map[plat][game] then
+                         context.last_seen_game = game
+                         break
+                    end
+                end
+                break
+            end
+        end
+
         -- Check if this is a fetch completion message
-        if t.log:find("%[fetch%]") and t.log:find("completed") then
-            state.pending_platforms = math.max(0, state.pending_platforms - 1)
-            print(string.format("Platform fetch completed. Pending: %d", state.pending_platforms))
-
-            -- When all fetches complete, transition to generation phase
-            if state.pending_platforms == 0 and state.fetch_phase then
-                state.fetch_phase = false
-                print(string.format("==== FETCH PHASE COMPLETE ===="))
-
-
+        local completed_platform = t.log:match("%[fetch%] Platform (.-) completed")
+        if completed_platform then
+            
+            -- RESUME LOGIC
+            local context = state.platform_context and state.platform_context[completed_platform]
+            local resumed = false
+            
+            if context then
+                -- log.write(string.format("Checking resume for %s. Last seen: %s", completed_platform, context.last_seen_game or "nil"))
+                local last_game_in_list = context.games[#context.games]
                 
-                -- SYNC TASK COUNT:
-                -- Skyscraper fetch might ignore some files (e.g. unrecognized extension, read error)
-                -- so we must update our task count to match what was ACTUALLY queued for generation.
-                -- Otherwise, we might wait forever for tasks that will never start.
-                local old_total = state.total
-                state.total = #state.queued_games
-                state.tasks = #state.queued_games
-                
-                print(string.format("Transitioning to GENERATION PHASE with %d queued games (was expecting %d)", state.total, old_total))
-                log.write(string.format("Syncing task count: %d -> %d to match queued games", old_total, state.total))
-
-                -- Update UI to reflect new total
-                local ui_progress = scraping_window ^ "progress"
-                if ui_progress then
-                    ui_progress.text = string.format("Generating: %d / %d", (state.total - state.tasks), state.total)
+                -- If we haven't seen the last game, we probably crashed/exited early
+                if context.last_seen_game ~= last_game_in_list then
+                    print(string.format("Early exit detected for %s! Expected last: %s", completed_platform, last_game_in_list))
+                    log.write(string.format("Early exit detected for %s. Resuming...", completed_platform))
+                    
+                    -- Find where to resume
+                    local resume_index = 1
+                    if context.last_seen_game then
+                        for i, g in ipairs(context.games) do
+                            if g == context.last_seen_game then
+                                resume_index = i + 1
+                                break
+                            end
+                        end
+                    end
+                    
+                    if resume_index <= #context.games then
+                        local next_game = context.games[resume_index]
+                        
+                        -- Find the rom file for this game title
+                        local game_info = game_file_map[completed_platform][next_game]
+                        local next_rom_file = game_info and game_info.file
+                        
+                        if next_rom_file then
+                             resumed = true
+                             -- Call fetch_artwork again with start_at
+                             skyscraper.fetch_artwork(context.rom_path, context.source, completed_platform, next_rom_file)
+                        else
+                             log.write("Could not find file for resume game: " .. next_game)
+                        end
+                    end
                 end
+            end
 
-                -- Start processing queued games by pushing them back to the queue
-                for i, game_info in ipairs(state.queued_games) do
-                    local game_title = game_info.title or game_info.game -- Support both keys for backward compatibility
-                    print(string.format("[%d/%d] Queueing %s for generation", i, #state.queued_games, game_title))
-                    channels.SKYSCRAPER_GAME_QUEUE:push({
-                        game = game_title,
-                        platform = game_info.platform,
-                        input_folder = game_info.input_folder,
-                        skipped = false
-                    })
+            if not resumed then
+                state.pending_platforms = math.max(0, state.pending_platforms - 1)
+                print(string.format("Platform fetch completed. Pending: %d", state.pending_platforms))
+
+                -- When all fetches complete, transition to generation phase
+                if state.pending_platforms == 0 and state.fetch_phase then
+                    state.fetch_phase = false
+                    print(string.format("==== FETCH PHASE COMPLETE ===="))
+    
+                    
+                    -- SYNC TASK COUNT:
+                    -- Skyscraper fetch might ignore some files (e.g. unrecognized extension, read error)
+                    -- so we must update our task count to match what was ACTUALLY queued for generation.
+                    -- Otherwise, we might wait forever for tasks that will never start.
+                    local old_total = state.total
+                    state.total = #state.queued_games
+                    state.tasks = #state.queued_games
+                    
+                    print(string.format("Transitioning to GENERATION PHASE with %d queued games (was expecting %d)", state.total, old_total))
+                    log.write(string.format("Syncing task count: %d -> %d to match queued games", old_total, state.total))
+    
+                    -- Update UI to reflect new total
+                    local ui_progress = scraping_window ^ "progress"
+                    if ui_progress then
+                        ui_progress.text = string.format("Generating: %d / %d", (state.total - state.tasks), state.total)
+                    end
+    
+                    -- Start processing queued games by pushing them back to the queue
+                    for i, game_info in ipairs(state.queued_games) do
+                        local game_title = game_info.title or game_info.game -- Support both keys for backward compatibility
+                        print(string.format("[%d/%d] Queueing %s for generation", i, #state.queued_games, game_title))
+                        channels.SKYSCRAPER_GAME_QUEUE:push({
+                            game = game_title,
+                            platform = game_info.platform,
+                            input_folder = game_info.input_folder,
+                            skipped = false
+                        })
+                    end
+                    -- Clear queued_games after processing to prevent reprocessing
+                    state.queued_games = {}
                 end
-                -- Clear queued_games after processing to prevent reprocessing
-                state.queued_games = {}
             end
         end
     end

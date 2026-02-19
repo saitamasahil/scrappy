@@ -289,10 +289,12 @@ function user_config:load_platforms()
         end
 
         -- 1. Attempt to resolve via muOS core.cfg
-        -- MuOS stores core assignments at /opt/muos/share/info/core/ with full folder path
-        -- e.g., /opt/muos/share/info/core/Atari Collection/Atari 5200/core.cfg
+        -- MuOS stores core assignments at /opt/muos/share/info/content/ (or core/) with full folder path
+        -- e.g., /opt/muos/share/info/content/Atari Collection/Atari 5200/core.cfg
         -- Check FULL folder path first (for nested folders like "Atari Collection/Atari 5200")
-        assignment = try_core_cfg(muos.CORE_DIR, item)
+        if not assignment then
+            assignment = try_core_cfg(muos.CORE_DIR, item)
+        end
         -- Then try just the leaf folder name (for simple folders like "NES")
         if not assignment then
             assignment = try_core_cfg(muos.CORE_DIR, leaf)

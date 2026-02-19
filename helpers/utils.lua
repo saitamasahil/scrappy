@@ -15,6 +15,14 @@ function utils.strip_ansi_colors(str)
     return str:gsub("\27%[%d*;*%d*m", "")
 end
 
+function utils.table_length(t)
+    local count = 0
+    for _ in pairs(t) do
+        count = count + 1
+    end
+    return count
+end
+
 function utils.strip_quotes(str)
     return str:gsub('"', '')
 end

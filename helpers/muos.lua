@@ -5,7 +5,7 @@ local muos = {
     CATALOGUE = "/run/muos/storage/info/catalogue",
     ASSIGN_JSON = "/opt/muos/share/info/assign/assign.json",
     ASSIGN_DIR = "/opt/muos/share/info/assign",
-    CORE_DIR = "/opt/muos/share/info/core",
+    CORE_DIR = "/opt/muos/share/info/core", -- Will be updated below
     platforms = {
         ["amstradcpc"] = "Amstrad",
         ["arcade"] = "Arcade",
@@ -180,5 +180,10 @@ local muos = {
         ["Watara Supervision"] = "supervision"
     }
 }
+
+local nativefs = require("lib.nativefs")
+if nativefs.getInfo("/opt/muos/share/info/content") then
+    muos.CORE_DIR = "/opt/muos/share/info/content"
+end
 
 return muos
