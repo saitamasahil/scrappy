@@ -11,3 +11,5 @@ regionPrios="us, wor, eu, jp, ss, uk, au, ame, de, cus, cn, kr, asi, br, sp, fr,
 subdirs="false"
 [screenscraper]
 userCreds="USER:PASS"
+[thegamesdb]
+userCreds="<your-private-api-key-of-64chars>"
