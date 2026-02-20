@@ -44,7 +44,7 @@ HTML_TEMPLATE = """
                 <li>Request a new API key or retrieve your already requested key.</li>
                 <li>Copy the key and paste it below.</li>
             </ol>
-            <p class="note">The <strong>TheGamesDB API</strong> is limited to <strong>1,000 requests per IP address per month</strong>. If you need more than <strong>1,000 requests per month</strong>, you must <strong>register for a private API key</strong> through TheGamesDB. Private keys provide higher request limits and are recommended for heavy usage.</p>
+            <p class="note">The TheGamesDB API is limited to 1,000 requests per IP address per month. If you need more than 1,000 requests per month, you must register for a private API key through TheGamesDB. Private keys provide higher request limits and are recommended for heavy usage.</p>
         </div>
         <form id="keyForm" method="POST" action="/">
             <input type="text" name="apikey" id="apikey" placeholder="Enter your 64-character API key" required minlength="64" maxlength="64" autocomplete="off" spellcheck="false">
