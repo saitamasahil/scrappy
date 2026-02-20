@@ -45,6 +45,14 @@ local ss_username = ""
 local ss_password = ""
 local ss_show_password = false
 local ss_status = ""
+
+-- TheGamesDB API Key Server State
+local tgdb_server_running = false
+local tgdb_server_ip = nil
+local tgdb_server_status = ""
+local tgdb_check_timer = 0
+local TMP_TGDB_KEY_FILE = "/tmp/scrappy_tgdb_key.txt"
+
 local vk = nil  -- virtual keyboard instance
 local vk_visible = false
 local vk_shift = false
@@ -726,6 +734,35 @@ local function on_toggle_show_password()
   ss_show_password = not ss_show_password
 end
 
+local function on_enter_tgdb_key_web()
+  if tgdb_server_running then
+    -- Cancel server
+    os.execute("pkill -f tgdb_server.py")
+    tgdb_server_running = false
+    tgdb_server_status = "Server stopped."
+    return
+  end
+
+  local ip = utils.get_ip_address()
+  if ip then
+    -- Make sure temp file is clear
+    love.filesystem.remove(TMP_TGDB_KEY_FILE)
+    os.execute("rm -f " .. TMP_TGDB_KEY_FILE)
+    
+    -- Start python server in background
+    -- Use WORK_DIR to ensure it works correctly regardless of SD1/SD2 install location
+    local server_path = WORK_DIR .. "/scripts/tgdb_server.py"
+    os.execute('python3 "' .. server_path .. '" > /dev/null 2>&1 &')
+    
+    tgdb_server_running = true
+    tgdb_server_ip = ip
+    tgdb_server_status = "Go to http://" .. ip .. ":8080 on your phone/PC"
+    tgdb_check_timer = 0
+  else
+    tgdb_server_status = "Could not find IP address! Connect to WiFi."
+  end
+end
+
 function settings:load()
   -- Preload Screenscraper credentials (if previously saved)
   load_screenscraper_creds()
@@ -750,6 +787,19 @@ function settings:load()
           + button { text = function() return ss_show_password and 'Hide Password' or 'Show Password' end, width = 180, onClick = on_toggle_show_password }
         )
       + label { text = function() return ss_status end }
+      
+      + label { text = 'TheGamesDB Account', icon = "user" }
+      + (component { column = true, gap = 6 }
+          + button { 
+              text = function() 
+                return tgdb_server_running and 'Cancel / Stop Server' or 'Enter API Key via Web Server' 
+              end, 
+              width = w_width - 20, 
+              onClick = on_enter_tgdb_key_web 
+            }
+        )
+      + label { text = function() return tgdb_server_status end }
+      
       + label { text = 'Resolution', icon = "display" }
       + checkbox {
         text = 'Filter templates for my resolution (Restart required)',
@@ -798,6 +848,32 @@ end
 
 function settings:update(dt)
   menu:update(dt)
+  
+  if tgdb_server_running then
+    tgdb_check_timer = tgdb_check_timer + dt
+    -- Check every 1 second
+    if tgdb_check_timer >= 1.0 then
+      tgdb_check_timer = 0
+      
+      -- Check if file exists via nativefs or standard io
+      local f = io.open(TMP_TGDB_KEY_FILE, "r")
+      if f then
+        local key = f:read("*a")
+        f:close()
+        if key and key ~= "" then
+          local sk = configs.skyscraper_config
+          -- Save with quotes
+          sk:insert('thegamesdb', 'userCreds', '"' .. key:gsub("%s+", "") .. '"')
+          sk:save()
+          tgdb_server_status = "Key saved successfully!"
+          tgdb_server_running = false
+          -- Server shuts itself down, but we can ensure cleanup
+          os.remove(TMP_TGDB_KEY_FILE)
+        end
+      end
+    end
+  end
+
   if not vk_visible then return end
   local held = nil
   if love.keyboard.isDown('up') then held = 'up'

@@ -189,4 +189,17 @@ function utils.normalize_platform(platform)
     return map[platform] or platform
 end
 
+function utils.get_ip_address()
+    local handle = io.popen("ip route get 8.8.8.8 | awk '{print $7}'")
+    if not handle then return nil end
+    local result = handle:read("*a")
+    handle:close()
+    if result then
+        result = result:gsub("%s+", "") -- strip whitespace
+        if result == "" then return nil end
+        return result
+    end
+    return nil
+end
+
 return utils
