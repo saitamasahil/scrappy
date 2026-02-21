@@ -109,8 +109,8 @@ function artwork.copy_artwork_type(platform, game, media_path, copy_path, output
     end
 
     -- Wait a bit for file to be fully written (sometimes filesystem is slow)
-    local max_retries = 5
-    local retry_delay = 0.2 -- 200ms
+    local max_retries = 2
+    local retry_delay = 0.05 -- 50ms
     local scraped_art = nil
 
     for i = 1, max_retries do
