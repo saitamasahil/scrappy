@@ -603,6 +603,20 @@ function skyscraper_config:init()
         if not subdirs or subdirs == "\"\"" then
             self:insert("main", "subdirs", "\"false\"")
         end
+        
+        -- Validate TheGamesDB API key (must be exactly 64 characters)
+        local tgdb_creds = self:read("thegamesdb", "userCreds")
+        if tgdb_creds then
+            local stripped_key = tgdb_creds:gsub('"', '')
+            if #stripped_key ~= 64 or tgdb_creds:find("<your%-private%-api%-key") then
+                log.write("Removing invalid/default TheGamesDB credentials from config")
+                if self.values["thegamesdb"] then
+                    self.values["thegamesdb"] = nil
+                    self:save()
+                end
+            end
+        end
+
         -- Sync credentials to Skyscraper's native path so it doesn't fall back to anonymous
         self:sync_native_config()
     else
