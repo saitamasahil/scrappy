@@ -24,7 +24,8 @@ local function label(props)
     id = props.id,
     x = props.x or 0,
     y = props.y or 0,
-    width = totalWidth,
+    width = props.max_width or totalWidth,
+    max_width = props.max_width,
     height = textHeight,
     font = _font,
     icon = props.icon,
@@ -55,7 +56,65 @@ local function label(props)
       local c = color or configs.theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
       love.graphics.setColor(c)
       local txt = (self.get_text and self.get_text()) or self.text or ""
-      love.graphics.print(txt, textX, self.y)
+      
+      local available_width = nil
+      if self.max_width then
+        available_width = self.max_width - (self.icon and (iconSize + padding) or 0)
+      end
+      
+      local content_w = self.font:getWidth(txt)
+      if available_width and content_w > available_width then
+        local scroll_speed = 40
+        local t = love.timer.getTime()
+        local extra = content_w - available_width + 10
+        local wait_time = 1.5
+        local cycle = wait_time * 2 + (extra / scroll_speed)
+        local phase = t % cycle
+        local offset = 0
+        
+        if phase < wait_time then
+            offset = 0
+        elseif phase < wait_time + (extra / scroll_speed) then
+            offset = (phase - wait_time) * scroll_speed
+        else
+            offset = extra
+        end
+        
+        -- Store current scissor state
+        local sx, sy, sw, sh = love.graphics.getScissor()
+        
+        local tx1, ty1 = love.graphics.transformPoint(textX, self.y)
+        local tx2, ty2 = love.graphics.transformPoint(textX + available_width, self.y + self.height)
+        local nx, ny = math.min(tx1, tx2), math.min(ty1, ty2)
+        local nw, nh = math.abs(tx2 - tx1), math.abs(ty2 - ty1)
+        
+        -- Apply intersected scissor
+        if sx then
+            local ix = math.max(sx, nx)
+            local iy = math.max(sy, ny)
+            local ir = math.min(sx + sw, nx + nw)
+            local ib = math.min(sy + sh, ny + nh)
+            if ir > ix and ib > iy then
+                love.graphics.setScissor(ix, iy, ir - ix, ib - iy)
+            else
+                love.graphics.setScissor(nx, ny, 0, 0)
+            end
+        else
+            love.graphics.setScissor(nx, ny, nw, nh)
+        end
+        
+        love.graphics.print(txt, textX - offset, self.y)
+        
+        -- Restore original scissor
+        if sx then
+            love.graphics.setScissor(sx, sy, sw, sh)
+        else
+            love.graphics.setScissor()
+        end
+      else
+        love.graphics.print(txt, textX, self.y)
+      end
+
       love.graphics.setColor({ 1, 1, 1 }) -- Reset color to white
       love.graphics.pop()
     end,

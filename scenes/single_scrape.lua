@@ -879,27 +879,32 @@ function single_scrape:load()
     -- Setup scraping window
     local infoComponent = component {
         column = true,
-        gap = 10
+        gap = 10,
+        width = love.graphics.getWidth() * 0.85
     } + label {
         id = "platform",
         text = "Platform: N/A",
-        icon = "controller"
+        icon = "controller",
+        max_width = love.graphics.getWidth() * 0.85
     } + label {
         id = "game",
         text = "Game: N/A",
-        icon = "cd"
+        icon = "cd",
+        max_width = love.graphics.getWidth() * 0.85
     } + label {
         id = "status",
         text = "Status: N/A",
-        icon = "info"
+        icon = "info",
+        max_width = love.graphics.getWidth() * 0.85
     }
 
     scraping_window = scraping_window + (component {
         column = true,
-        gap = 15
+        gap = 15,
+        width = love.graphics.getWidth() * 0.85
     } + infoComponent + output_log {
         id = "scraping_log",
-        width = scraping_window.width,
+        width = love.graphics.getWidth() * 0.85,
         height = 100
     })
 end

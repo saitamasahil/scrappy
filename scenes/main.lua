@@ -971,25 +971,34 @@ function main:load()
         end
     }
 
+    local popup_max_width = love.graphics.getWidth() * 0.85
+    local canvas_width = w_width * 0.5 - 20
+    local info_width = popup_max_width - canvas_width - 10 -- account for 10px row gap
+
     local infoComponent = component {
         column = true,
-        gap = 10
+        gap = 10,
+        width = info_width
     } + label {
         id = "platform",
         text = "Platform: N/A",
-        icon = "controller"
+        icon = "controller",
+        max_width = info_width
     } + label {
         id = "game",
         text = "Game: N/A",
-        icon = "cd"
+        icon = "cd",
+        max_width = info_width
     } + label {
         id = "fetch_progress",
         text = "Fetching: 0 / 0",
-        icon = "downloading"
+        icon = "downloading",
+        max_width = info_width
     } + label {
         id = "progress",
         text = "Generating: 0 / 0",
-        icon = "generating"
+        icon = "generating",
+        max_width = info_width
     }
     -- + progress { id = "progress_bar", width = w_width * 0.5 - 30 }
 
@@ -1033,14 +1042,15 @@ function main:load()
     scraping_window = scraping_window + ( -- Column
     component {
         column = true,
-        gap = 15
+        gap = 15,
+        width = w_width * 0.85
     } + ( -- Row: Preview + Info
     component {
         row = true,
         gap = 10
     } + canvasComponent2 + infoComponent) + output_log {
         id = "scraping_log",
-        width = scraping_window.width,
+        width = w_width * 0.85,
         height = 100
     })
     menu:updatePosition(10, 10)
