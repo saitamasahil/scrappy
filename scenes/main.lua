@@ -1061,11 +1061,16 @@ function main:load()
     menu:updatePosition(10, 10)
 
     menu:focusFirstElement()
-    if not skyscraper_config:has_credentials() then
+    local current_scraper = user_config:read("main", "scraperModule") or "screenscraper"
+    if not skyscraper_config:has_credentials(current_scraper) then
+        local warn_text = current_scraper == "thegamesdb" 
+            and "TheGamesDB scraping is limited without an API key. Add it in Settings."
+            or "Open Settings and add your ScreenScraper credentials."
         menu = menu + label {
             id = "ss_warning",
-            text = "Open Settings and add your ScreenScraper credentials.",
-            icon = "warn"
+            text = warn_text,
+            icon = "warn",
+            max_width = w_width * 0.95
         }
     end
     if not user_config:has_platforms() then
@@ -1413,9 +1418,11 @@ function main:gamepadpressed(joystick, button)
 end
 
 function main:resume()
-    -- If we have credentials now, remove the warning if it exists
-    if skyscraper_config:has_credentials() then
-        local warning = menu ^ "ss_warning"
+    local current_scraper = user_config:read("main", "scraperModule") or "screenscraper"
+    local warning = menu ^ "ss_warning"
+
+    if skyscraper_config:has_credentials(current_scraper) then
+        -- If we have credentials now, remove the warning if it exists
         if warning then
             -- Find and remove the warning component
             for i, child in ipairs(menu.children) do
@@ -1425,6 +1432,25 @@ function main:resume()
                 end
             end
             -- Recalculate layout
+            menu:updatePosition(10, 10)
+        end
+    else
+        -- If we don't have credentials, we need to show the correct warning
+        local warn_text = current_scraper == "thegamesdb" 
+            and "TheGamesDB scraping is limited without an API key. Add it in Settings."
+            or "Open Settings and add your ScreenScraper credentials."
+            
+        if warning then
+            if warning.text ~= warn_text then
+                warning.text = warn_text
+            end
+        else
+            menu = menu + label {
+                id = "ss_warning",
+                text = warn_text,
+                icon = "warn",
+                max_width = w_width * 0.95
+            }
             menu:updatePosition(10, 10)
         end
     end

@@ -631,8 +631,12 @@ function skyscraper_config:reset()
     self:save()
 end
 
-function skyscraper_config:has_credentials()
-    local creds = self:read("screenscraper", "userCreds")
+function skyscraper_config:has_credentials(module_name)
+    module_name = module_name or "screenscraper"
+    local creds = self:read(module_name, "userCreds")
+    if module_name == "thegamesdb" then
+        return creds ~= nil and creds ~= "\"\""
+    end
     return creds and creds:find("USER:PASS") == nil
 end
 
