@@ -37,7 +37,7 @@ local function base_task_command(id, command)
         command_finished = true,
         command = id
     })
-    log.write(string.format("Finished command %s", id, command))
+    log.write(string.format("Finished command %s - '%s'", id, command))
 end
 
 local function migrate_cache()
