@@ -603,6 +603,8 @@ function skyscraper_config:init()
         if not subdirs or subdirs == "\"\"" then
             self:insert("main", "subdirs", "\"false\"")
         end
+        -- Sync credentials to Skyscraper's native path so it doesn't fall back to anonymous
+        self:sync_native_config()
     else
         self:start_fresh()
     end
@@ -624,6 +626,44 @@ function skyscraper_config:get_paths()
     local cache_path = self:read("main", "cacheFolder")
     local output_path = self:read("main", "gameListFolder")
     return cache_path, output_path
+end
+
+function skyscraper_config:sync_native_config()
+    local ok, err = pcall(function()
+        local native_dir = string.format("%s/static/.skyscraper", WORK_DIR)
+        local native_path = string.format("%s/config.ini", native_dir)
+        os.execute(string.format('mkdir -p "%s"', native_dir))
+
+        local f = io.open(native_path, "w")
+        if f then
+            f:write("[main]\n")
+            if self:read("main", "artworkXml") then
+                f:write(string.format("artworkXml = %s\n", self:read("main", "artworkXml")))
+            end
+            if self:read("main", "cacheFolder") then
+                f:write(string.format("cacheFolder = %s\n", self:read("main", "cacheFolder")))
+            end
+            if self:read("main", "gameListFolder") then
+                f:write(string.format("gameListFolder = %s\n", self:read("main", "gameListFolder")))
+            end
+            
+            local ss_creds = self:read("screenscraper", "userCreds")
+            if ss_creds then
+                f:write("\n[screenscraper]\n")
+                f:write(string.format("userCreds = %s\n", ss_creds))
+            end
+            
+            local tgdb_creds = self:read("thegamesdb", "userCreds")
+            if tgdb_creds then
+                f:write("\n[thegamesdb]\n")
+                f:write(string.format("userCreds = %s\n", tgdb_creds))
+            end
+            f:close()
+        end
+    end)
+    if not ok then
+        log.write("Failed to sync native Skyscraper config: " .. tostring(err))
+    end
 end
 
 -- Theme specific

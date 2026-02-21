@@ -724,6 +724,7 @@ local function on_save_ss()
   if ss_username ~= '' and ss_password ~= '' then
     sk:insert('screenscraper', 'userCreds', string.format('"%s:%s"', ss_username, ss_password))
     sk:save()
+    sk:sync_native_config()
     ss_status = "Saved credentials."
   else
     ss_status = "Enter both username and password."
@@ -865,6 +866,7 @@ function settings:update(dt)
           -- Save with quotes
           sk:insert('thegamesdb', 'userCreds', '"' .. key:gsub("%s+", "") .. '"')
           sk:save()
+          sk:sync_native_config()
           tgdb_server_status = "Key saved successfully!"
           tgdb_server_running = false
           -- Server shuts itself down, but we can ensure cleanup
