@@ -297,6 +297,7 @@ local function generate_command(config)
     end
     if config.fetch then
         command = string.format('%s -s %s', command, config.module)
+        command = string.format('%s --verbosity 1', command)
     end
     if config.use_config then
         command = string.format('%s -c "%s"', command, skyscraper.config_path)
