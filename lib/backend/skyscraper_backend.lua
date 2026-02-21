@@ -181,6 +181,10 @@ while true do
                     emit_ready(res, current_platform, input_folder, skipped)
                 end
             end
+            
+            if res == nil and (error == nil or error == "") then 
+                log.write(string.format("[fetch:raw] %s", line), "skyscraper") 
+            end
 
             if error ~= nil and error ~= "" then
                 log.write("ERROR: " .. error, "skyscraper")
