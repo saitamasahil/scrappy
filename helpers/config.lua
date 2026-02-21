@@ -78,7 +78,7 @@ function user_config:start_fresh()
         log.write("Created user config")
         self:detect_sd()
         self:load_platforms()
-        self:save()
+        self:fill_defaults()
     else
         log.write("Failed to create user config")
     end
