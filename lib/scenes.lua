@@ -14,8 +14,8 @@ scenes.__index = scenes
 
 function scenes:load(initial_state)
     for _, file in ipairs(nativefs.getDirectoryItems("scenes")) do
-        if string.find(file, ".lua") then
-            self.states[string.gsub(file, ".lua", "")] = require("scenes." .. string.gsub(file, ".lua", ""))
+        if string.find(file, "%.lua$") then
+            self.states[string.gsub(file, "%.lua$", "")] = require("scenes." .. string.gsub(file, "%.lua$", ""))
         end
     end
     if initial_state then
