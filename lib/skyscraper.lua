@@ -218,7 +218,8 @@ function skyscraper.init(config_path, binary)
     end
 
     push_cache_command({
-        command = string.format("%s -v", skyscraper.base_command)
+        command = string.format("%s -v", skyscraper.base_command),
+        version = true
     })
 end
 
