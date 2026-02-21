@@ -969,6 +969,11 @@ function single_scrape:keypressed(key)
         if key == 'escape' then
             mapped = 'cancel'
         end
+        if key == 'backspace' then mapped = 'backspace' end
+        if key == 'x' then mapped = 'x' end
+        if key == 'y' then mapped = 'y' end
+        if key == 'space' then mapped = 'space' end
+        
         if mapped then
             vk:handle_key(mapped)
             return

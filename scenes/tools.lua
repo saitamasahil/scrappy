@@ -1356,6 +1356,11 @@ function tools:keypressed(key)
         if key == 'escape' then
             mapped = 'cancel'
         end
+        if key == 'backspace' then mapped = 'backspace' end
+        if key == 'x' then mapped = 'x' end
+        if key == 'y' then mapped = 'y' end
+        if key == 'space' then mapped = 'space' end
+        
         if mapped then
             vk:handle_key(mapped)
             return
@@ -1451,6 +1456,30 @@ function tools:gamepadpressed(joystick, button)
             return true
         end
         return true -- Block all buttons
+    end
+
+    -- Handle virtual keyboard input first if visible
+    if vk and vk.visible then
+        local map = {
+            dpup = 'up',
+            dpdown = 'down',
+            dpleft = 'left',
+            dpright = 'right',
+            a = 'confirm',
+            b = 'cancel',
+            x = 'x',
+            y = 'y'
+        }
+        local m = map[btn] or map[button]
+        if m then
+            if m == 'up' or m == 'down' or m == 'left' or m == 'right' then
+                -- D-pad handled in update for hold repeat
+                return true
+            end
+            vk:handle_key(m)
+            return true
+        end
+        return true
     end
 
     -- Handle region popup
