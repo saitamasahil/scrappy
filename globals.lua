@@ -27,4 +27,5 @@ _G.SKYSCRAPER_ERRORS = {"doesn't exist or can't be accessed by current user. Ple
                         "requested either on command line or with",
                         "Couldn't create cache folders, please check folder permissions and try again...",
                         "Please set a valid platform with", "No files to process in cache",
-                        "Skyscraper came to an untimely end."}
+                        "Skyscraper came to an untimely end.", "maxrequestspermin",
+                        "maxrequestsperday", "maxthreadsreached", "API closed"}
