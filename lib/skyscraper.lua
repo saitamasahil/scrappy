@@ -426,11 +426,13 @@ end
 
 function skyscraper.update_artwork(rom_path, rom, input_folder, platform, artwork)
     local artwork = WORK_DIR .. "/templates/" .. artwork .. ".xml"
+
     local update_command = generate_command({
         platform = platform,
         input = rom_path,
         artwork = artwork,
-        rom = rom
+        rom = rom,
+        refresh = true
     })
     skyscraper.run(update_command, input_folder, platform, "generate", rom)
 end
