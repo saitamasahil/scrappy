@@ -1067,7 +1067,7 @@ function tools:load()
     } + output_log {
         visible = false,
         id = "scraping_log",
-        width = info_window.width,
+        width = info_window.width - 20,
         height = w_height * 0.50
     })
 

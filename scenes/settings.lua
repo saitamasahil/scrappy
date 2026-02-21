@@ -8,6 +8,8 @@ local label             = require 'lib.gui.label'
 local checkbox          = require 'lib.gui.checkbox'
 local select            = require 'lib.gui.select'
 local scroll_container  = require 'lib.gui.scroll_container'
+local popup             = require 'lib.gui.popup'
+local output_log        = require 'lib.gui.output_log'
 
 -- Virtual keyboard layout for gamepad input
 local VKEY = {
@@ -37,6 +39,7 @@ local vk_password_font = love.graphics.newFont(18)
 local settings          = {}
 
 local menu, content, scroller, checkboxes
+local info_window
 
 local all_check         = true
 
@@ -676,6 +679,16 @@ local function update_checkboxes()
   end
 end
 
+local function dispatch_info(title, content_text)
+  if not info_window then return end
+  info_window.title = title
+  local log_comp = info_window ^ "scraping_log"
+  if log_comp then
+    log_comp.text = content_text
+  end
+  info_window.visible = true
+end
+
 local function on_refresh_press()
   local btn = menu ^ "rescan_btn"
   if btn then btn.text = "Scanning..." end
@@ -690,13 +703,7 @@ local function on_refresh_press()
   
   if btn then btn.text = "Rescan folders" end
   
-  -- Show completion message (User Suggestion)
-  if info_window then
-      info_window.title = "Scan Complete"
-      local scraping_log = info_window ^ "scraping_log"
-      if scraping_log then scraping_log.text = "Folder scan finished.\nPlatform list updated." end
-      info_window.visible = true
-  end
+  dispatch_info("Scan Complete", "Folder scan finished.\nPlatform list updated.")
 end
 
 local on_check_all_press = function()
@@ -855,10 +862,29 @@ function settings:load()
   -- Position and focus
   menu:updatePosition(10, 10)
   menu:focusFirstElement()
+
+  info_window = popup {
+    title = "Information",
+    width = w_width * 0.8,
+    height = w_height * 0.5,
+    visible = false
+  }
+  info_window = info_window + (component {
+    column = true,
+    gap = 15
+  } + output_log {
+    id = "scraping_log",
+    width = info_window.width - 20,
+    height = info_window.height * 0.8
+  })
 end
 
 function settings:update(dt)
-  menu:update(dt)
+  if info_window and info_window.visible then
+    info_window:update(dt)
+  else
+    menu:update(dt)
+  end
   
   if tgdb_server_running then
     tgdb_check_timer = tgdb_check_timer + dt
@@ -936,6 +962,9 @@ end
 function settings:draw()
   love.graphics.clear(theme:read_color("main", "BACKGROUND", "#000000"))
   menu:draw()
+  if info_window and info_window.visible then
+    info_window:draw()
+  end
   vk_draw()
 end
 
@@ -953,6 +982,13 @@ function settings:keypressed(key)
         return
       end
     end
+  end
+
+  if info_window and info_window.visible then
+    if key == "escape" or key == "b" or key == "return" then
+      info_window.visible = false
+    end
+    return
   end
 
   menu:keypressed(key)
@@ -978,6 +1014,14 @@ function settings:gamepadpressed(joystick, button)
       end
     end
   end
+  
+  if info_window and info_window.visible then
+    if button == "b" or button == "a" or button == "start" then
+      info_window.visible = false
+    end
+    return true
+  end
+
   if menu.gamepadpressed then return menu:gamepadpressed(joystick, button) end
   return false
 end
