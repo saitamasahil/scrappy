@@ -1333,18 +1333,65 @@ function tools:draw()
 end
 
 function tools:keypressed(key)
-    -- Handle info scraping log/error popup first (highest priority)
+    -- 1. Handle info popup (highest priority)
     if info_window.visible then
-        if key == "escape" or key == "return" or key == "a" or key == "b" then
+        if key == "return" or key == "a" or key == "escape" or key == "b" then
             info_window.visible = false
             command_output = ""
             local scraping_log = info_window ^ "scraping_log"
-            scraping_log.text = ""
+            if scraping_log then scraping_log.text = "" end
             return
         end
         return -- Block all other keys
     end
 
+    -- 2. Handle modal confirmation popups
+    if clear_cache_popup_visible then
+        if key == "return" or key == "a" then
+            on_confirm_clear_cache_standalone()
+            return
+        elseif key == "escape" or key == "b" then
+            on_cancel_clear_cache_standalone()
+            return
+        end
+        return -- Block all other keys while popup is visible
+    end
+
+    if confirm_popup_visible then
+        if key == "return" or key == "a" then
+            on_confirm_cache_clear()
+            return
+        elseif key == "escape" or key == "b" then
+            on_cancel_cache_clear()
+            return
+        end
+        return -- Block all other keys while confirmation is visible
+    end
+
+    if offline_popup_visible then
+        if key == "return" or key == "a" then
+            on_confirm_offline_mode()
+            return
+        elseif key == "escape" or key == "b" then
+            on_cancel_offline_mode()
+            return
+        end
+        return -- Block all other keys while popup is visible
+    end
+
+    -- 3. Accent popup
+    if accent_popup and accent_popup.visible then
+        if key == "escape" then
+            close_accent_popup()
+            return
+        end
+        if accent_menu then
+            accent_menu:keypressed(key)
+        end
+        return
+    end
+
+    -- 4. Virtual Keyboard
     if vk and vk.visible then
         local mapped = nil
         if key == 'up' or key == 'down' or key == 'left' or key == 'right' then
@@ -1368,52 +1415,7 @@ function tools:keypressed(key)
         return
     end
 
-    if accent_popup and accent_popup.visible then
-        if key == "escape" then
-            close_accent_popup()
-            return
-        end
-        if accent_menu then
-            accent_menu:keypressed(key)
-        end
-        return
-    end
 
-    -- Handle clear cache popup first (highest priority)
-    if clear_cache_popup_visible then
-        if key == "return" or key == "a" then
-            on_confirm_clear_cache_standalone()
-            return
-        elseif key == "escape" or key == "b" then
-            on_cancel_clear_cache_standalone()
-            return
-        end
-        return -- Block all other keys while popup is visible
-    end
-
-    -- Handle confirmation popup (region priorities)
-    if confirm_popup_visible then
-        if key == "return" or key == "a" then
-            on_confirm_cache_clear()
-            return
-        elseif key == "escape" or key == "b" then
-            on_cancel_cache_clear()
-            return
-        end
-        return -- Block all other keys while confirmation is visible
-    end
-
-    -- Handle offline mode popup
-    if offline_popup_visible then
-        if key == "return" or key == "a" then
-            on_confirm_offline_mode()
-            return
-        elseif key == "escape" or key == "b" then
-            on_cancel_offline_mode()
-            return
-        end
-        return -- Block all other keys while popup is visible
-    end
 
     if region_popup and region_popup.visible then
         if key == "escape" then
@@ -1447,18 +1449,53 @@ function tools:gamepadpressed(joystick, button)
     local btn = type(button) == 'string' and button:lower() or button
 
     -- Handle info popup first
+    -- 1. Handle info popup (highest priority)
     if info_window.visible then
         if btn == "a" or btn == "b" then
             info_window.visible = false
             command_output = ""
             local scraping_log = info_window ^ "scraping_log"
-            scraping_log.text = ""
+            if scraping_log then scraping_log.text = "" end
             return true
         end
         return true -- Block all buttons
     end
 
-    -- Handle virtual keyboard input first if visible
+    -- 2. Handle modal confirmation popups
+    if clear_cache_popup_visible then
+        if btn == "a" then
+             on_confirm_clear_cache_standalone()
+             return true
+        elseif btn == "b" then
+             on_cancel_clear_cache_standalone()
+             return true
+        end
+        return true
+    end
+
+    if confirm_popup_visible then
+        if btn == "a" then
+             on_confirm_cache_clear()
+             return true
+        elseif btn == "b" then
+             on_cancel_cache_clear()
+             return true
+        end
+        return true
+    end
+
+    if offline_popup_visible then
+        if btn == 'a' then
+            on_confirm_offline_mode()
+            return true
+        elseif btn == 'b' then
+            on_cancel_offline_mode()
+            return true
+        end
+        return true -- Block all buttons while popup is visible
+    end
+
+    -- 3. Handle virtual keyboard input first if visible
     if vk and vk.visible then
         local map = {
             dpup = 'up',
@@ -1513,76 +1550,7 @@ function tools:gamepadpressed(joystick, button)
         return true
     end
 
-    -- Handle accent popup
-    if accent_popup and accent_popup.visible then
-        if btn == "b" then
-            close_accent_popup()
-            return true
-        elseif btn == "dpup" or btn == "dpdown" or btn == "dpleft" or btn == "dpright" then
-             local dir_map = {dpup='up', dpdown='down', dpleft='left', dpright='right'}
-             if accent_menu then accent_menu:keypressed(dir_map[btn]) end
-             return true
-        elseif btn == "a" then
-             if accent_menu then accent_menu:keypressed('return') end
-             return true
-        end
-        return true
-    end
 
-    -- Handle clear cache popup
-    if clear_cache_popup_visible then
-        if btn == "a" then
-             on_confirm_clear_cache_standalone()
-             return true
-        elseif btn == "b" then
-             on_cancel_clear_cache_standalone()
-             return true
-        end
-        return true
-    end
-
-    -- Handle confirm popup
-    if confirm_popup_visible then
-        if btn == "a" then
-             on_confirm_cache_clear()
-             return true
-        elseif btn == "b" then
-             on_cancel_cache_clear()
-             return true
-        end
-        return true
-    end
-
-    -- Handle offline mode popup
-    if offline_popup_visible then
-        if btn == 'a' then
-            on_confirm_offline_mode()
-            return true
-        elseif btn == 'b' then
-            on_cancel_offline_mode()
-            return true
-        end
-        return true -- Block all buttons while popup is visible
-    end
-
-    if vk and vk.visible then
-        local map = {
-            dpup = 'up',
-            dpdown = 'down',
-            dpleft = 'left',
-            dpright = 'right',
-            a = 'confirm',
-            b = 'cancel',
-            x = 'x',
-            y = 'y'
-        }
-        local m = map[btn] or map[button]
-        if m then
-            vk:handle_key(m)
-            return true
-        end
-        return true
-    end
 
     -- Rely on global input handling for D-Pad (to support hold-repeat) and standard keys
     return false
