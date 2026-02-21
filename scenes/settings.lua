@@ -51,6 +51,7 @@ local tgdb_server_running = false
 local tgdb_server_ip = nil
 local tgdb_server_status = ""
 local tgdb_check_timer = 0
+local tgdb_key_exists = false
 local TMP_TGDB_KEY_FILE = "/tmp/scrappy_tgdb_key.txt"
 
 local vk = nil  -- virtual keyboard instance
@@ -767,6 +768,9 @@ end
 function settings:load()
   -- Preload Screenscraper credentials (if previously saved)
   load_screenscraper_creds()
+  
+  local tgdb_creds = configs.skyscraper_config:read("thegamesdb", "userCreds")
+  tgdb_key_exists = (tgdb_creds ~= nil and tgdb_creds ~= "" and tgdb_creds ~= '""')
 
   -- Root container holds just the scroller; content lives inside scroller
   menu = component:root { column = true, gap = 10 }
@@ -793,7 +797,13 @@ function settings:load()
       + (component { column = true, gap = 6 }
           + button { 
               text = function() 
-                return tgdb_server_running and 'Cancel / Stop Server' or 'Enter API Key via Web Server' 
+                if tgdb_server_running then
+                  return 'Cancel / Stop Server'
+                elseif tgdb_key_exists then
+                  return 'Update API Key via Web Server (Key Saved)'
+                else
+                  return 'Enter API Key via Web Server'
+                end
               end, 
               width = w_width - 20, 
               onClick = on_enter_tgdb_key_web 
@@ -867,6 +877,7 @@ function settings:update(dt)
           sk:insert('thegamesdb', 'userCreds', '"' .. key:gsub("%s+", "") .. '"')
           sk:save()
           sk:sync_native_config()
+          tgdb_key_exists = true
           tgdb_server_status = "Key saved successfully!"
           tgdb_server_running = false
           -- Server shuts itself down, but we can ensure cleanup
