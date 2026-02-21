@@ -936,16 +936,19 @@ function main:load()
         width = w_width * 0.5 - 30,
         options = templates,
         startIndex = current_template,
-        onChange = on_artwork_change
+        onChange = on_artwork_change,
+        onFocus = function() on_output_focus("box") end
     } + select {
         width = w_width * 0.5 - 30,
         options = scrape_modes,
         startIndex = current_scrape_mode,
-        onChange = on_scrape_mode_change
+        onChange = on_scrape_mode_change,
+        onFocus = function() on_output_focus("box") end
     } + button {
         text = "Start scraping",
         width = w_width * 0.5 - 30,
-        onClick = scrape_platforms
+        onClick = scrape_platforms,
+        onFocus = function() on_output_focus("box") end
     } + label {
         text = "Select to preview outputs:"
     } + listitem {
@@ -1029,14 +1032,16 @@ function main:load()
         icon = "mag_glass",
         onClick = function()
             scenes:push("single_scrape")
-        end
+        end,
+        onFocus = function() on_output_focus("box") end
     } + button {
         text = "Advanced tools",
         width = w_width * 0.5 - 30,
         icon = "wrench",
         onClick = function()
             scenes:push("tools")
-        end
+        end,
+        onFocus = function() on_output_focus("box") end
     })
 
     scraping_window = scraping_window + ( -- Column

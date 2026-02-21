@@ -56,7 +56,14 @@ return function(props)
         if props.onChange then props.onChange(key, self.currentIndex) end
       end
     end,
+    onFocus = props.onFocus,
+    last_focused = false,
     onUpdate = function(self, dt)
+      if self.focused and not self.last_focused then
+        if self.onFocus then self:onFocus() end
+      end
+      self.last_focused = self.focused
+
       -- Update scroll offset if text is wider than the button
       local textWidth = font:getWidth(self.options[self.currentIndex] or "")
       -- Only scroll if the button is focused and the text is longer than the button width
