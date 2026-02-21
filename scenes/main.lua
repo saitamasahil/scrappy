@@ -690,7 +690,8 @@ local function update_state(t)
 
             -- Check if finished
             if state.scraping and state.tasks == 0 then
-                log.write(string.format("Finished scraping %d games. %d failed or skipped", state.total,
+                local grand_total = state.total + #state.failed_tasks
+                log.write(string.format("Finished scraping %d games. %d failed or skipped", grand_total,
                     #state.failed_tasks))
                 -- Clear state
                 state.scraping = false
@@ -701,7 +702,7 @@ local function update_state(t)
                 scraping_log.text = ""
                 -- Show success message
                 show_info_window("Finished scraping",
-                    string.format("Scraped %d games, %d failed or skipped! %s", state.total, #state.failed_tasks,
+                    string.format("Scraped %d games, %d failed or skipped! %s", grand_total, #state.failed_tasks,
                         table.concat(state.failed_tasks, ", ")))
                 channels.SKYSCRAPER_OUTPUT:clear()
             end
@@ -1134,11 +1135,15 @@ local function process_game_queue()
             ui_game.text = game or "N/A"
         end
         if skipped then
-            update_state({
-                title = game,
-                platform = platform,
-                success = false
-            })
+            if state.fetch_phase then
+                state.failed_tasks[#state.failed_tasks + 1] = game
+            else
+                update_state({
+                    title = game,
+                    platform = platform,
+                    success = false
+                })
+            end
             print("Skipping game " .. game)
             -- continue to next item in loop
         else
