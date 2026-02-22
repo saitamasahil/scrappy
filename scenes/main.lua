@@ -54,9 +54,19 @@ local current_scrape_mode = 1
 local scrape_missing_only = false
 local showing_core_reminder = false -- Tracks if the core assignment reminder popup is active
 
+-- Dashboard server state
+local dashboard_server_running = false
+local dashboard_server_ip = nil
+local dashboard_write_timer = 0
+local dashboard_state_file = "/tmp/scrappy_dashboard.json"
+local dashboard_fetch_progress = "0/0"
+local dashboard_log_lines = {}
+local dashboard_cached_ip = nil -- Cached before scraping starts (avoids blocking network probe)
+
 -- Load button icons for popup buttons
 local button_a_icon = love.graphics.newImage("assets/inputs/switch_button_a.png")
 local button_b_icon = love.graphics.newImage("assets/inputs/switch_button_b.png")
+local button_x_icon = love.graphics.newImage("assets/inputs/switch_button_x.png")
 
 -- Draw the core assignment reminder popup (matches Clear Cache style)
 local function draw_core_reminder_popup()
@@ -394,6 +404,9 @@ local function scrape_platforms()
     state.pending_platforms = 0
     game_file_map = {}
 
+    -- Cache IP address now (before network gets busy with ScreenScraper)
+    dashboard_cached_ip = utils.get_ip_address()
+
     -- Process cached data from quickid and db
     if user_config:read("main", "parseCache") == "1" then
         artwork.process_cached_data()
@@ -620,6 +633,127 @@ local function scrape_platforms()
     log.write(string.format("Generated %d Skyscraper tasks", state.total))
 end
 
+-- Dashboard server helpers
+local function write_dashboard_state(extra)
+    local data = extra or {}
+    data.scraping = state.scraping
+    data.phase = state.fetch_phase and "fetch" or "generate"
+    data.gen_total = state.total or 0
+    data.gen_done = (state.total or 0) - (state.tasks or 0)
+    data.failed = state.failed_tasks or {}
+    data.logs = dashboard_log_lines
+    data.fetch_progress = dashboard_fetch_progress
+    data.pending_platforms = state.pending_platforms or 0
+
+    -- Current game/platform from scraping window UI
+    if scraping_window then
+        local ui_platform = scraping_window ^ "platform"
+        local ui_game = scraping_window ^ "game"
+        local ui_source = scraping_window ^ "scraper_source"
+        if ui_platform then data.platform = ui_platform.text end
+        if ui_game then data.game = ui_game.text end
+        if ui_source then data.source = ui_source.text end
+    end
+
+    -- Build JSON manually (no json lib dependency from main thread)
+    local function escape_json_str(s)
+        if not s then return "" end
+        return s:gsub('\\', '\\\\'):gsub('"', '\\"'):gsub('\n', '\\n'):gsub('\r', '\\r'):gsub('\t', '\\t')
+    end
+
+    local parts = {}
+    parts[#parts + 1] = string.format('"scraping":%s', data.scraping and "true" or "false")
+    parts[#parts + 1] = string.format('"phase":"%s"', escape_json_str(data.phase))
+    parts[#parts + 1] = string.format('"platform":"%s"', escape_json_str(data.platform or "N/A"))
+    parts[#parts + 1] = string.format('"game":"%s"', escape_json_str(data.game or "N/A"))
+    parts[#parts + 1] = string.format('"source":"%s"', escape_json_str(data.source or "N/A"))
+    parts[#parts + 1] = string.format('"fetch_progress":"%s"', escape_json_str(data.fetch_progress))
+    parts[#parts + 1] = string.format('"gen_done":%d', data.gen_done)
+    parts[#parts + 1] = string.format('"gen_total":%d', data.gen_total)
+    parts[#parts + 1] = string.format('"pending_platforms":%d', data.pending_platforms)
+
+    if data.shutdown then
+        parts[#parts + 1] = '"shutdown":true'
+    end
+    if data.finished then
+        parts[#parts + 1] = '"finished":true'
+    end
+
+    -- Failed tasks array
+    local failed_items = {}
+    for _, f in ipairs(data.failed) do
+        failed_items[#failed_items + 1] = '"' .. escape_json_str(f) .. '"'
+    end
+    parts[#parts + 1] = '"failed":[' .. table.concat(failed_items, ',') .. ']'
+
+    -- Logs array
+    local log_items = {}
+    for _, l in ipairs(data.logs) do
+        log_items[#log_items + 1] = '"' .. escape_json_str(l) .. '"'
+    end
+    parts[#parts + 1] = '"logs":[' .. table.concat(log_items, ',') .. ']'
+
+    local json_str = '{' .. table.concat(parts, ',') .. '}'
+
+    local f = io.open(dashboard_state_file, "w")
+    if f then
+        f:write(json_str)
+        f:close()
+    end
+end
+
+local function toggle_dashboard_server()
+    if dashboard_server_running then
+        -- Stop server in a background thread to avoid blocking
+        local stop_thread = love.thread.newThread([[
+            os.execute("pkill -f scrape_dashboard.py")
+        ]])
+        stop_thread:start()
+        dashboard_server_running = false
+        dashboard_server_ip = nil
+        os.remove(dashboard_state_file)
+        dashboard_log_lines = {}
+        dashboard_fetch_progress = "0/0"
+        log.write("Dashboard server stopped")
+        return
+    end
+
+    local ip = dashboard_cached_ip or utils.get_ip_address()
+    if ip then
+        -- Write initial state before launching
+        write_dashboard_state()
+
+        -- Build command
+        local server_path = WORK_DIR .. "/scripts/scrape_dashboard.py"
+        local logo_path = WORK_DIR .. "/assets/scrappy_logo.png"
+        local theme_name = theme:get_current_name() or "dark"
+        local accent_color = configs.user_config:read("main", "customAccent") or "cbaa0f"
+        local accent_mode = tostring(configs.user_config:read("main", "accentMode") or "muos"):lower()
+        if accent_mode == "muos" then
+            accent_color = theme:read("button", "BUTTON_FOCUS") or "cbaa0f"
+        end
+        -- Build command (ensure we kill any old server before starting new one to avoid port conflicts)
+        local cmd = string.format('pkill -f scrape_dashboard.py; sleep 1; python3 "%s" --theme %s --accent "%s" --logo "%s" > /dev/null 2>&1',
+            server_path, theme_name, accent_color, logo_path)
+
+        -- Launch in a LÖVE background thread so fork()+exec() doesn't block the UI
+        local launch_thread = love.thread.newThread([[
+            local cmd = love.thread.getChannel("dashboard_launch"):pop()
+            if cmd then
+                os.execute(cmd)
+            end
+        ]])
+        love.thread.getChannel("dashboard_launch"):push(cmd)
+        launch_thread:start()
+
+        dashboard_server_running = true
+        dashboard_server_ip = ip
+        log.write(string.format("Dashboard server started at http://%s:8081", ip))
+    else
+        log.write("Cannot start dashboard: no IP address (connect to WiFi)")
+    end
+end
+
 -- Stops all scraping and clears queue
 local function halt_scraping()
     -- Clear UI output channel (restart_threads handles backend channels)
@@ -643,6 +777,11 @@ local function halt_scraping()
     if scraping_window then
         scraping_window.visible = false
     end
+
+    -- Write final state to dashboard (keep server running so user can review)
+    if dashboard_server_running then
+        write_dashboard_state()
+    end
 end
 
 -- Takes the output from Skyscraper commands and updates state
@@ -656,6 +795,12 @@ local function update_state(t)
         table.insert(state.log, t.log)
         if #state.log > 6 then
             table.remove(state.log, 1)
+        end
+
+        -- Track log lines for dashboard (keep last 20)
+        table.insert(dashboard_log_lines, t.log)
+        if #dashboard_log_lines > 20 then
+            table.remove(dashboard_log_lines, 1)
         end
         local log_str = ""
         for _, lstr in ipairs(state.log) do
@@ -674,6 +819,7 @@ local function update_state(t)
                 if ui_fetch_progress then
                     ui_fetch_progress.text = string.format("Fetching: %s / %s", current, total)
                 end
+                dashboard_fetch_progress = current .. "/" .. total
             end
         end
 
@@ -847,6 +993,12 @@ local function update_state(t)
                 local grand_total = state.total
                 log.write(string.format("Finished scraping %d games. %d failed or skipped", grand_total,
                     #state.failed_tasks))
+
+                -- Notify dashboard of completion (keep server running so user can see results)
+                if dashboard_server_running then
+                    write_dashboard_state({ finished = true })
+                end
+
                 -- Clear state
                 state.scraping = false
                 scraping_window.visible = false
@@ -1221,6 +1373,34 @@ function main:load()
         id = "scraping_log",
         width = w_width * 0.85,
         height = 100
+    } + component {
+        id = "dashboard_hint",
+        width = w_width * 0.85,
+        height = 20,
+        draw = function(self)
+            if not self.visible then return end
+            love.graphics.push()
+            local icon_size = 20
+            local gap = 6
+            -- Draw X button icon
+            if button_x_icon then
+                local iw, ih = button_x_icon:getDimensions()
+                local sx, sy = icon_size / iw, icon_size / ih
+                local c = configs.theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
+                love.graphics.setColor(c)
+                love.graphics.draw(button_x_icon, self.x, self.y, 0, sx, sy)
+            end
+            -- Draw text
+            local txt
+            if dashboard_server_running and dashboard_server_ip then
+                txt = "Dashboard at http://" .. dashboard_server_ip .. ":8081"
+            else
+                txt = "Launch Live Dashboard"
+            end
+            love.graphics.print(txt, self.x + icon_size + gap, self.y + (icon_size - love.graphics.getFont():getHeight()) / 2)
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.pop()
+        end
     })
     menu:updatePosition(10, 10)
 
@@ -1479,6 +1659,15 @@ function main:update(dt)
     if scraping_window and scraping_window.visible then
         scraping_window:update(dt)
     end
+
+    -- Periodically write dashboard state for the live server
+    if dashboard_server_running and state.scraping then
+        dashboard_write_timer = dashboard_write_timer + dt
+        if dashboard_write_timer >= 0.5 then
+            dashboard_write_timer = 0
+            write_dashboard_state()
+        end
+    end
 end
 
 function main:draw()
@@ -1566,11 +1755,15 @@ function main:keypressed(key)
             showing_core_reminder = false
         elseif info_window.visible then
             info_window.visible = false
+            if dashboard_server_running then toggle_dashboard_server() end
         elseif state.scraping then
             halt_scraping()
         else
             love.event.quit()
         end
+    end
+    if key == "x" and state.scraping then
+        toggle_dashboard_server()
     end
     if not state.scraping and not info_window.visible then
         menu:keypressed(key)
@@ -1590,6 +1783,7 @@ function main:gamepadpressed(joystick, button)
             showing_core_reminder = false
         elseif info_window.visible then
             info_window.visible = false
+            if dashboard_server_running then toggle_dashboard_server() end
         elseif state.scraping then
             halt_scraping()
         elseif scraping_window.visible then
@@ -1599,6 +1793,12 @@ function main:gamepadpressed(joystick, button)
             love.event.quit()
         end
         return true -- Handled, prevent global input from double-processing
+    end
+
+    -- X button: toggle dashboard server during scraping
+    if button == "x" and state.scraping then
+        toggle_dashboard_server()
+        return true
     end
 
     if not state.scraping and not info_window.visible and not showing_core_reminder then
