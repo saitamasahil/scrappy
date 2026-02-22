@@ -477,4 +477,6 @@ function skyscraper.fetch_single_manual(rom_path, rom, input_folder, platform, q
     skyscraper.run(command, input_folder, platform, "fetch", rom)
 end
 
+skyscraper.get_module_name = get_default_module_for
+
 return skyscraper

@@ -163,6 +163,16 @@ local function on_refine_search_done(query, target)
         if ui_status then
             ui_status.text = "Fetching from server..."
         end
+        local ui_source = scraping_window ^ "scraper_source"
+        if ui_source then
+            local module = skyscraper.get_module_name(platform_dest or state.last_failed_platform)
+            local module_map = {
+                screenscraper = "ScreenScraper",
+                thegamesdb = "TheGamesDB",
+                import = "Import"
+            }
+            ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
+        end
         scraping_window.visible = true
     end
 
@@ -444,6 +454,16 @@ local function on_rom_press(rom)
                 if ui_status then
                     ui_status.text = "Fetching from server..."
                 end
+                local ui_source = scraping_window ^ "scraper_source"
+                if ui_source then
+                    local module = skyscraper.get_module_name(platform_dest)
+                    local module_map = {
+                        screenscraper = "ScreenScraper",
+                        thegamesdb = "TheGamesDB",
+                        import = "Import"
+                    }
+                    ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
+                end
                 scraping_window.visible = true
             end
 
@@ -512,6 +532,10 @@ local function on_manual_scrape(rom)
         end
         if ui_status then
             ui_status.text = "Fetching manual..."
+        end
+        local ui_source = scraping_window ^ "scraper_source"
+        if ui_source then
+            ui_source.text = "Source: ScreenScraper"
         end
         scraping_window.visible = true
     end
@@ -731,6 +755,21 @@ local function update_scrape_state()
             toggle_info()
         end
 
+        local ui_source = scraping_window ^ "scraper_source"
+        if ui_source then
+            if state.fetch_stage then
+                local module = skyscraper.get_module_name(state.current_platform)
+                local module_map = {
+                    screenscraper = "ScreenScraper",
+                    thegamesdb = "TheGamesDB",
+                    import = "Import"
+                }
+                ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
+            elseif state.generate_stage then
+                ui_source.text = "Source: Local"
+            end
+        end
+
         if t.title then
             state.scraping = false
             state.fetch_stage = false
@@ -895,6 +934,11 @@ function single_scrape:load()
         id = "status",
         text = "Status: N/A",
         icon = "info",
+        max_width = love.graphics.getWidth() * 0.85
+    } + label {
+        id = "scraper_source",
+        text = "Source: N/A",
+        icon = "source",
         max_width = love.graphics.getWidth() * 0.85
     }
 

@@ -661,6 +661,21 @@ local function update_state(t)
         if ui_game then
             ui_game.text = t.title or "N/A"
         end
+
+        local ui_source = scraping_window ^ "scraper_source"
+        if ui_source then
+            if state.fetch_phase then
+                local module = skyscraper.get_module_name(t.platform)
+                local module_map = {
+                    screenscraper = "ScreenScraper",
+                    thegamesdb = "TheGamesDB",
+                    import = "Import"
+                }
+                ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
+            else
+                ui_source.text = "Source: Local"
+            end
+        end
         if t.title ~= "fake-rom" then
             log.write(string.format("[%s] Finished Skyscraper task \"%s\"", t.success and "SUCCESS" or "FAILURE",
                 t.title))
@@ -1002,6 +1017,11 @@ function main:load()
         text = "Generating: 0 / 0",
         icon = "generating",
         max_width = info_width
+    } + label {
+        id = "scraper_source",
+        text = "Source: N/A",
+        icon = "source",
+        max_width = info_width
     }
     -- + progress { id = "progress_bar", width = w_width * 0.5 - 30 }
 
@@ -1153,6 +1173,21 @@ local function process_game_queue()
         end
         if ui_game then
             ui_game.text = game or "N/A"
+        end
+
+        local ui_source = scraping_window ^ "scraper_source"
+        if ui_source then
+            if state.fetch_phase then
+                local module = skyscraper.get_module_name(platform)
+                local module_map = {
+                    screenscraper = "ScreenScraper",
+                    thegamesdb = "TheGamesDB",
+                    import = "Import"
+                }
+                ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
+            else
+                ui_source.text = "Source: Local"
+            end
         end
         if skipped then
             if state.fetch_phase then
