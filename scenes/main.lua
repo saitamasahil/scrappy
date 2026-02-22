@@ -365,9 +365,16 @@ local function scrape_platforms()
 
         -- Iterate over ROMs
         table.sort(roms)
+        local seen_titles = {}
         for _, rom in ipairs(roms) do
             -- Get the title without extension
             local game_title = utils.get_filename(rom)
+
+            -- Skip if we already processed a ROM with this same title (e.g. game.zip vs game.min)
+            if seen_titles[game_title] then
+                goto continue_rom
+            end
+            seen_titles[game_title] = true
 
             -- Verify if game is cached in Skyscraper's internal database
             if not uncached_games then
