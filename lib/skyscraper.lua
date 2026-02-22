@@ -8,7 +8,8 @@ local function normalize_platform(platform)
         ["pcengine_"] = "pcengine", -- SuperGrafx shares Skyscraper platform with PC Engine
         ["coleco_"] = "coleco" -- Umbrella SVI - ColecoVision - SG1000 uses coleco in Skyscraper
     }
-    return map[platform] or platform
+    local normalized = map[platform] or platform
+    return (type(normalized) == "string") and normalized:lower() or normalized
 end
 
 -- Escape special shell characters in filenames
@@ -272,8 +273,9 @@ function skyscraper.filename_matches_extension(filename, platform)
     end
 
     -- Check if a file matches any of the patterns
+    local lower_filename = filename:lower()
     for _, pattern in ipairs(match_patterns) do
-        if filename:match(pattern) then
+        if lower_filename:match(pattern:lower()) then
             return true
         end
     end

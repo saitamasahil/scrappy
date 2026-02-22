@@ -222,6 +222,52 @@ local function update_preview(direction)
     scheduled_template_index = current_template
 end
 
+local function get_missing_media_types(dest_platform, game_title)
+    local result = {
+        box = false,
+        preview = false,
+        splash = false
+    }
+    if not dest_platform or not game_title or game_title == "" then
+        return result
+    end
+    local _, catalogue_path = user_config:get_paths()
+    if not catalogue_path or catalogue_path == "" then
+        return get_required_output_types_for_current_template()
+    end
+    local platform_str = muos.platforms[dest_platform] or dest_platform
+    local base = string.format("%s/%s", catalogue_path, platform_str)
+    local required = get_required_output_types_for_current_template()
+
+    local function missing_for(output_type)
+        local fp = string.format("%s/%s/%s.png", base, output_type, game_title)
+        if nativefs.getInfo(fp) then
+            return false
+        end
+
+        local sanitized_title = game_title:gsub(":", "_")
+        if sanitized_title ~= game_title then
+            local fp_sanitized = string.format("%s/%s/%s.png", base, output_type, sanitized_title)
+            if nativefs.getInfo(fp_sanitized) then
+                return false
+            end
+        end
+
+        return true
+    end
+
+    if required.box and missing_for("box") then
+        result.box = true
+    end
+    if required.preview and missing_for("preview") then
+        result.preview = true
+    end
+    if required.splash and missing_for("splash") then
+        result.splash = true
+    end
+    return result
+end
+
 -- Updates feedback for template outputs
 local function update_output_types()
     local sample_artwork = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
@@ -259,7 +305,6 @@ local function scrape_platforms()
         return
     end
 
-
     -- Load platforms from config
     local platforms = user_config:get().platforms
     if not platforms then
@@ -290,7 +335,7 @@ local function scrape_platforms()
 
         local platform_path = string.format("%s/%s", rom_path, src)
 
-        -- Identify games not in cache
+        -- Identify if this platform needs fetching
         local uncached_games = false
         local game_list = {}
 
@@ -298,25 +343,15 @@ local function scrape_platforms()
         local files = nativefs.getDirectoryItems(platform_path)
         if not files or #files == 0 then
             log.write("No roms found in " .. platform_path)
-            -- Check if path exists but is inaccessible
-            local path_info = nativefs.getInfo(platform_path)
-            if path_info then
-                log.write("Path exists but appears empty or inaccessible: " .. platform_path)
-            else
-                log.write("Path does not exist: " .. platform_path)
-            end
             goto skip
         end
 
         -- Filter files -> ROMs
         local roms = {}
         for _, file in pairs(files) do
-            -- Check if it's a file or directory
             local full_path = string.format("%s/%s", platform_path, file)
             local file_info = nativefs.getInfo(full_path)
-            if not file_info then
-                log.write(string.format("Unable to access file info for: %s", full_path))
-            elseif file_info then
+            if file_info then
                 if file_info.type == "file" then
                     -- Verify if extension matches peas file
                     if skyscraper.filename_matches_extension(file, dest) then
@@ -328,7 +363,7 @@ local function scrape_platforms()
                 elseif file_info.type == "directory" then
                     -- Ignore hidden metadata folders (e.g., .psmultidisc)
                     if file:sub(1, 1) == "." then
-                        goto continue
+                        goto next_file
                     end
                     if dest == "pc" then
                         -- DOS often uses per-game folders; treat folder names as ROM identifiers
@@ -354,13 +389,11 @@ local function scrape_platforms()
                         end
                         if candidate or fallback then
                             table.insert(roms, candidate or fallback)
-                        else
-                            -- No directly matching files in subfolder; keep scanning
                         end
                     end
-                    ::continue::
                 end
             end
+            ::next_file::
         end
 
         -- Iterate over ROMs
@@ -376,21 +409,53 @@ local function scrape_platforms()
             end
             seen_titles[game_title] = true
 
-            -- Verify if game is cached in Skyscraper's internal database
-            if not uncached_games then
-                local res_cache_id = artwork.cached_game_ids[dest] and artwork.cached_game_ids[dest][rom]
-                if res_cache_id == nil then
-                    -- CRITICAL: If not in Skyscraper cache, we MUST fetch from server
-                    -- Do NOT skip based on catalogue artwork existence, as Skyscraper needs cache to generate
-                    uncached_games = true
+            -- Identify which media types we actually need to scrape for this game
+            local missing_in_catalogue = {}
+            local needs_scraping = false
+
+            if scrape_missing_only then
+                missing_in_catalogue = get_missing_media_types(dest, game_title)
+                for _, is_missing in pairs(missing_in_catalogue) do
+                    if is_missing then
+                        needs_scraping = true
+                        break
+                    end
                 end
+            else
+                -- Scrape all: we need everything the template requires
+                missing_in_catalogue = get_required_output_types_for_current_template()
+                needs_scraping = true
             end
 
-            if scrape_missing_only and not has_missing_catalogue_artwork(dest, game_title) then
+            -- Skip game if it has complete artwork and we only care about missing stuff
+            if not needs_scraping then
                 goto continue_rom
             end
 
-            -- Save in reference map (store both file and input_folder for each game)
+            -- For games that need scraping, verify if required missing pieces are in Skyscraper's cache
+            if not uncached_games then
+                local pea_key = utils.normalize_platform(dest):lower()
+                local cached_res = artwork.cached_game_ids[pea_key] and artwork.cached_game_ids[pea_key][rom:lower()]
+
+                if not cached_res then
+                    uncached_games = true
+                else
+                    -- cached_res is now a table of types { cover = true, screenshot = true, ... }
+                    for art_type, is_missing in pairs(missing_in_catalogue) do
+                        if is_missing then
+                            -- Map Scrappy types to Skyscraper resource types
+                            local sky_type = (art_type == "box" and "cover") or (art_type == "preview" and "screenshot") or (art_type == "splash" and "wheel")
+                            if not cached_res[sky_type] then
+                                -- Missing required media from local cache, MUST fetch from server
+                                uncached_games = true
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+
+            -- Save in reference map
             if game_file_map[dest] == nil then
                 game_file_map[dest] = {}
             end

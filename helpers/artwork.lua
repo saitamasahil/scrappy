@@ -23,13 +23,32 @@ artwork.output_map = {
 
 local user_config, skyscraper_config = config.user_config, config.skyscraper_config
 
+local function xml_decode(s)
+    if not s then return s end
+    local entities = {
+        amp = "&",
+        quot = "\"",
+        apos = "'",
+        lt = "<",
+        gt = ">"
+    }
+    s = s:gsub("&(%a+);", function(entity)
+        return entities[entity] or ("&" .. entity .. ";")
+    end)
+    s = s:gsub("&#(%d+);", function(n)
+        local status, char = pcall(string.char, tonumber(n))
+        return status and char or ("&#" .. n .. ";")
+    end)
+    s = s:gsub("&#x(%x+);", function(h)
+        local status, char = pcall(string.char, tonumber(h, 16))
+        return status and char or ("&#x" .. h .. ";")
+    end)
+    return s
+end
+
 -- Normalize internal distinctions to Skyscraper/peas output folder keys
 local function normalize_platform(platform)
-    local map = {
-        ["pcengine_"] = "pcengine",
-        ["coleco_"] = "coleco"
-    }
-    return map[platform] or platform
+    return utils.normalize_platform(platform)
 end
 
 function artwork.get_artwork_path()
@@ -243,7 +262,11 @@ function artwork.process_cached_by_platform(platform, cache_folder)
             if filepath then
                 local filename = filepath:match("([^/]+)$")
                 local id = line:match('id="([^"]+)"')
-                quick_id_entries[filename] = id
+                if filename and id then
+                    filename = xml_decode(filename)
+                    id = xml_decode(id)
+                    quick_id_entries[filename:lower()] = id -- Store filename in lowercase
+                end
             end
         end
     end
@@ -253,8 +276,14 @@ function artwork.process_cached_by_platform(platform, cache_folder)
     for _, line in ipairs(lines) do
         if line:find("<resource%s") then
             local id = line:match('id="([^"]+)"')
-            if id then
-                cached_games[id] = true
+            local res_type = line:match('type="([^"]+)"')
+            if id and res_type then
+                id = xml_decode(id)
+                res_type = xml_decode(res_type)
+                if not cached_games[id] then
+                    cached_games[id] = {}
+                end
+                cached_games[id][res_type] = true
             end
         end
     end
@@ -263,13 +292,16 @@ function artwork.process_cached_by_platform(platform, cache_folder)
     for filename, id in pairs(quick_id_entries) do
         if not cached_games[id] then
             quick_id_entries[filename] = nil
+        else
+            -- Store the resource types for this game filename
+            quick_id_entries[filename] = cached_games[id]
         end
     end
 
-    -- pprint(quick_id_entries)
 
-    -- Save entries globally
-    artwork.cached_game_ids[platform] = quick_id_entries
+    -- Save entries globally (use lowercase platform ID for consistent lookup)
+    local pea_key = normalize_platform(platform):lower() -- Normalize and lowercase platform key
+    artwork.cached_game_ids[pea_key] = quick_id_entries
 end
 
 function artwork.process_cached_data()
@@ -288,7 +320,6 @@ function artwork.process_cached_data()
         artwork.process_cached_by_platform(platform)
     end
 
-    pprint(artwork.cached_game_ids)
 
     log.write("Finished processing cached data")
 end
@@ -363,7 +394,7 @@ function artwork.extract_manuals(platform)
                 local filename = filepath:match("([^/]+)$")
                 local id = line:match('id="([^"]+)"')
                 if filename and id then
-                    id_to_rom[id] = filename
+                    id_to_rom[id] = xml_decode(filename) -- Decode filename here
                 end
             end
         end

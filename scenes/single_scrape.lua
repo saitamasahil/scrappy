@@ -829,7 +829,7 @@ function single_scrape:load()
     state.current_platform = nil
     state.log = {}
 
-    if #artwork.cached_game_ids == 0 then
+    if utils.table_length(artwork.cached_game_ids) == 0 then
         artwork.process_cached_data()
     end
 

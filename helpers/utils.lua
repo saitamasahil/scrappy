@@ -186,7 +186,8 @@ function utils.normalize_platform(platform)
         ["pcengine_"] = "pcengine",
         ["coleco_"] = "coleco"
     }
-    return map[platform] or platform
+    local normalized = map[platform] or platform
+    return (type(normalized) == "string") and normalized:lower() or normalized
 end
 
 function utils.get_ip_address()
