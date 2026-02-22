@@ -16,62 +16,93 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
     """Build the HTML dashboard with theme-aware styling."""
     is_dark = "light" not in theme.lower()
 
-    # Theme colors
-    if is_dark:
-        bg = "#0a0a0f"
-        card_bg = "#16161e"
-        card_border = "#2a2a35"
-        text_primary = "#e4e4e8"
-        text_secondary = "#9a9aa8"
-        text_muted = "#6a6a78"
-        log_bg = "#0e0e16"
-        log_border = "#2a2a35"
-        stat_bg = "#1a1a24"
-        stat_border = "#2a2a35"
-        phase_fetch_bg = "#0f1a2a"
-        phase_fetch_border = "#1a3a5a"
-        phase_gen_bg = "#0f2a1a"
-        phase_gen_border = "#1a5a3a"
-        failed_bg = "#1a0f0f"
-        failed_border = "#3a1a1a"
-        failed_text = "#e85555"
-        success_text = "#4ade80"
-        link_color = f"#{accent}"
-        logo_filter = "none"
-        ring_track = "#2a2a35"
-        overlay_bg = "rgba(0,0,0,0.6)"
-    else:
-        bg = "#f0f0f4"
-        card_bg = "#ffffff"
-        card_border = "#e0e0e5"
-        text_primary = "#1a1a2e"
-        text_secondary = "#6a6a7a"
-        text_muted = "#9a9aa8"
-        log_bg = "#f5f5f8"
-        log_border = "#e0e0e5"
-        stat_bg = "#f8f8fc"
-        stat_border = "#e8e8ed"
-        phase_fetch_bg = "#f0f5ff"
-        phase_fetch_border = "#c0d5f0"
-        phase_gen_bg = "#f0fff5"
-        phase_gen_border = "#c0f0d0"
-        failed_bg = "#fff5f5"
-        failed_border = "#f0c0c0"
-        failed_text = "#c02020"
-        success_text = "#22872d"
-        link_color = f"#{accent}"
-        logo_filter = "invert(1)"
-        ring_track = "#e0e0e5"
-        overlay_bg = "rgba(255,255,255,0.6)"
+    themes = {
+        "dark": {
+            "bg": "#0a0a0f",
+            "card_bg": "#16161e",
+            "card_border": "#2a2a35",
+            "text_primary": "#e4e4e8",
+            "text_secondary": "#9a9aa8",
+            "text_muted": "#6a6a78",
+            "log_bg": "#0e0e16",
+            "log_border": "#2a2a35",
+            "stat_bg": "#1a1a24",
+            "stat_border": "#2a2a35",
+            "phase_fetch_bg": "#0f1a2a",
+            "phase_fetch_border": "#1a3a5a",
+            "phase_gen_bg": "#0f2a1a",
+            "phase_gen_border": "#1a5a3a",
+            "failed_bg": "#1a0f0f",
+            "failed_border": "#3a1a1a",
+            "failed_text": "#e85555",
+            "success_text": "#4ade80",
+            "logo_filter": "none",
+            "ring_track": "#2a2a35",
+            "overlay_bg": "rgba(0,0,0,0.6)"
+        },
+        "light": {
+            "bg": "#f0f0f4",
+            "card_bg": "#ffffff",
+            "card_border": "#e0e0e5",
+            "text_primary": "#1a1a2e",
+            "text_secondary": "#6a6a7a",
+            "text_muted": "#9a9aa8",
+            "log_bg": "#f5f5f8",
+            "log_border": "#e0e0e5",
+            "stat_bg": "#f8f8fc",
+            "stat_border": "#e8e8ed",
+            "phase_fetch_bg": "#f0f5ff",
+            "phase_fetch_border": "#c0d5f0",
+            "phase_gen_bg": "#f0fff5",
+            "phase_gen_border": "#c0f0d0",
+            "failed_bg": "#fff5f5",
+            "failed_border": "#f0c0c0",
+            "failed_text": "#c02020",
+            "success_text": "#22872d",
+            "logo_filter": "invert(1)",
+            "ring_track": "#e0e0e5",
+            "overlay_bg": "rgba(255,255,255,0.6)"
+        }
+    }
+
+    t = themes["dark"] if is_dark else themes["light"]
+
+    # Define CSS variables based on theme
+    css_vars = f"""
+        :root {{
+            --bg: {t['bg']};
+            --card-bg: {t['card_bg']};
+            --card-border: {t['card_border']};
+            --text-primary: {t['text_primary']};
+            --text-secondary: {t['text_secondary']};
+            --text-muted: {t['text_muted']};
+            --log-bg: {t['log_bg']};
+            --log-border: {t['log_border']};
+            --stat-bg: {t['stat_bg']};
+            --stat-border: {t['stat_border']};
+            --phase-fetch-bg: {t['phase_fetch_bg']};
+            --phase-fetch-border: {t['phase_fetch_border']};
+            --phase-gen-bg: {t['phase_gen_bg']};
+            --phase-gen-border: {t['phase_gen_border']};
+            --failed-bg: {t['failed_bg']};
+            --failed-border: {t['failed_border']};
+            --failed-text: {t['failed_text']};
+            --success-text: {t['success_text']};
+            --accent: #{accent};
+            --logo-filter: {t['logo_filter']};
+            --ring-track: {t['ring_track']};
+            --overlay-bg: {t['overlay_bg']};
+        }}
+    """
 
     logo_section = ""
     if logo_b64:
         logo_section = f'''
         <div class="logo-container">
-            <img src="data:image/png;base64,{logo_b64}" alt="Scrappy" class="logo" style="filter: {logo_filter};">
+            <img src="data:image/png;base64,{logo_b64}" alt="Scrappy" class="logo" style="filter: {t['logo_filter']};">
         </div>'''
 
-    return f"""<!DOCTYPE html>
+        template = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -81,274 +112,280 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {{
+        body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: {bg};
-            color: {text_primary};
+            background: var(--bg);
+            color: var(--text-primary);
             min-height: 100vh;
             padding: 1rem;
-        }}
+            transition: background 0.4s ease, color 0.4s ease;
+        }
 
-        .page {{
+        .page {
             width: 100%;
             max-width: 640px;
             margin: 0 auto;
             animation: fadeInUp 0.6s ease-out;
-        }}
+        }
 
-        @keyframes fadeInUp {{
-            from {{ opacity: 0; transform: translateY(20px); }}
-            to {{ opacity: 1; transform: translateY(0); }}
-        }}
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-        @keyframes logoReveal {{
-            0% {{ opacity: 0; transform: scale(0.8); }}
-            50% {{ opacity: 1; transform: scale(1.05); }}
-            100% {{ opacity: 1; transform: scale(1); }}
-        }}
+        @keyframes logoReveal {
+            0% { opacity: 0; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
 
-        @keyframes pulse {{
-            0%, 100% {{ opacity: 0.6; }}
-            50% {{ opacity: 1; }}
-        }}
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
 
-        @keyframes spin {{
-            from {{ transform: rotate(0deg); }}
-            to {{ transform: rotate(360deg); }}
-        }}
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
 
-        @keyframes slideIn {{
-            from {{ opacity: 0; transform: translateX(-10px); }}
-            to {{ opacity: 1; transform: translateX(0); }}
-        }}
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
 
-        .logo-container {{
+        .logo-container {
             text-align: center;
             margin-bottom: 1rem;
-        }}
+        }
 
-        .logo {{
+        .logo {
             height: 48px;
             animation: logoReveal 0.8s ease-out;
-        }}
+            filter: var(--logo-filter);
+        }
 
-        .header {{
+        .header {
             text-align: center;
             margin-bottom: 1.25rem;
-        }}
+        }
 
-        .header h1 {{
+        .header h1 {
             font-size: 1.2rem;
             font-weight: 600;
             letter-spacing: -0.01em;
             margin-bottom: 0.25rem;
-        }}
+        }
 
-        .header .subtitle {{
+        .header .subtitle {
             font-size: 0.8rem;
-            color: {text_secondary};
-        }}
+            color: var(--text-secondary);
+        }
 
-        .accent-dot {{
+        .accent-dot {
             display: inline-block;
             width: 8px;
             height: 8px;
-            background: #{accent};
+            background: var(--accent);
             border-radius: 50%;
             margin-right: 6px;
             animation: pulse 2s ease-in-out infinite;
-        }}
+        }
 
         /* Progress Ring */
-        .progress-section {{
+        .progress-section {
             display: flex;
             align-items: center;
             gap: 1.25rem;
-            background: {card_bg};
-            border: 1px solid {card_border};
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
             border-radius: 16px;
             padding: 1.25rem 1.5rem;
             margin-bottom: 0.75rem;
-        }}
+            transition: background 0.4s ease, border-color 0.4s ease;
+        }
 
-        .ring-container {{
+        .ring-container {
             position: relative;
             width: 90px;
             height: 90px;
             flex-shrink: 0;
-        }}
+        }
 
-        .ring-container svg {{
+        .ring-container svg {
             transform: rotate(-90deg);
             width: 90px;
             height: 90px;
-        }}
+        }
 
-        .ring-track {{
+        .ring-track {
             fill: none;
-            stroke: {ring_track};
+            stroke: var(--ring-track);
             stroke-width: 6;
-        }}
+        }
 
-        .ring-progress {{
+        .ring-progress {
             fill: none;
-            stroke: #{accent};
+            stroke: var(--accent);
             stroke-width: 6;
             stroke-linecap: round;
             transition: stroke-dashoffset 0.5s ease;
-        }}
+        }
 
-        .ring-label {{
+        .ring-label {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 1.3rem;
             font-weight: 700;
-            color: {text_primary};
-        }}
+            color: var(--text-primary);
+        }
 
-        .ring-label .pct {{
+        .ring-label .pct {
             font-size: 0.7rem;
             font-weight: 400;
-            color: {text_secondary};
-        }}
+            color: var(--text-secondary);
+        }
 
-        .progress-info {{
+        .progress-info {
             flex: 1;
             min-width: 0;
-        }}
+        }
 
-        .progress-info h2 {{
+        .progress-info h2 {
             font-size: 1rem;
             font-weight: 600;
             margin-bottom: 0.5rem;
-        }}
+        }
 
-        .progress-detail {{
+        .progress-detail {
             font-size: 0.8rem;
-            color: {text_secondary};
+            color: var(--text-secondary);
             margin-bottom: 0.25rem;
-        }}
+        }
 
-        .progress-bar-bg {{
+        .progress-bar-bg {
             width: 100%;
             height: 6px;
-            background: {ring_track};
+            background: var(--ring-track);
             border-radius: 3px;
             margin-top: 0.5rem;
             overflow: hidden;
-        }}
+        }
 
-        .progress-bar-fill {{
+        .progress-bar-fill {
             height: 100%;
-            background: #{accent};
+            background: var(--accent);
             border-radius: 3px;
             transition: width 0.5s ease;
             width: 0%;
-        }}
+        }
 
         /* Stats Row */
-        .stats-row {{
+        .stats-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 0.5rem;
             margin-bottom: 0.75rem;
-        }}
+        }
 
-        .stat-card {{
-            background: {stat_bg};
-            border: 1px solid {stat_border};
+        .stat-card {
+            background: var(--stat-bg);
+            border: 1px solid var(--stat-border);
             border-radius: 12px;
             padding: 0.75rem 0.5rem;
             text-align: center;
-        }}
+            transition: background 0.4s ease, border-color 0.4s ease;
+        }
 
-        .stat-value {{
+        .stat-value {
             font-size: 1.2rem;
             font-weight: 700;
-            color: {text_primary};
+            color: var(--text-primary);
             margin-bottom: 0.15rem;
-        }}
+        }
 
-        .stat-label {{
+        .stat-label {
             font-size: 0.65rem;
             font-weight: 500;
-            color: {text_muted};
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.05em;
-        }}
+        }
 
         /* Current Game Card */
-        .current-card {{
-            background: {card_bg};
-            border: 1px solid {card_border};
+        .current-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
             border-radius: 14px;
             padding: 1rem 1.25rem;
             margin-bottom: 0.75rem;
-        }}
+            transition: background 0.4s ease, border-color 0.4s ease;
+        }
 
-        .current-card .card-title {{
+        .current-card .card-title {
             font-size: 0.7rem;
             font-weight: 600;
-            color: {text_muted};
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.06em;
             margin-bottom: 0.6rem;
-        }}
+        }
 
-        .current-item {{
+        .current-item {
             display: flex;
             align-items: center;
             gap: 0.75rem;
             margin-bottom: 0.5rem;
-        }}
+        }
 
-        .current-item:last-child {{
+        .current-item:last-child {
             margin-bottom: 0;
-        }}
+        }
 
-        .current-icon {{
+        .current-icon {
             width: 28px;
             height: 28px;
-            background: {stat_bg};
-            border: 1px solid {stat_border};
+            background: var(--stat-bg);
+            border: 1px solid var(--stat-border);
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 0.85rem;
             flex-shrink: 0;
-        }}
+            transition: background 0.4s ease, border-color 0.4s ease;
+        }
 
-        .current-text {{
+        .current-text {
             flex: 1;
             min-width: 0;
-        }}
+        }
 
-        .current-text .label {{
+        .current-text .label {
             font-size: 0.7rem;
-            color: {text_muted};
+            color: var(--text-muted);
             margin-bottom: 0.1rem;
-        }}
+        }
 
-        .current-text .value {{
+        .current-text .value {
             font-size: 0.9rem;
             font-weight: 500;
-            color: {text_primary};
+            color: var(--text-primary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-        }}
+        }
 
-        .game-value {{
+        .game-value {
             animation: slideIn 0.3s ease-out;
-        }}
+        }
 
         /* Phase Badge */
-        .phase-badge {{
+        .phase-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -356,199 +393,203 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             border-radius: 20px;
             font-size: 0.75rem;
             font-weight: 600;
-        }}
+        }
 
-        .phase-fetch {{
-            background: {phase_fetch_bg};
-            border: 1px solid {phase_fetch_border};
+        .phase-fetch {
+            background: var(--phase-fetch-bg);
+            border: 1px solid var(--phase-fetch-border);
             color: #5b9bf5;
-        }}
+        }
 
-        .phase-gen {{
-            background: {phase_gen_bg};
-            border: 1px solid {phase_gen_border};
-            color: {success_text};
-        }}
+        .phase-gen {
+            background: var(--phase-gen-bg);
+            border: 1px solid var(--phase-gen-border);
+            color: var(--success-text);
+        }
 
-        .phase-done {{
-            background: {phase_gen_bg};
-            border: 1px solid {phase_gen_border};
-            color: {success_text};
-        }}
+        .phase-done {
+            background: var(--phase-gen-bg);
+            border: 1px solid var(--phase-gen-border);
+            color: var(--success-text);
+        }
 
-        .phase-spinner {{
+        .phase-spinner {
             width: 10px;
             height: 10px;
             border: 2px solid transparent;
             border-top-color: currentColor;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-        }}
+        }
 
         /* Log Section */
-        .log-section {{
-            background: {card_bg};
-            border: 1px solid {card_border};
+        .log-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
             border-radius: 14px;
             padding: 1rem;
             margin-bottom: 0.75rem;
-        }}
+            transition: background 0.4s ease, border-color 0.4s ease;
+        }
 
-        .log-header {{
+        .log-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 0.6rem;
-        }}
+        }
 
-        .log-header .card-title {{
+        .log-header .card-title {
             font-size: 0.7rem;
             font-weight: 600;
-            color: {text_muted};
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.06em;
-        }}
+        }
 
-        .log-count {{
+        .log-count {
             font-size: 0.7rem;
-            color: {text_muted};
-        }}
+            color: var(--text-muted);
+        }
 
-        .log-box {{
-            background: {log_bg};
-            border: 1px solid {log_border};
+        .log-box {
+            background: var(--log-bg);
+            border: 1px solid var(--log-border);
             border-radius: 10px;
             padding: 0.75rem;
             max-height: 220px;
             overflow-y: auto;
             scroll-behavior: smooth;
-        }}
+            transition: background 0.4s ease, border-color 0.4s ease;
+        }
 
-        .log-box::-webkit-scrollbar {{
+        .log-box::-webkit-scrollbar {
             width: 4px;
-        }}
+        }
 
-        .log-box::-webkit-scrollbar-track {{
+        .log-box::-webkit-scrollbar-track {
             background: transparent;
-        }}
+        }
 
-        .log-box::-webkit-scrollbar-thumb {{
-            background: {card_border};
+        .log-box::-webkit-scrollbar-thumb {
+            background: var(--card-border);
             border-radius: 2px;
-        }}
+        }
 
-        .log-line {{
+        .log-line {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.72rem;
             line-height: 1.6;
-            color: {text_secondary};
+            color: var(--text-secondary);
             white-space: pre-wrap;
             word-break: break-all;
-        }}
+        }
 
-        .log-line.found {{
-            color: {success_text};
-        }}
+        .log-line.found {
+            color: var(--success-text);
+        }
 
-        .log-line.error {{
-            color: {failed_text};
-        }}
+        .log-line.error {
+            color: var(--failed-text);
+        }
 
-        .log-line.info {{
+        .log-line.info {
             color: #5b9bf5;
-        }}
+        }
 
         /* Failed Games */
-        .failed-section {{
-            background: {failed_bg};
-            border: 1px solid {failed_border};
+        .failed-section {
+            background: var(--failed-bg);
+            border: 1px solid var(--failed-border);
             border-radius: 14px;
             padding: 1rem;
             margin-bottom: 0.75rem;
             display: none;
-        }}
+            transition: background 0.4s ease, border-color 0.4s ease;
+        }
 
-        .failed-section.visible {{
+        .failed-section.visible {
             display: block;
-        }}
+        }
 
-        .failed-header {{
+        .failed-header {
             font-size: 0.75rem;
             font-weight: 600;
-            color: {failed_text};
+            color: var(--failed-text);
             margin-bottom: 0.5rem;
-        }}
+        }
 
-        .failed-list {{
+        .failed-list {
             list-style: none;
             padding: 0;
-        }}
+        }
 
-        .failed-list li {{
+        .failed-list li {
             font-size: 0.78rem;
-            color: {failed_text};
+            color: var(--failed-text);
             padding: 0.2rem 0;
             opacity: 0.85;
-        }}
+        }
 
-        .failed-list li::before {{
+        .failed-list li::before {
             content: "\\00d7";
             margin-right: 6px;
             font-weight: 700;
-        }}
+        }
 
         /* Idle / Complete Overlay */
-        .idle-overlay {{
-            background: {card_bg};
-            border: 1px solid {card_border};
+        .idle-overlay {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
             border-radius: 16px;
             padding: 3rem 2rem;
             text-align: center;
             display: none;
-        }}
+            transition: background 0.4s ease, border-color 0.4s ease;
+        }
 
-        .idle-overlay.visible {{
+        .idle-overlay.visible {
             display: block;
-        }}
+        }
 
-        .idle-overlay .idle-icon {{
+        .idle-overlay .idle-icon {
             font-size: 2.5rem;
             margin-bottom: 1rem;
-        }}
+        }
 
-        .idle-overlay h2 {{
+        .idle-overlay h2 {
             font-size: 1.1rem;
             font-weight: 600;
             margin-bottom: 0.4rem;
-        }}
+        }
 
-        .idle-overlay p {{
+        .idle-overlay p {
             font-size: 0.85rem;
-            color: {text_secondary};
-        }}
+            color: var(--text-secondary);
+        }
 
-        .footer {{
+        .footer {
             text-align: center;
             margin-top: 1rem;
             font-size: 0.7rem;
-            color: {text_secondary};
+            color: var(--text-secondary);
             opacity: 0.5;
-        }}
+        }
 
         /* Responsive */
-        @media (max-width: 480px) {{
-            .stats-row {{
+        @media (max-width: 480px) {
+            .stats-row {
                 grid-template-columns: repeat(2, 1fr);
-            }}
-            .ring-container {{
+            }
+            .ring-container {
                 width: 72px;
                 height: 72px;
-            }}
-            .ring-container svg {{
+            }
+            .ring-container svg {
                 width: 72px;
                 height: 72px;
-            }}
-        }}
+            }
+        }
     </style>
 </head>
 <body>
@@ -664,58 +705,126 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         let eventSource = null;
         let reconnectTimer = null;
 
-        function connectSSE() {{
-            if (eventSource) {{
+        // Theme definitions (same as Python side for consistency)
+        const themes = {
+            "dark": {
+                "bg": "#0a0a0f",
+                "card-bg": "#16161e",
+                "card-border": "#2a2a35",
+                "text-primary": "#e4e4e8",
+                "text-secondary": "#9a9aa8",
+                "text-muted": "#6a6a78",
+                "log-bg": "#0e0e16",
+                "log-border": "#2a2a35",
+                "stat-bg": "#1a1a24",
+                "stat-border": "#2a2a35",
+                "phase-fetch-bg": "#0f1a2a",
+                "phase-fetch-border": "#1a3a5a",
+                "phase-gen-bg": "#0f2a1a",
+                "phase-gen-border": "#1a5a3a",
+                "failed-bg": "#1a0f0f",
+                "failed-border": "#3a1a1a",
+                "failed-text": "#e85555",
+                "success-text": "#4ade80",
+                "logo-filter": "none",
+                "ring-track": "#2a2a35",
+                "overlay-bg": "rgba(0,0,0,0.6)"
+            },
+            "light": {
+                "bg": "#f0f0f4",
+                "card-bg": "#ffffff",
+                "card-border": "#e0e0e5",
+                "text-primary": "#1a1a2e",
+                "text-secondary": "#6a6a7a",
+                "text-muted": "#9a9aa8",
+                "log-bg": "#f5f5f8",
+                "log-border": "#e0e0e5",
+                "stat-bg": "#f8f8fc",
+                "stat-border": "#e8e8ed",
+                "phase-fetch-bg": "#f0f5ff",
+                "phase-fetch-border": "#c0d5f0",
+                "phase-gen-bg": "#f0fff5",
+                "phase-gen-border": "#c0f0d0",
+                "failed-bg": "#fff5f5",
+                "failed-border": "#f0c0c0",
+                "failed-text": "#c02020",
+                "success-text": "#22872d",
+                "logo-filter": "invert(1)",
+                "ring-track": "#e0e0e5",
+                "overlay-bg": "rgba(255,255,255,0.6)"
+            }
+        };
+
+        function updateThemeColors(themeName, accentColor) {
+            const root = document.documentElement;
+            const t = themes[themeName] || themes["dark"];
+            
+            for (const [key, value] of Object.entries(t)) {
+                root.style.setProperty('--' + key, value);
+            }
+            if (accentColor) {
+                root.style.setProperty('--accent', '#' + accentColor.replace('#', ''));
+            }
+        }
+
+        function connectSSE() {
+            if (eventSource) {
                 eventSource.close();
-            }}
+            }
             eventSource = new EventSource('/events');
 
-            eventSource.onmessage = function(e) {{
-                try {{
+            eventSource.onmessage = function(e) {
+                try {
                     const data = JSON.parse(e.data);
+                    
+                    // Live theme update
+                    if (data.theme || data.accent) {
+                        updateThemeColors(data.theme, data.accent);
+                    }
+                    
                     updateDashboard(data);
-                }} catch(err) {{
+                } catch(err) {
                     console.error('Parse error:', err);
-                }}
-            }};
+                }
+            };
 
-            eventSource.onerror = function() {{
+            eventSource.onerror = function() {
                 eventSource.close();
                 // Reconnect after 2 seconds
                 if (reconnectTimer) clearTimeout(reconnectTimer);
                 reconnectTimer = setTimeout(connectSSE, 2000);
-            }};
-        }}
+            };
+        }
 
-        function classifyLog(line) {{
+        function classifyLog(line) {
             if (!line) return '';
             if (line.indexOf('found!') !== -1) return 'found';
             if (line.indexOf('ERROR') !== -1 || line.indexOf('not found') !== -1 || line.indexOf('match too low') !== -1) return 'error';
             if (line.indexOf('Starting') !== -1 || line.indexOf('Fetching') !== -1 || line.indexOf('[fetch]') !== -1) return 'info';
             return '';
-        }}
+        }
 
-        function updateDashboard(d) {{
+        function updateDashboard(d) {
             const active = document.getElementById('activeContent');
             const idle = document.getElementById('idleOverlay');
 
-            if (!d.scraping) {{
+            if (!d.scraping) {
                 active.style.display = 'none';
                 idle.classList.add('visible');
-                if (d.finished) {{
+                if (d.finished) {
                     document.getElementById('idleIcon').innerHTML = '&#10003;';
                     document.getElementById('idleTitle').textContent = 'Scraping Complete!';
                     const total = d.gen_total || 0;
                     const failed = (d.failed || []).length;
                     document.getElementById('idleText').textContent =
                         'Scraped ' + total + ' games, ' + failed + ' failed.';
-                }} else {{
+                } else {
                     document.getElementById('idleIcon').innerHTML = '&#9203;';
                     document.getElementById('idleTitle').textContent = 'Waiting for scraping...';
                     document.getElementById('idleText').textContent = 'Start a scrape in Scrappy and this dashboard will update automatically.';
-                }}
+                }
                 return;
-            }}
+            }
 
             active.style.display = 'block';
             idle.classList.remove('visible');
@@ -727,13 +836,13 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             const phaseSubDetail = document.getElementById('phaseSubDetail');
             const statPhase = document.getElementById('statPhase');
 
-            if (isFetch) {{
+            if (isFetch) {
                 phaseTitle.textContent = 'Fetching Metadata';
                 phaseDetail.textContent = d.fetch_progress ? ('Progress: ' + d.fetch_progress) : 'Downloading game data...';
                 phaseSubDetail.textContent = d.pending_platforms ? (d.pending_platforms + ' platform(s) remaining') : '';
                 statPhase.textContent = 'Fetch';
                 statPhase.title = 'Fetching';
-            }} else {{
+            } else {
                 phaseTitle.textContent = 'Generating Artwork';
                 const done = d.gen_done || 0;
                 const total = d.gen_total || 0;
@@ -741,7 +850,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
                 phaseSubDetail.textContent = '';
                 statPhase.textContent = 'Gen';
                 statPhase.title = 'Generating';
-            }}
+            }
 
             // Progress ring
             const total = d.gen_total || 1;
@@ -766,13 +875,13 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             curSource.textContent = d.source || 'N/A';
 
             // Animate game name change
-            if (d.game && d.game !== lastGame) {{
+            if (d.game && d.game !== lastGame) {
                 curGame.textContent = d.game;
                 curGame.style.animation = 'none';
                 curGame.offsetHeight; // trigger reflow
                 curGame.style.animation = 'slideIn 0.3s ease-out';
                 lastGame = d.game;
-            }}
+            }
 
             // Logs
             const logBox = document.getElementById('logBox');
@@ -781,10 +890,10 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 
             // Rebuild log content
             let logHtml = '';
-            for (let i = 0; i < logs.length; i++) {{
+            for (let i = 0; i < logs.length; i++) {
                 const cls = classifyLog(logs[i]);
                 logHtml += '<div class="log-line' + (cls ? ' ' + cls : '') + '">' + escapeHtml(logs[i]) + '</div>';
-            }}
+            }
             logBox.innerHTML = logHtml;
             // Auto-scroll to bottom
             logBox.scrollTop = logBox.scrollHeight;
@@ -793,30 +902,36 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             const failedSection = document.getElementById('failedSection');
             const failedList = document.getElementById('failedList');
             const failed = d.failed || [];
-            if (failed.length > 0) {{
+            if (failed.length > 0) {
                 failedSection.classList.add('visible');
                 document.getElementById('failedHeader').textContent = 'Failed Games (' + failed.length + ')';
                 let fHtml = '';
-                for (let i = 0; i < failed.length; i++) {{
+                for (let i = 0; i < failed.length; i++) {
                     fHtml += '<li>' + escapeHtml(failed[i]) + '</li>';
-                }}
+                }
                 failedList.innerHTML = fHtml;
-            }} else {{
+            } else {
                 failedSection.classList.remove('visible');
-            }}
-        }}
+            }
+        }
 
-        function escapeHtml(text) {{
+        function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
-        }}
+        }
 
         // Start SSE connection
         connectSSE();
     </script>
 </body>
 </html>"""
+    html = template.replace("{logo_b64}", logo_b64)
+    html = html.replace("{logo_section}", logo_section)
+    html = html.replace("{success_text}", t["success_text"])
+    html = html.replace("{failed_text}", t["failed_text"])
+    html = html.replace("<style>", "<style>\n" + css_vars)
+    return html
 
 
 class DashboardHandler(http.server.SimpleHTTPRequestHandler):
@@ -853,6 +968,14 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         try:
             while True:
                 state = read_state_file()
+                
+                # Ensure theme/accent from command line are the default if not in state
+                # This allows live updates if Scrappy starts writing them to the JSON
+                if "theme" not in state:
+                    state["theme"] = getattr(self.server, 'dashboard_theme', 'dark')
+                if "accent" not in state:
+                    state["accent"] = getattr(self.server, 'dashboard_accent', 'cbaa0f')
+
                 state_json = json.dumps(state, separators=(',', ':'))
 
                 # Only send if state changed
@@ -909,6 +1032,9 @@ def main():
         socketserver.ThreadingTCPServer.allow_reuse_address = True
         socketserver.ThreadingTCPServer.daemon_threads = True
         with socketserver.ThreadingTCPServer(("", PORT), DashboardHandler) as server:
+            # Store theme/accent on the server instance so the handler can access them
+            server.dashboard_theme = args.theme
+            server.dashboard_accent = args.accent
             print(f"Dashboard serving on port {PORT}...", flush=True)
             server.serve_forever()
 

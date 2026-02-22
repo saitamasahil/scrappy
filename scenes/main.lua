@@ -672,6 +672,16 @@ local function write_dashboard_state(extra)
     parts[#parts + 1] = string.format('"gen_total":%d', data.gen_total)
     parts[#parts + 1] = string.format('"pending_platforms":%d', data.pending_platforms)
 
+    -- Add theme and accent for live updates
+    local theme_name = theme:get_current_name() or "dark"
+    local accent_color = configs.user_config:read("main", "customAccent") or "cbaa0f"
+    local accent_mode = tostring(configs.user_config:read("main", "accentMode") or "muos"):lower()
+    if accent_mode == "muos" then
+        accent_color = theme:read("button", "BUTTON_FOCUS") or "cbaa0f"
+    end
+    parts[#parts + 1] = string.format('"theme":"%s"', escape_json_str(theme_name))
+    parts[#parts + 1] = string.format('"accent":"%s"', escape_json_str(accent_color))
+
     if data.shutdown then
         parts[#parts + 1] = '"shutdown":true'
     end
@@ -704,11 +714,20 @@ end
 
 local function toggle_dashboard_server()
     if dashboard_server_running then
-        -- Stop server in a background thread to avoid blocking
+        -- Signal the server to shutdown gracefully via state file first
+        write_dashboard_state({shutdown = true})
+        
+        -- Then force kill in a background thread to be sure
         local stop_thread = love.thread.newThread([[
-            os.execute("pkill -f scrape_dashboard.py")
+            local count = 0
+            while count < 4 do
+                os.execute("pkill -9 -f scrape_dashboard.py")
+                os.execute("sleep 0.5")
+                count = count + 1
+            end
         ]])
         stop_thread:start()
+        
         dashboard_server_running = false
         dashboard_server_ip = nil
         os.remove(dashboard_state_file)
@@ -720,6 +739,9 @@ local function toggle_dashboard_server()
 
     local ip = dashboard_cached_ip or utils.get_ip_address()
     if ip then
+        -- Ensure any zombie servers are gone before starting
+        os.execute("pkill -9 -f scrape_dashboard.py")
+        
         -- Write initial state before launching
         write_dashboard_state()
 
@@ -732,11 +754,11 @@ local function toggle_dashboard_server()
         if accent_mode == "muos" then
             accent_color = theme:read("button", "BUTTON_FOCUS") or "cbaa0f"
         end
-        -- Build command (ensure we kill any old server before starting new one to avoid port conflicts)
-        local cmd = string.format('pkill -f scrape_dashboard.py; sleep 1; python3 "%s" --theme %s --accent "%s" --logo "%s" > /dev/null 2>&1',
+        
+        local cmd = string.format('python3 "%s" --theme %s --accent "%s" --logo "%s" > /dev/null 2>&1',
             server_path, theme_name, accent_color, logo_path)
 
-        -- Launch in a LÖVE background thread so fork()+exec() doesn't block the UI
+        -- Launch in a LÖVE background thread
         local launch_thread = love.thread.newThread([[
             local cmd = love.thread.getChannel("dashboard_launch"):pop()
             if cmd then
