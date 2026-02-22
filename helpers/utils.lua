@@ -4,8 +4,10 @@ function utils.split(inputstr, sep)
     if sep == nil then
         sep = "%s"
     end
+    -- Strip carriage returns to prevent issues with Windows line endings (\r\n) on Linux
+    local s = inputstr:gsub("\r", "")
     local t = {}
-    for str in string.gmatch(inputstr, "([^" .. sep .. "]+)") do
+    for str in string.gmatch(s, "([^" .. sep .. "]+)") do
         table.insert(t, str)
     end
     return t

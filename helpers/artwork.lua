@@ -301,11 +301,14 @@ function artwork.process_cached_by_platform(platform, cache_folder)
 
     -- Save entries globally (use lowercase platform ID for consistent lookup)
     local pea_key = normalize_platform(platform):lower() -- Normalize and lowercase platform key
+    log.write(string.format("PLATFORM %s: Loaded %d cache entries (Pea key: %s)", platform, utils.table_length(quick_id_entries), pea_key))
     artwork.cached_game_ids[pea_key] = quick_id_entries
+    log.write(string.format("Cached %d game entries for platform '%s'", utils.table_length(quick_id_entries), platform))
 end
 
 function artwork.process_cached_data()
     log.write("Processing cached data")
+    artwork.cached_game_ids = {}
     local cache_folder = skyscraper_config:read("main", "cacheFolder")
     if not cache_folder then
         return

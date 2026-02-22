@@ -321,6 +321,7 @@ local function scrape_platforms()
     state.tasks_in_progress = {}
     state.platform_context = {}
     state.pending_platforms = 0
+    game_file_map = {}
 
     -- Process cached data from quickid and db
     if user_config:read("main", "parseCache") == "1" then
