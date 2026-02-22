@@ -761,7 +761,17 @@ local function on_enter_tgdb_key_web()
     -- Start python server in background
     -- Use WORK_DIR to ensure it works correctly regardless of SD1/SD2 install location
     local server_path = WORK_DIR .. "/scripts/tgdb_server.py"
-    os.execute('python3 "' .. server_path .. '" > /dev/null 2>&1 &')
+    local logo_path = WORK_DIR .. "/assets/scrappy_logo.png"
+    local theme_name = theme:get_current_name() or "dark"
+    -- Get the accent color (hex string without #)
+    local accent_color = configs.user_config:read("main", "customAccent") or "cbaa0f"
+    local accent_mode = tostring(configs.user_config:read("main", "accentMode") or "muos"):lower()
+    if accent_mode == "muos" then
+      -- Use muOS accent from the theme's BUTTON_FOCUS
+      accent_color = theme:read("button", "BUTTON_FOCUS") or "cbaa0f"
+    end
+    os.execute(string.format('python3 "%s" --theme %s --accent "%s" --logo "%s" > /dev/null 2>&1 &',
+      server_path, theme_name, accent_color, logo_path))
     
     tgdb_server_running = true
     tgdb_server_ip = ip
