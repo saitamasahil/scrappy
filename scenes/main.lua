@@ -636,14 +636,15 @@ end
 -- Dashboard server helpers
 local function write_dashboard_state(extra)
     local data = extra or {}
-    data.scraping = state.scraping
-    data.phase = state.fetch_phase and "fetch" or "generate"
-    data.gen_total = state.total or 0
-    data.gen_done = (state.total or 0) - (state.tasks or 0)
-    data.failed = state.failed_tasks or {}
-    data.logs = dashboard_log_lines
-    data.fetch_progress = dashboard_fetch_progress
-    data.pending_platforms = state.pending_platforms or 0
+    -- Only set from state if not already provided in 'extra'
+    if data.scraping == nil then data.scraping = state.scraping end
+    if data.phase == nil then data.phase = state.fetch_phase and "fetch" or "generate" end
+    if data.gen_total == nil then data.gen_total = state.total or 0 end
+    if data.gen_done == nil then data.gen_done = (state.total or 0) - (state.tasks or 0) end
+    if data.failed == nil then data.failed = state.failed_tasks or {} end
+    if data.logs == nil then data.logs = dashboard_log_lines end
+    if data.fetch_progress == nil then data.fetch_progress = dashboard_fetch_progress end
+    if data.pending_platforms == nil then data.pending_platforms = state.pending_platforms or 0 end
 
     -- Current game/platform from scraping window UI
     if scraping_window then
@@ -1016,13 +1017,14 @@ local function update_state(t)
                 log.write(string.format("Finished scraping %d games. %d failed or skipped", grand_total,
                     #state.failed_tasks))
 
+                -- Clear state
+                state.scraping = false
+
                 -- Notify dashboard of completion (keep server running so user can see results)
                 if dashboard_server_running then
                     write_dashboard_state({ finished = true })
                 end
 
-                -- Clear state
-                state.scraping = false
                 scraping_window.visible = false
                 state.log = {}
                 -- Clear log
