@@ -346,7 +346,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         <div class="card" id="mainCard">
             <div class="card-header">
                 <h1>TheGamesDB API Key</h1>
-                <span class="subtitle"><span class="accent-dot"></span>Enter your API key to enable scraping</span>
+                <span class="subtitle"><span class="accent-dot"></span>Add your API key for higher request limits</span>
             </div>
 
             <div class="instructions">
@@ -370,7 +370,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             <div class="divider"></div>
 
             <div class="note">
-                The TheGamesDB API is limited to 1,000 requests per month per IP. For higher limits, register for a private key through TheGamesDB.
+                Without an API key, TheGamesDB limits you to a very small number of requests. With a key, you get 1,000 requests per month per IP. For even higher limits, register for a private key through TheGamesDB.
             </div>
         </div>
 
