@@ -1109,6 +1109,10 @@ function tools:update(dt)
     else
         menu:update(dt)
     end
+    -- Update info window components (enables marquee scrolling in log)
+    if info_window and info_window.visible then
+        info_window:update(dt)
+    end
     update_state()
     update_task_state()
 end

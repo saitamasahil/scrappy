@@ -958,6 +958,11 @@ function single_scrape:update(dt)
     update_scrape_state()
     process_fetched_game()
 
+    -- Update scraping window components (enables marquee scrolling in log)
+    if scraping_window and scraping_window.visible then
+        scraping_window:update(dt)
+    end
+
     -- Update virtual keyboard if active
     if vk and vk.visible then
         vk:update(dt)

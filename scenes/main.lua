@@ -1474,6 +1474,11 @@ function main:update(dt)
             -- give up silently; user can change template again
         end
     end
+
+    -- Update scraping window components (enables marquee scrolling in log)
+    if scraping_window and scraping_window.visible then
+        scraping_window:update(dt)
+    end
 end
 
 function main:draw()
