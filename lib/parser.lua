@@ -58,8 +58,8 @@ function parser.parse(line)
         return "N/A", nil, true, return_types.GAME
     else
         -- print("Line did not match: " .. line)
-        for _, error in ipairs(SKYSCRAPER_ERRORS) do
-            if line:find(error) then
+        for _, err_pattern in ipairs(SKYSCRAPER_ERRORS) do
+            if line:find(err_pattern, 1, true) then
                 return nil, line, true, return_types.LOG
             end
         end

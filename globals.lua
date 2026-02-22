@@ -28,4 +28,5 @@ _G.SKYSCRAPER_ERRORS = {"doesn't exist or can't be accessed by current user. Ple
                         "Couldn't create cache folders, please check folder permissions and try again...",
                         "Please set a valid platform with", "No files to process in cache",
                         "Skyscraper came to an untimely end.", "maxrequestspermin",
-                        "maxrequestsperday", "maxthreadsreached", "API closed"}
+                        "maxrequestsperday", "maxthreadsreached", "API closed",
+                        "Server response status 429", "Cannot continue!"}

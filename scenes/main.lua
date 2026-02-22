@@ -562,11 +562,11 @@ local function update_state(t)
         local completed_platform = t.log:match("%[fetch%] Platform (.-) completed")
         if completed_platform then
             
-            -- RESUME LOGIC
+            -- RESUME LOGIC (only if still scraping and not manually halted)
             local context = state.platform_context and state.platform_context[completed_platform]
             local resumed = false
             
-            if context then
+            if state.scraping and context then
                 -- log.write(string.format("Checking resume for %s. Last seen: %s", completed_platform, context.last_seen_game or "nil"))
                 local last_game_in_list = context.games[#context.games]
                 

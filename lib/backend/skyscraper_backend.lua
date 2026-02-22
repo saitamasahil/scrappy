@@ -85,6 +85,7 @@ while true do
     local attempts, max_attempts = 0, 3
     local retry_delay_secs = 5
     local aborted = false
+    local fatal_error = false
     while attempts < max_attempts do
         attempts = attempts + 1
         local stderr_to_stdout = " 2>&1"
@@ -186,18 +187,20 @@ while true do
                 log.write(string.format("[fetch:raw] %s", line), "skyscraper") 
             end
 
-            if error ~= nil and error ~= "" then
-                log.write("ERROR: " .. error, "skyscraper")
-                channels.SKYSCRAPER_OUTPUT:push({
-                    data = {},
-                    error = error,
-                    loading = false
-                })
-                if error:lower():find("invalid/empty json") then
-                    retriable_error = true
+                if error ~= nil and error ~= "" then
+                    log.write("ERROR: " .. error, "skyscraper")
+                    channels.SKYSCRAPER_OUTPUT:push({
+                        data = {},
+                        error = error,
+                        loading = false
+                    })
+                    if error:lower():find("invalid/empty json") then
+                        retriable_error = true
+                    else
+                        fatal_error = true
+                    end
+                    break
                 end
-                break
-            end
         end
 
         -- Safely close output if still open
@@ -215,7 +218,7 @@ while true do
         end
 
         -- Notify that fetch operation completed for this platform
-        if current_platform and not aborted and not retriable_error then
+        if current_platform and not aborted and not retriable_error and not fatal_error then
             channels.SKYSCRAPER_OUTPUT:push({
                 log = string.format("[fetch] Platform %s completed", current_platform)
             })
