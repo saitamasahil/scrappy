@@ -709,12 +709,31 @@ local function get_cache_path()
     return cache_path
 end
 
+-- Clear all potential cache locations (SD1 and SD2)
+local function clear_all_caches()
+    -- 1. Clear the default SD1 cache
+    local sd1_cache = WORK_DIR .. "/data/cache"
+    log.write("Clearing SD1 cache: " .. sd1_cache)
+    clear_directory(sd1_cache)
+
+    -- 2. Clear the SD2 cache (standard location)
+    local sd2_cache = "/mnt/sdcard/scrappy_cache"
+    log.write("Clearing SD2 cache: " .. sd2_cache)
+    clear_directory(sd2_cache)
+
+    -- 3. Clear the currently configured cache folder if it's different (e.g. if pointing elsewhere)
+    local config_cache = skyscraper_config:read("main", "cacheFolder")
+    config_cache = utils.strip_quotes(config_cache or "")
+    if config_cache ~= "" and config_cache ~= sd2_cache then
+        log.write("Clearing custom configured cache: " .. config_cache)
+        clear_directory(config_cache)
+    end
+end
+
 -- Called when user confirms cache deletion
 local function on_confirm_cache_clear()
-    -- Clear the cache
-    local cache_path = get_cache_path()
-    log.write("Clearing cache at: " .. cache_path)
-    clear_directory(cache_path)
+    -- Clear all potential caches
+    clear_all_caches()
 
     -- Save the pending region priorities
     if pending_region_prios then
@@ -746,9 +765,7 @@ end
 
 -- Standalone clear cache functions
 local function on_confirm_clear_cache_standalone()
-    local cache_path = get_cache_path()
-    log.write("Clearing cache at: " .. cache_path)
-    clear_directory(cache_path)
+    clear_all_caches()
     clear_cache_popup_visible = false
     dispatch_info("Cache Cleared", "Skyscraper cache has been cleared.\nYou will need to re-scrape your ROMs.")
 end
