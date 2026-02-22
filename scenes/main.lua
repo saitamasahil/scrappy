@@ -52,6 +52,77 @@ local scheduled_template_index = nil
 local scrape_modes = {"Scrape all", "Scrape only missing artwork"}
 local current_scrape_mode = 1
 local scrape_missing_only = false
+local showing_core_reminder = false -- Tracks if the core assignment reminder popup is active
+
+-- Load button icons for popup buttons
+local button_a_icon = love.graphics.newImage("assets/inputs/switch_button_a.png")
+local button_b_icon = love.graphics.newImage("assets/inputs/switch_button_b.png")
+
+-- Draw the core assignment reminder popup (matches Clear Cache style)
+local function draw_core_reminder_popup()
+    if not showing_core_reminder then return end
+
+    local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
+    local font = love.graphics.getFont()
+    local font_h = font:getHeight()
+
+    -- Dim background
+    love.graphics.setColor(0, 0, 0, 0.8)
+    love.graphics.rectangle("fill", 0, 0, sw, sh)
+
+    -- Popup box
+    local box_w = math.min(sw - 40, 420)
+    local box_h = 200
+    local box_x = (sw - box_w) / 2
+    local box_y = (sh - box_h) / 2
+
+    -- Background
+    love.graphics.setColor(0.18, 0.18, 0.18, 1)
+    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8, 8)
+
+    -- Border
+    love.graphics.setColor(0.4, 0.4, 0.4, 1)
+    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8, 8)
+
+    love.graphics.setColor(1, 1, 1, 1)
+
+    -- Title
+    love.graphics.printf("Reminder", box_x, box_y + 15, box_w, "center")
+
+    -- Message
+    local msg = "Make sure you have assigned cores\nto your ROM folders/subfolders\nin muOS before scraping."
+    love.graphics.printf(msg, box_x + 15, box_y + 45, box_w - 30, "center")
+
+    -- Button icons
+    local icon_size = 24
+    local btn_y = box_y + box_h - 45
+
+    -- Calculate total width of both button groups with gap between them
+    local gap = 30
+    local ok_text = "OK"
+    local hide_text = "Don't show again"
+    local ok_w = icon_size + 6 + font:getWidth(ok_text)
+    local hide_w = icon_size + 6 + font:getWidth(hide_text)
+    local total_w = ok_w + gap + hide_w
+    local start_x = box_x + (box_w - total_w) / 2
+
+    -- A = OK
+    if button_a_icon then
+        local iw, ih = button_a_icon:getDimensions()
+        local sx, sy = icon_size / iw, icon_size / ih
+        love.graphics.draw(button_a_icon, start_x, btn_y, 0, sx, sy)
+    end
+    love.graphics.print(ok_text, start_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+
+    -- B = Don't show again
+    local hide_x = start_x + ok_w + gap
+    if button_b_icon then
+        local iw, ih = button_b_icon:getDimensions()
+        local sx, sy = icon_size / iw, icon_size / ih
+        love.graphics.draw(button_b_icon, hide_x, btn_y, 0, sx, sy)
+    end
+    love.graphics.print(hide_text, hide_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+end
 
 -- Ensure sample media folders exist and remove stale fake-rom images
 local function prepare_sample_media()
@@ -953,6 +1024,11 @@ function main:load()
         title = "Scraping in progress"
     }
 
+    -- Show core assignment reminder on first load (unless user dismissed it)
+    if user_config:read("main", "hideCoreReminder") ~= "1" then
+        showing_core_reminder = true
+    end
+
     local canvasComponent = component {
         overlay = true,
         width = w_width * 0.5,
@@ -1405,6 +1481,7 @@ function main:draw()
     menu:draw()
     info_window:draw()
     scraping_window:draw()
+    draw_core_reminder_popup()
 
     -- Show status icon: offline icon when in offline mode, wifi icon when disconnected
     local status_icon = nil
@@ -1480,7 +1557,9 @@ end
 
 function main:keypressed(key)
     if key == "escape" then
-        if info_window.visible then
+        if showing_core_reminder then
+            showing_core_reminder = false
+        elseif info_window.visible then
             info_window.visible = false
         elseif state.scraping then
             halt_scraping()
@@ -1499,7 +1578,12 @@ end
 function main:gamepadpressed(joystick, button)
     -- Map 'b' button to back/cancel/escape action
     if button == "b" then
-        if info_window.visible then
+        if showing_core_reminder then
+            -- User pressed B on the core reminder: save "don't show again"
+            user_config:insert("main", "hideCoreReminder", "1")
+            user_config:save()
+            showing_core_reminder = false
+        elseif info_window.visible then
             info_window.visible = false
         elseif state.scraping then
             halt_scraping()
@@ -1512,10 +1596,15 @@ function main:gamepadpressed(joystick, button)
         return true -- Handled, prevent global input from double-processing
     end
 
-    if not state.scraping and not info_window.visible then
+    if not state.scraping and not info_window.visible and not showing_core_reminder then
         if menu.gamepadpressed then
             menu:gamepadpressed(joystick, button)
         end
+    elseif showing_core_reminder and button == "a" then
+        -- A button just dismisses the popup (no "don't show again")
+        showing_core_reminder = false
+    elseif info_window.visible and button == "a" then
+        info_window.visible = false
     end
     return false -- Let global input handle D-pad navigation
 end

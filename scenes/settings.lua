@@ -703,7 +703,7 @@ local function on_refresh_press()
   
   if btn then btn.text = "Rescan folders" end
   
-  dispatch_info("Scan Complete", "Folder scan finished.\nPlatform list updated.")
+  dispatch_info("Scan Complete", "Folder scan finished. Platform list updated.\nIf you see unticked folders, make sure you have assigned cores in muOS (Folders/Subfolders).")
 end
 
 local on_check_all_press = function()
