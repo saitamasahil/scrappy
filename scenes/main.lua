@@ -269,7 +269,7 @@ local function scrape_platforms()
     -- Load selected platforms
     local selected_platforms = user_config:get().platformsSelected
     local rom_path, _ = user_config:get_paths()
-    -- Reset tasks and clear any stale queued games from previous runs
+    state.total = 0
     state.tasks = 0
     state.failed_tasks = {}
     state.queued_games = {}
@@ -369,15 +369,13 @@ local function scrape_platforms()
             -- Get the title without extension
             local game_title = utils.get_filename(rom)
 
-            -- Verify if game is cached
+            -- Verify if game is cached in Skyscraper's internal database
             if not uncached_games then
                 local res_cache_id = artwork.cached_game_ids[dest] and artwork.cached_game_ids[dest][rom]
                 if res_cache_id == nil then
-                    -- Check if artwork already exists in catalogue to avoid redundant fetches
-                    -- Skyscraper with 'onlymissing' flag skips existing artwork anyway, so match that logic
-                    if has_missing_catalogue_artwork(dest, game_title) then
-                        uncached_games = true
-                    end
+                    -- CRITICAL: If not in Skyscraper cache, we MUST fetch from server
+                    -- Do NOT skip based on catalogue artwork existence, as Skyscraper needs cache to generate
+                    uncached_games = true
                 end
             end
 
@@ -425,9 +423,6 @@ local function scrape_platforms()
         ::skip::
     end
 
-    --
-    -- TODO: Refactor user feedback
-    --
     state.total = state.tasks
     if state.total > 0 then
         state.scraping = true
@@ -705,7 +700,7 @@ local function update_state(t)
 
             -- Check if finished
             if state.scraping and state.tasks == 0 then
-                local grand_total = state.total + #state.failed_tasks
+                local grand_total = state.total
                 log.write(string.format("Finished scraping %d games. %d failed or skipped", grand_total,
                     #state.failed_tasks))
                 -- Clear state
