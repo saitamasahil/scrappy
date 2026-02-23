@@ -1,4 +1,5 @@
 local log = require("lib.log")
+local json = require("lib.json")
 local pprint = require("lib.pprint")
 local scenes = require("lib.scenes")
 local skyscraper = require("lib.skyscraper")
@@ -41,6 +42,11 @@ local confirm_popup, confirm_popup_visible = nil, false
 local clear_cache_popup_visible = false
 local offline_popup_visible = false -- Offline mode confirmation popup
 local accent_popup, accent_menu
+local artwork_manager_running = false
+local artwork_manager_ip = nil
+local artwork_manager_status = ""
+local REGEN_FILE = "/tmp/scrappy_regen.json"
+local regen_check_timer = 0
 local pending_region_prios = nil
 local selected_region_index = 1
 local region_prios = {}
@@ -415,9 +421,12 @@ local function update_state()
         if t.data and next(t.data) then
             dispatch_info(string.format("Updating cache for %s, please wait...", t.data.platform))
         end
-        if t.success ~= nil then
+        if t.success ~= nil and t.title then
             finished_tasks = finished_tasks + 1
-            dispatch_info(nil, string.format("Finished %d games", finished_tasks))
+            dispatch_info(nil, string.format("Finished game: %s", t.title))
+            if t.success then
+                artwork.copy_to_catalogue(t.platform, t.title)
+            end
         end
         if t.command_finished then
             dispatch_info("Updated cache", "Cache has been updated.")
@@ -892,6 +901,38 @@ local function on_migrate_cache()
     thread:start("migrate")
 end
 
+local function on_toggle_artwork_manager()
+    if artwork_manager_running then
+        os.execute("pkill -9 -f artwork_manager.py")
+        artwork_manager_running = false
+        artwork_manager_status = "Server stopped."
+        return
+    end
+
+    local ip = utils.get_ip_address()
+    if ip then
+        local server_path = WORK_DIR .. "/scripts/artwork_manager.py"
+        local logo_path = WORK_DIR .. "/assets/scrappy_logo.png"
+        local theme_name = theme:get_current_name() or "dark"
+        local accent_color = user_config:read("main", "customAccent") or "cbaa0f"
+        local accent_mode = tostring(user_config:read("main", "accentMode") or "muos"):lower()
+        if accent_mode == "muos" then
+            accent_color = theme:read("button", "BUTTON_FOCUS") or "cbaa0f"
+        end
+        local cache_path = get_cache_path()
+        
+        os.execute(string.format('python3 "%s" --theme %s --accent "%s" --logo "%s" --cache "%s" > /dev/null 2>&1 &',
+            server_path, theme_name, accent_color, logo_path, cache_path))
+
+        artwork_manager_running = true
+        artwork_manager_ip = ip
+        artwork_manager_status = "Go to http://" .. ip .. ":8082 on phone/PC"
+        regen_check_timer = 0
+    else
+        artwork_manager_status = "No IP found! Connect to WiFi."
+    end
+end
+
 local function on_app_update()
     log.write("Updating Scrappy")
     dispatch_info("Updating Scrappy", "Please wait...")
@@ -1076,6 +1117,24 @@ function tools:load()
         width = item_width,
         onClick = on_clear_cache_press,
         icon = "cache_clean"
+    } + listitem {
+        id = "artwork_manager_toggle",
+        text = function()
+            if artwork_manager_running then
+                return "Stop Artwork Manager"
+            else
+                return "Start Artwork Manager (Web)"
+            end
+        end,
+        width = item_width,
+        onClick = on_toggle_artwork_manager,
+        icon = "theme"
+    } + listitem {
+        text = function() return artwork_manager_status end,
+        width = item_width,
+        focusable = false,
+        disabled = true,
+        visible = function() return artwork_manager_status ~= "" end
     }))
 
     info_window = info_window + (component {
@@ -1115,6 +1174,29 @@ function tools:update(dt)
     end
     update_state()
     update_task_state()
+
+    -- Monitor regeneration requests from web UI
+    if artwork_manager_running then
+        regen_check_timer = regen_check_timer + dt
+        if regen_check_timer >= 1.0 then
+            regen_check_timer = 0
+            local f = io.open(REGEN_FILE, "r")
+            if f then
+                local content = f:read("*a")
+                f:close()
+                os.remove(REGEN_FILE)
+                
+                local data = json.decode(content)
+                if data and data.platform and data.rom then
+                    local rom_path, _ = user_config:get_paths()
+                    local platform_path = rom_path .. "/" .. data.platform
+                    local xml = data.xml or "box2d"
+                    -- Trigger regeneration with refresh and specified template
+                    skyscraper.update_artwork(platform_path, data.rom, data.platform, data.platform, xml) 
+                end
+            end
+        end
+    end
 end
 
 -- Load button icons

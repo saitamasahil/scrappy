@@ -178,6 +178,16 @@ function artwork.copy_to_catalogue(platform, game)
     end
     output_path = utils.strip_quotes(output_path)
     local platform_str = muos.platforms[platform]
+    -- Fallback: try lowercase lookup if the direct lookup fails
+    if not platform_str then
+        for k, v in pairs(muos.platforms) do
+            if k:lower() == platform:lower() then
+                platform_str = v
+                break
+            end
+        end
+    end
+
     if not platform_str then
         log.write(string.format("Catalogue destination folder not found for platform: %s", platform))
         return
@@ -186,9 +196,6 @@ function artwork.copy_to_catalogue(platform, game)
     local pea_key = normalize_platform(platform)
     local media_path = string.format("%s/%s/media", output_path, pea_key)
     local copy_path = string.format("%s/%s", catalogue_path, platform_str)
-
-    log.write(string.format("Source media path: %s", media_path))
-    log.write(string.format("Destination catalogue path: %s", copy_path))
 
     -- Create platform directory and common subfolders if missing
     if not nativefs.getInfo(copy_path) then

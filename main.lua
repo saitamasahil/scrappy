@@ -83,6 +83,12 @@ end
 
 -- Cleanup when app quits
 function love.quit()
+    -- Stop any background web servers started by Scrappy
+    -- (Artwork Manager, Scrape Dashboard, TGDB key helper, etc.)
+    os.execute("pkill -9 -f artwork_manager.py 2>/dev/null")
+    os.execute("pkill -9 -f scrape_dashboard.py 2>/dev/null")
+    os.execute("pkill -9 -f tgdb_server.py 2>/dev/null")
+
     skyscraper.shutdown()
     return false -- Allow quit to proceed
 end

@@ -33,6 +33,7 @@ local muos = {
         -- "Dinothawr",
         -- "Doom",
         ["PORTS"] = "External - Ports",
+        ["ports"] = "External - Ports",
         ["channelf"] = "Fairchild Channel F",
         -- "Flashback",
         ["vectrex"] = "GCE Vectrex",

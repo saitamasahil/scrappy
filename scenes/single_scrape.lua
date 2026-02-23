@@ -22,6 +22,7 @@ local single_scrape = {}
 
 local menu, info_window, scraping_window, platform_list, rom_list, rom_scroll, footer
 local user_config = configs.user_config
+local skyscraper_config = configs.skyscraper_config
 local theme = configs.theme
 
 local last_selected_platform = nil
@@ -688,6 +689,19 @@ local function process_fetched_game()
 
         state.fetch_stage = false
         state.refine_attempted = false -- Reset on successful scrape
+
+        -- Clear local artwork cache so only the newly scraped source exists
+        local cache_path = skyscraper_config:read("main", "cacheFolder")
+        cache_path = utils.strip_quotes(cache_path or "")
+        if cache_path == "" then
+            cache_path = WORK_DIR .. "/data/cache"
+        end
+        local script_path = WORK_DIR .. "/scripts/clear_local_cache.py"
+        if nativefs.getInfo(script_path) then
+            local rom_escaped = last_selected_rom:gsub('\\', '\\\\'):gsub('"', '\\"')
+            os.execute(string.format('python3 "%s" --cache "%s" --platform "%s" --rom "%s" 2>/dev/null',
+                script_path, cache_path, t.input_folder, rom_escaped))
+        end
 
         -- Manual mode: extract PDF from cache and finish (no artwork generation)
         if state.manual_mode then
