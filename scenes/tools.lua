@@ -1128,7 +1128,7 @@ function tools:load()
         end,
         width = item_width,
         onClick = on_toggle_artwork_manager,
-        icon = "theme"
+        icon = "artwork"
     } + listitem {
         text = function() return artwork_manager_status end,
         width = item_width,

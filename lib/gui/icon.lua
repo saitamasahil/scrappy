@@ -43,6 +43,7 @@ local icons = {
   downloading  = love.graphics.newImage("assets/icons/download-solid.png"),
   generating   = love.graphics.newImage("assets/icons/generate.png"),
   source       = love.graphics.newImage("assets/icons/source.png"),
+  artwork      = love.graphics.newImage("assets/icons/artwork.png"),
 }
 
 return function(props)

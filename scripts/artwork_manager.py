@@ -50,7 +50,7 @@ class ArtworkManagerHandler(http.server.BaseHTTPRequestHandler):
 
             if path == "/":
                 self.serve_ui()
-            elif path == "/favicon.ico":
+            elif path in ["/favicon.ico", "/favicon.png"]:
                 self.serve_favicon()
             elif path == "/api/cache":
                 self.api_get_platforms()
@@ -76,6 +76,7 @@ class ArtworkManagerHandler(http.server.BaseHTTPRequestHandler):
         if args.logo and os.path.exists(args.logo):
             self.serve_file(args.logo)
             return
+        # If no logo, send 404
         self.send_error(404)
 
     def do_POST(self):
@@ -520,8 +521,9 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 <html>
 <head>
     <title>Scrappy Artwork Manager</title>
-    <link rel="icon" href="/favicon.ico">
-    <link rel="apple-touch-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
