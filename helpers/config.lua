@@ -351,18 +351,27 @@ function user_config:load_platforms()
                 ["cd-i"] = "cdi",
                 ["gamecube"] = "gc",
                 ["gc"] = "gc",
-                ["nintendo gamecube"] = "gc"
+                ["nintendo gamecube"] = "gc",
+                ["intellivision"] = "intellivision",
+                ["mattel - intellivision"] = "intellivision",
+                ["mattel intellivision"] = "intellivision"
             }
             if alias[item_l] then
                 assignment = alias[item_l]
             end
-            -- Exact key/label match
+            -- Exact key/label match using normalized strings
             if not assignment then
+                local function normalize_string(str)
+                    return tostring(str):lower():gsub("[%W_]", "")
+                end
+                
+                local item_norm = normalize_string(leaf)
+                
                 for key, label in pairs(muos.platforms or {}) do
                     if type(label) == "string" then
-                        local key_l = tostring(key):lower()
-                        local label_l = label:lower()
-                        if label_l == item_l or key_l == item_l then
+                        local key_norm = normalize_string(key)
+                        local label_norm = normalize_string(label)
+                        if label_norm == item_norm or key_norm == item_norm then
                             assignment = key
                             break
                         end
@@ -371,10 +380,17 @@ function user_config:load_platforms()
             end
             -- Partial label contains match (e.g., leaf "genesis" in label "Sega Mega Drive - Genesis")
             if not assignment then
+                local function normalize_string(str)
+                    return tostring(str):lower():gsub("[%W_]", "")
+                end
+                
+                local item_norm = normalize_string(leaf)
+                
                 for key, label in pairs(muos.platforms or {}) do
                     if type(label) == "string" then
-                        local label_l = label:lower()
-                        if label_l:find(item_l, 1, true) then
+                        local label_norm = normalize_string(label)
+                        -- Ensure partial match actually finds the normalized string inside the normalized label
+                        if label_norm:find(item_norm, 1, true) then
                             assignment = key
                             break
                         end
@@ -402,19 +418,28 @@ function user_config:load_platforms()
                 ["genesis"] = "megadrive",
                 ["megadrive"] = "megadrive",
                 ["arcade"] = "arcade",
-                ["mame"] = "arcade"
+                ["mame"] = "arcade",
+                ["intellivision"] = "intellivision",
+                ["mattel - intellivision"] = "intellivision",
+                ["mattel intellivision"] = "intellivision"
             }
             if alias[parent_l] then
                 assignment = alias[parent_l]
                 log.write(string.format("Inherited platform '%s' for '%s' from parent folder alias", assignment, item))
             end
-            -- Also try muos.platforms lookup for parent
+            -- Also try muos.platforms lookup for parent using normalized strings
             if not assignment then
+                local function normalize_string(str)
+                    return tostring(str):lower():gsub("[%W_]", "")
+                end
+                
+                local parent_norm = normalize_string(parent)
+                
                 for key, label in pairs(muos.platforms or {}) do
                     if type(label) == "string" then
-                        local key_l = tostring(key):lower()
-                        local label_l = label:lower()
-                        if label_l:find(parent_l, 1, true) or key_l == parent_l then
+                        local key_norm = normalize_string(key)
+                        local label_norm = normalize_string(label)
+                        if label_norm:find(parent_norm, 1, true) or key_norm == parent_norm then
                             assignment = key
                             log.write(string.format("Inherited platform '%s' for '%s' from parent folder '%s'",
                                 assignment, item, parent))
