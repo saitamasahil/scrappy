@@ -771,9 +771,9 @@ local function toggle_dashboard_server()
 
         dashboard_server_running = true
         dashboard_server_ip = ip
-        log.write(string.format("Dashboard server started at http://%s:8081", ip))
+        log.write(string.format('Go to http://%s:8081 on phone/PC (same WiFi)', ip))
     else
-        log.write("Cannot start dashboard: no IP address (connect to WiFi)")
+        log.write("No IP found! Connect to WiFi.")
     end
 end
 

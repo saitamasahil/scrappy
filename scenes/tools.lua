@@ -926,7 +926,7 @@ local function on_toggle_artwork_manager()
 
         artwork_manager_running = true
         artwork_manager_ip = ip
-        artwork_manager_status = "Go to http://" .. ip .. ":8082 on phone/PC"
+        artwork_manager_status = 'Go to http://' .. ip .. ':8082 on phone/PC (same WiFi)'
         regen_check_timer = 0
     else
         artwork_manager_status = "No IP found! Connect to WiFi."

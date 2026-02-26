@@ -775,10 +775,10 @@ local function on_enter_tgdb_key_web()
     
     tgdb_server_running = true
     tgdb_server_ip = ip
-    tgdb_server_status = "Go to http://" .. ip .. ":8080 on your phone/PC"
+    tgdb_server_status = 'Go to http://' .. ip .. ':8080 on phone/PC (same WiFi)'
     tgdb_check_timer = 0
   else
-    tgdb_server_status = "Could not find IP address! Connect to WiFi."
+    tgdb_server_status = "No IP found! Connect to WiFi."
   end
 end
 
