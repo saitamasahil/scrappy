@@ -468,6 +468,19 @@ local function on_rom_press(rom)
                 scraping_window.visible = true
             end
 
+            -- Clear local artwork cache before starting the fetch so old media is removed
+            local cache_path = skyscraper_config:read("main", "cacheFolder")
+            cache_path = utils.strip_quotes(cache_path or "")
+            if cache_path == "" then
+                cache_path = WORK_DIR .. "/data/cache"
+            end
+            local script_path = WORK_DIR .. "/scripts/clear_local_cache.py"
+            if nativefs.getInfo(script_path) then
+                local rom_escaped = rom:gsub('\\', '\\\\'):gsub('"', '\\"')
+                os.execute(string.format('python3 "%s" --cache "%s" --platform "%s" --rom "%s" 2>/dev/null',
+                    script_path, cache_path, last_selected_platform, rom_escaped))
+            end
+
             skyscraper.fetch_single(rom_path, rom, last_selected_platform, platform_dest)
         end
     else
