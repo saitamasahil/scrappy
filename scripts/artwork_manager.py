@@ -1170,7 +1170,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             regenSection.style.margin = '20px';
             regenSection.innerHTML = `
                 <button class="btn btn-regen" id="btn-regen-modal" style="width:100%; padding:15px; font-size:16px;">
-                    Regenerate Final Artwork
+                    Generate Artwork
                 </button>
             `;
             modalMediaList.appendChild(regenSection);
