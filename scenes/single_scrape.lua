@@ -478,7 +478,7 @@ local function on_rom_press(rom)
             if nativefs.getInfo(script_path) then
                 local rom_escaped = rom:gsub('\\', '\\\\'):gsub('"', '\\"')
                 os.execute(string.format('python3 "%s" --cache "%s" --platform "%s" --rom "%s" 2>/dev/null',
-                    script_path, cache_path, last_selected_platform, rom_escaped))
+                    script_path, cache_path, platform_dest, rom_escaped))
             end
 
             skyscraper.fetch_single(rom_path, rom, last_selected_platform, platform_dest)
@@ -713,7 +713,7 @@ local function process_fetched_game()
         if nativefs.getInfo(script_path) then
             local rom_escaped = last_selected_rom:gsub('\\', '\\\\'):gsub('"', '\\"')
             os.execute(string.format('python3 "%s" --cache "%s" --platform "%s" --rom "%s" 2>/dev/null',
-                script_path, cache_path, t.input_folder, rom_escaped))
+                script_path, cache_path, t.platform, rom_escaped))
         end
 
         -- Manual mode: extract PDF from cache and finish (no artwork generation)
