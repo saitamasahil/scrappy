@@ -1189,10 +1189,21 @@ function tools:update(dt)
                 local data = json.decode(content)
                 if data and data.platform and data.rom then
                     local rom_path, _ = user_config:get_paths()
-                    local platform_path = rom_path .. "/" .. data.platform
+                    local platforms = user_config:get().platforms
+                    
+                    -- Find the actual source folder for this platform mapping
+                    local input_folder = data.platform
+                    for src, dest in pairs(platforms or {}) do
+                        if dest == data.platform then
+                            input_folder = src
+                            break
+                        end
+                    end
+                    
+                    local platform_path = rom_path .. "/" .. input_folder
                     local xml = data.xml or "box2d"
                     -- Trigger regeneration with refresh and specified template
-                    skyscraper.update_artwork(platform_path, data.rom, data.platform, data.platform, xml) 
+                    skyscraper.update_artwork(platform_path, data.rom, input_folder, data.platform, xml) 
                 end
             end
         end
