@@ -1417,7 +1417,7 @@ function main:load()
             -- Draw text
             local txt
             if dashboard_server_running and dashboard_server_ip then
-                txt = "Dashboard at http://" .. dashboard_server_ip .. ":8081"
+                txt = "Go to http://" .. dashboard_server_ip .. ":8081 on phone/PC (same WiFi)"
             else
                 txt = "Launch Live Dashboard"
             end
