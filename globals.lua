@@ -3,9 +3,9 @@ _G.timer = require("lib.timer")
 _G.WORK_DIR = nativefs.getWorkingDirectory()
 
 local sem_ver = {
-    major = 6,
+    major = 7,
     minor = 0,
-    patch = 4,
+    patch = 0,
     extra = ""
 }
 
