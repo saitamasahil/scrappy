@@ -892,8 +892,10 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             to {{ opacity: 1; transform: translateY(0); }}
         }}
         @keyframes logoReveal {{
-            from {{ opacity: 0; transform: scale(0.95); }}
-            to {{ opacity: 1; transform: scale(1); }}
+            0% {{ opacity: 0; transform: scale(0); }}
+            40% {{ opacity: 1; transform: scale(1.15); }}
+            70% {{ transform: scale(0.95); }}
+            100% {{ opacity: 1; transform: scale(1); }}
         }}
         @keyframes pulse {{
             0% {{ box-shadow: 0 0 0 0 rgba(203, 170, 15, 0.4); }}
