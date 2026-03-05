@@ -607,6 +607,10 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             <div class="idle-icon" id="idleIcon">&#9203;</div>
             <h2 id="idleTitle">Waiting for scraping...</h2>
             <p id="idleText">Start a scrape in Scrappy and this dashboard will update automatically.</p>
+            <div class="failed-section" id="idleFailedSection" style="margin-top: 1.25rem; text-align: left;">
+                <div class="failed-header" id="idleFailedHeader">Failed Games (0)</div>
+                <ul class="failed-list" id="idleFailedList"></ul>
+            </div>
         </div>
 
         <!-- Active scraping content -->
@@ -816,13 +820,30 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
                     document.getElementById('idleIcon').innerHTML = '&#10003;';
                     document.getElementById('idleTitle').textContent = 'Scraping Complete!';
                     const total = d.gen_total || 0;
-                    const failed = (d.failed || []).length;
+                    const failed = d.failed || [];
                     document.getElementById('idleText').textContent =
-                        'Scraped ' + total + ' games, ' + failed + ' failed.';
+                        'Scraped ' + total + ' games, ' + failed.length + ' failed.';
+
+                    // Show failed games list on the completion screen
+                    const idleFailedSection = document.getElementById('idleFailedSection');
+                    const idleFailedList = document.getElementById('idleFailedList');
+                    if (failed.length > 0) {
+                        idleFailedSection.classList.add('visible');
+                        document.getElementById('idleFailedHeader').textContent = 'Failed Games (' + failed.length + ')';
+                        let fHtml = '';
+                        for (let i = 0; i < failed.length; i++) {
+                            fHtml += '<li>' + escapeHtml(failed[i]) + '</li>';
+                        }
+                        idleFailedList.innerHTML = fHtml;
+                    } else {
+                        idleFailedSection.classList.remove('visible');
+                    }
                 } else {
                     document.getElementById('idleIcon').innerHTML = '&#9203;';
                     document.getElementById('idleTitle').textContent = 'Waiting for scraping...';
                     document.getElementById('idleText').textContent = 'Start a scrape in Scrappy and this dashboard will update automatically.';
+                    // Hide failed section when idle
+                    document.getElementById('idleFailedSection').classList.remove('visible');
                 }
                 return;
             }
