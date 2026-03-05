@@ -1026,12 +1026,12 @@ function tools:load()
         text = "Backup cache to SD1/ARCHIVE folder",
         width = item_width,
         onClick = on_backup_cache_sd1,
-        icon = "sd_card"
+        icon = "backup"
     } + listitem {
         text = "Backup cache to SD2/ARCHIVE folder",
         width = item_width,
         onClick = on_backup_cache,
-        icon = "sd_card"
+        icon = "backup"
     } + listitem {
         id = "scraper_module",
         text = "Change Skyscraper module (current: " .. scraper_opts[scraper_index] .. ")",
@@ -1096,7 +1096,7 @@ function tools:load()
         text = "Update cache (uses threads, doesn't generate artwork)",
         width = item_width,
         onClick = on_update_press,
-        icon = "sd_card"
+        icon = "cache"
     } + listitem {
         text = "Run custom import (adds custom data to cache, read Wiki!)",
         width = item_width,
