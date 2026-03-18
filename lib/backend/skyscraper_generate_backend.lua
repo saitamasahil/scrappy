@@ -168,6 +168,16 @@ while true do
     channels.SKYSCRAPER_OUTPUT:push({
         log = string.format("[gen] Finished \"%s\"", game)
     })
+
+    -- Signal Template Maker that preview is done
+    if game == "fake-rom" then
+        local df = io.open("/tmp/scrappy_preview_done.txt", "w")
+        if df then
+            df:write("done")
+            df:close()
+        end
+    end
+
     channels.SKYSCRAPER_GEN_OUTPUT:push({
         finished = true,
         game = original_game,

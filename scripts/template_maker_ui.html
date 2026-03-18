@@ -433,13 +433,27 @@ input[type="color"]:hover { border-color: var(--accent); }
                 <span class="section-toggle">▼</span>
             </div>
             <div class="section-body">
+                <div class="field" style="margin-bottom:12px">
+                    <label class="field-label">Included Outputs (in XML)</label>
+                    <div style="display:flex; gap:12px; font-size:12px; margin-top:4px">
+                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer">
+                            <input type="checkbox" id="outBox" checked oninput="onOutputChange()"> Boxart
+                        </label>
+                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer">
+                            <input type="checkbox" id="outPreview" oninput="onOutputChange()"> Preview
+                        </label>
+                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer">
+                            <input type="checkbox" id="outSplash" oninput="onOutputChange()"> Splash
+                        </label>
+                    </div>
+                </div>
                 <div class="field-row">
                     <div class="field">
-                        <label class="field-label">Type</label>
+                        <label class="field-label">Preview Target</label>
                         <select id="outputType" oninput="onOutputChange()">
-                            <option value="cover">cover</option>
-                            <option value="screenshot">screenshot</option>
-                            <option value="wheel">wheel</option>
+                            <option value="cover">cover (Boxart)</option>
+                            <option value="screenshot">screenshot (Preview)</option>
+                            <option value="wheel">wheel (Splash)</option>
                             <option value="marquee">marquee</option>
                             <option value="texture">texture</option>
                         </select>
@@ -627,58 +641,85 @@ init();
 
 // ─── XML Generation ─────────────────────────────────────────
 function generateXml() {
-    const type = document.getElementById('outputType').value;
     const w = document.getElementById('outputWidth').value;
     const h = document.getElementById('outputHeight').value;
 
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<artwork>\n';
-    xml += `  <output type="${type}" width="${w}" height="${h}">\n`;
+    const enabledTypes = [];
+    if (document.getElementById('outBox').checked) enabledTypes.push('cover');
+    if (document.getElementById('outPreview').checked) enabledTypes.push('screenshot');
+    if (document.getElementById('outSplash').checked) enabledTypes.push('wheel');
+    
+    // Fallback if none checked
+    if (enabledTypes.length === 0) enabledTypes.push(document.getElementById('outputType').value);
 
-    for (const layer of layers) {
-        if (layer.type === 'mask-between') {
-            xml += `    <mask file="${layer.file}"`;
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<artwork>\n';
+    
+    for (const type of enabledTypes) {
+        xml += `  <output type="${type}" width="${w}" height="${h}">\n`;
+
+        for (const layer of layers) {
+            if (layer.type === 'mask-between') {
+                xml += `    <mask file="${layer.file}"`;
+                if (layer.width) xml += ` width="${layer.width}"`;
+                if (layer.height) xml += ` height="${layer.height}"`;
+                xml += `/>\n`;
+                continue;
+            }
+            xml += `    <layer`;
+            if (layer.resource) xml += ` resource="${layer.resource}"`;
             if (layer.width) xml += ` width="${layer.width}"`;
             if (layer.height) xml += ` height="${layer.height}"`;
-            xml += `/>\n`;
-            continue;
-        }
-        xml += `    <layer`;
-        if (layer.resource) xml += ` resource="${layer.resource}"`;
-        if (layer.width) xml += ` width="${layer.width}"`;
-        if (layer.height) xml += ` height="${layer.height}"`;
-        if (layer.x) xml += ` x="${layer.x}"`;
-        if (layer.y) xml += ` y="${layer.y}"`;
-        if (layer.align && layer.align !== 'left') xml += ` align="${layer.align}"`;
-        if (layer.valign && layer.valign !== 'top') xml += ` valign="${layer.valign}"`;
-        if (layer.opacity && layer.opacity != 100) xml += ` opacity="${layer.opacity}"`;
-        if (layer.mpixels) xml += ` mpixels="${layer.mpixels}"`;
-        xml += `>\n`;
+            if (layer.x) xml += ` x="${layer.x}"`;
+            if (layer.y) xml += ` y="${layer.y}"`;
+            if (layer.align && layer.align !== 'left') xml += ` align="${layer.align}"`;
+            if (layer.valign && layer.valign !== 'top') xml += ` valign="${layer.valign}"`;
+            if (layer.opacity && layer.opacity != 100) xml += ` opacity="${layer.opacity}"`;
+            if (layer.mpixels) xml += ` mpixels="${layer.mpixels}"`;
+            xml += `>\n`;
 
-        for (const eff of (layer.effects || [])) {
-            const def = EFFECTS_LIST.find(e => e.key === eff.type);
-            if (!def) continue;
-            xml += `      <${eff.type}`;
-            for (const f of def.fields) {
-                const val = eff.values[f.n];
-                if (val !== undefined && val !== '' && val !== 0 && val !== f.d) {
-                    if (f.n === 'color' && eff.type === 'stroke') {
-                        // Convert hex to RGB attributes
-                        const hex = val.replace('#','');
-                        const r = parseInt(hex.substring(0,2),16);
-                        const g = parseInt(hex.substring(2,4),16);
-                        const b = parseInt(hex.substring(4,6),16);
-                        xml += ` red="${r}" green="${g}" blue="${b}"`;
-                    } else {
-                        xml += ` ${f.n}="${val}"`;
+            for (const eff of (layer.effects || [])) {
+                const def = EFFECTS_LIST.find(e => e.key === eff.type);
+                if (!def) continue;
+                xml += `      <${eff.type}`;
+                for (const f of def.fields) {
+                    const val = eff.values[f.n];
+                    if (val !== undefined && val !== '' && val !== 0 && val !== f.d) {
+                        if (f.n === 'color' && eff.type === 'stroke') {
+                            const hex = val.replace('#','');
+                            const r = parseInt(hex.substring(0,2),16);
+                            const g = parseInt(hex.substring(2,4),16);
+                            const b = parseInt(hex.substring(4,6),16);
+                            xml += ` red="${r}" green="${g}" blue="${b}"`;
+                        } else {
+                            xml += ` ${f.n}="${val}"`;
+                        }
                     }
                 }
+                xml += `/>\n`;
             }
-            xml += `/>\n`;
+            xml += `    </layer>\n`;
         }
-        xml += `    </layer>\n`;
+        xml += `  </output>\n`;
     }
-    xml += `  </output>\n</artwork>`;
+    xml += `</artwork>`;
     return xml;
+}
+
+function onOutputChange() {
+    // Ensure at least one output is checked
+    const anyChecked = document.getElementById('outBox').checked || 
+                       document.getElementById('outPreview').checked || 
+                       document.getElementById('outSplash').checked;
+    
+    if (!anyChecked) {
+        // Fallback to currently selected preview target
+        const type = document.getElementById('outputType').value;
+        if (type === 'cover') document.getElementById('outBox').checked = true;
+        else if (type === 'screenshot') document.getElementById('outPreview').checked = true;
+        else if (type === 'wheel') document.getElementById('outSplash').checked = true;
+    }
+    
+    // schedulePreview(); // User requested manual only
 }
 
 // ─── XML Parsing ────────────────────────────────────────────
@@ -688,17 +729,26 @@ function parseXml(xmlStr) {
     const err = doc.querySelector('parsererror');
     if (err) throw new Error('Invalid XML: ' + err.textContent.substring(0,100));
 
-    const output = doc.querySelector('output');
-    if (!output) throw new Error('No <output> element found');
+    const allOutputs = Array.from(doc.querySelectorAll('artwork > output'));
+    if (allOutputs.length === 0) throw new Error('No <output> element found');
 
-    document.getElementById('outputType').value = output.getAttribute('type') || 'cover';
-    document.getElementById('outputWidth').value = output.getAttribute('width') || 640;
-    document.getElementById('outputHeight').value = output.getAttribute('height') || 480;
+    // Use the first output for general settings (width, height, type)
+    const firstOutput = allOutputs[0];
+    document.getElementById('outputType').value = firstOutput.getAttribute('type') || 'cover';
+    document.getElementById('outputWidth').value = firstOutput.getAttribute('width') || 640;
+    document.getElementById('outputHeight').value = firstOutput.getAttribute('height') || 480;
+
+    // Synchronize checkboxes
+    const types = allOutputs.map(o => o.getAttribute('type'));
+    document.getElementById('outBox').checked = types.includes('cover');
+    document.getElementById('outPreview').checked = types.includes('screenshot');
+    document.getElementById('outSplash').checked = types.includes('wheel');
 
     layers = [];
     layerIdCounter = 0;
 
-    for (const child of output.children) {
+    // Parse layers from the first output
+    for (const child of firstOutput.children) {
         if (child.tagName === 'layer') {
             const layer = {
                 id: layerIdCounter++,
@@ -725,8 +775,9 @@ function parseXml(xmlStr) {
                         const r = eff.getAttribute('red') || 0;
                         const g = eff.getAttribute('green') || 0;
                         const b = eff.getAttribute('blue') || 0;
-                        values.color = '#' + [r,g,b].map(v =>
+                        const hex = [r,g,b].map(v =>
                             parseInt(v).toString(16).padStart(2,'0')).join('');
+                        values.color = '#' + hex;
                     } else {
                         values[f.n] = eff.getAttribute(f.n) || f.d;
                     }
