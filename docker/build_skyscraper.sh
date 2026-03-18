@@ -12,7 +12,7 @@ set -euo pipefail
 # - Copy only needed Qt/OpenSSL/ICU libs into bin/libs.aarch64/ if required
 # - Do not copy generic system libs (e.g., libc, libstdc++, libX11, libGL, etc.)
 
-VERSION="${1:-3.18.5}"
+VERSION="${1:-3.19.0}"
 
 # Project root is the parent of this script directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
