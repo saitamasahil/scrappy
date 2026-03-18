@@ -47,6 +47,11 @@ local artwork_manager_ip = nil
 local artwork_manager_status = ""
 local REGEN_FILE = "/tmp/scrappy_regen.json"
 local regen_check_timer = 0
+local template_maker_running = false
+local template_maker_ip = nil
+local template_maker_status = ""
+local TPL_REGEN_FILE = "/tmp/scrappy_tpl_regen.json"
+local tpl_regen_check_timer = 0
 local pending_region_prios = nil
 local selected_region_index = 1
 local region_prios = {}
@@ -415,17 +420,23 @@ end
 local function update_state()
     local t = channels.SKYSCRAPER_OUTPUT:pop()
     if t then
-        -- if t.error and t.error ~= "" then
-        --   dispatch_info("Error", t.error)
-        -- end
+        if t.log and string.match(t.log, "%[gen%] Finished \"fake%-rom\"") then
+            local f = io.open("/tmp/scrappy_preview_done.txt", "w")
+            if f then
+                f:write(tostring(os.time()))
+                f:close()
+            end
+        end
         if t.data and next(t.data) then
             dispatch_info(string.format("Updating cache for %s, please wait...", t.data.platform))
         end
         if t.success ~= nil and t.title then
-            finished_tasks = finished_tasks + 1
-            dispatch_info(nil, string.format("Finished game: %s", t.title))
-            if t.success then
-                artwork.copy_to_catalogue(t.platform, t.title)
+            if t.title ~= "fake-rom" and t.original_filename ~= "fake-rom" then
+                finished_tasks = finished_tasks + 1
+                dispatch_info(nil, string.format("Finished game: %s", t.title))
+                if t.success then
+                    artwork.copy_to_catalogue(t.platform, t.title)
+                end
             end
         end
         if t.command_finished then
@@ -440,10 +451,10 @@ end
 local function update_task_state()
     local t = channels.TASK_OUTPUT:pop()
     if t then
-        if t.error and t.error ~= "" then
+        if t.error and t.error ~= "" and not string.match(t.error or "", "fake%-rom") then
             dispatch_info("Error", t.error)
         end
-        if t.output and t.output ~= "" then
+        if t.output and t.output ~= "" and not string.match(t.output or "", "fake%-rom") then
             command_output = command_output .. t.output .. "\n"
             local scraping_log = info_window ^ "scraping_log"
             scraping_log.text = command_output
@@ -933,6 +944,42 @@ local function on_toggle_artwork_manager()
     end
 end
 
+local function on_toggle_template_maker()
+    if template_maker_running then
+        os.execute("pkill -9 -f template_maker.py")
+        template_maker_running = false
+        template_maker_status = "Server stopped."
+        return
+    end
+
+    local ip = utils.get_ip_address()
+    if ip then
+        local server_path = WORK_DIR .. "/scripts/template_maker.py"
+        local logo_path = WORK_DIR .. "/assets/scrappy_logo.png"
+        local theme_name = theme:get_current_name() or "dark"
+        local accent_color = user_config:read("main", "customAccent") or "cbaa0f"
+        local accent_mode = tostring(user_config:read("main", "accentMode") or "muos"):lower()
+        if accent_mode == "muos" then
+            accent_color = theme:read("button", "BUTTON_FOCUS") or "cbaa0f"
+        end
+        local templates_dir = WORK_DIR .. "/templates"
+        local resources_dir = WORK_DIR .. "/templates/resources"
+        local sample_dir = WORK_DIR .. "/sample"
+
+        os.execute(string.format(
+            'python3 "%s" --theme %s --accent "%s" --logo "%s" --templates-dir "%s" --resources-dir "%s" --sample-dir "%s" > /dev/null 2>&1 &',
+            server_path, theme_name, accent_color, logo_path,
+            templates_dir, resources_dir, sample_dir))
+
+        template_maker_running = true
+        template_maker_ip = ip
+        template_maker_status = 'Go to http://' .. ip .. ':8083 on phone/PC (same WiFi)'
+        tpl_regen_check_timer = 0
+    else
+        template_maker_status = "No IP found! Connect to WiFi."
+    end
+end
+
 local function on_app_update()
     log.write("Updating Scrappy")
     dispatch_info("Updating Scrappy", "Please wait...")
@@ -1121,7 +1168,9 @@ function tools:load()
         id = "artwork_manager_toggle",
         text = function()
             if artwork_manager_running then
-                return "Stop Artwork Manager"
+                return "Stop Artwork Manager (http://" .. (artwork_manager_ip or "") .. ":8082)"
+            elseif artwork_manager_status == "No IP found! Connect to WiFi." then
+                return "Artwork Manager (No WiFi Connection!)"
             else
                 return "Start Artwork Manager (Web)"
             end
@@ -1130,11 +1179,19 @@ function tools:load()
         onClick = on_toggle_artwork_manager,
         icon = "artwork"
     } + listitem {
-        text = function() return artwork_manager_status end,
+        id = "template_maker_toggle",
+        text = function()
+            if template_maker_running then
+                return "Stop Template Maker (http://" .. (template_maker_ip or "") .. ":8083)"
+            elseif template_maker_status == "No IP found! Connect to WiFi." then
+                return "Template Maker (No WiFi Connection!)"
+            else
+                return "Start Template Maker (Web)"
+            end
+        end,
         width = item_width,
-        focusable = false,
-        disabled = true,
-        visible = function() return artwork_manager_status ~= "" end
+        onClick = on_toggle_template_maker,
+        icon = "canvas"
     }))
 
     info_window = info_window + (component {
@@ -1204,6 +1261,25 @@ function tools:update(dt)
                     local xml = data.xml or "box2d"
                     -- Trigger regeneration with refresh and specified template
                     skyscraper.update_artwork(platform_path, data.rom, input_folder, data.platform, xml) 
+                end
+            end
+        end
+    end
+
+    -- Monitor template maker preview requests
+    if template_maker_running then
+        tpl_regen_check_timer = tpl_regen_check_timer + dt
+        if tpl_regen_check_timer >= 1.0 then
+            tpl_regen_check_timer = 0
+            local f = io.open(TPL_REGEN_FILE, "r")
+            if f then
+                local content = f:read("*a")
+                f:close()
+                os.remove(TPL_REGEN_FILE)
+
+                local data = json.decode(content)
+                if data and data.xml_path then
+                    skyscraper.update_sample(data.xml_path)
                 end
             end
         end

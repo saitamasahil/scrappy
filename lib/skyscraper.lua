@@ -187,7 +187,7 @@ end
 function skyscraper.init(config_path, binary)
     log.write("Initializing Skyscraper")
     skyscraper.config_path = WORK_DIR .. "/" .. config_path
-    skyscraper.base_command = "./" .. binary
+    skyscraper.base_command = "env QT_QPA_PLATFORM=offscreen ./" .. binary
 
     -- Load saved scraper module from config
     local configs = require("helpers.config")
@@ -304,6 +304,8 @@ local function generate_command(config)
     end
     if config.use_config then
         command = string.format('%s -c "%s"', command, skyscraper.config_path)
+    else
+        command = string.format('%s -c /dev/null', command)
     end
     if config.cache then
         command = string.format('%s -d "%s"', command, config.cache)

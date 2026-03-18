@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Scrappy Template Maker</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: %%BG%%;
+    --card-bg: %%CARD_BG%%;
+    --card-border: %%CARD_BORDER%%;
+    --text-primary: %%TEXT_PRIMARY%%;
+    --text-secondary: %%TEXT_SECONDARY%%;
+    --accent: %%ACCENT%%;
+    --input-bg: %%INPUT_BG%%;
+    --header-bg: %%HEADER_BG%%;
+    --panel-bg: %%PANEL_BG%%;
+    --hover-bg: %%HOVER_BG%%;
+    --danger: #e85555;
+    --success: #4ade80;
+    --accent-glow: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ─── Header ─── */
+header {
+    background: var(--header-bg);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--card-border);
+    display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 100;
+}
+.header-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.logo { height: 28px; }
+.header-title { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+.header-dot {
+    display: inline-block; width: 7px; height: 7px;
+    background: var(--accent); border-radius: 50%; margin-right: 5px;
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.header-center { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.header-center select {
+    flex: 1; max-width: 260px; padding: 7px 10px;
+    background: var(--input-bg); border: 1px solid var(--card-border);
+    border-radius: 8px; color: var(--text-primary);
+    font-family: inherit; font-size: 13px; cursor: pointer; outline: none;
+}
+.header-center select:focus { border-color: var(--accent); }
+.header-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ─── Buttons ─── */
+.btn {
+    padding: 7px 14px; border-radius: 10px; border: 1px solid var(--card-border);
+    background: var(--card-bg); color: var(--text-primary);
+    font-family: inherit; font-weight: 600; font-size: 12px;
+    cursor: pointer; transition: all 0.2s ease; display: inline-flex;
+    align-items: center; gap: 5px; white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); background: var(--hover-bg); transform: translateY(-1px); }
+.btn:active { transform: scale(0.97) translateY(0); }
+.btn-accent { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+.btn-accent:hover { opacity: 0.9; background: var(--accent); box-shadow: 0 4px 12px var(--accent-glow); }
+.btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+.btn-danger:hover { background: rgba(232,85,85,0.1); border-color: var(--danger); }
+.btn-sm { padding: 5px 10px; font-size: 11px; border-radius: 8px; }
+.btn-icon { padding: 5px 8px; font-size: 14px; min-width: 32px; justify-content: center; }
+
+/* ─── Layout ─── */
+.editor {
+    flex: 1; display: grid;
+    grid-template-columns: 1fr 460px;
+    gap: 0; overflow: hidden;
+}
+@media (max-width: 960px) {
+    .editor { grid-template-columns: 1fr; grid-template-rows: 280px 1fr; }
+    .header-center select { max-width: 160px; }
+}
+@media (max-width: 600px) {
+    header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+    .header-center { order: 3; width: 100%; }
+    .header-center select { max-width: 100%; }
+    .header-actions { gap: 4px; }
+    .btn { padding: 6px 10px; font-size: 11px; }
+}
+
+/* ─── Preview Panel ─── */
+.preview-panel {
+    background: var(--panel-bg);
+    border-right: 1px solid var(--card-border);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 24px; position: relative; overflow: hidden;
+}
+.preview-status {
+    position: absolute; top: 12px; left: 12px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 20px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    font-size: 11px; font-weight: 600; color: var(--text-secondary);
+    backdrop-filter: blur(8px);
+}
+.preview-status .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-secondary);
+}
+.preview-status.generating .dot { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+.preview-status.ready .dot { background: var(--success); }
+.preview-container {
+    max-width: 100%; max-height: calc(100vh - 160px);
+    position: relative;
+    background: repeating-conic-gradient(rgba(128,128,128,0.06) 0% 25%, transparent 0% 50%) 0 0 / 16px 16px;
+    border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--card-border);
+    display: flex; align-items: center; justify-content: center;
+    min-width: 200px; min-height: 200px;
+    transition: border-color 0.3s;
+}
+.preview-container:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--card-border)); }
+.preview-container img {
+    max-width: 100%; max-height: calc(100vh - 180px);
+    object-fit: contain; display: block;
+    transition: opacity 0.3s;
+}
+.preview-placeholder {
+    color: var(--text-secondary); font-size: 13px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 12px; padding: 40px; text-align: center;
+}
+.preview-placeholder .icon { font-size: 40px; opacity: 0.6; }
+.preview-badge {
+    position: absolute; bottom: 12px; right: 12px;
+    background: rgba(0,0,0,0.65); color: #fff;
+    padding: 4px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    backdrop-filter: blur(4px);
+}
+.preview-generating {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.45); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 8px;
+    color: #fff; font-weight: 600; font-size: 13px;
+    border-radius: 14px;
+}
+.spinner {
+    width: 24px; height: 24px;
+    border: 2.5px solid rgba(255,255,255,0.15); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Properties Panel ─── */
+.props-panel {
+    background: var(--bg);
+    overflow-y: auto; overflow-x: hidden;
+    height: calc(100vh - 53px);
+}
+.props-panel::-webkit-scrollbar { width: 4px; }
+.props-panel::-webkit-scrollbar-track { background: transparent; }
+.props-panel::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 2px; }
+.props-panel::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+.section { border-bottom: 1px solid var(--card-border); padding: 14px 16px; }
+.section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; cursor: pointer; user-select: none;
+}
+.section-title {
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-secondary);
+}
+.section-toggle { color: var(--text-secondary); font-size: 11px; transition: transform 0.2s; }
+.section-header-actions { display: flex; gap: 4px; }
+
+/* ─── Form Controls ─── */
+.field { margin-bottom: 8px; }
+.field-label {
+    display: block; font-size: 10px; font-weight: 600;
+    color: var(--text-secondary); margin-bottom: 3px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+}
+.field-row { display: flex; gap: 6px; align-items: flex-end; }
+.field-row .field { flex: 1; margin-bottom: 0; }
+.field-with-btn { display: flex; gap: 4px; align-items: center; }
+.field-with-btn select { flex: 1; }
+
+input[type="text"], input[type="number"], select {
+    width: 100%; padding: 7px 10px;
+    background: var(--input-bg); border: 1px solid var(--card-border);
+    border-radius: 8px; color: var(--text-primary);
+    font-family: inherit; font-size: 13px; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+input[type="number"] { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+select { cursor: pointer; }
+
+input[type="range"] {
+    width: 100%; height: 4px; -webkit-appearance: none; appearance: none;
+    background: var(--card-border); border-radius: 2px; outline: none;
+    transition: background 0.2s;
+}
+input[type="range"]:hover { background: var(--text-secondary); }
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 16px; height: 16px;
+    background: var(--accent); border-radius: 50%; cursor: pointer;
+    box-shadow: 0 2px 6px var(--accent-glow);
+    transition: transform 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+input[type="color"] {
+    width: 36px; height: 36px; border: 2px solid var(--card-border);
+    border-radius: 8px; cursor: pointer; padding: 2px;
+    background: var(--input-bg); transition: border-color 0.2s;
+}
+input[type="color"]:hover { border-color: var(--accent); }
+
+/* ─── Layer Card ─── */
+.layer-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px; margin-bottom: 6px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.layer-card:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--card-border)); }
+.layer-card.expanded {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-glow), 0 4px 16px rgba(0,0,0,0.15);
+}
+.layer-header {
+    display: flex; align-items: center; padding: 8px 10px;
+    gap: 7px; cursor: pointer; user-select: none;
+    transition: background 0.15s;
+}
+.layer-header:hover { background: var(--hover-bg); }
+.layer-drag {
+    color: var(--text-secondary); font-size: 12px; cursor: grab;
+    padding: 2px; opacity: 0.5; transition: opacity 0.15s;
+}
+.layer-card:hover .layer-drag { opacity: 1; }
+.layer-icon {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: var(--panel-bg); display: flex;
+    align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+}
+.layer-info { flex: 1; min-width: 0; }
+.layer-name {
+    font-size: 12px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.layer-meta { font-size: 10px; color: var(--text-secondary); margin-top: 1px; }
+.layer-actions { display: flex; gap: 3px; }
+
+.layer-body {
+    padding: 0 10px 10px;
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+.layer-card.expanded .layer-body {
+    max-height: 2000px;
+    padding: 4px 10px 10px;
+}
+
+/* ─── Effect Tag ─── */
+.effect-tag {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 7px; border-radius: 6px;
+    background: var(--panel-bg); border: 1px solid var(--card-border);
+    font-size: 10px; font-weight: 600; color: var(--text-secondary);
+    margin: 2px; cursor: pointer; transition: all 0.15s;
+}
+.effect-tag:hover { border-color: var(--accent); color: var(--text-primary); }
+.effect-tag .remove {
+    color: var(--danger); font-size: 13px; cursor: pointer;
+    margin-left: 1px; line-height: 1;
+}
+
+.effect-props { padding: 6px 0; }
+
+/* ─── Add Buttons ─── */
+.add-bar { display: flex; gap: 6px; flex-wrap: wrap; padding: 6px 0; }
+
+/* ─── Modals ─── */
+.modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+    z-index: 200; display: none;
+    align-items: center; justify-content: center;
+}
+.modal-overlay.visible { display: flex; }
+.modal {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    width: 90%; max-width: 480px; max-height: 80vh;
+    overflow-y: auto; padding: 20px;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.4);
+    animation: modalIn 0.25s ease-out;
+}
+@keyframes modalIn { from{opacity:0;transform:scale(0.95) translateY(8px)} to{opacity:1;transform:none} }
+.modal h2 { font-size: 16px; margin-bottom: 14px; font-weight: 700; }
+.modal-item {
+    padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--card-border);
+    margin-bottom: 6px; cursor: pointer;
+    transition: all 0.2s;
+}
+.modal-item:hover { border-color: var(--accent); background: var(--hover-bg); transform: translateX(2px); }
+.modal-item-name { font-weight: 600; font-size: 13px; }
+.modal-item-meta { font-size: 10px; color: var(--text-secondary); margin-top: 3px; }
+
+.xml-textarea {
+    width: 100%; min-height: 260px; padding: 12px;
+    background: var(--input-bg); border: 1px solid var(--card-border);
+    border-radius: 10px; color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    resize: vertical; outline: none; transition: border-color 0.2s;
+}
+.xml-textarea:focus { border-color: var(--accent); }
+
+/* ─── Toast ─── */
+#toast {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent); color: #000;
+    padding: 9px 22px; border-radius: 30px;
+    font-weight: 700; font-size: 12px;
+    box-shadow: 0 8px 24px var(--accent-glow);
+    display: none; z-index: 300;
+    animation: toastIn 0.3s ease-out;
+}
+@keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} }
+
+/* ─── Animations ─── */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.25s ease-out; }
+
+/* ─── Empty State ─── */
+.empty-state {
+    text-align: center; padding: 24px 16px;
+    color: var(--text-secondary);
+}
+.empty-state .icon { font-size: 32px; margin-bottom: 8px; opacity: 0.5; }
+.empty-state p { font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
+
+/* ─── Upload input (hidden) ─── */
+.upload-input { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-brand">
+        <img src="data:image/png;base64,%%LOGO_B64%%" class="logo" onerror="this.style.display='none'">
+        <div class="header-title"><span class="header-dot"></span>Template Maker</div>
+    </div>
+    <div class="header-center">
+        <select id="quickTemplateSelect" onchange="quickLoadTemplate(this.value)">
+            <option value="">— Select template —</option>
+        </select>
+    </div>
+    <div class="header-actions">
+        <button class="btn" onclick="openXmlModal('import')" title="Import XML">📥 Import</button>
+        <button class="btn" onclick="openXmlModal('export')" title="Export XML">📤 Export</button>
+        <button class="btn btn-accent" onclick="saveTemplate()" title="Save template">💾 Save</button>
+    </div>
+</header>
+
+<input type="file" id="uploadMaskInput" class="upload-input" accept=".png,.jpg,.jpeg">
+<input type="file" id="uploadFrameInput" class="upload-input" accept=".png,.jpg,.jpeg">
+
+<div class="editor">
+    <!-- Preview Panel -->
+    <div class="preview-panel">
+        <div class="preview-status" id="previewStatus"><span class="dot"></span>Idle</div>
+        <div class="preview-container" id="previewContainer">
+            <div class="preview-placeholder" id="previewPlaceholder">
+                <span class="icon">🎨</span>
+                <span>Add layers and start building<br>your artwork template</span>
+                <span style="font-size:10px;opacity:0.6">Click "Generate Preview" to render</span>
+            </div>
+            <img id="previewImg" style="display:none" alt="Preview">
+            <div class="preview-generating" id="previewLoading" style="display:none">
+                <div class="spinner"></div>
+                <span>Generating preview…</span>
+            </div>
+        </div>
+        <div class="preview-badge" id="previewBadge" style="display:none">640×480</div>
+    </div>
+
+    <!-- Properties Panel -->
+    <div class="props-panel" id="propsPanel">
+
+        <div class="section" style="padding:16px;">
+            <button class="btn btn-accent" style="width:100%; justify-content:center; font-size:16px; padding:12px; border-radius:8px" onclick="requestPreview()">▶ Generate Preview</button>
+        </div>
+
+        <!-- Template Name -->
+        <div class="section">
+            <div class="field">
+                <label class="field-label">Template Name</label>
+                <input type="text" id="templateName" placeholder="my-awesome-template" value="new-template">
+            </div>
+        </div>
+
+        <!-- Output Settings -->
+        <div class="section" id="outputSection">
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-title">📤 Output Settings</span>
+                <span class="section-toggle">▼</span>
+            </div>
+            <div class="section-body">
+                <div class="field-row">
+                    <div class="field">
+                        <label class="field-label">Type</label>
+                        <select id="outputType" oninput="onOutputChange()">
+                            <option value="cover">cover</option>
+                            <option value="screenshot">screenshot</option>
+                            <option value="wheel">wheel</option>
+                            <option value="marquee">marquee</option>
+                            <option value="texture">texture</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Width</label>
+                        <input type="number" id="outputWidth" value="640" min="1" max="4096" oninput="onOutputChange()">
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Height</label>
+                        <input type="number" id="outputHeight" value="480" min="1" max="4096" oninput="onOutputChange()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layers -->
+        <div class="section" id="layersSection">
+            <div class="section-header">
+                <span class="section-title">🗂️ Layers</span>
+                <div class="section-header-actions">
+                    <button class="btn btn-sm" onclick="addMaskBetween()" title="Add mask layer">🎭 Mask</button>
+                    <button class="btn btn-sm" onclick="triggerUpload('mask')" title="Upload mask file">📤 Upload Mask</button>
+                    <button class="btn btn-sm" onclick="triggerUpload('frames')" title="Upload frame file">🖼️ Upload Frame</button>
+                    <button class="btn btn-sm btn-accent" onclick="addLayer()">+ Layer</button>
+                </div>
+            </div>
+            <div id="layerStack"></div>
+        </div>
+
+        <!-- Quick Reference -->
+        <div class="section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <span class="section-title">📖 Quick Reference</span>
+                <span class="section-toggle">►</span>
+            </div>
+            <div class="section-body" style="display:none">
+                <div style="font-size:12px;color:var(--text-secondary);line-height:1.8">
+                    <b>Resources:</b> screenshot, cover, wheel, marquee, texture<br>
+                    <b>Align:</b> left, center, right<br>
+                    <b>VAlign:</b> top, middle, bottom<br>
+                    <b>Effects:</b> shadow, stroke, rounded, blur, mask, frame, gamebox, balance, brightness, contrast, opacity, rotate, saturation, hue, colorize, scanlines<br>
+                    <b>Mask tip:</b> White = transparent areas
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Load Template Modal -->
+<div class="modal-overlay" id="loadModal">
+    <div class="modal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <h2>📂 Load Template</h2>
+            <button class="btn btn-sm" onclick="closeModals()">✕</button>
+        </div>
+        <input type="text" id="loadSearch" placeholder="Search templates..." oninput="filterTemplates()" style="margin-bottom:10px">
+        <div id="templateList"></div>
+    </div>
+</div>
+
+<!-- XML Import/Export Modal -->
+<div class="modal-overlay" id="xmlModal">
+    <div class="modal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h2 id="xmlModalTitle">XML</h2>
+            <button class="btn btn-sm" onclick="closeModals()">✕</button>
+        </div>
+        <textarea class="xml-textarea" id="xmlTextarea" spellcheck="false"></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-accent" id="xmlActionBtn" onclick="xmlAction()">Apply</button>
+            <button class="btn" onclick="copyXml()">📋 Copy</button>
+            <button class="btn" onclick="closeModals()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Save Modal -->
+<div class="modal-overlay" id="saveModal">
+    <div class="modal">
+        <h2 style="margin-bottom:16px">Save Template</h2>
+        <div class="field">
+            <label class="field-label">Template Name</label>
+            <input type="text" id="saveName" placeholder="my-template">
+        </div>
+        <div id="saveWarning" style="color:var(--danger);font-size:12px;margin:8px 0;display:none"></div>
+        <div style="display:flex;gap:8px;margin-top:16px">
+            <button class="btn btn-accent" onclick="confirmSave(false)">Save</button>
+            <button class="btn" id="overwriteBtn" style="display:none" onclick="confirmSave(true)">Overwrite</button>
+            <button class="btn" onclick="closeModals()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── State ──────────────────────────────────────────────────
+let layers = [];
+let layerIdCounter = 0;
+let templatesList = [];
+let resourcesList = { masks: [], frames: [], other: [] };
+let previewTimer = null;
+let generating = false;
+let previewQueued = false;
+let xmlModalMode = 'export';
+let previewRequestTime = 0;
+let uploadPendingTarget = null; // {layerIdx, effectIdx, fieldName} or 'standalone'
+
+const EFFECTS_LIST = [
+    { key: 'shadow', label: '💫 Shadow', fields: [
+        {n:'distance',t:'number',d:5},{n:'softness',t:'number',d:5},{n:'opacity',t:'number',d:70}
+    ]},
+    { key: 'stroke', label: '✏️ Stroke', fields: [
+        {n:'width',t:'number',d:2},{n:'color',t:'color',d:'#000000'}
+    ]},
+    { key: 'rounded', label: '⬜ Rounded', fields: [
+        {n:'radius',t:'number',d:7}
+    ]},
+    { key: 'blur', label: '🌫️ Blur', fields: [
+        {n:'softness',t:'number',d:5}
+    ]},
+    { key: 'mask', label: '🎭 Mask', fields: [
+        {n:'file',t:'mask-select',d:''},{n:'width',t:'number',d:0},{n:'height',t:'number',d:0},
+        {n:'x',t:'number',d:0},{n:'y',t:'number',d:0}
+    ]},
+    { key: 'frame', label: '🖼️ Frame', fields: [
+        {n:'file',t:'frame-select',d:''},{n:'width',t:'number',d:0},{n:'height',t:'number',d:0},
+        {n:'x',t:'number',d:0},{n:'y',t:'number',d:0}
+    ]},
+    { key: 'gamebox', label: '📦 Gamebox', fields: [
+        {n:'side',t:'text',d:'wheel'},{n:'rotate',t:'number',d:90}
+    ]},
+    { key: 'balance', label: '🎨 Balance', fields: [
+        {n:'red',t:'number',d:0},{n:'green',t:'number',d:0},{n:'blue',t:'number',d:0}
+    ]},
+    { key: 'brightness', label: '☀️ Brightness', fields: [{n:'value',t:'number',d:0}]},
+    { key: 'contrast', label: '◐ Contrast', fields: [{n:'value',t:'number',d:0}]},
+    { key: 'saturation', label: '🌈 Saturation', fields: [{n:'value',t:'number',d:0}]},
+    { key: 'hue', label: '🔄 Hue', fields: [{n:'value',t:'number',d:0}]},
+    { key: 'opacity', label: '👁 Opacity', fields: [{n:'value',t:'number',d:100}]},
+    { key: 'rotate', label: '🔃 Rotate', fields: [
+        {n:'degrees',t:'number',d:0},{n:'axis',t:'text',d:'z'}
+    ]},
+    { key: 'colorize', label: '🎨 Colorize', fields: [
+        {n:'hue',t:'number',d:0},{n:'saturation',t:'number',d:100}
+    ]},
+    { key: 'scanlines', label: '📺 Scanlines', fields: [
+        {n:'file',t:'text',d:'scanlines1.png'},{n:'scale',t:'number',d:1},
+        {n:'opacity',t:'number',d:50},{n:'mode',t:'text',d:'overlay'}
+    ]}
+];
+
+// ─── Init ───────────────────────────────────────────────────
+async function init() {
+    try {
+        const [tRes, rRes] = await Promise.all([
+            fetch('/api/templates'), fetch('/api/resources')
+        ]);
+        templatesList = await tRes.json();
+        resourcesList = await rRes.json();
+        populateQuickTemplateSelect();
+    } catch(e) {
+        console.error('Init error:', e);
+    }
+}
+
+function populateQuickTemplateSelect() {
+    const sel = document.getElementById('quickTemplateSelect');
+    sel.innerHTML = '<option value="">— Select template —</option>';
+    templatesList.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.name;
+        opt.textContent = t.name + (t.resolution ? ` (${t.resolution})` : '');
+        sel.appendChild(opt);
+    });
+}
+
+async function quickLoadTemplate(name) {
+    if (!name) return;
+    await loadTemplate(name);
+}
+
+init();
+
+// ─── XML Generation ─────────────────────────────────────────
+function generateXml() {
+    const type = document.getElementById('outputType').value;
+    const w = document.getElementById('outputWidth').value;
+    const h = document.getElementById('outputHeight').value;
+
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<artwork>\n';
+    xml += `  <output type="${type}" width="${w}" height="${h}">\n`;
+
+    for (const layer of layers) {
+        if (layer.type === 'mask-between') {
+            xml += `    <mask file="${layer.file}"`;
+            if (layer.width) xml += ` width="${layer.width}"`;
+            if (layer.height) xml += ` height="${layer.height}"`;
+            xml += `/>\n`;
+            continue;
+        }
+        xml += `    <layer`;
+        if (layer.resource) xml += ` resource="${layer.resource}"`;
+        if (layer.width) xml += ` width="${layer.width}"`;
+        if (layer.height) xml += ` height="${layer.height}"`;
+        if (layer.x) xml += ` x="${layer.x}"`;
+        if (layer.y) xml += ` y="${layer.y}"`;
+        if (layer.align && layer.align !== 'left') xml += ` align="${layer.align}"`;
+        if (layer.valign && layer.valign !== 'top') xml += ` valign="${layer.valign}"`;
+        if (layer.opacity && layer.opacity != 100) xml += ` opacity="${layer.opacity}"`;
+        if (layer.mpixels) xml += ` mpixels="${layer.mpixels}"`;
+        xml += `>\n`;
+
+        for (const eff of (layer.effects || [])) {
+            const def = EFFECTS_LIST.find(e => e.key === eff.type);
+            if (!def) continue;
+            xml += `      <${eff.type}`;
+            for (const f of def.fields) {
+                const val = eff.values[f.n];
+                if (val !== undefined && val !== '' && val !== 0 && val !== f.d) {
+                    if (f.n === 'color' && eff.type === 'stroke') {
+                        // Convert hex to RGB attributes
+                        const hex = val.replace('#','');
+                        const r = parseInt(hex.substring(0,2),16);
+                        const g = parseInt(hex.substring(2,4),16);
+                        const b = parseInt(hex.substring(4,6),16);
+                        xml += ` red="${r}" green="${g}" blue="${b}"`;
+                    } else {
+                        xml += ` ${f.n}="${val}"`;
+                    }
+                }
+            }
+            xml += `/>\n`;
+        }
+        xml += `    </layer>\n`;
+    }
+    xml += `  </output>\n</artwork>`;
+    return xml;
+}
+
+// ─── XML Parsing ────────────────────────────────────────────
+function parseXml(xmlStr) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlStr, 'text/xml');
+    const err = doc.querySelector('parsererror');
+    if (err) throw new Error('Invalid XML: ' + err.textContent.substring(0,100));
+
+    const output = doc.querySelector('output');
+    if (!output) throw new Error('No <output> element found');
+
+    document.getElementById('outputType').value = output.getAttribute('type') || 'cover';
+    document.getElementById('outputWidth').value = output.getAttribute('width') || 640;
+    document.getElementById('outputHeight').value = output.getAttribute('height') || 480;
+
+    layers = [];
+    layerIdCounter = 0;
+
+    for (const child of output.children) {
+        if (child.tagName === 'layer') {
+            const layer = {
+                id: layerIdCounter++,
+                type: 'layer',
+                resource: child.getAttribute('resource') || '',
+                width: child.getAttribute('width') || '',
+                height: child.getAttribute('height') || '',
+                x: child.getAttribute('x') || '',
+                y: child.getAttribute('y') || '',
+                align: child.getAttribute('align') || 'left',
+                valign: child.getAttribute('valign') || 'top',
+                opacity: child.getAttribute('opacity') || 100,
+                mpixels: child.getAttribute('mpixels') || '',
+                effects: [],
+                expanded: false
+            };
+            // Parse effects
+            for (const eff of child.children) {
+                const def = EFFECTS_LIST.find(e => e.key === eff.tagName);
+                if (!def) continue;
+                const values = {};
+                for (const f of def.fields) {
+                    if (f.n === 'color' && eff.tagName === 'stroke') {
+                        const r = eff.getAttribute('red') || 0;
+                        const g = eff.getAttribute('green') || 0;
+                        const b = eff.getAttribute('blue') || 0;
+                        values.color = '#' + [r,g,b].map(v =>
+                            parseInt(v).toString(16).padStart(2,'0')).join('');
+                    } else {
+                        values[f.n] = eff.getAttribute(f.n) || f.d;
+                    }
+                }
+                layer.effects.push({ type: eff.tagName, values });
+            }
+            layers.push(layer);
+        } else if (child.tagName === 'mask') {
+            layers.push({
+                id: layerIdCounter++,
+                type: 'mask-between',
+                file: child.getAttribute('file') || '',
+                width: child.getAttribute('width') || '',
+                height: child.getAttribute('height') || ''
+            });
+        }
+    }
+    renderLayers();
+}
+
+// ─── Layer Rendering ────────────────────────────────────────
+function renderLayers() {
+    const stack = document.getElementById('layerStack');
+    stack.innerHTML = '';
+
+    layers.forEach((layer, idx) => {
+        const card = document.createElement('div');
+        card.className = `layer-card fade-in${layer.expanded ? ' expanded' : ''}`;
+        card.dataset.idx = idx;
+
+        if (layer.type === 'mask-between') {
+            card.innerHTML = `
+                <div class="layer-header" onclick="toggleLayer(${idx})">
+                    <span class="layer-drag" title="Drag to reorder">⠿</span>
+                    <div class="layer-icon">🎭</div>
+                    <div class="layer-info">
+                        <div class="layer-name">Mask</div>
+                        <div class="layer-meta">${layer.file || 'No file set'}</div>
+                    </div>
+                    <div class="layer-actions">
+                        <button class="btn btn-sm" onclick="event.stopPropagation();moveLayer(${idx},-1)" ${idx===0?'disabled':''}>▲</button>
+                        <button class="btn btn-sm" onclick="event.stopPropagation();moveLayer(${idx},1)" ${idx===layers.length-1?'disabled':''}>▼</button>
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeLayer(${idx})">✕</button>
+                    </div>
+                </div>
+                <div class="layer-body">
+                    <div class="field">
+                        <label class="field-label">Mask File</label>
+                        <div class="field-with-btn">
+                            <select oninput="layers[${idx}].file=this.value;schedulePreview()">
+                                <option value="">Select mask...</option>
+                                ${resourcesList.masks.map(m => `<option value="mask/${m.name}" ${layer.file===`mask/${m.name}`?'selected':''}>${m.name}</option>`).join('')}
+                            </select>
+                            <button class="btn btn-icon" onclick="triggerUpload('mask', {layerIdx:${idx}, fieldName:'file'})" title="Upload mask">📤</button>
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field-label">Width</label>
+                            <input type="number" value="${layer.width}" oninput="layers[${idx}].width=this.value;schedulePreview()">
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Height</label>
+                            <input type="number" value="${layer.height}" oninput="layers[${idx}].height=this.value;schedulePreview()">
+                        </div>
+                    </div>
+                </div>`;
+        } else {
+            const resIcon = {'screenshot':'📸','cover':'📦','wheel':'🎰','marquee':'🏷️','texture':'🧱','':'📄'}[layer.resource] || '📄';
+            const effectTags = (layer.effects||[]).map((e,ei) =>
+                `<span class="effect-tag">${EFFECTS_LIST.find(d=>d.key===e.type)?.label||e.type}<span class="remove" onclick="event.stopPropagation();removeEffect(${idx},${ei})">×</span></span>`
+            ).join('');
+
+            card.innerHTML = `
+                <div class="layer-header" onclick="toggleLayer(${idx})">
+                    <span class="layer-drag">⠿</span>
+                    <div class="layer-icon">${resIcon}</div>
+                    <div class="layer-info">
+                        <div class="layer-name">${layer.resource || 'Empty Layer'}</div>
+                        <div class="layer-meta">${layer.width||'auto'}×${layer.height||'auto'} ${effectTags?'• '+layer.effects.length+' effects':''}</div>
+                    </div>
+                    <div class="layer-actions">
+                        <button class="btn btn-sm" onclick="event.stopPropagation();moveLayer(${idx},-1)" ${idx===0?'disabled':''}>▲</button>
+                        <button class="btn btn-sm" onclick="event.stopPropagation();moveLayer(${idx},1)" ${idx===layers.length-1?'disabled':''}>▼</button>
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeLayer(${idx})">✕</button>
+                    </div>
+                </div>
+                <div class="layer-body">
+                    <div class="field">
+                        <label class="field-label">Resource</label>
+                        <select oninput="layers[${idx}].resource=this.value;renderLayers();schedulePreview()">
+                            <option value="">None (custom)</option>
+                            <option value="screenshot" ${layer.resource==='screenshot'?'selected':''}>Screenshot</option>
+                            <option value="cover" ${layer.resource==='cover'?'selected':''}>Cover</option>
+                            <option value="wheel" ${layer.resource==='wheel'?'selected':''}>Wheel</option>
+                            <option value="marquee" ${layer.resource==='marquee'?'selected':''}>Marquee</option>
+                            <option value="texture" ${layer.resource==='texture'?'selected':''}>Texture</option>
+                        </select>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field-label">Width</label>
+                            <input type="number" value="${layer.width}" placeholder="auto" oninput="layers[${idx}].width=this.value;schedulePreview()">
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Height</label>
+                            <input type="number" value="${layer.height}" placeholder="auto" oninput="layers[${idx}].height=this.value;schedulePreview()">
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field-label">X</label>
+                            <input type="number" value="${layer.x}" placeholder="0" oninput="layers[${idx}].x=this.value;schedulePreview()">
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Y</label>
+                            <input type="number" value="${layer.y}" placeholder="0" oninput="layers[${idx}].y=this.value;schedulePreview()">
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field-label">Align</label>
+                            <select oninput="layers[${idx}].align=this.value;schedulePreview()">
+                                <option value="left" ${layer.align==='left'?'selected':''}>Left</option>
+                                <option value="center" ${layer.align==='center'?'selected':''}>Center</option>
+                                <option value="right" ${layer.align==='right'?'selected':''}>Right</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">VAlign</label>
+                            <select oninput="layers[${idx}].valign=this.value;schedulePreview()">
+                                <option value="top" ${layer.valign==='top'?'selected':''}>Top</option>
+                                <option value="middle" ${layer.valign==='middle'?'selected':''}>Middle</option>
+                                <option value="bottom" ${layer.valign==='bottom'?'selected':''}>Bottom</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Opacity</label>
+                            <input type="number" value="${layer.opacity}" min="0" max="100" oninput="layers[${idx}].opacity=this.value;schedulePreview()">
+                        </div>
+                    </div>
+
+                    <!-- Effects -->
+                    <div style="margin-top:8px">
+                        <div class="field-label">Effects</div>
+                        <div style="margin:6px 0">${effectTags || '<span style="font-size:11px;color:var(--text-secondary)">No effects</span>'}</div>
+                        ${renderEffectProps(idx)}
+                        <div class="add-bar">
+                            <select id="addEffect${idx}" style="flex:1">
+                                ${EFFECTS_LIST.map(e => `<option value="${e.key}">${e.label}</option>`).join('')}
+                            </select>
+                            <button class="btn btn-sm" onclick="addEffect(${idx})">+ Add</button>
+                        </div>
+                    </div>
+                </div>`;
+        }
+        stack.appendChild(card);
+    });
+
+    if (layers.length === 0) {
+        stack.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px">No layers yet. Click "+ Add Layer" to start.</div>';
+    }
+}
+
+function renderEffectProps(layerIdx) {
+    const layer = layers[layerIdx];
+    if (!layer.effects || layer.effects.length === 0) return '';
+    return layer.effects.map((eff, ei) => {
+        const def = EFFECTS_LIST.find(d => d.key === eff.type);
+        if (!def) return '';
+        return `<div class="effect-props" style="background:var(--panel-bg);border-radius:8px;padding:8px;margin:4px 0">
+            <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px">${def.label}</div>
+            <div class="field-row" style="flex-wrap:wrap">
+                ${def.fields.map(f => {
+                    if (f.t === 'mask-select') {
+                        return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
+                            <div class="field-with-btn">
+                                <select oninput="layers[${layerIdx}].effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
+                                    <option value="">Select...</option>
+                                    ${resourcesList.masks.map(m => `<option value="mask/${m.name}" ${eff.values[f.n]===`mask/${m.name}`?'selected':''}>${m.name}</option>`).join('')}
+                                </select>
+                                <button class="btn btn-icon" onclick="triggerUpload('mask', {layerIdx:${layerIdx}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload mask">📤</button>
+                            </div></div>`;
+                    }
+                    if (f.t === 'frame-select') {
+                        return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
+                            <div class="field-with-btn">
+                                <select oninput="layers[${layerIdx}].effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
+                                    <option value="">Select...</option>
+                                    ${resourcesList.frames.map(m => `<option value="frames/${m.name}" ${eff.values[f.n]===`frames/${m.name}`?'selected':''}>${m.name}</option>`).join('')}
+                                    ${resourcesList.other.map(m => `<option value="${m.name}" ${eff.values[f.n]===m.name?'selected':''}>${m.name}</option>`).join('')}
+                                </select>
+                                <button class="btn btn-icon" onclick="triggerUpload('frames', {layerIdx:${layerIdx}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload frame">📤</button>
+                            </div></div>`;
+                    }
+                    if (f.t === 'color') {
+                        return `<div class="field"><label class="field-label">${f.n}</label>
+                            <input type="color" value="${eff.values[f.n]||f.d}" oninput="layers[${layerIdx}].effects[${ei}].values['${f.n}']=this.value;schedulePreview()"></div>`;
+                    }
+                    return `<div class="field"><label class="field-label">${f.n}</label>
+                        <input type="number" value="${eff.values[f.n]||f.d}" oninput="layers[${layerIdx}].effects[${ei}].values['${f.n}']=this.value;schedulePreview()"></div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ─── Layer Actions ──────────────────────────────────────────
+function addLayer() {
+    layers.push({
+        id: layerIdCounter++, type: 'layer',
+        resource: 'screenshot', width: '', height: '',
+        x: '', y: '', align: 'left', valign: 'top',
+        opacity: 100, mpixels: '', effects: [], expanded: true
+    });
+    renderLayers();
+    schedulePreview();
+}
+
+function addMaskBetween() {
+    layers.push({
+        id: layerIdCounter++, type: 'mask-between',
+        file: '', width: '', height: ''
+    });
+    renderLayers();
+}
+
+function removeLayer(idx) {
+    layers.splice(idx, 1);
+    renderLayers();
+    schedulePreview();
+}
+
+function moveLayer(idx, dir) {
+    const target = idx + dir;
+    if (target < 0 || target >= layers.length) return;
+    [layers[idx], layers[target]] = [layers[target], layers[idx]];
+    renderLayers();
+    schedulePreview();
+}
+
+function toggleLayer(idx) {
+    layers[idx].expanded = !layers[idx].expanded;
+    renderLayers();
+}
+
+function addEffect(layerIdx) {
+    const sel = document.getElementById('addEffect' + layerIdx);
+    const key = sel.value;
+    const def = EFFECTS_LIST.find(e => e.key === key);
+    if (!def) return;
+    const values = {};
+    def.fields.forEach(f => values[f.n] = f.d);
+    layers[layerIdx].effects.push({ type: key, values });
+    renderLayers();
+    schedulePreview();
+}
+
+function removeEffect(layerIdx, effectIdx) {
+    layers[layerIdx].effects.splice(effectIdx, 1);
+    renderLayers();
+    schedulePreview();
+}
+
+// ─── Preview ────────────────────────────────────────────────
+function setPreviewStatus(status) {
+    const el = document.getElementById('previewStatus');
+    el.className = 'preview-status ' + status;
+    el.innerHTML = `<span class="dot"></span>${status === 'generating' ? 'Generating...' : status === 'ready' ? 'Ready' : 'Idle'}`;
+}
+
+function schedulePreview() {
+    // Auto-preview removed per user request.
+    // Wait for manual "Generate Preview" button click to prevent device slowdowns.
+}
+
+async function requestPreview(fromQueue = false) {
+    if (layers.length === 0) return;
+    
+    // If we're already generating, queue this request to run next
+    if (generating && !fromQueue) {
+        previewQueued = true;
+        return;
+    }
+    
+    previewQueued = false;
+    const xml = generateXml();
+    generating = true;
+    previewRequestTime = Date.now();
+    
+    document.getElementById('previewLoading').style.display = 'flex';
+    document.getElementById('previewPlaceholder').style.display = 'none';
+    setPreviewStatus('generating');
+
+    try {
+        await fetch('/api/preview', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ xml })
+        });
+        // Start polling for result, passing the time we requested it
+        pollPreview(previewRequestTime);
+    } catch(e) {
+        generating = false;
+        document.getElementById('previewLoading').style.display = 'none';
+        setPreviewStatus('idle');
+        showToast('Preview generation failed');
+        // Check queue
+        if (previewQueued) setTimeout(() => requestPreview(true), 100);
+    }
+}
+
+function pollPreview(reqTime) {
+    // If a newer request was made while we were polling, abandon this one
+    if (reqTime < previewRequestTime) return;
+    
+    if (Date.now() - reqTime > 30000) {
+        if (reqTime === previewRequestTime) {
+            generating = false;
+            document.getElementById('previewLoading').style.display = 'none';
+            setPreviewStatus('idle');
+            showToast('Preview timed out');
+            
+            // Check queue
+            if (previewQueued) setTimeout(() => requestPreview(true), 100);
+        }
+        return;
+    }
+    
+    const type = document.getElementById('outputType').value;
+    fetch(`/api/preview?t=${reqTime}&type=${type}`)
+        .then(r => r.json())
+        .then(data => {
+            if (reqTime < previewRequestTime) return; // check again after fetch
+            
+            // Convert mtime from seconds (Python) to ms
+            const fileTime = (data.mtime || 0) * 1000;
+            
+            // Only accept if the file was modified AFTER our request
+            if (data.ready && data.url && fileTime > reqTime) {
+                const img = document.getElementById('previewImg');
+                img.src = data.url + '?t=' + Date.now();
+                img.style.display = 'block';
+                img.onload = () => {
+                    if (reqTime === previewRequestTime) {
+                        generating = false;
+                        document.getElementById('previewLoading').style.display = 'none';
+                        setPreviewStatus('ready');
+                        const w = document.getElementById('outputWidth').value;
+                        const h = document.getElementById('outputHeight').value;
+                        const badge = document.getElementById('previewBadge');
+                        badge.textContent = `${w}×${h}`;
+                        badge.style.display = 'block';
+                        
+                        // Check queue
+                        if (previewQueued) setTimeout(() => requestPreview(true), 100);
+                    }
+                };
+            } else {
+                setTimeout(() => pollPreview(reqTime), 1000); // 1.5s -> 1s poll
+            }
+        })
+        .catch(() => {
+            setTimeout(() => pollPreview(reqTime), 1500);
+        });
+}
+
+function onOutputChange() { schedulePreview(); }
+
+// ─── Template Load ──────────────────────────────────────────
+function openLoadModal() {
+    document.getElementById('loadModal').classList.add('visible');
+    renderTemplateList();
+}
+
+function renderTemplateList(filter='') {
+    const list = document.getElementById('templateList');
+    const filtered = templatesList.filter(t =>
+        t.name.toLowerCase().includes(filter.toLowerCase())
+    );
+    list.innerHTML = filtered.map(t => `
+        <div class="modal-item" onclick="loadTemplate('${t.name}')">
+            <div class="modal-item-name">${t.name}</div>
+            <div class="modal-item-meta">${t.types.join(', ')} ${t.resolution?'• '+t.resolution:''}</div>
+        </div>
+    `).join('');
+    if (filtered.length === 0) {
+        list.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>No templates found</p></div>';
+    }
+}
+
+function filterTemplates() {
+    renderTemplateList(document.getElementById('loadSearch').value);
+}
+
+async function loadTemplate(name) {
+    try {
+        const res = await fetch(`/api/template/${encodeURIComponent(name)}`);
+        const data = await res.json();
+        document.getElementById('templateName').value = name;
+        parseXml(data.xml);
+        closeModals();
+        showToast(`Loaded "${name}"`);
+        // Force immediate preview without debounce
+        requestPreview();
+    } catch(e) {
+        showToast('Failed to load template');
+    }
+}
+
+// ─── Resources Upload ───────────────────────────────────────
+function triggerUpload(category, target = 'standalone') {
+    uploadPendingTarget = target;
+    const inputId = category === 'mask' ? 'uploadMaskInput' : 'uploadFrameInput';
+    const input = document.getElementById(inputId);
+    input.value = ''; // reset so same file can be selected again
+    input.click();
+}
+
+async function handleUpload(event, category) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('category', category);
+
+    try {
+        showToast(`Uploading ${file.name}...`);
+        const res = await fetch('/api/upload-resource', {
+            method: 'POST',
+            body: fd
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+            showToast('Upload complete');
+            // Refresh resources
+            const rRes = await fetch('/api/resources');
+            resourcesList = await rRes.json();
+            
+            // Update the UI target
+            if (uploadPendingTarget !== 'standalone') {
+                const t = uploadPendingTarget;
+                if (t.layerIdx !== undefined) {
+                    if (t.effectIdx !== undefined) {
+                        // It's an effect
+                        layers[t.layerIdx].effects[t.effectIdx].values[t.fieldName] = data.path;
+                    } else {
+                        // It's a mask-between layer
+                        layers[t.layerIdx][t.fieldName] = data.path;
+                    }
+                }
+            }
+            renderLayers();
+            schedulePreview();
+        } else {
+            showToast(data.message || 'Upload failed');
+        }
+    } catch(e) {
+        showToast('Upload error');
+    }
+}
+
+// Attach upload listeners
+document.getElementById('uploadMaskInput').addEventListener('change', e => handleUpload(e, 'mask'));
+document.getElementById('uploadFrameInput').addEventListener('change', e => handleUpload(e, 'frames'));
+
+// ─── Save ───────────────────────────────────────────────────
+function saveTemplate() {
+    document.getElementById('saveName').value = document.getElementById('templateName').value;
+    document.getElementById('saveWarning').style.display = 'none';
+    document.getElementById('overwriteBtn').style.display = 'none';
+    document.getElementById('saveModal').classList.add('visible');
+}
+
+async function confirmSave(overwrite) {
+    const name = document.getElementById('saveName').value.trim();
+    if (!name) { showToast('Enter a name'); return; }
+    const xml = generateXml();
+    try {
+        const res = await fetch('/api/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name, xml, overwrite })
+        });
+        const data = await res.json();
+        if (data.status === 'exists') {
+            document.getElementById('saveWarning').textContent = data.message;
+            document.getElementById('saveWarning').style.display = 'block';
+            document.getElementById('overwriteBtn').style.display = 'inline-flex';
+            return;
+        }
+        if (data.status === 'ok') {
+            document.getElementById('templateName').value = data.name;
+            closeModals();
+            showToast(`Saved "${data.name}.xml"`);
+            // Refresh templates list
+            const tRes = await fetch('/api/templates');
+            templatesList = await tRes.json();
+        } else {
+            showToast(data.message || 'Save failed');
+        }
+    } catch(e) {
+        showToast('Save error');
+    }
+}
+
+// ─── XML Import/Export ──────────────────────────────────────
+function openXmlModal(mode) {
+    xmlModalMode = mode;
+    const title = document.getElementById('xmlModalTitle');
+    const textarea = document.getElementById('xmlTextarea');
+    const btn = document.getElementById('xmlActionBtn');
+
+    if (mode === 'export') {
+        title.textContent = 'Export XML';
+        textarea.value = generateXml();
+        textarea.readOnly = true;
+        btn.textContent = 'Close';
+    } else {
+        title.textContent = 'Import XML';
+        textarea.value = '';
+        textarea.readOnly = false;
+        textarea.placeholder = 'Paste Skyscraper artwork XML here...';
+        btn.textContent = 'Import';
+    }
+    document.getElementById('xmlModal').classList.add('visible');
+}
+
+function xmlAction() {
+    if (xmlModalMode === 'export') { closeModals(); return; }
+    try {
+        parseXml(document.getElementById('xmlTextarea').value);
+        closeModals();
+        showToast('XML imported successfully');
+        schedulePreview();
+    } catch(e) {
+        showToast('Parse error: ' + e.message);
+    }
+}
+
+function copyXml() {
+    const ta = document.getElementById('xmlTextarea');
+    ta.select();
+    navigator.clipboard.writeText(ta.value).then(
+        () => showToast('Copied to clipboard'),
+        () => { document.execCommand('copy'); showToast('Copied'); }
+    );
+}
+
+// ─── Utility ────────────────────────────────────────────────
+function closeModals() {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('visible'));
+}
+
+function toggleSection(header) {
+    const body = header.nextElementSibling;
+    const toggle = header.querySelector('.section-toggle');
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        toggle.textContent = '▼';
+    } else {
+        body.style.display = 'none';
+        toggle.textContent = '►';
+    }
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3000);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.onclick = e => { if (e.target === m) closeModals(); };
+});
+
+// Initial render
+renderLayers();
+</script>
+</body>
+</html>
