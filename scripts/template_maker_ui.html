@@ -448,16 +448,7 @@ input[type="color"]:hover { border-color: var(--accent); }
                     </div>
                 </div>
                 <div class="field-row">
-                    <div class="field">
-                        <label class="field-label">Preview Target</label>
-                        <select id="outputType" oninput="onOutputChange()">
-                            <option value="cover">cover (Boxart)</option>
-                            <option value="screenshot">screenshot (Preview)</option>
-                            <option value="wheel">wheel (Splash)</option>
-                            <option value="marquee">marquee</option>
-                            <option value="texture">texture</option>
-                        </select>
-                    </div>
+                    <!-- Preview Target removed per user request, handled internally now -->
                     <div class="field">
                         <label class="field-label">Width</label>
                         <input type="number" id="outputWidth" value="640" min="1" max="4096" oninput="onOutputChange()">
@@ -558,10 +549,10 @@ let templatesList = [];
 let resourcesList = { masks: [], frames: [], other: [] };
 let previewTimer = null;
 let generating = false;
-let previewQueued = false;
 let xmlModalMode = 'export';
 let previewRequestTime = 0;
 let uploadPendingTarget = null; // {layerIdx, effectIdx, fieldName} or 'standalone'
+let primaryOutputType = 'cover'; // Track the output being edited
 
 const EFFECTS_LIST = [
     { key: 'shadow', label: '💫 Shadow', fields: [
@@ -650,54 +641,68 @@ function generateXml() {
     if (document.getElementById('outSplash').checked) enabledTypes.push('wheel');
     
     // Fallback if none checked
-    if (enabledTypes.length === 0) enabledTypes.push(document.getElementById('outputType').value);
+    if (enabledTypes.length === 0) enabledTypes.push(primaryOutputType);
 
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<artwork>\n';
     
     for (const type of enabledTypes) {
         xml += `  <output type="${type}" width="${w}" height="${h}">\n`;
 
-        for (const layer of layers) {
-            if (layer.type === 'mask-between') {
-                xml += `    <mask file="${layer.file}"`;
+        if (type === 'screenshot' && primaryOutputType !== 'screenshot') {
+            // Automated Pattern: Single centered screenshot
+            xml += `    <layer resource="screenshot" height="${h}" valign="center"></layer>\n`;
+        } else if (type === 'wheel' && primaryOutputType !== 'wheel') {
+            // Automated Pattern: Fluent-style splash (black background + centered wheel)
+            xml += `    <layer resource="screenshot" width="${w}" height="${h}">\n`;
+            xml += `      <balance red="-255" green="-255" blue="-255"/>\n`;
+            xml += `    </layer>\n`;
+            xml += `    <layer resource="wheel" width="${Math.round(w * 0.47)}" valign="middle" align="center">\n`;
+            xml += `      <stroke width="1" color="#ffffff"/>\n`;
+            xml += `    </layer>\n`;
+        } else {
+            // Main Artwork or specific template design (use layers)
+            for (const layer of layers) {
+                if (layer.type === 'mask-between') {
+                    xml += `    <mask file="${layer.file}"`;
+                    if (layer.width) xml += ` width="${layer.width}"`;
+                    if (layer.height) xml += ` height="${layer.height}"`;
+                    xml += `/>\n`;
+                    continue;
+                }
+                xml += `    <layer`;
+                if (layer.resource) xml += ` resource="${layer.resource}"`;
                 if (layer.width) xml += ` width="${layer.width}"`;
                 if (layer.height) xml += ` height="${layer.height}"`;
-                xml += `/>\n`;
-                continue;
-            }
-            xml += `    <layer`;
-            if (layer.resource) xml += ` resource="${layer.resource}"`;
-            if (layer.width) xml += ` width="${layer.width}"`;
-            if (layer.height) xml += ` height="${layer.height}"`;
-            if (layer.x) xml += ` x="${layer.x}"`;
-            if (layer.y) xml += ` y="${layer.y}"`;
-            if (layer.align && layer.align !== 'left') xml += ` align="${layer.align}"`;
-            if (layer.valign && layer.valign !== 'top') xml += ` valign="${layer.valign}"`;
-            if (layer.opacity && layer.opacity != 100) xml += ` opacity="${layer.opacity}"`;
-            if (layer.mpixels) xml += ` mpixels="${layer.mpixels}"`;
-            xml += `>\n`;
+                if (layer.x) xml += ` x="${layer.x}"`;
+                if (layer.y) xml += ` y="${layer.y}"`;
+                if (layer.align && layer.align !== 'left') xml += ` align="${layer.align}"`;
+                if (layer.valign && layer.valign !== 'top') xml += ` valign="${layer.valign}"`;
+                if (layer.opacity && layer.opacity != 100) xml += ` opacity="${layer.opacity}"`;
+                if (layer.mpixels) xml += ` mpixels="${layer.mpixels}"`;
+                xml += `>\n`;
 
-            for (const eff of (layer.effects || [])) {
-                const def = EFFECTS_LIST.find(e => e.key === eff.type);
-                if (!def) continue;
-                xml += `      <${eff.type}`;
-                for (const f of def.fields) {
-                    const val = eff.values[f.n];
-                    if (val !== undefined && val !== '' && val !== 0 && val !== f.d) {
-                        if (f.n === 'color' && eff.type === 'stroke') {
-                            const hex = val.replace('#','');
-                            const r = parseInt(hex.substring(0,2),16);
-                            const g = parseInt(hex.substring(2,4),16);
-                            const b = parseInt(hex.substring(4,6),16);
-                            xml += ` red="${r}" green="${g}" blue="${b}"`;
-                        } else {
-                            xml += ` ${f.n}="${val}"`;
+                for (const eff of (layer.effects || [])) {
+                    const def = EFFECTS_LIST.find(e => e.key === eff.type);
+                    if (!def) continue;
+                    xml += `      <${eff.type}`;
+                    for (const f of def.fields) {
+                        const val = eff.values[f.n];
+                        if (val !== undefined && val !== '' && val !== 0 && val !== f.d) {
+                            if (f.n === 'color' && eff.type === 'stroke') {
+                                const hex = val.replace('#','');
+                                const r = parseInt(hex.substring(0,2),16);
+                                const g = parseInt(hex.substring(2,4),16);
+                                const b = parseInt(hex.substring(4,6),16);
+                                xml += ` red="${r}" green="${g}" blue="${b}"`;
+                            } else {
+                                xml += ` ${f.n}="${val}"`;
+                            }
                         }
                     }
+                    xml += `/>\n`;
                 }
-                xml += `/>\n`;
+                xml += `    </layer>\n`;
             }
-            xml += `    </layer>\n`;
         }
         xml += `  </output>\n`;
     }
@@ -712,14 +717,11 @@ function onOutputChange() {
                        document.getElementById('outSplash').checked;
     
     if (!anyChecked) {
-        // Fallback to currently selected preview target
-        const type = document.getElementById('outputType').value;
-        if (type === 'cover') document.getElementById('outBox').checked = true;
-        else if (type === 'screenshot') document.getElementById('outPreview').checked = true;
-        else if (type === 'wheel') document.getElementById('outSplash').checked = true;
+        // Fallback to primary being edited
+        if (primaryOutputType === 'cover') document.getElementById('outBox').checked = true;
+        else if (primaryOutputType === 'screenshot') document.getElementById('outPreview').checked = true;
+        else if (primaryOutputType === 'wheel') document.getElementById('outSplash').checked = true;
     }
-    
-    // schedulePreview(); // User requested manual only
 }
 
 // ─── XML Parsing ────────────────────────────────────────────
@@ -734,7 +736,7 @@ function parseXml(xmlStr) {
 
     // Use the first output for general settings (width, height, type)
     const firstOutput = allOutputs[0];
-    document.getElementById('outputType').value = firstOutput.getAttribute('type') || 'cover';
+    primaryOutputType = firstOutput.getAttribute('type') || 'cover';
     document.getElementById('outputWidth').value = firstOutput.getAttribute('width') || 640;
     document.getElementById('outputHeight').value = firstOutput.getAttribute('height') || 480;
 
@@ -1107,7 +1109,7 @@ function pollPreview(reqTime) {
         return;
     }
     
-    const type = document.getElementById('outputType').value;
+    const type = primaryOutputType;
     fetch(`/api/preview?t=${reqTime}&type=${type}`)
         .then(r => r.json())
         .then(data => {
