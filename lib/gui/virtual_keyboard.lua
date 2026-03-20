@@ -88,6 +88,10 @@ local function create_vk(config)
     cursor_pos = 0,
     -- Whether the text field is focused (for cursor movement within text)
     text_field_focused = false,
+    key_anim = {},
+    -- Focus flow animation states
+    focus_x = 0, focus_y = 0, focus_w = 0, focus_h = 0,
+    focus_initialized = false,
   }
   
   function vk:show(initial, target)
@@ -99,6 +103,8 @@ local function create_vk(config)
     self.opened_at = love.timer.getTime()
     self.cursor_pos = #self.buffer  -- Start cursor at end of text
     self.text_field_focused = false
+    self.focus_initialized = false -- reset so it snaps to first key on show
+    self.fade = 0
     _G.ui_overlay_active = true
   end
   
@@ -370,7 +376,14 @@ local function create_vk(config)
   end
   
   function vk:update(dt)
-    if not self.visible then return end
+    if not self.visible then 
+      self.fade = 0
+      return 
+    end
+    -- Organic opening curve (aggressive EaseOut)
+    self.fade = (self.fade or 0) + (1 - (self.fade or 0)) * 12 * dt
+    if self.fade > 0.999 then self.fade = 1 end
+    
     local held = nil
     if love.keyboard.isDown('up') then held = 'up'
     elseif love.keyboard.isDown('down') then held = 'down'
@@ -414,6 +427,70 @@ local function create_vk(config)
       self.repeat_started = false
       self.hold_acc = 0
     end
+
+    -- Update individual key animations and focus flow
+    local layout = self:get_layout()
+    local key_w, key_h, margin = 30, 30, 4
+    if w_height >= 720 then key_w, key_h, margin = 38, 38, 6 end
+    local kb_h = math.floor(w_height * 0.30)
+    local y0 = w_height - kb_h - 68
+    local box_h = math.max(22, math.floor(key_h * 0.95))
+    local box_y = y0 + 6
+    local area_x0 = 6
+    local prompt_w = 136
+    local panel_gap = 12
+    local area_w = math.max(100, w_width - area_x0 - prompt_w - panel_gap)
+    local keys_y0 = box_y + box_h + 10
+
+    local target_x, target_y, target_w, target_h = 0, 0, 0, 0
+
+    if self.text_field_focused then
+      target_x, target_y = area_x0, box_y
+      target_w, target_h = area_w, box_h
+    end
+
+    for r = 1, #layout do
+      local row = layout[r]
+      local row_w = 0
+      for i=1,#row do
+        local k = row[i]
+        local mult = (type(k)=='table' and k.w) or 1
+        row_w = row_w + (key_w*mult) + (i>1 and margin or 0)
+      end
+      local x_start = area_x0 + math.floor((area_w - row_w) / 2)
+      local cx = x_start
+      
+      self.key_anim[r] = self.key_anim[r] or {}
+      for c = 1, #row do
+        local k = row[c]
+        local mult = (type(k)=='table' and k.w) or 1
+        local kw = key_w * mult
+        local ry = keys_y0 + (r - 1) * (key_h + margin)
+        
+        local is_focused = (not self.text_field_focused and self.row == r and self.col == c)
+        local target_v = is_focused and 1 or 0
+        self.key_anim[r][c] = (self.key_anim[r][c] or 0) + (target_v - (self.key_anim[r][c] or 0)) * 20 * dt
+        
+        if is_focused then
+          target_x, target_y = cx, ry
+          target_w, target_h = kw, key_h
+        end
+        cx = cx + kw + margin
+      end
+    end
+
+    -- Lerp focus flow
+    if not self.focus_initialized then
+      self.focus_x, self.focus_y = target_x, target_y
+      self.focus_w, self.focus_h = target_w, target_h
+      self.focus_initialized = true
+    else
+      local speed = 15
+      self.focus_x = self.focus_x + (target_x - self.focus_x) * speed * dt
+      self.focus_y = self.focus_y + (target_y - self.focus_y) * speed * dt
+      self.focus_w = self.focus_w + (target_w - self.focus_w) * speed * dt
+      self.focus_h = self.focus_h + (target_h - self.focus_h) * speed * dt
+    end
   end
 
   function vk:draw()
@@ -434,11 +511,15 @@ local function create_vk(config)
     local key_focus = theme:read_color("keyboard", "KEY_FOCUS", "#4d4dcc")
     local prompt_panel_bg = theme:read_color("keyboard", "PROMPT_PANEL_BG", "#1f1f1f")
 
-    overlay_color[4] = overlay_opacity
+    local fade = self.fade or 1
+    overlay_color[4] = overlay_opacity * fade
     love.graphics.setColor(overlay_color)
     love.graphics.rectangle('fill', 0, 0, w, h)
 
-    panel_bg[4] = panel_opacity
+    love.graphics.push()
+    love.graphics.translate(0, (1 - fade) * 20)
+
+    panel_bg[4] = panel_opacity * fade
     love.graphics.setColor(panel_bg)
     love.graphics.rectangle('fill', 0, y0, w, h - y0)
 
@@ -454,12 +535,15 @@ local function create_vk(config)
     local box_x = area_x0
     local box_w = area_w
 
-    -- Draw text field focus highlight
-    if self.text_field_focused then
-      love.graphics.setColor(key_focus)
-      love.graphics.rectangle('line', box_x - 2, box_y - 2, box_w + 4, box_h + 4, 14, 14)
-    end
-
+    -- Draw focus flow highlight behind everything
+    love.graphics.setColor(key_focus)
+    love.graphics.rectangle('fill', self.focus_x - 3, self.focus_y - 3, self.focus_w + 6, self.focus_h + 6, 14, 14)
+    -- Also draw a slightly brighter border to make it pop
+    love.graphics.setLineWidth(2)
+    love.graphics.setColor(key_focus[1]*1.2, key_focus[2]*1.2, key_focus[3]*1.2, (key_focus[4] or 1))
+    love.graphics.rectangle('line', self.focus_x - 4, self.focus_y - 4, self.focus_w + 8, self.focus_h + 8, 14, 14)
+    love.graphics.setLineWidth(1)
+    
     love.graphics.setColor(preview_bg)
     love.graphics.rectangle('fill', box_x, box_y, box_w, box_h, 12, 12)
     love.graphics.setColor(key_text)
@@ -541,13 +625,28 @@ local function create_vk(config)
       local cx = x
       for c = 1, #row do
         local k = row[c]
+        local anim_p = (self.key_anim[r] and self.key_anim[r][c]) or 0
         local mult = (type(k)=='table' and k.w) or 1
         local kw = key_w * mult
         local rx, ry = cx, ypos + (r - 1) * (key_h + margin)
-        if r == self.row and c == self.col and not self.text_field_focused then
-          love.graphics.setColor(key_focus)
-          love.graphics.rectangle('fill', rx - 3, ry - 3, kw + 6, key_h + 6, 6, 6)
+        
+        love.graphics.push()
+        local kcx, kcy = rx + kw/2, ry + key_h/2
+        local kscale = 1.0 + anim_p * 0.05
+        love.graphics.translate(kcx, kcy)
+        love.graphics.scale(kscale, kscale)
+        love.graphics.translate(-kcx, -kcy)
+
+        if anim_p > 0.01 then
+          -- Subtle per-key scale pop is still there, but highlight is now global "flow"
+          local br = key_bg[1] + (key_focus[1] - key_bg[1]) * anim_p * 0.5 -- 50% opacity blend for local key
+          local bg = key_bg[2] + (key_focus[2] - key_bg[2]) * anim_p * 0.5
+          local bb = key_bg[3] + (key_focus[3] - key_bg[3]) * anim_p * 0.5
+          local ba = (key_bg[4] or 1) + ((key_focus[4] or 1) - (key_bg[4] or 1)) * anim_p * 0.5
+          love.graphics.setColor(br, bg, bb, ba)
+          -- No local rectangle fill here anymore, the Flow highlight handles it
         end
+        
         love.graphics.setColor(key_bg)
         love.graphics.rectangle('fill', rx, ry, kw, key_h, 4, 4)
         love.graphics.setColor(key_text)
@@ -573,6 +672,7 @@ local function create_vk(config)
         else
           draw_label(rx, ry, kw, key_h, tostring(k))
         end
+        love.graphics.pop()
         cx = cx + kw + margin
       end
     end
@@ -616,6 +716,7 @@ local function create_vk(config)
     draw_prompt(2, 'b', 'Close')
     draw_prompt(3, 'x', 'Layout')
     draw_prompt(4, 'y', 'Delete')
+    love.graphics.pop()
   end
   
   return vk

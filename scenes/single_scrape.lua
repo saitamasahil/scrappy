@@ -13,8 +13,10 @@ local component = require 'lib.gui.badr'
 local label = require 'lib.gui.label'
 local popup = require 'lib.gui.popup'
 local listitem = require 'lib.gui.listitem'
+local checkbox = require 'lib.gui.checkbox'
 local scroll_container = require 'lib.gui.scroll_container'
 local output_log = require 'lib.gui.output_log'
+local icon = require 'lib.gui.icon'
 local virtual_keyboard = require 'lib.gui.virtual_keyboard'
 
 local w_width, w_height = love.window.getMode()
@@ -46,7 +48,8 @@ local state = {
     last_failed_rom = nil,
     last_failed_platform = nil,
     refine_attempted = false, -- Track if we've already tried a refine search
-    refine_confirm_visible = false -- Confirmation popup before showing VK
+    refine_confirm_visible = false, -- Confirmation popup before showing VK
+    refine_fade = 0
 }
 
 -- Virtual keyboard for refine search
@@ -175,6 +178,7 @@ local function on_refine_search_done(query, target)
             ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
         end
         scraping_window.visible = true
+        scraping_window.fade = 0
     end
 
     -- Mark that we've attempted a refine search
@@ -219,6 +223,7 @@ local function show_refine_confirm(rom, platform)
     state.last_failed_rom = rom
     state.last_failed_platform = platform
     state.refine_confirm_visible = true
+    state.refine_fade = 0 -- Explicit reset
 end
 
 -- User confirmed they want to refine search
@@ -238,16 +243,28 @@ end
 -- Draw the refine search confirmation popup
 local function draw_refine_confirm_popup()
     if not state.refine_confirm_visible then
+        state.refine_fade = 0
         return
     end
+
+    state.refine_fade = state.refine_fade + (1 - state.refine_fade) * 15 * love.timer.getDelta()
+    if state.refine_fade > 0.999 then state.refine_fade = 1 end
 
     local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
     local font = love.graphics.getFont()
     local font_h = font:getHeight()
 
+    love.graphics.push()
+    love.graphics.origin()
+
     -- Dim background
-    love.graphics.setColor(0, 0, 0, 0.8)
+    love.graphics.setColor(0, 0, 0, 0.8 * state.refine_fade)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
+
+    local popup_scale = 0.9 + 0.1 * state.refine_fade
+    love.graphics.translate(sw / 2, sh / 2)
+    love.graphics.scale(popup_scale, popup_scale)
+    love.graphics.translate(-sw / 2, -sh / 2)
 
     -- Popup box dimensions
     local box_w = math.min(sw - 40, 340)
@@ -298,6 +315,8 @@ local function draw_refine_confirm_popup()
         love.graphics.draw(button_b_icon, no_x, btn_y, 0, sx, sy)
     end
     love.graphics.print("No", no_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+
+    love.graphics.pop()
 end
 
 local function set_rom_list_enabled(enabled)
@@ -388,9 +407,6 @@ local function on_select_platform(platform)
         item.disabled = true
         item.active = item.id == platform
     end
-    if missing_filter_item then
-        missing_filter_item.disabled = false
-    end
     set_rom_list_enabled(true)
 end
 
@@ -466,6 +482,7 @@ local function on_rom_press(rom)
                     ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
                 end
                 scraping_window.visible = true
+                scraping_window.fade = 0
             end
 
             -- Clear local artwork cache before starting the fetch so old media is removed
@@ -552,6 +569,7 @@ local function on_manual_scrape(rom)
             ui_source.text = "Source: ScreenScraper"
         end
         scraping_window.visible = true
+        scraping_window.fade = 0
     end
 
     skyscraper.fetch_single_manual(rom_path, rom, last_selected_platform, platform_dest)
@@ -580,13 +598,19 @@ local function on_return()
 end
 
 local function load_rom_buttons(src_platform, dest_platform)
-    rom_list.children = {} -- Clear existing ROM items
-    rom_list.height = 0
-
-    -- Reset scroll position to top
-    if rom_scroll then
-        rom_scroll:scrollTo(0)
+    -- If focus is currently inside the rom_list, we should back it out 
+    -- before clearing children to avoid 'ghost' focus state.
+    if menu then
+        local focused = menu.focusedElement
+        if focused and focused.parent == rom_list then
+            menu:setFocus(missing_filter_item or menu)
+        end
     end
+
+    rom_list.children = {} -- Clear existing ROM items
+    -- Store them for toggle refresh
+    last_selected_platform = src_platform
+    last_dest_platform = dest_platform
 
     -- Set label
     local label_item = menu ^ "roms_label"
@@ -629,22 +653,49 @@ local function load_rom_buttons(src_platform, dest_platform)
         end
         ::continue::
     end
+
+    -- IMPORTANT: Reset scroll position to top AFTER filling the list
+    -- This ensures clamping works with the new height
+    if rom_scroll then
+        rom_scroll:scrollTo(0)
+    end
 end
 
-local function toggle_missing_filter()
-    show_missing_only = not show_missing_only
+local function toggle_missing_filter(checked)
+    local now = love.timer.getTime()
+    show_missing_only = (checked == true)
+    print(string.format("[DEBUG] [%.2f] toggle_missing_filter: %s", now, tostring(show_missing_only)))
+    
     if missing_filter_item then
-        missing_filter_item.text = string.format("Show only missing artwork: %s", show_missing_only and "ON" or "OFF")
-        missing_filter_item.icon = show_missing_only and "square_check" or "square"
+        -- Sync the internal state only if it doesn't match
+        if missing_filter_item.checked ~= show_missing_only then
+            missing_filter_item.checked = show_missing_only
+        end
+        local statusText = show_missing_only and "ON" or "OFF"
+        missing_filter_item.text = string.format("Show only missing artwork: %s", statusText)
     end
-    if last_selected_platform then
-        local rom_path, _ = user_config:get_paths()
-        local platforms = user_config:get().platforms
-        local dest_platform = platforms and platforms[last_selected_platform]
-        if dest_platform and dest_platform ~= "unmapped" then
-            load_rom_buttons(last_selected_platform, dest_platform)
-            active_column = 2
-            set_rom_list_enabled(true)
+    local plat = last_selected_platform
+    local dest = last_dest_platform
+    
+    -- Fallback: check platform_list
+    if not plat and platform_list then
+        for _, item in ipairs(platform_list.children) do
+            if item.active then
+                plat = item.id
+                local platforms = user_config:get().platforms
+                dest = platforms and platforms[plat]
+                break
+            end
+        end
+    end
+
+    if plat and dest and dest ~= "unmapped" then
+        -- Refresh the list
+        load_rom_buttons(plat, dest)
+        -- Important: Do NOT call set_rom_list_enabled here,
+        -- it steals focus from the checkbox back to the ROM list!
+        for _, item in ipairs(rom_list.children) do
+            item.disabled = false
         end
     end
 end
@@ -909,20 +960,19 @@ function single_scrape:load()
         id = "roms_label",
         text = 'ROMs',
         icon = "cd"
-    } + (listitem {
+    } + (checkbox {
         id = "missing_filter",
+        icon = "button_y",
+        iconSize = 22,
         text = "Show only missing artwork: OFF",
-        icon = "square",
-        onClick = toggle_missing_filter,
-        disabled = true,
-        active = true
+        onToggle = toggle_missing_filter,
+        checked = show_missing_only,
     }) + (rom_scroll + rom_list)
 
     missing_filter_item = right_column % "missing_filter"
     if missing_filter_item then
-        missing_filter_item.text = "Show only missing artwork: OFF"
-        missing_filter_item.icon = "square"
-        missing_filter_item.disabled = true
+        missing_filter_item.text = string.format("Show only missing artwork: %s", show_missing_only and "ON" or "OFF")
+        missing_filter_item.disabled = false -- Ensure always enabled
     end
 
     menu = menu + (component {
@@ -1078,6 +1128,12 @@ function single_scrape:keypressed(key)
     if key == "lalt" and not state.scraping then
         scenes:push("settings")
     end
+
+    -- Y button for global filter toggle
+    if key == "y" and not state.scraping and (active_column == 2 or last_selected_platform) then
+        toggle_missing_filter(not show_missing_only)
+    end
+
     -- X button for manual scraping
     if key == "x" and not state.scraping and active_column == 2 and focused_rom then
         on_manual_scrape(focused_rom)
@@ -1148,6 +1204,11 @@ function single_scrape:gamepadpressed(joystick, button)
         -- X button for manual scraping
         if button == "x" and active_column == 2 and focused_rom then
             on_manual_scrape(focused_rom)
+            return true
+        end
+        -- Y button for global filter toggle
+        if button == "y" and (active_column == 2 or last_selected_platform) then
+            toggle_missing_filter(not show_missing_only)
             return true
         end
     end

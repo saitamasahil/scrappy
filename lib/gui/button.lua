@@ -60,6 +60,10 @@ return function(props)
       end
       self.last_focused = self.focused
 
+      self.anim_p = self.anim_p or (self.focused and 1 or 0)
+      local target_p = self.focused and 1 or 0
+      self.anim_p = self.anim_p + (target_p - self.anim_p) * 15 * dt
+
       -- Update scroll offset if text is wider than the button
       local currentText = (self.get_text and self.get_text()) or self.text or ""
       local textWidth = font:getWidth(currentText)
@@ -77,7 +81,15 @@ return function(props)
     --
     draw = function(self)
       if not self.visible then return end
+
       love.graphics.push()
+      -- Modern minimal scale bump on focus
+      local cx, cy = self.x + self.width/2, self.y + self.height/2
+      local scale = 1.0 + (self.anim_p or 0) * 0.02
+      love.graphics.translate(cx, cy)
+      love.graphics.scale(scale, scale)
+      love.graphics.translate(-cx, -cy)
+
       love.graphics.setFont(font)
 
       -- Resolve colors dynamically
@@ -85,15 +97,16 @@ return function(props)
       local focusColor = self.focusColor or theme:read_color("button", "BUTTON_FOCUS", "#636e72")
       local textColor = self.textColor or theme:read_color("button", "BUTTON_TEXT", "#dfe6e9")
 
-      -- Set color based on focus
-      if self.focused then
-        love.graphics.setColor(focusColor)
-      else
-        love.graphics.setColor(backgroundColor)
-      end
+      -- Interpolate colors
+      local anim_p = self.anim_p or 0
+      local br = backgroundColor[1] + (focusColor[1] - backgroundColor[1]) * anim_p
+      local bg = backgroundColor[2] + (focusColor[2] - backgroundColor[2]) * anim_p
+      local bb = backgroundColor[3] + (focusColor[3] - backgroundColor[3]) * anim_p
+      local ba = (backgroundColor[4] or 1) + ((focusColor[4] or 1) - (backgroundColor[4] or 1)) * anim_p
+      love.graphics.setColor(br, bg, bb, ba)
 
       -- Draw button background
-      love.graphics.rectangle('fill', self.x, self.y, self.width, self.height, self.cornerRadius)
+      love.graphics.rectangle('fill', self.x, self.y, self.width, self.height, self.cornerRadius or 6)
 
       if self.icon then
         local leftIcon = icon {

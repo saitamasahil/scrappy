@@ -72,6 +72,10 @@ return function(props)
       end
       self.last_focused = self.focused
 
+      self.anim_p = self.anim_p or (self.focused and 1 or 0)
+      local target_p = self.focused and 1 or 0
+      self.anim_p = self.anim_p + (target_p - self.anim_p) * 15 * dt
+
       -- Resolve text if it's a function
       if type(self.text) == "function" then
         self.displayText = self.text()
@@ -97,6 +101,14 @@ return function(props)
     draw = function(self)
       if not self.visible then return end
       love.graphics.push()
+      
+      -- Match the modern scale bump from button.lua
+      local cx, cy = self.x + self.width/2, self.y + self.height/2
+      local scale = 1.0 + (self.anim_p or 0) * 0.02
+      love.graphics.translate(cx, cy)
+      love.graphics.scale(scale, scale)
+      love.graphics.translate(-cx, -cy)
+      
       love.graphics.setFont(font)
 
       -- Ensure displayText is resolved even if update wasn't called (unlikely but safe)
@@ -126,16 +138,18 @@ return function(props)
       local indicatorColor = indicators[props.indicator or 1]
 
       -- Background and focus styling
-      if self.focused then
-        love.graphics.setColor(focusColor)
+      if (self.anim_p or 0) > 0.01 then
+        love.graphics.setColor(focusColor[1], focusColor[2], focusColor[3], (focusColor[4] or 1) * self.anim_p)
         love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
       end
 
-      if self.active then
+      -- Draw indicator pill (e.g., green for found, red for missing)
+      if props.indicator and props.indicator > 1 then
         love.graphics.setColor(indicatorColor)
-        love.graphics.rectangle("fill", self.x, self.y + self.height * 0.25, 4, self.height * 0.5)
+        local pillWidth = 4
+        local pillHeight = self.height * 0.6
+        love.graphics.rectangle("fill", self.x + 2, self.y + (self.height - pillHeight) * 0.5, pillWidth, pillHeight, 2, 2)
       end
-
       if self.icon then
         local leftIcon = icon {
           name = self.icon,

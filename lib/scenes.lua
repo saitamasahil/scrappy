@@ -26,6 +26,7 @@ end
 function scenes:push(state)
     self.states[state]:load()
     self.focus[#self.focus + 1] = state
+    self.scene_fade = 0
 end
 
 function scenes:pop()
@@ -40,6 +41,7 @@ function scenes:pop()
         if new_focus_id and self.states[new_focus_id].resume then
             self.states[new_focus_id]:resume()
         end
+        self.scene_fade = 0
     end
 end
 
@@ -60,6 +62,9 @@ function scenes:keypressed(key)
 end
 
 function scenes:update(dt)
+    if self.scene_fade then
+        self.scene_fade = math.min(1, self.scene_fade + dt * 4)
+    end
     self.states[self:currentFocus()]:update(dt)
 end
 
@@ -67,6 +72,10 @@ function scenes:draw()
     local top = self:currentFocus()
     if top then
         self.states[top]:draw()
+        if self.scene_fade and self.scene_fade < 1 then
+            love.graphics.setColor(0, 0, 0, 1 - self.scene_fade)
+            love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+        end
     end
 end
 

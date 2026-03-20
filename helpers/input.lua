@@ -26,7 +26,9 @@ input.events = {
     RETURN = "return",
     MENU = "lalt",
     PREV = "[",
-    NEXT = "]"
+    NEXT = "]",
+    X = "x",
+    Y = "y"
 }
 
 input.joystick_mapping = {
@@ -36,8 +38,9 @@ input.joystick_mapping = {
     ["dpdown"] = input.events.DOWN,
     ["a"] = input.events.RETURN,
     ["b"] = input.events.ESC,
+    ["x"] = input.events.X,
+    ["y"] = input.events.Y,
     ["back"] = input.events.MENU,
-    -- Use LÖVE standard names for shoulder buttons
     ["leftshoulder"] = input.events.PREV,
     ["rightshoulder"] = input.events.NEXT
 }

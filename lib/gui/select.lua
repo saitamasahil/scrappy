@@ -64,6 +64,10 @@ return function(props)
       end
       self.last_focused = self.focused
 
+      self.anim_p = self.anim_p or (self.focused and 1 or 0)
+      local target_p = self.focused and 1 or 0
+      self.anim_p = self.anim_p + (target_p - self.anim_p) * 15 * dt
+
       -- Update scroll offset if text is wider than the button
       local textWidth = font:getWidth(self.options[self.currentIndex] or "")
       -- Only scroll if the button is focused and the text is longer than the button width
@@ -80,6 +84,14 @@ return function(props)
     draw = function(self)
       if not self.visible then return end
       love.graphics.push()
+
+      -- Scale bump on focus
+      local cx, cy = self.x + self.width/2, self.y + self.height/2
+      local scale = 1.0 + (self.anim_p or 0) * 0.02
+      love.graphics.translate(cx, cy)
+      love.graphics.scale(scale, scale)
+      love.graphics.translate(-cx, -cy)
+
       love.graphics.setFont(font)
 
       -- Resolve colors dynamically
@@ -87,12 +99,13 @@ return function(props)
       local focusColor = self.focusColor or theme:read_color("select", "SELECT_FOCUS", "#636e72")
       local textColor = self.textColor or theme:read_color("select", "SELECT_TEXT", "#dfe6e9")
 
-      -- Set color based on focus
-      if self.focused then
-        love.graphics.setColor(focusColor)
-      else
-        love.graphics.setColor(backgroundColor)
-      end
+      -- Interpolate colors
+      local anim_p = self.anim_p or 0
+      local br = backgroundColor[1] + (focusColor[1] - backgroundColor[1]) * anim_p
+      local bg = backgroundColor[2] + (focusColor[2] - backgroundColor[2]) * anim_p
+      local bb = backgroundColor[3] + (focusColor[3] - backgroundColor[3]) * anim_p
+      local ba = (backgroundColor[4] or 1) + ((focusColor[4] or 1) - (backgroundColor[4] or 1)) * anim_p
+      love.graphics.setColor(br, bg, bb, ba)
 
       -- Draw background rectangle
       love.graphics.rectangle('fill', self.x, self.y, self.width, self.height)

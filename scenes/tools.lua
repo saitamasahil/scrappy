@@ -41,6 +41,7 @@ local region_popup, region_menu, region_list
 local confirm_popup, confirm_popup_visible = nil, false
 local clear_cache_popup_visible = false
 local offline_popup_visible = false -- Offline mode confirmation popup
+local confirm_fade, clear_cache_fade, offline_fade = 0, 0, 0 -- Zoom animation state
 local accent_popup, accent_menu
 local artwork_manager_running = false
 local artwork_manager_ip = nil
@@ -415,6 +416,7 @@ dispatch_info = function(title, content)
         scraping_log.text = scraping_log.text .. "\n" .. content
     end
     info_window.visible = true
+    info_window.fade = 0 -- Reset for zoom animation
 end
 
 local function update_state()
@@ -595,6 +597,7 @@ local function on_toggle_offline_mode()
     else
         -- Show confirmation popup before enabling
         offline_popup_visible = true
+        offline_fade = 0
     end
 end
 
@@ -781,6 +784,7 @@ end
 -- Show the cache warning confirmation popup
 local function show_cache_warning()
     confirm_popup_visible = true
+    confirm_fade = 0
 end
 
 -- Standalone clear cache functions
@@ -796,6 +800,7 @@ end
 
 local function on_clear_cache_press()
     clear_cache_popup_visible = true
+    clear_cache_fade = 0
 end
 
 local function save_region_prios()
@@ -871,7 +876,8 @@ local function open_region_editor()
         onClick = save_region_prios,
         onFocus = function()
             set_region_action_active("region_save")
-        end
+        end,
+        icon = "save"
     }
 
     region_menu:updatePosition(0, 0)
@@ -1293,18 +1299,30 @@ local button_b_icon = love.graphics.newImage("assets/inputs/switch_button_b.png"
 -- Draw the confirmation popup
 local function draw_confirm_popup()
     if not confirm_popup_visible then
+        confirm_fade = 0
         return
     end
+
+    confirm_fade = confirm_fade + (1 - confirm_fade) * 15 * love.timer.getDelta()
+    if confirm_fade > 0.999 then confirm_fade = 1 end
 
     local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
     local font = love.graphics.getFont()
     local font_h = font:getHeight()
 
+    love.graphics.push()
+    love.graphics.origin()
+
     -- Dim background
-    love.graphics.setColor(0, 0, 0, 0.8)
+    love.graphics.setColor(0, 0, 0, 0.8 * confirm_fade)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
 
-    -- Popup box dimensions - taller to fit all content
+    local popup_scale = 0.9 + 0.1 * confirm_fade
+    love.graphics.translate(sw / 2, sh / 2)
+    love.graphics.scale(popup_scale, popup_scale)
+    love.graphics.translate(-sw / 2, -sh / 2)
+
+    -- Popup box dimensions
     local box_w = math.min(sw - 40, 340)
     local box_h = 140
     local box_x = (sw - box_w) / 2
@@ -1323,19 +1341,16 @@ local function draw_confirm_popup()
     -- Title
     love.graphics.printf("Clear Cache?", box_x, box_y + 12, box_w, "center")
 
-    -- Warning message (shorter, no overlap)
+    -- Warning message
     local msg = "Changing region priorities will delete cached artwork."
     love.graphics.printf(msg, box_x + 15, box_y + 35, box_w - 30, "center")
 
     -- Button icons and labels
     local icon_size = 24
     local btn_y = box_y + box_h - 38
-
-    -- Calculate button positions - centered in each half
     local left_center = box_x + box_w * 0.25
     local right_center = box_x + box_w * 0.75
 
-    -- Proceed button (A) - icon and text side by side, centered
     local proceed_total_w = icon_size + 6 + font:getWidth("Proceed")
     local proceed_x = left_center - proceed_total_w / 2
     if button_a_icon then
@@ -1345,7 +1360,6 @@ local function draw_confirm_popup()
     end
     love.graphics.print("Proceed", proceed_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
 
-    -- Cancel button (B) - icon and text side by side, centered
     local cancel_total_w = icon_size + 6 + font:getWidth("Cancel")
     local cancel_x = right_center - cancel_total_w / 2
     if button_b_icon then
@@ -1354,21 +1368,35 @@ local function draw_confirm_popup()
         love.graphics.draw(button_b_icon, cancel_x, btn_y, 0, sx, sy)
     end
     love.graphics.print("Cancel", cancel_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+
+    love.graphics.pop()
 end
 
 -- Draw the standalone clear cache popup
 local function draw_clear_cache_popup()
     if not clear_cache_popup_visible then
+        clear_cache_fade = 0
         return
     end
+
+    clear_cache_fade = clear_cache_fade + (1 - clear_cache_fade) * 15 * love.timer.getDelta()
+    if clear_cache_fade > 0.999 then clear_cache_fade = 1 end
 
     local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
     local font = love.graphics.getFont()
     local font_h = font:getHeight()
 
+    love.graphics.push()
+    love.graphics.origin()
+
     -- Dim background
-    love.graphics.setColor(0, 0, 0, 0.8)
+    love.graphics.setColor(0, 0, 0, 0.8 * clear_cache_fade)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
+
+    local popup_scale = 0.9 + 0.1 * clear_cache_fade
+    love.graphics.translate(sw / 2, sh / 2)
+    love.graphics.scale(popup_scale, popup_scale)
+    love.graphics.translate(-sw / 2, -sh / 2)
 
     -- Popup box dimensions - taller for more content
     local box_w = math.min(sw - 40, 380)
@@ -1420,21 +1448,36 @@ local function draw_clear_cache_popup()
         love.graphics.draw(button_b_icon, cancel_x, btn_y, 0, sx, sy)
     end
     love.graphics.print("Cancel", cancel_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+
+    love.graphics.pop()
 end
+
 
 -- Draw the offline mode confirmation popup
 local function draw_offline_popup()
     if not offline_popup_visible then
+        offline_fade = 0
         return
     end
+
+    offline_fade = offline_fade + (1 - offline_fade) * 15 * love.timer.getDelta()
+    if offline_fade > 0.999 then offline_fade = 1 end
 
     local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
     local font = love.graphics.getFont()
     local font_h = font:getHeight()
 
+    love.graphics.push()
+    love.graphics.origin()
+
     -- Dim background
-    love.graphics.setColor(0, 0, 0, 0.8)
+    love.graphics.setColor(0, 0, 0, 0.8 * offline_fade)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
+
+    local popup_scale = 0.9 + 0.1 * offline_fade
+    love.graphics.translate(sw / 2, sh / 2)
+    love.graphics.scale(popup_scale, popup_scale)
+    love.graphics.translate(-sw / 2, -sh / 2)
 
     -- Popup box dimensions - taller for more content
     local box_w = math.min(sw - 40, 420)
@@ -1489,7 +1532,10 @@ local function draw_offline_popup()
         love.graphics.draw(button_b_icon, cancel_x, btn_y, 0, sx, sy)
     end
     love.graphics.print("Cancel", cancel_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+
+    love.graphics.pop()
 end
+
 
 function tools:draw()
     love.graphics.clear(theme:read_color("main", "BACKGROUND", "#000000"))

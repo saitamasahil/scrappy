@@ -25,7 +25,14 @@ local function popup(props)
     padding = props.padding or 10,
     _font = props.font or love.graphics.getFont(),
     draw = function(self)
-      if not self.visible then return end
+      if not self.visible then 
+        self.fade = 0
+        return 
+      end
+
+      -- Organic damping animation (Increased to 15 for snappier feel)
+      self.fade = (self.fade or 0) + (1 - (self.fade or 0)) * 15 * love.timer.getDelta()
+      if self.fade > 0.999 then self.fade = 1 end
 
       love.graphics.push()
       love.graphics.origin()
@@ -47,9 +54,16 @@ local function popup(props)
       -- Background Overlay
       local overlayBG = theme:read_color("popup", "POPUP_BACKGROUND", "#000000")
       local overlayOpacity = theme:read_number("popup", "POPUP_OPACITY", 0.75)
-      overlayBG[4] = overlayOpacity
+      overlayBG[4] = overlayOpacity * self.fade
       love.graphics.setColor(overlayBG)
       love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
+
+      local popup_scale = 0.9 + 0.1 * self.fade
+      local sx = screenWidth / 2
+      local sy = screenHeight / 2
+      love.graphics.translate(sx, sy)
+      love.graphics.scale(popup_scale, popup_scale)
+      love.graphics.translate(-sx, -sy)
 
       local overlayLabel = label {
         text = self.title,

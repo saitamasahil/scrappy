@@ -53,6 +53,8 @@ local scrape_modes = {"Scrape all", "Scrape only missing artwork"}
 local current_scrape_mode = 1
 local scrape_missing_only = false
 local showing_core_reminder = false -- Tracks if the core assignment reminder popup is active
+local reminder_fade = 0
+local core_reminder_dismissed = false -- Tracking if it was dismissed during this session
 
 -- Dashboard server state
 local dashboard_server_running = false
@@ -70,15 +72,29 @@ local button_x_icon = love.graphics.newImage("assets/inputs/switch_button_x.png"
 
 -- Draw the core assignment reminder popup (matches Clear Cache style)
 local function draw_core_reminder_popup()
-    if not showing_core_reminder then return end
+    if not showing_core_reminder then 
+        reminder_fade = 0
+        return 
+    end
+
+    reminder_fade = reminder_fade + (1 - reminder_fade) * 15 * love.timer.getDelta()
+    if reminder_fade > 0.999 then reminder_fade = 1 end
 
     local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
     local font = love.graphics.getFont()
     local font_h = font:getHeight()
 
+    love.graphics.push()
+    love.graphics.origin()
+
     -- Dim background
-    love.graphics.setColor(0, 0, 0, 0.8)
+    love.graphics.setColor(0, 0, 0, 0.8 * reminder_fade)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
+
+    local popup_scale = 0.9 + 0.1 * reminder_fade
+    love.graphics.translate(sw / 2, sh / 2)
+    love.graphics.scale(popup_scale, popup_scale)
+    love.graphics.translate(-sw / 2, -sh / 2)
 
     -- Popup box
     local box_w = math.min(sw - 40, 420)
@@ -132,6 +148,8 @@ local function draw_core_reminder_popup()
         love.graphics.draw(button_b_icon, hide_x, btn_y, 0, sx, sy)
     end
     love.graphics.print(hide_text, hide_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+
+    love.graphics.pop()
 end
 
 -- Ensure sample media folders exist and remove stale fake-rom images
@@ -187,6 +205,7 @@ local game_file_map = {}
 -- Display popup window
 local function show_info_window(title, content)
     info_window.visible = true
+    info_window.fade = 0 -- Explicit reset
     info_window.title = title
     info_window.content = content
 end
@@ -611,6 +630,7 @@ local function scrape_platforms()
                 ui_progress.text = string.format("Generating: %d / %d", (state.total - state.tasks), state.total)
             end
             scraping_window.visible = true
+            scraping_window.fade = 0 -- Explicit reset
         end
     else
         -- Determine if platforms were actually selected
