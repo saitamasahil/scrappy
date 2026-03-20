@@ -47,12 +47,10 @@ local all_check         = true
 local ss_username = ""
 local ss_password = ""
 local ss_show_password = false
-local ss_status = ""
 
 -- TheGamesDB API Key Server State
 local tgdb_server_running = false
 local tgdb_server_ip = nil
-local tgdb_server_status = ""
 local tgdb_check_timer = 0
 local tgdb_key_exists = false
 local TMP_TGDB_KEY_FILE = "/tmp/scrappy_tgdb_key.txt"
@@ -733,9 +731,9 @@ local function on_save_ss()
     sk:insert('screenscraper', 'userCreds', string.format('"%s:%s"', ss_username, ss_password))
     sk:save()
     sk:sync_native_config()
-    ss_status = "Saved credentials."
+    dispatch_info("ScreenScraper", "Saved credentials.")
   else
-    ss_status = "Enter both username and password."
+    dispatch_info("ScreenScraper", "Enter both username and password.")
   end
 end
 
@@ -748,7 +746,7 @@ local function on_enter_tgdb_key_web()
     -- Cancel server
     os.execute("pkill -f tgdb_server.py")
     tgdb_server_running = false
-    tgdb_server_status = "Server stopped."
+    dispatch_info("TheGamesDB Web Server", "Server stopped.")
     return
   end
 
@@ -775,10 +773,10 @@ local function on_enter_tgdb_key_web()
     
     tgdb_server_running = true
     tgdb_server_ip = ip
-    tgdb_server_status = 'Go to http://' .. ip .. ':8080 on phone/PC (same WiFi)'
+    dispatch_info("TheGamesDB Web Server", 'Go to http://' .. ip .. ':8080 on phone/PC (same WiFi)\n\nWaiting for you to enter the API key...')
     tgdb_check_timer = 0
   else
-    tgdb_server_status = "No IP found! Connect to WiFi."
+    dispatch_info("TheGamesDB Web Server", "No IP found! Connect to WiFi.")
   end
 end
 
@@ -808,14 +806,13 @@ function settings:load()
           + button { text = 'Save', width = 160, onClick = on_save_ss }
           + button { text = function() return ss_show_password and 'Hide Password' or 'Show Password' end, width = 180, onClick = on_toggle_show_password }
         )
-      + label { text = function() return ss_status end }
       
       + label { text = 'TheGamesDB Account', icon = "user" }
       + (component { column = true, gap = 6 }
           + button { 
               text = function() 
                 if tgdb_server_running then
-                  return 'Cancel / Stop Server'
+                  return 'Stop Server (IP: ' .. (tgdb_server_ip or "") .. ')'
                 elseif tgdb_key_exists then
                   return 'Update API Key via Web Server (Key Saved)'
                 else
@@ -826,7 +823,6 @@ function settings:load()
               onClick = on_enter_tgdb_key_web 
             }
         )
-      + label { text = function() return tgdb_server_status end }
       
       + label { text = 'Resolution', icon = "display" }
       + checkbox {
@@ -914,8 +910,8 @@ function settings:update(dt)
           sk:save()
           sk:sync_native_config()
           tgdb_key_exists = true
-          tgdb_server_status = "Key saved successfully!"
           tgdb_server_running = false
+          dispatch_info("TheGamesDB Web Server", "API Key saved successfully!")
           -- Server shuts itself down, but we can ensure cleanup
           os.remove(TMP_TGDB_KEY_FILE)
         end
