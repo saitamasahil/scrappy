@@ -535,17 +535,23 @@ local function create_vk(config)
     local box_x = area_x0
     local box_w = area_w
 
-    -- Draw focus flow highlight behind everything
-    love.graphics.setColor(key_focus)
-    love.graphics.rectangle('fill', self.focus_x - 3, self.focus_y - 3, self.focus_w + 6, self.focus_h + 6, 14, 14)
-    -- Also draw a slightly brighter border to make it pop
-    love.graphics.setLineWidth(2)
-    love.graphics.setColor(key_focus[1]*1.2, key_focus[2]*1.2, key_focus[3]*1.2, (key_focus[4] or 1))
-    love.graphics.rectangle('line', self.focus_x - 4, self.focus_y - 4, self.focus_w + 8, self.focus_h + 8, 14, 14)
-    love.graphics.setLineWidth(1)
+    -- Draw a modern, soft sliding focus highlight that glides between keys
+    if self.focus_w and self.focus_w > 0 then
+      local padding = 4
+      love.graphics.setColor(key_focus[1], key_focus[2], key_focus[3], (key_focus[4] or 1) * 0.35)
+      love.graphics.rectangle('fill', self.focus_x - padding, self.focus_y - padding, self.focus_w + padding*2, self.focus_h + padding*2, 10, 10)
+    end
     
     love.graphics.setColor(preview_bg)
     love.graphics.rectangle('fill', box_x, box_y, box_w, box_h, 12, 12)
+    
+    if self.text_field_focused then
+      love.graphics.setLineWidth(2)
+      love.graphics.setColor(key_focus)
+      love.graphics.rectangle('line', box_x - 1, box_y - 1, box_w + 2, box_h + 2, 12, 12)
+      love.graphics.setLineWidth(1)
+    end
+    
     love.graphics.setColor(key_text)
 
     local preview
@@ -582,12 +588,8 @@ local function create_vk(config)
     local cursor_blink = math.floor(love.timer.getTime() / 0.53) % 2 == 0
     if cursor_blink or self.text_field_focused then
       -- Calculate cursor X based on cursor position, not end of text
-      local text_before_cursor
-      if self.mask_input and #self.buffer > 0 then
-        text_before_cursor = string.rep(MASK_CHAR, math.min(cursor_display_pos, #self.buffer))
-      else
-        text_before_cursor = self.buffer:sub(1, cursor_display_pos)
-      end
+      -- Calculate cursor X based on exactly what was printed before the cursor
+      local text_before_cursor = preview:sub(1, cursor_display_pos)
       local cursor_x = box_x + 12 + love.graphics.getFont():getWidth(text_before_cursor)
       local cursor_y = box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2)
       local cursor_h = love.graphics.getFont():getHeight()
@@ -632,23 +634,23 @@ local function create_vk(config)
         
         love.graphics.push()
         local kcx, kcy = rx + kw/2, ry + key_h/2
-        local kscale = 1.0 + anim_p * 0.05
+        local kscale = 1.0 + anim_p * 0.09
         love.graphics.translate(kcx, kcy)
         love.graphics.scale(kscale, kscale)
         love.graphics.translate(-kcx, -kcy)
 
+        local current_bg = key_bg
         if anim_p > 0.01 then
-          -- Subtle per-key scale pop is still there, but highlight is now global "flow"
-          local br = key_bg[1] + (key_focus[1] - key_bg[1]) * anim_p * 0.5 -- 50% opacity blend for local key
-          local bg = key_bg[2] + (key_focus[2] - key_bg[2]) * anim_p * 0.5
-          local bb = key_bg[3] + (key_focus[3] - key_bg[3]) * anim_p * 0.5
-          local ba = (key_bg[4] or 1) + ((key_focus[4] or 1) - (key_bg[4] or 1)) * anim_p * 0.5
-          love.graphics.setColor(br, bg, bb, ba)
-          -- No local rectangle fill here anymore, the Flow highlight handles it
+          -- Blend to focus color based on animation progress
+          local br = key_bg[1] + (key_focus[1] - key_bg[1]) * anim_p
+          local bg = key_bg[2] + (key_focus[2] - key_bg[2]) * anim_p
+          local bb = key_bg[3] + (key_focus[3] - key_bg[3]) * anim_p
+          local ba = (key_bg[4] or 1) + ((key_focus[4] or 1) - (key_bg[4] or 1)) * anim_p
+          current_bg = {br, bg, bb, ba}
         end
         
-        love.graphics.setColor(key_bg)
-        love.graphics.rectangle('fill', rx, ry, kw, key_h, 4, 4)
+        love.graphics.setColor(current_bg)
+        love.graphics.rectangle('fill', rx, ry, kw, key_h, 6, 6)
         love.graphics.setColor(key_text)
         if type(k)=='table' then
           if k.t=='toggle' then draw_label(rx, ry, kw, key_h, k.label)
