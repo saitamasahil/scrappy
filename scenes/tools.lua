@@ -1676,7 +1676,15 @@ function tools:keypressed(key)
         if info_window.visible then
             -- Already handled above
         else
-            scenes:pop()
+            if artwork_manager_running or template_maker_running then
+                local server_names = {}
+                if artwork_manager_running then table.insert(server_names, "Artwork Manager") end
+                if template_maker_running then table.insert(server_names, "Template Maker") end
+                dispatch_info("Servers still running!",
+                    table.concat(server_names, " & ") .. " is still running.\nPlease stop it before exiting Advanced Tools.")
+            else
+                scenes:pop()
+            end
         end
     end
 end
