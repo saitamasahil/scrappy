@@ -539,6 +539,19 @@ input[type="color"]:hover { border-color: var(--accent); }
     </div>
 </div>
 
+<!-- Restart Required Modal -->
+<div class="modal-overlay" id="restartModal">
+    <div class="modal" style="text-align:center; padding:30px;">
+        <div style="font-size:40px; margin-bottom:15px;">🔄</div>
+        <h2 style="margin-bottom:10px;">Restart Required</h2>
+        <p style="color:var(--text-secondary); font-size:14px; line-height:1.5;">
+            Scrappy needs to be restarted for these changes to take effect.<br>
+            Please close and reopen Scrappy.
+        </p>
+        <div style="margin-top:20px; font-size:12px; opacity:0.6;" id="restartTimer">Closing in 5s...</div>
+    </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -553,6 +566,27 @@ let xmlModalMode = 'export';
 let previewRequestTime = 0;
 let uploadPendingTarget = null; // {layerIdx, effectIdx, fieldName} or 'standalone'
 let primaryOutputType = 'cover'; // Track the output being edited
+let restartPopupTimer = null;
+
+function showRestartPopup() {
+    const modal = document.getElementById('restartModal');
+    const timerText = document.getElementById('restartTimer');
+    modal.classList.add('visible');
+    
+    let seconds = 5;
+    timerText.textContent = `Closing in ${seconds}s...`;
+    
+    if (restartPopupTimer) clearInterval(restartPopupTimer);
+    
+    restartPopupTimer = setInterval(() => {
+        seconds--;
+        timerText.textContent = `Closing in ${seconds}s...`;
+        if (seconds <= 0) {
+            clearInterval(restartPopupTimer);
+            modal.classList.remove('visible');
+        }
+    }, 1000);
+}
 
 const EFFECTS_LIST = [
     { key: 'shadow', label: '💫 Shadow', fields: [
@@ -1252,6 +1286,7 @@ async function handleUpload(event, category) {
             }
             renderLayers();
             schedulePreview();
+            showRestartPopup();
         } else {
             showToast(data.message || 'Upload failed');
         }
@@ -1296,6 +1331,7 @@ async function confirmSave(overwrite) {
             // Refresh templates list
             const tRes = await fetch('/api/templates');
             templatesList = await tRes.json();
+            showRestartPopup();
         } else {
             showToast(data.message || 'Save failed');
         }
