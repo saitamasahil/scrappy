@@ -586,9 +586,6 @@ local function on_return()
             item.disabled = false
             item.active = false
         end
-        if missing_filter_item then
-            missing_filter_item.disabled = true
-        end
         set_rom_list_enabled(false)
         local active_element = platform_list % last_selected_platform
         platform_list:setFocus(active_element)
@@ -603,7 +600,9 @@ local function load_rom_buttons(src_platform, dest_platform)
     if menu then
         local focused = menu.focusedElement
         if focused and focused.parent == rom_list then
-            menu:setFocus(missing_filter_item or menu)
+            -- Focus a safe non-disabled element (first platform or menu root)
+            local safe_target = platform_list and platform_list.children and platform_list.children[1]
+            menu:setFocus(safe_target or menu)
         end
     end
 
@@ -674,6 +673,11 @@ local function toggle_missing_filter(checked)
         local statusText = show_missing_only and "ON" or "OFF"
         missing_filter_item.text = string.format("Show only missing artwork: %s", statusText)
     end
+
+    -- Persist to config
+    user_config:insert("main", "showMissingOnly", show_missing_only and "1" or "0")
+    user_config:save()
+
     local plat = last_selected_platform
     local dest = last_dest_platform
     
@@ -690,12 +694,29 @@ local function toggle_missing_filter(checked)
     end
 
     if plat and dest and dest ~= "unmapped" then
-        -- Refresh the list
+        -- Refresh the list and enable ROM items
         load_rom_buttons(plat, dest)
-        -- Important: Do NOT call set_rom_list_enabled here,
-        -- it steals focus from the checkbox back to the ROM list!
         for _, item in ipairs(rom_list.children) do
             item.disabled = false
+        end
+        -- Only change focus if user is in the ROM column
+        if active_column == 2 then
+            if rom_list.children and #rom_list.children > 0 then
+                rom_list:focusFirstElement()
+            else
+                -- No ROMs match filter — return to platform column
+                active_column = 1
+                for _, item in ipairs(platform_list.children) do
+                    item.disabled = false
+                    item.active = (item.id == plat)
+                end
+                local active_element = platform_list % plat
+                if active_element then
+                    platform_list:setFocus(active_element)
+                else
+                    platform_list:focusFirstElement()
+                end
+            end
         end
     end
 end
@@ -782,7 +803,7 @@ local function process_fetched_game()
             state.log = {}
 
             if copied > 0 then
-                dispatch_info("Manual Downloaded", string.format("Game manual saved for %s.\nUse KOReader via PortMaster to read it.", state.current_game))
+                dispatch_info("Manual Downloaded", string.format("Game manual saved for %s.\n Use KOReader via PortMaster to read it.", state.current_game))
             elseif skipped > 0 then
                 dispatch_info("Manual Exists", string.format("Manual already exists for %s.", state.current_game))
             else
@@ -897,7 +918,8 @@ function single_scrape:load()
     last_selected_rom = nil
     focused_rom = nil
     active_column = 1
-    show_missing_only = false
+    -- Restore persisted setting
+    show_missing_only = (user_config:read("main", "showMissingOnly") == "1")
     missing_filter_item = nil
 
     state.scraping = false
@@ -964,16 +986,13 @@ function single_scrape:load()
         id = "missing_filter",
         icon = "button_y",
         iconSize = 22,
-        text = "Show only missing artwork: OFF",
+        text = string.format("Show only missing artwork: %s", show_missing_only and "ON" or "OFF"),
         onToggle = toggle_missing_filter,
         checked = show_missing_only,
+        focusable = false,
     }) + (rom_scroll + rom_list)
 
     missing_filter_item = right_column % "missing_filter"
-    if missing_filter_item then
-        missing_filter_item.text = string.format("Show only missing artwork: %s", show_missing_only and "ON" or "OFF")
-        missing_filter_item.disabled = false -- Ensure always enabled
-    end
 
     menu = menu + (component {
         row = true,

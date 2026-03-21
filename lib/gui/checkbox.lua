@@ -26,7 +26,7 @@ return function(props)
     y = props.y or 0,
     width = width,
     height = height,
-    focusable = props.focusable or true,
+    focusable = props.focusable ~= false,
     -- Colors and styles
     -- Colors and styles (explicit overrides only)
     backgroundColor = props.backgroundColor,
