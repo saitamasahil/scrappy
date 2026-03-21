@@ -41,7 +41,9 @@ local anim = {
     maintainer_y_offset = 20,
     author_alpha = 0,
     author_y_offset = 20,
-    fade_out = 1           -- Final sequence to exit
+    fade_out = 1,          -- Final sequence to exit
+    wave_1_x = 0,
+    wave_2_x = 0
 }
 
 local configs = require("helpers.config")
@@ -69,7 +71,10 @@ function splash.load(delay)
     anim.author_alpha = 0
     anim.author_y_offset = 20
     anim.fade_out = 1
+    anim.wave_1_x = 0
+    anim.wave_2_x = 0
     splash.finished = false
+    splash.is_revealing = false
 
     -- PHASE 1: Logo Pop-In (Elastic/Bouncy)
     timer.tween(0.8, anim, { pop_scale = 1.0 }, 'out-elastic')
@@ -95,10 +100,20 @@ function splash.load(delay)
         timer.tween(0.5, anim, { author_alpha = 0.5, author_y_offset = 0 }, 'out-quad')
     end)
 
-    -- EXIT PHASE: Fade out entirely to game
+    -- EXIT PHASE: Water wave transition
     timer.after(delay + cascade_start + 0.5, function()
-        timer.tween(0.5, anim, { fade_out = 0 }, 'in-out-cubic', function()
-            splash.finished = true
+        local w = love.graphics.getWidth()
+        splash.is_revealing = true
+        anim.wave_1_x = w + 100
+        anim.wave_2_x = w + 250
+        
+        timer.tween(0.8, anim, { wave_1_x = -150 }, 'in-out-sine')
+        
+        timer.after(0.15, function()
+            timer.tween(0.8, anim, { wave_2_x = -150 }, 'in-out-sine', function()
+                splash.finished = true
+                splash.is_revealing = false
+            end)
         end)
     end)
     
@@ -120,7 +135,25 @@ function splash.draw()
     -- Global Fade out control
     local r, g, b = colors.main[1], colors.main[2], colors.main[3]
 
-    love.graphics.clear(colors.background)
+    if splash.is_revealing then
+        love.graphics.stencil(function()
+            local points = { 0, 0, 0, height }
+            local segments = 40
+            for i = segments, 0, -1 do
+                local y = (i / segments) * height
+                local wave_offset = math.sin(y * 0.03 + love.timer.getTime() * 8) * 30
+                table.insert(points, anim.wave_1_x + wave_offset)
+                table.insert(points, y)
+            end
+            love.graphics.polygon("fill", points)
+        end, "replace", 1)
+        love.graphics.setStencilTest("greater", 0)
+        
+        love.graphics.setColor(colors.background)
+        love.graphics.rectangle("fill", 0, 0, width, height)
+    else
+        love.graphics.clear(colors.background)
+    end
 
     love.graphics.push()
     love.graphics.translate(width * 0.5, height * 0.5)
@@ -165,6 +198,29 @@ function splash.draw()
     
     love.graphics.setColor(colors.background)
     love.graphics.pop()
+
+    if splash.is_revealing then
+        love.graphics.setStencilTest()
+        
+        local points = {}
+        local segments = 40
+        for i = 0, segments do
+            local y = (i / segments) * height
+            local wave_offset = math.sin(y * 0.03 + love.timer.getTime() * 8) * 30
+            table.insert(points, anim.wave_1_x + wave_offset)
+            table.insert(points, y)
+        end
+        for i = segments, 0, -1 do
+            local y = (i / segments) * height
+            local wave_offset = math.sin(y * 0.035 + love.timer.getTime() * 7) * 40
+            table.insert(points, anim.wave_2_x + wave_offset)
+            table.insert(points, y)
+        end
+        
+        local accent_color = theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f")
+        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
+        love.graphics.polygon("fill", points)
+    end
 end
 
 function splash.finish()

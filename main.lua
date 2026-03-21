@@ -64,9 +64,8 @@ function love.update(dt)
 end
 
 function love.draw()
-    splash.draw()
 
-    if splash.finished then
+    if splash.finished or splash.is_revealing then
         scenes:draw()
         -- Draw footer on main scene; also on settings when no overlay (VK) is active
         local focus = scenes:currentFocus()
@@ -78,6 +77,10 @@ function love.draw()
             end
             footer:draw()
         end
+    end
+
+    if not splash.finished then
+        splash.draw()
     end
 end
 
