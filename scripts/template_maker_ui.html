@@ -734,8 +734,15 @@ function parseXml(xmlStr) {
     const allOutputs = Array.from(doc.querySelectorAll('artwork > output'));
     if (allOutputs.length === 0) throw new Error('No <output> element found');
 
-    // Use the first output for general settings (width, height, type)
-    const firstOutput = allOutputs[0];
+    // Find the primary output (the one with the most layers) to load into the editor
+    let firstOutput = allOutputs[0];
+    let maxChildren = -1;
+    for (const out of allOutputs) {
+        if (out.children.length > maxChildren) {
+            maxChildren = out.children.length;
+            firstOutput = out;
+        }
+    }
     primaryOutputType = firstOutput.getAttribute('type') || 'cover';
     document.getElementById('outputWidth').value = firstOutput.getAttribute('width') || 640;
     document.getElementById('outputHeight').value = firstOutput.getAttribute('height') || 480;
