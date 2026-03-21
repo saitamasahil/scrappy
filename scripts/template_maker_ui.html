@@ -737,10 +737,20 @@ function parseXml(xmlStr) {
     // Find the primary output (the one with the most layers) to load into the editor
     let firstOutput = allOutputs[0];
     let maxChildren = -1;
+    const typePriority = { "cover": 3, "wheel": 2, "marquee": 1, "screenshot": 0, "texture": 0 };
+
     for (const out of allOutputs) {
-        if (out.children.length > maxChildren) {
-            maxChildren = out.children.length;
+        const len = out.children.length;
+        const currentType = firstOutput.getAttribute('type') || '';
+        const thisType = out.getAttribute('type') || '';
+
+        if (len > maxChildren) {
+            maxChildren = len;
             firstOutput = out;
+        } else if (len === maxChildren) {
+            if ((typePriority[thisType] || 0) > (typePriority[currentType] || 0)) {
+                firstOutput = out;
+            }
         }
     }
     primaryOutputType = firstOutput.getAttribute('type') || 'cover';
