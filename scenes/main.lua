@@ -10,6 +10,7 @@ local utils = require("helpers.utils")
 local artwork = require("helpers.artwork")
 local muos = require("helpers.muos")
 local wifi = require("helpers.wifi")
+local splash = require("lib.splash")
 
 local component = require "lib.gui.badr"
 local button = require "lib.gui.button"
@@ -58,6 +59,7 @@ local core_reminder_dismissed = false -- Tracking if it was dismissed during thi
 
 -- Dashboard server state
 local dashboard_server_running = false
+local initial_preview_triggered = false
 local dashboard_server_ip = nil
 local dashboard_write_timer = 0
 local dashboard_state_file = "/tmp/scrappy_dashboard.json"
@@ -154,8 +156,9 @@ end
 
 -- Ensure sample media folders exist and remove stale fake-rom images
 local function prepare_sample_media()
+    cover_preview = nil -- Ensure LÖVE releases the file handle
     local base = WORK_DIR .. "/sample/media"
-    local sub = {"covers", "screenshots", "wheels"}
+    local sub = {"covers", "screenshots", "wheels", "splashes", "previews"}
     for _, d in ipairs(sub) do
         local dir = string.format("%s/%s", base, d)
         if not nativefs.getInfo(dir) then
@@ -299,11 +302,6 @@ local function generate_preview_now()
     local folder, resolved = resolve_preview_output(state.selected_output)
     state.selected_output = resolved
     cover_preview_path = build_media_path(sample_media_root, folder, "fake-rom")
-    state.sample_poll = {
-        path = cover_preview_path,
-        t0 = love.timer.getTime(),
-        timeout = 3.0
-    }
 end
 
 -- Cycles templates and schedules preview generation after a short pause
@@ -854,6 +852,11 @@ local function update_state(t)
             scraping_log.text = log_str
         end
 
+        -- Detailed signal for preview generation
+        if t.log:match("%[gen%] Finished \"fake%-rom\"") then
+            state.reload_preview = true
+        end
+
         -- Parse fetch progress from Skyscraper output (e.g., "#26/761 (T2) Pass 1")
         if t.log then
             local current, total = t.log:match("#(%d+)/(%d+)")
@@ -1056,12 +1059,6 @@ local function update_state(t)
                         table.concat(state.failed_tasks, ", ")))
                 channels.SKYSCRAPER_OUTPUT:clear()
             end
-        else
-            -- Sample generation finished: reload preview
-            local folder, resolved = resolve_preview_output(state.selected_output)
-            state.selected_output = resolved
-            cover_preview_path = build_media_path(sample_media_root, folder, "fake-rom")
-            state.reload_preview = true
         end
     end
 end
@@ -1469,6 +1466,8 @@ function main:load()
     end
 
     update_output_types()
+    -- Flag for initial preview generation after splash
+    initial_preview_triggered = false
 end
 
 -- Reads games from fetch queue and pushes "ready" games into generate queue
@@ -1687,17 +1686,6 @@ function main:update(dt)
     --   end
     -- end
 
-    -- Poll for sample image availability to avoid races with backend output
-    if state.sample_poll then
-        local p = state.sample_poll
-        if nativefs.getInfo(p.path) then
-            state.sample_poll = nil
-            render_to_canvas()
-        elseif (love.timer.getTime() - p.t0) > p.timeout then
-            state.sample_poll = nil
-            -- give up silently; user can change template again
-        end
-    end
 
     -- Update scraping window components (enables marquee scrolling in log)
     if scraping_window and scraping_window.visible then
@@ -1711,6 +1699,12 @@ function main:update(dt)
             dashboard_write_timer = 0
             write_dashboard_state()
         end
+    end
+
+    -- Trigger initial preview generation ONLY after splash screen is finished
+    if not initial_preview_triggered and splash.finished then
+        initial_preview_triggered = true
+        update_preview(0)
     end
 end
 
