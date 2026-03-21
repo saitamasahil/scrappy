@@ -1859,6 +1859,9 @@ function main:gamepadpressed(joystick, button)
 end
 
 function main:resume()
+    -- Form a fresh preview generation request to clear out the one Template Maker just made
+    update_preview(0)
+
     local current_scraper = user_config:read("main", "scraperModule") or "screenscraper"
     local warning = menu ^ "ss_warning"
 
