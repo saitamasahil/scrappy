@@ -63,7 +63,7 @@ end
 
 function scenes:update(dt)
     if self.scene_fade then
-        self.scene_fade = math.min(1, self.scene_fade + dt * 4)
+        self.scene_fade = math.min(1, self.scene_fade + dt * 8)
     end
     self.states[self:currentFocus()]:update(dt)
 end

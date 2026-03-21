@@ -30,8 +30,8 @@ local function popup(props)
         return 
       end
 
-      -- Organic damping animation (Increased to 15 for snappier feel)
-      self.fade = (self.fade or 0) + (1 - (self.fade or 0)) * 15 * love.timer.getDelta()
+      -- Organic damping animation (Increased to 20 for snappier feel)
+      self.fade = (self.fade or 0) + (1 - (self.fade or 0)) * 20 * love.timer.getDelta()
       if self.fade > 0.999 then self.fade = 1 end
 
       love.graphics.push()
@@ -58,7 +58,7 @@ local function popup(props)
       love.graphics.setColor(overlayBG)
       love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
 
-      local popup_scale = 0.9 + 0.1 * self.fade
+      local popup_scale = 0.85 + 0.15 * self.fade
       local sx = screenWidth / 2
       local sy = screenHeight / 2
       love.graphics.translate(sx, sy)

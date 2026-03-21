@@ -79,7 +79,7 @@ local function draw_core_reminder_popup()
         return 
     end
 
-    reminder_fade = reminder_fade + (1 - reminder_fade) * 15 * love.timer.getDelta()
+    reminder_fade = reminder_fade + (1 - reminder_fade) * 20 * love.timer.getDelta()
     if reminder_fade > 0.999 then reminder_fade = 1 end
 
     local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
@@ -93,7 +93,7 @@ local function draw_core_reminder_popup()
     love.graphics.setColor(0, 0, 0, 0.8 * reminder_fade)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
 
-    local popup_scale = 0.9 + 0.1 * reminder_fade
+    local popup_scale = 0.85 + 0.15 * reminder_fade
     love.graphics.translate(sw / 2, sh / 2)
     love.graphics.scale(popup_scale, popup_scale)
     love.graphics.translate(-sw / 2, -sh / 2)

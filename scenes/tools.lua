@@ -1303,7 +1303,7 @@ local function draw_confirm_popup()
         return
     end
 
-    confirm_fade = confirm_fade + (1 - confirm_fade) * 15 * love.timer.getDelta()
+    confirm_fade = confirm_fade + (1 - confirm_fade) * 20 * love.timer.getDelta()
     if confirm_fade > 0.999 then confirm_fade = 1 end
 
     local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
@@ -1317,7 +1317,7 @@ local function draw_confirm_popup()
     love.graphics.setColor(0, 0, 0, 0.8 * confirm_fade)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
 
-    local popup_scale = 0.9 + 0.1 * confirm_fade
+    local popup_scale = 0.85 + 0.15 * confirm_fade
     love.graphics.translate(sw / 2, sh / 2)
     love.graphics.scale(popup_scale, popup_scale)
     love.graphics.translate(-sw / 2, -sh / 2)
@@ -1379,7 +1379,7 @@ local function draw_clear_cache_popup()
         return
     end
 
-    clear_cache_fade = clear_cache_fade + (1 - clear_cache_fade) * 15 * love.timer.getDelta()
+    clear_cache_fade = clear_cache_fade + (1 - clear_cache_fade) * 20 * love.timer.getDelta()
     if clear_cache_fade > 0.999 then clear_cache_fade = 1 end
 
     local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
@@ -1393,7 +1393,7 @@ local function draw_clear_cache_popup()
     love.graphics.setColor(0, 0, 0, 0.8 * clear_cache_fade)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
 
-    local popup_scale = 0.9 + 0.1 * clear_cache_fade
+    local popup_scale = 0.85 + 0.15 * clear_cache_fade
     love.graphics.translate(sw / 2, sh / 2)
     love.graphics.scale(popup_scale, popup_scale)
     love.graphics.translate(-sw / 2, -sh / 2)
@@ -1460,7 +1460,7 @@ local function draw_offline_popup()
         return
     end
 
-    offline_fade = offline_fade + (1 - offline_fade) * 15 * love.timer.getDelta()
+    offline_fade = offline_fade + (1 - offline_fade) * 20 * love.timer.getDelta()
     if offline_fade > 0.999 then offline_fade = 1 end
 
     local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
@@ -1474,7 +1474,7 @@ local function draw_offline_popup()
     love.graphics.setColor(0, 0, 0, 0.8 * offline_fade)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
 
-    local popup_scale = 0.9 + 0.1 * offline_fade
+    local popup_scale = 0.85 + 0.15 * offline_fade
     love.graphics.translate(sw / 2, sh / 2)
     love.graphics.scale(popup_scale, popup_scale)
     love.graphics.translate(-sw / 2, -sh / 2)
