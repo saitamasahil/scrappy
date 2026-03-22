@@ -113,8 +113,8 @@ function badr:recalculateSize()
         if #self.children > 1 then
             totalHeight = totalHeight + (gap * (#self.children - 1))
         end
-        self.height = math.max(self.height, totalHeight)
-        self.width = math.max(self.width, maxWidth)
+        self.height = totalHeight
+        self.width = maxWidth
     end
 
     if self.row then
@@ -135,8 +135,8 @@ function badr:recalculateSize()
         if #self.children > 1 then
             totalWidth = totalWidth + (gap * (#self.children - 1))
         end
-        self.width = math.max(self.width, totalWidth)
-        self.height = math.max(self.height, maxHeight)
+        self.width = totalWidth
+        self.height = maxHeight
     end
 end
 

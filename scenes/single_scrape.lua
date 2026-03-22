@@ -611,6 +611,7 @@ local function load_rom_buttons(src_platform, dest_platform)
     end
 
     rom_list.children = {} -- Clear existing ROM items
+    rom_list.height = 0   -- Reset height so it can shrink
     -- Store them for toggle refresh
     last_selected_platform = src_platform
     last_dest_platform = dest_platform

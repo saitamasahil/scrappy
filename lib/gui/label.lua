@@ -8,7 +8,7 @@ local icon_to_event = {
   ["button_x"] = "x",
   ["button_y"] = "y",
   ["select"] = "lalt",
-  ["dpad"] = {"up", "down", "left", "right"},
+  ["dpad"] = {"up", "down"},
   ["dpad_horizontal"] = {"left", "right"}
 }
 
