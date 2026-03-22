@@ -6,8 +6,7 @@ return function(props)
   local height = props.height or
       200                                                                  -- Height of the scroll container viewport
   local width = props.width or 200
-  local scrollY = 0                                                        -- Initialize actual visual scroll position
-  local targetScrollY = 0                                                  -- Initialize target scroll position
+  -- Visual properties moved to component
   local scrollbarWidth = theme:read_number("scroll", "SCROLLBAR_WIDTH", 6) -- Width of the scroll bar
 
   -- No per-node offsets needed when children don't use absolute scissor.
@@ -21,11 +20,15 @@ return function(props)
     focusable = false,
 
     barColor = props.barColor,
+    scrollY = 0,
+    targetScrollY = 0,
+    scrollVelocity = 0,
+    scrollbarBulge = 0,
 
     -- Scroll control methods
     scrollTo = function(self, position)
       -- Clamp the scroll position to be within the content bounds
-      targetScrollY = math.max(0, math.min(position, self:getContentHeight() - height))
+      self.targetScrollY = math.max(0, math.min(position, self:getContentHeight() - height))
     end,
 
     scrollToFocused = function(self)
@@ -44,15 +47,15 @@ return function(props)
       if not isDescendantOf(focusedChild, self) then return end
 
       -- Determine the relative position of the focused child within the container
-      local childY = focusedChild.y - self.y - targetScrollY -- Calculate relative to where the screen WILL be
+      local childY = focusedChild.y - self.y - self.targetScrollY -- Calculate relative to where the screen WILL be
       -- Dynamic margin so section headers above the focused control are fully visible
       local margin = math.max(24, math.min(80, math.floor(height * 0.12)))
       if childY < margin then
         -- Scroll up slightly more to reveal the header above the focused control
-        self:scrollTo(scrollY + childY - margin)
+        self:scrollTo(self.scrollY + childY - margin)
       elseif childY + focusedChild.height > height - margin then
         -- Scroll down and keep a bottom margin
-        self:scrollTo(scrollY + childY + focusedChild.height - height + margin)
+        self:scrollTo(self.scrollY + childY + focusedChild.height - height + margin)
       end
     end,
 
@@ -71,14 +74,18 @@ return function(props)
       if contentHeight <= self.height then return end -- No scrollbar if content fits
 
       local scrollbarHeight = (self.height / contentHeight) * self.height
-      local scrollbarY = (scrollY / contentHeight) * self.height
+      local scrollbarY = (self.scrollY / contentHeight) * self.height
 
       -- Resolve colors dynamically
       local barColor = self.barColor or theme:read_color("scroll", "SCROLLBAR_COLOR", "#636e72")
 
+      -- Liquid UI: Scrollbar Bulge and Stretch
+      local bulge = (self.scrollbarBulge or 0) * 4
+      local bw = scrollbarWidth + bulge
+      
       -- Draw the scroll bar on the left of the container
-      love.graphics.setColor(barColor) -- Set the scrollbar color (light gray)
-      love.graphics.rectangle("fill", self.x - scrollbarWidth - 2, self.y + scrollbarY, scrollbarWidth, scrollbarHeight)
+      love.graphics.setColor(barColor)
+      love.graphics.rectangle("fill", self.x - bw - 2, self.y + scrollbarY - bulge/2, bw, scrollbarHeight + bulge, 4, 4)
     end,
 
     draw = function(self)
@@ -93,7 +100,7 @@ return function(props)
 
       -- Draw each child with adjusted position for scrolling
       love.graphics.push()
-      love.graphics.translate(0, -scrollY)
+      love.graphics.translate(0, -self.scrollY)
       for _, child in ipairs(self.children) do
         child:draw()
       end
@@ -109,7 +116,12 @@ return function(props)
 
     update = function(self, dt)
       -- Smoothly interpolate scroll position toward target
-      scrollY = scrollY + (targetScrollY - scrollY) * 15 * dt
+      local prevY = self.scrollY
+      self.scrollY = self.scrollY + (self.targetScrollY - self.scrollY) * 15 * dt
+      self.scrollVelocity = (self.scrollY - prevY) / dt
+      
+      local targetBulge = math.min(1.0, math.abs(self.scrollVelocity) / 1000)
+      self.scrollbarBulge = (self.scrollbarBulge or 0) + (targetBulge - (self.scrollbarBulge or 0)) * 10 * dt
       
       -- Update children with the current scroll offset
       for _, child in ipairs(self.children) do

@@ -33,9 +33,23 @@ return function(props)
       love.graphics.setColor(backgroundColor)
       love.graphics.rectangle('fill', self.x, self.y, self.width, self.height)
 
-      -- Draw progress bar
+      -- Draw progress bar (Liquid Style)
       love.graphics.setColor(barColor)
-      love.graphics.rectangle('fill', self.x, self.y, self.width * self.progress, self.height)
+      local barWidth = self.width * self.progress
+      love.graphics.rectangle('fill', self.x, self.y, barWidth, self.height)
+      
+      -- Surface wave at the leading edge
+      if self.progress > 0 and self.progress < 1 then
+          local wave_x = self.x + barWidth
+          local segments = 10
+          local wave_w = 4
+          love.graphics.setLineWidth(1)
+          for i = 0, segments do
+              local py = self.y + (i / segments) * self.height
+              local offset = math.sin(py * 0.1 + love.timer.getTime() * 10) * wave_w * (1 - self.progress*0.5)
+              love.graphics.line(wave_x, py, wave_x + offset, py)
+          end
+      end
 
       -- Draw border if specified
       if self.borderWidth > 0 then

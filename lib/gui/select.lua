@@ -56,6 +56,20 @@ return function(props)
         if props.onChange then props.onChange(key, self.currentIndex) end
       end
     end,
+    onClick = function(self)
+      if self.disabled then return end
+      self.ripple_r = 0
+      self.ripple_a = 0.25
+      -- Determine if we clicked left or right half
+      local mx = love.mouse.getX()
+      local _, tx = love.graphics.transformPoint(self.x, self.y)
+      local relativeX = mx - tx
+      if relativeX < self.width / 2 then
+        self:onKeyPress("left")
+      else
+        self:onKeyPress("right")
+      end
+    end,
     onFocus = props.onFocus,
     last_focused = false,
     onUpdate = function(self, dt)

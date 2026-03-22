@@ -40,14 +40,7 @@ return function(props)
     -- Key press handling for toggling checkbox with Enter/Return key
     onKeyPress = function(self, key)
       if (key == "return" or key == "a") and self.focused then
-        local now = love.timer.getTime()
-        self.last_toggle = self.last_toggle or 0
-        if now - self.last_toggle < 0.25 then return end
-        self.last_toggle = now
-        self.checked = not self.checked
-        self.ripple_r = 0
-        self.ripple_a = 0.25
-        if self.onToggle then self:onToggle(self.checked) end
+        self:onClick()
       end
     end,
     -- Handle mouse clicks

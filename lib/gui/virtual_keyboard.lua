@@ -90,6 +90,8 @@ local function create_vk(config)
     -- Whether the text field is focused (for cursor movement within text)
     text_field_focused = false,
     key_anim = {},
+    key_ripples = {}, -- [row][col] = {r, a}
+    key_squish = {},  -- [row][col] = {sx, sy}
     -- Focus flow animation states
     focus_x = 0, focus_y = 0, focus_w = 0, focus_h = 0,
     focus_initialized = false,
@@ -379,6 +381,11 @@ local function create_vk(config)
       end
       self.move_lock_until = love.timer.getTime() + 0.12
       self.hold_dir = nil
+      
+      -- Trigger ripple and squish
+      self.key_ripples[self.row] = self.key_ripples[self.row] or {}
+      self.key_ripples[self.row][self.col] = { r = 0, a = 0.6 }
+      
       return true
     elseif key == 'cancel' then
       self:hide(false)
@@ -498,6 +505,24 @@ local function create_vk(config)
         local target_v = is_focused and 1 or 0
         self.key_anim[r][c] = (self.key_anim[r][c] or 0) + (target_v - (self.key_anim[r][c] or 0)) * 20 * dt
         
+        -- Liquid Squish for keys
+        self.key_squish[r] = self.key_squish[r] or {}
+        self.key_squish[r][c] = self.key_squish[r][c] or { sx = 1, sy = 1 }
+        local is_pressed = is_focused and held == 'confirm'
+        local target_sx = is_pressed and 1.15 or 1
+        local target_sy = is_pressed and 0.82 or 1
+        local ks = self.key_squish[r][c]
+        ks.sx = ks.sx + (target_sx - ks.sx) * 25 * dt
+        ks.sy = ks.sy + (target_sy - ks.sy) * 25 * dt
+        
+        -- Liquid Ripple for keys
+        self.key_ripples[r] = self.key_ripples[r] or {}
+        local kr = self.key_ripples[r][c]
+        if kr and kr.a > 0 then
+            kr.r = kr.r + 200 * dt
+            kr.a = kr.a - 2.0 * dt
+        end
+
         if is_focused then
           target_x, target_y = cx, ry
           target_w, target_h = kw, key_h
@@ -662,8 +687,9 @@ local function create_vk(config)
         love.graphics.push()
         local kcx, kcy = rx + kw/2, ry + key_h/2
         local kscale = 1.0 + anim_p * 0.09
+        local ks = (self.key_squish[r] and self.key_squish[r][c]) or {sx=1, sy=1}
         love.graphics.translate(kcx, kcy)
-        love.graphics.scale(kscale, kscale)
+        love.graphics.scale(kscale * ks.sx, kscale * ks.sy)
         love.graphics.translate(-kcx, -kcy)
 
         local current_bg = key_bg
@@ -678,6 +704,15 @@ local function create_vk(config)
         
         love.graphics.setColor(current_bg)
         love.graphics.rectangle('fill', rx, ry, kw, key_h, 6, 6)
+        
+        -- Draw key ripple
+        local kr = (self.key_ripples[r] and self.key_ripples[r][c])
+        if kr and kr.a > 0 then
+            love.graphics.setColor(key_text[1], key_text[2], key_text[3], kr.a)
+            love.graphics.setLineWidth(1)
+            love.graphics.circle("line", kcx, kcy, kr.r)
+        end
+
         love.graphics.setColor(key_text)
         if type(k)=='table' then
           if k.t=='toggle' then draw_label(rx, ry, kw, key_h, k.label)

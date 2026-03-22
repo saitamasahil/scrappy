@@ -335,14 +335,15 @@ function settings:load()
 end
 
 function settings:update(dt)
+  if vk and vk.visible then
+    vk:update(dt)
+    return -- Skip all background updates while keyboard is active
+  end
+
   if info_window and info_window.visible then
     info_window:update(dt)
   else
     menu:update(dt)
-  end
-
-  if vk and vk.visible then
-    vk:update(dt)
   end
   
   if tgdb_server_running then

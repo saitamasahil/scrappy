@@ -42,11 +42,14 @@ local anim = {
     author_alpha = 0,
     author_y_offset = 20,
     fade_out = 1,          -- Final sequence to exit
+    wave_1_x = 0,
     wave_2_x = 0,
-    reveal_style = "wave",  -- wave | bubbles | droplet
+    reveal_style = "wave", -- wave | bubbles | droplet | rain | tidal
     bubble_progress = 0,
     drop_y = -100,
-    impact_r = 0
+    impact_r = 0,
+    rain_progress = 0,
+    particles = {}         -- for droplet impact
 }
 
 local configs = require("helpers.config")
@@ -74,12 +77,18 @@ function splash.load(delay)
     anim.author_alpha = 0
     anim.author_y_offset = 20
     anim.fade_out = 1
+    anim.wave_1_x = 0
     anim.wave_2_x = 0
     anim.bubble_progress = 0
     anim.drop_y = -100
     anim.impact_r = 0
+    anim.vortex_rot = 0
+    anim.vortex_scale = 0
+    anim.rain_progress = 0
+    anim.tidal_y = 0
+    anim.particles = {}
     
-    local styles = {"wave", "bubbles", "droplet"}
+    local styles = { "wave", "bubbles", "droplet", "rain" }
     anim.reveal_style = styles[math.random(#styles)]
     
     splash.finished = false
@@ -132,10 +141,27 @@ function splash.load(delay)
         elseif anim.reveal_style == "droplet" then
             local h = love.graphics.getHeight()
             timer.tween(0.4, anim, { drop_y = h / 2 }, 'in-quad', function()
+                -- Spawn particles
+                for i = 1, 16 do
+                    local angle = math.random() * math.pi * 2
+                    local speed = 100 + math.random() * 200
+                    table.insert(anim.particles, {
+                        x = w / 2,
+                        y = h / 2,
+                        vx = math.cos(angle) * speed,
+                        vy = math.sin(angle) * speed,
+                        life = 1.0
+                    })
+                end
                 timer.tween(0.8, anim, { impact_r = math.max(w, h) * 1.5 }, 'out-quad', function()
                     splash.finished = true
                     splash.is_revealing = false
                 end)
+            end)
+        elseif anim.reveal_style == "rain" then
+            timer.tween(1.2, anim, { rain_progress = 1 }, 'linear', function()
+                splash.finished = true
+                splash.is_revealing = false
             end)
         end
     end)
@@ -158,134 +184,174 @@ function splash.draw()
     -- Global Fade out control
     local r, g, b = colors.main[1], colors.main[2], colors.main[3]
 
-    if splash.is_revealing and anim.reveal_style == "wave" then
+    if splash.is_revealing then
+        -- REVEAL LOGIC: Cover the screen and use stencils to POKE HOLES to reveal the UI
         love.graphics.stencil(function()
-            local points = { 0, 0, 0, height }
+            if anim.reveal_style == "wave" then
+                -- Sweep from left to right to reveal
+                local points = { 0, 0, 0, height }
+                local segments = 40
+                for i = segments, 0, -1 do
+                    local y = (i / segments) * height
+                    local offset = math.sin(y * 0.03 + love.timer.getTime() * 8) * 30
+                    table.insert(points, (width - anim.wave_1_x) + offset)
+                    table.insert(points, y)
+                end
+                love.graphics.polygon("fill", points)
+            elseif anim.reveal_style == "bubbles" then
+                -- Grow bubbles to reveal
+                local num_bubbles = 20
+                for i = 1, num_bubbles do
+                    local bx = (i / num_bubbles) * width
+                    local seed = i * 123.45
+                    local by = height - (anim.bubble_progress * height * (1 + math.sin(seed) * 0.3))
+                    local br = 10 + math.abs(math.sin(seed * 2)) * 60
+                    love.graphics.circle("fill", bx, by, br * (anim.bubble_progress * 2))
+                end
+                if anim.bubble_progress > 0.8 then
+                    love.graphics.rectangle("fill", 0, height * (1 - (anim.bubble_progress - 0.8) * 5), width, height)
+                end
+            elseif anim.reveal_style == "droplet" and anim.impact_r > 0 then
+                love.graphics.circle("fill", width / 2, height / 2, anim.impact_r)
+            elseif anim.reveal_style == "rain" then
+                for i = 1, 30 do
+                    local seed = i * 555.55
+                    local rx = (math.sin(seed) * 0.5 + 0.5) * width
+                    local ry = (math.cos(seed * 1.2) * 0.5 + 0.5) * height
+                    local r_max = 250
+                    local r_progress = math.max(0, math.min(1, (anim.rain_progress * 1.5) - (i * 0.02)))
+                    if r_progress > 0 then
+                        love.graphics.circle("fill", rx, ry, r_progress * r_max)
+                    end
+                end
+                if anim.rain_progress > 0.8 then
+                   love.graphics.rectangle("fill", 0, 0, width, height * (anim.rain_progress - 0.8) * 5)
+                end
+            end
+        end, "replace", 1)
+
+        -- Draw the MASK color where stencil is 0 (not revealed yet)
+        love.graphics.setStencilTest("equal", 0)
+        love.graphics.setColor(colors.background)
+        love.graphics.rectangle("fill", 0, 0, width, height)
+        love.graphics.setStencilTest()
+
+        -- Draw the Accent-Colored "Water" effects over the reveal
+        local accent_color = theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f")
+        if anim.reveal_style == "wave" then
+            local points = {}
             local segments = 40
-            for i = segments, 0, -1 do
+            for i = 0, segments do
                 local y = (i / segments) * height
                 local wave_offset = math.sin(y * 0.03 + love.timer.getTime() * 8) * 30
-                table.insert(points, anim.wave_1_x + wave_offset)
+                table.insert(points, (width - anim.wave_1_x) + wave_offset)
                 table.insert(points, y)
             end
+            for i = segments, 0, -1 do
+                local y = (i / segments) * height
+                local wave_offset = math.sin(y * 0.035 + love.timer.getTime() * 7) * 40
+                table.insert(points, (width - anim.wave_1_x) + 150 + wave_offset)
+                table.insert(points, y)
+            end
+            love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
             love.graphics.polygon("fill", points)
-        end, "replace", 1)
-        love.graphics.setStencilTest("greater", 0)
-        
-        love.graphics.setColor(colors.background)
-        love.graphics.rectangle("fill", 0, 0, width, height)
-    elseif anim.reveal_style == "bubbles" and splash.is_revealing then
-        love.graphics.clear(colors.background)
-    elseif anim.reveal_style == "droplet" and splash.is_revealing and anim.impact_r > 0 then
-        love.graphics.stencil(function()
-            love.graphics.circle("fill", width / 2, height / 2, anim.impact_r)
-        end, "replace", 1)
-        love.graphics.setStencilTest("greater", 0)
-        love.graphics.setColor(colors.background)
-        love.graphics.rectangle("fill", 0, 0, width, height)
+        elseif anim.reveal_style == "bubbles" then
+            love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], anim.bubble_progress * 2)
+            local num_bubbles = 20
+            for i = 1, num_bubbles do
+                local bx = (i / num_bubbles) * width
+                local seed = i * 123.45
+                local by = height - (anim.bubble_progress * height * (1 + math.sin(seed) * 0.3))
+                local br = 10 + math.abs(math.sin(seed * 2)) * 30
+                love.graphics.circle("fill", bx, by, br * (1 - anim.bubble_progress))
+            end
+        elseif anim.reveal_style == "droplet" then
+            love.graphics.setColor(accent_color)
+            if anim.impact_r == 0 then
+                love.graphics.circle("fill", width / 2, anim.drop_y, 12)
+                love.graphics.setLineWidth(4)
+                love.graphics.line(width / 2, anim.drop_y, width / 2, anim.drop_y - 20)
+            else
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1 - (anim.impact_r / (math.max(width, height) * 1.5)))
+                love.graphics.setLineWidth(10)
+                love.graphics.circle("line", width / 2, height / 2, anim.impact_r)
+                local dt = love.timer.getDelta()
+                for i = #anim.particles, 1, -1 do
+                    local p = anim.particles[i]
+                    p.x = p.x + p.vx * dt
+                    p.y = p.y + p.vy * dt
+                    p.vy = p.vy + 500 * dt -- gravity
+                    p.life = p.life - dt * 2
+                    if p.life <= 0 then
+                        table.remove(anim.particles, i)
+                    else
+                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], p.life)
+                        love.graphics.circle("fill", p.x, p.y, 3)
+                    end
+                end
+            end
+        elseif anim.reveal_style == "rain" then
+            for i = 1, 30 do
+                local seed = i * 555.55
+                local rx = (math.sin(seed) * 0.5 + 0.5) * width
+                local ry = (math.cos(seed * 1.2) * 0.5 + 0.5) * height
+                local r_max = 200
+                local r_progress = math.max(0, math.min(1, (anim.rain_progress * 1.5) - (i * 0.02)))
+                if r_progress > 0 and r_progress < 1 then
+                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1 - r_progress)
+                    love.graphics.setLineWidth(2)
+                    love.graphics.circle("line", rx, ry, r_progress * r_max)
+                end
+            end
+        end
     else
         love.graphics.clear(colors.background)
     end
 
-    love.graphics.push()
-    love.graphics.translate(width * 0.5, height * 0.5)
-    
-    -- Draw Logo (Scale handled by pop_scale, Y sliding handled by slide_y + Buoyancy)
-    local buoyancy = math.sin(love.timer.getTime() * 2) * 4
-    love.graphics.setColor(r, g, b, anim.fade_out)
-    love.graphics.draw(logo, 0, -anim.slide_y * half_logo_height + buoyancy, 0, anim.pop_scale, anim.pop_scale, half_logo_width, half_logo_height)
-    
-    -- Draw App Name (Title)
-    love.graphics.setColor(r, g, b, anim.title_alpha * anim.fade_out)
-    love.graphics.push()
-    love.graphics.translate(0, half_logo_height)
-    love.graphics.draw(app_name, -app_name:getWidth() * 0.5, -anim.slide_y * app_name:getHeight() + anim.title_y_offset)
-    love.graphics.pop()
-    
-    -- Calculate Heights and Spacing for Credits Cascade
-    love.graphics.push()
-    love.graphics.translate(0, height * 0.5 - 20)
-    local v_h = app_version_text:getHeight()
-    local ca_h = credits_author:getHeight()
-    local cm_h = credits_maintainer:getHeight()
-    local spacing = math.max(6, math.floor(ca_h * 0.4))
-    
-    -- Base Y positions climbing upwards from the bottom
-    local version_base_y = -v_h
-    local maintainer_base_y = version_base_y - cm_h - spacing
-    local author_base_y = maintainer_base_y - ca_h - spacing * 2
+    if not splash.is_revealing then
+        love.graphics.push()
+        love.graphics.translate(width * 0.5, height * 0.5)
 
-    -- Draw Version
-    love.graphics.setColor(r, g, b, anim.version_alpha * anim.fade_out)
-    love.graphics.draw(app_version_text, -app_version_text:getWidth() * 0.5, version_base_y + anim.version_y_offset)
-    
-    -- Draw Maintainer
-    love.graphics.setColor(r, g, b, anim.maintainer_alpha * anim.fade_out)
-    love.graphics.draw(credits_maintainer, -credits_maintainer:getWidth() * 0.5, maintainer_base_y + anim.maintainer_y_offset)
-    
-    -- Draw Author
-    love.graphics.setColor(r, g, b, anim.author_alpha * anim.fade_out)
-    love.graphics.draw(credits_author, -credits_author:getWidth() * 0.5, author_base_y + anim.author_y_offset)
-    
-    love.graphics.pop()
-    
-    love.graphics.setColor(colors.background)
-    love.graphics.pop()
+        -- Draw Logo (Scale handled by pop_scale, Y sliding handled by slide_y + Buoyancy)
+        local buoyancy = math.sin(love.timer.getTime() * 2) * 4
+        love.graphics.setColor(r, g, b, anim.fade_out)
+        love.graphics.draw(logo, 0, -anim.slide_y * half_logo_height + buoyancy, 0, anim.pop_scale, anim.pop_scale, half_logo_width,
+            half_logo_height)
 
-    if splash.is_revealing and anim.reveal_style == "wave" then
-        love.graphics.setStencilTest()
-        
-        local points = {}
-        local segments = 40
-        for i = 0, segments do
-            local y = (i / segments) * height
-            local wave_offset = math.sin(y * 0.03 + love.timer.getTime() * 8) * 30
-            table.insert(points, anim.wave_1_x + wave_offset)
-            table.insert(points, y)
-        end
-        for i = segments, 0, -1 do
-            local y = (i / segments) * height
-            local wave_offset = math.sin(y * 0.035 + love.timer.getTime() * 7) * 40
-            table.insert(points, anim.wave_2_x + wave_offset)
-            table.insert(points, y)
-        end
-        
-        local accent_color = theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f")
-        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
-        love.graphics.polygon("fill", points)
-    end
+        -- Draw App Name (Title)
+        love.graphics.setColor(r, g, b, anim.title_alpha * anim.fade_out)
+        love.graphics.push()
+        love.graphics.translate(0, half_logo_height)
+        love.graphics.draw(app_name, -app_name:getWidth() * 0.5, -anim.slide_y * app_name:getHeight() + anim.title_y_offset)
+        love.graphics.pop()
 
-    -- Draw Bubbles if active
-    if anim.reveal_style == "bubbles" and splash.is_revealing then
-        local accent_color = theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f")
-        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], anim.bubble_progress * 2)
-        local num_bubbles = 20
-        for i = 1, num_bubbles do
-            local bx = (i / num_bubbles) * width
-            local seed = i * 123.45
-            local by = height - (anim.bubble_progress * height * (1 + math.sin(seed) * 0.3))
-            local br = 10 + math.abs(math.sin(seed * 2)) * 30
-            love.graphics.circle("fill", bx, by, br * (1 - anim.bubble_progress))
-        end
-    end
+        -- Calculate Heights and Spacing for Credits Cascade
+        love.graphics.push()
+        love.graphics.translate(0, height * 0.5 - 20)
+        local v_h = app_version_text:getHeight()
+        local ca_h = credits_author:getHeight()
+        local cm_h = credits_maintainer:getHeight()
+        local spacing = math.max(6, math.floor(ca_h * 0.4))
 
-    -- Draw Droplet/Impact if active
-    if anim.reveal_style == "droplet" and splash.is_revealing then
-        local accent_color = theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f")
-        if anim.impact_r == 0 then
-            -- Falling drop
-            love.graphics.setColor(accent_color)
-            love.graphics.circle("fill", width / 2, anim.drop_y, 12)
-            -- Trail
-            love.graphics.setLineWidth(4)
-            love.graphics.line(width / 2, anim.drop_y, width / 2, anim.drop_y - 20)
-        else
-            -- Expanding Impact ring
-            love.graphics.setStencilTest()
-            love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1 - (anim.impact_r / (math.max(width, height) * 1.5)))
-            love.graphics.setLineWidth(10)
-            love.graphics.circle("line", width / 2, height / 2, anim.impact_r)
-        end
+        -- Base Y positions climbing upwards from the bottom
+        local version_base_y = -v_h
+        local maintainer_base_y = version_base_y - cm_h - spacing
+        local author_base_y = maintainer_base_y - ca_h - spacing * 2
+
+        -- Draw Version
+        love.graphics.setColor(r, g, b, anim.version_alpha * anim.fade_out)
+        love.graphics.draw(app_version_text, -app_version_text:getWidth() * 0.5, version_base_y + anim.version_y_offset)
+
+        -- Draw Maintainer
+        love.graphics.setColor(r, g, b, anim.maintainer_alpha * anim.fade_out)
+        love.graphics.draw(credits_maintainer, -credits_maintainer:getWidth() * 0.5, maintainer_base_y + anim.maintainer_y_offset)
+
+        -- Draw Author
+        love.graphics.setColor(r, g, b, anim.author_alpha * anim.fade_out)
+        love.graphics.draw(credits_author, -credits_author:getWidth() * 0.5, author_base_y + anim.author_y_offset)
+
+        love.graphics.pop()
+        love.graphics.pop()
     end
 end
 

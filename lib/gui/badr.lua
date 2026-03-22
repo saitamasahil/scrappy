@@ -215,6 +215,7 @@ function badr:animate(props)
 end
 
 function badr:update(dt)
+  if _G.ui_overlay_active then return end -- Modern Modal: Pause background UI logic while overlay is active
   if self.onUpdate then
     self:onUpdate(dt)
   end
@@ -324,6 +325,7 @@ end
 
 -- Handles keyboard navigation
 function badr:keypressed(key)
+  if _G.ui_overlay_active then return end -- Modern Modal: Ignore background keys while overlay is active
   local root = self:getRoot()
   if not root.focusedElement then return end
 

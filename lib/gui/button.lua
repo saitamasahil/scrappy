@@ -45,11 +45,16 @@ return function(props)
     topPadding = props.topPadding or 4,
     bottomPadding = props.bottomPadding or 4,
     -- logic
-    onClick = props.onClick,
+    onClick = function(self)
+      if self.disabled then return end
+      self.ripple_r = 0
+      self.ripple_a = 0.25
+      if props.onClick then props.onClick() end
+    end,
     disabled = props.disabled or false,
     onKeyPress = function(self, key)
-      if key == "return" and self.focused and props.onClick then
-        props.onClick()
+      if key == "return" and self.focused then
+        self:onClick()
       end
     end,
     onFocus = props.onFocus,
