@@ -16,6 +16,14 @@ local output_log = require 'lib.gui.output_log'
 local label = require 'lib.gui.label'
 local icon = require 'lib.gui.icon'
 local virtual_keyboard = require 'lib.gui.virtual_keyboard'
+local icon_input = require 'helpers.input'
+
+-- Load button icons
+local button_a_icon = love.graphics.newImage("assets/inputs/switch_button_a.png")
+local button_b_icon = love.graphics.newImage("assets/inputs/switch_button_b.png")
+local dpad_v_icon = love.graphics.newImage("assets/inputs/switch_dpad_vertical_outline.png")
+local dpad_h_icon = love.graphics.newImage("assets/inputs/switch_dpad_horizontal_outline.png")
+
 
 local tools = {}
 local theme = configs.theme
@@ -56,6 +64,10 @@ local tpl_regen_check_timer = 0
 local pending_region_prios = nil
 local selected_region_index = 1
 local region_prios = {}
+local region_hold_dir = nil
+local region_hold_time = 0
+local region_repeat_acc = 0
+local region_icon_scales = { navigate = 1, reorder = 1, confirm = 1 }
 local default_region_prios = {"us", "wor", "eu", "jp", "ss", "uk", "au", "ame", "de", "cus", "cn", "kr", "asi", "br",
                               "sp", "fr", "gr", "it", "no", "dk", "nz", "nl", "pl", "ru", "se", "tw", "ca"}
 local region_names = {
@@ -835,25 +847,46 @@ local function open_region_editor()
     region_menu = region_menu + (component {
         row = true,
         gap = 6
-    } + icon {
-        name = "dpad",
-        size = 24,
-        y = 6
-    } + label {
+    } + (component {
+        width = 24, height = 32,
+        draw = function(self)
+            local scale = region_icon_scales.navigate or 1
+            local w0, h0 = dpad_v_icon:getDimensions()
+            local box = 24 * scale
+            local sx, sy = box / w0, box / h0
+            local icon_color = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
+            love.graphics.setColor(icon_color)
+            love.graphics.draw(dpad_v_icon, self.x + 12, self.y + 16, 0, sx, sy, w0/2, h0/2)
+        end
+    }) + label {
         text = "Navigate •",
         y = 6
-    } + icon {
-        name = "dpad_horizontal",
-        size = 24,
-        y = 6
-    } + label {
+    } + (component {
+        width = 24, height = 32,
+        draw = function(self)
+            local scale = region_icon_scales.reorder or 1
+            local w0, h0 = dpad_h_icon:getDimensions()
+            local box = 24 * scale
+            local sx, sy = box / w0, box / h0
+            local icon_color = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
+            love.graphics.setColor(icon_color)
+            love.graphics.draw(dpad_h_icon, self.x + 12, self.y + 16, 0, sx, sy, w0/2, h0/2)
+        end
+    }) + label {
         text = "Reorder •",
         y = 6
-    } + icon {
-        name = "button_a",
-        size = 24,
-        y = 8
-    } + label {
+    } + (component {
+        width = 24, height = 32,
+        draw = function(self)
+            local scale = region_icon_scales.confirm or 1
+            local w0, h0 = button_a_icon:getDimensions()
+            local box = 24 * scale
+            local sx, sy = box / w0, box / h0
+            local icon_color = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
+            love.graphics.setColor(icon_color)
+            love.graphics.draw(button_a_icon, self.x + 12, self.y + 16, 0, sx, sy, w0/2, h0/2)
+        end
+    }) + label {
         text = "Confirm",
         y = 6
     }) + (scroll_container {
@@ -1227,6 +1260,65 @@ function tools:update(dt)
     end
     if region_popup and region_popup.visible and region_menu then
         region_menu:update(dt)
+        
+        local held = nil
+        if icon_input.isEventDown("up") then held = "up"
+        elseif icon_input.isEventDown("down") then held = "down"
+        elseif icon_input.isEventDown("left") then held = "left"
+        elseif icon_input.isEventDown("right") then held = "right"
+        elseif icon_input.isEventDown("return") then held = "return" end
+
+        -- Smooth kinetic transitions (spring animation towards target)
+        for k, v in pairs(region_icon_scales) do
+            local target = 1.0
+            if held then
+                if k == "navigate" and (held == "up" or held == "down") then target = 0.7
+                elseif k == "reorder" and (held == "left" or held == "right") then target = 0.7
+                elseif k == "confirm" and held == "return" then target = 0.7 end
+            end
+            region_icon_scales[k] = v + (target - v) * 15 * dt
+        end
+
+        if held then
+            if region_hold_dir ~= held then
+                region_hold_dir = held
+                region_hold_time = 0
+                region_repeat_acc = 0
+                
+                -- Perform action immediately on first press
+                if held == "up" or held == "down" then
+                    region_menu:keypressed(held)
+                elseif held == "left" or held == "right" then
+                    local focused = region_menu:getRoot().focusedElement
+                    if focused and type(focused.id) == "string" and focused.id:match("^region_%d+$") then
+                        move_region(held == "left" and -1 or 1)
+                    end
+                elseif held == "return" then
+                    if region_menu then 
+                        region_menu:keypressed("return")
+                    end
+                end
+            else
+                region_hold_time = region_hold_time + dt
+                if region_hold_time > 0.4 then -- repeat delay
+                    region_repeat_acc = region_repeat_acc + dt
+                    if region_repeat_acc > 0.08 then -- repeat rate
+                        region_repeat_acc = 0
+                        -- Perform repeat action (no scale resets here to prevent vibration)
+                        if held == "up" or held == "down" then
+                            region_menu:keypressed(held)
+                        elseif held == "left" or held == "right" then
+                            local focused = region_menu:getRoot().focusedElement
+                            if focused and type(focused.id) == "string" and focused.id:match("^region_%d+$") then
+                                move_region(held == "left" and -1 or 1)
+                            end
+                        end
+                    end
+                end
+            end
+        else
+            region_hold_dir = nil
+        end
     elseif accent_popup and accent_popup.visible and accent_menu then
         accent_menu:update(dt)
     else
@@ -1292,10 +1384,6 @@ function tools:update(dt)
         end
     end
 end
-
--- Load button icons
-local button_a_icon = love.graphics.newImage("assets/inputs/switch_button_a.png")
-local button_b_icon = love.graphics.newImage("assets/inputs/switch_button_b.png")
 
 -- Draw the confirmation popup
 local function draw_confirm_popup()
@@ -1679,20 +1767,11 @@ function tools:keypressed(key)
 
 
     if region_popup and region_popup.visible then
-        if key == "escape" then
+        if key == "escape" or key == "b" then
             region_popup.visible = false
             return
         end
-        if region_menu and (key == "left" or key == "right") then
-            local focused = region_menu:getRoot().focusedElement
-            if focused and type(focused.id) == "string" and focused.id:match("^region_%d+$") then
-                move_region(key == "left" and -1 or 1)
-                return
-            end
-        end
-        if region_menu then
-            region_menu:keypressed(key)
-        end
+        -- All other inputs handled in tools:update for hold-to-repeat and icons
         return
     end
 
@@ -1800,35 +1879,13 @@ function tools:gamepadpressed(joystick, button)
         return true
     end
 
-    -- Handle region popup
+    -- Handle region popup (mostly handled in tools:update)
     if region_popup and region_popup.visible then
         if btn == "b" then
             region_popup.visible = false
             return true
-        elseif btn == "dpup" or btn == "dpdown" then
-            if region_menu then
-               -- Navigate region list
-               local direction = (btn == "dpup") and "up" or "down"
-               region_menu:keypressed(direction)
-            end
-            return true
-        elseif btn == "dpleft" or btn == "dpright" then
-            if region_menu then
-                local focused = region_menu:getRoot().focusedElement
-                if focused and type(focused.id) == "string" and focused.id:match("^region_%d+$") then
-                    move_region(btn == "dpleft" and -1 or 1)
-                    return true
-                end
-            end
-            return true
         end
-         -- Handle A/Select/Start if needed for reordering logic
-         if region_menu then
-            -- simplistic mapping for now
-             local map = {a='return'}
-             if map[btn] then region_menu:keypressed(map[btn]) end
-         end
-        return true
+        return true -- Block other gamepad inputs in popups
     end
 
 
