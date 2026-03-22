@@ -73,8 +73,9 @@ local function create_vk(config)
     -- Timing state
     hold_dir = nil,
     hold_time = 0,
-    repeat_delay = 0.28,
-    repeat_rate = 0.06,
+    repeat_delay = 0.45,
+    repeat_rate = 0.12,
+    nav_repeat_rate = 0.08, -- Faster rate for D-pad navigation
     repeat_started = false,
     hold_acc = 0,
     char_font = nil,
@@ -153,6 +154,7 @@ local function create_vk(config)
   
   function vk:handle_key(key)
     if not self.visible then return false end
+    if key == 'return' or key == 'kpreturn' then key = 'confirm' end
     local layout = self:get_layout()
     local now = love.timer.getTime()
     
@@ -240,21 +242,21 @@ local function create_vk(config)
         if self.cursor_pos > 0 then
           self.cursor_pos = self.cursor_pos - 1
         end
-        self.move_lock_until = love.timer.getTime() + 0.06
+        self.move_lock_until = love.timer.getTime() + 0.12
         return true
       elseif key == 'right' then
         if movement_locked() then return true end
         if self.cursor_pos < #self.buffer then
           self.cursor_pos = self.cursor_pos + 1
         end
-        self.move_lock_until = love.timer.getTime() + 0.06
+        self.move_lock_until = love.timer.getTime() + 0.12
         return true
       elseif key == 'down' then
         if movement_locked() then return true end
         -- Exit text field focus, go to keyboard row 1
         self.text_field_focused = false
         self.row = 1
-        self.move_lock_until = love.timer.getTime() + 0.06
+        self.move_lock_until = love.timer.getTime() + 0.12
         return true
       elseif key == 'up' then
         if movement_locked() then return true end
@@ -263,25 +265,29 @@ local function create_vk(config)
         local layout = self:get_layout()
         self.row = #layout
         self.col = math.min(self.col, #layout[self.row])
-        self.move_lock_until = love.timer.getTime() + 0.06
+        self.move_lock_until = love.timer.getTime() + 0.12
         return true
       elseif key == 'confirm' then
         -- Exit text field focus, go back to keyboard
         self.text_field_focused = false
-        self.move_lock_until = love.timer.getTime() + 0.08
+        self.move_lock_until = love.timer.getTime() + 0.12
         return true
       elseif key == 'cancel' then
         self:hide(false)
         return true
       elseif key == 'backspace' or key == 'y' then
+        if movement_locked() then return true end
         -- Y button or backspace deletes character at cursor
         delete_at_cursor()
+        self.move_lock_until = love.timer.getTime() + 0.12
         return true
       elseif key == 'x' then
+        if movement_locked() then return true end
         -- X button cycles keyboard layout even when text field is focused
         if self.mode == 'lower' then self.mode = 'upper'
         elseif self.mode == 'upper' then self.mode = 'symbol'
         else self.mode = 'lower' end
+        self.move_lock_until = love.timer.getTime() + 0.12
         return true
       end
       return true
@@ -293,62 +299,68 @@ local function create_vk(config)
       if self.row == 1 then
         -- From top row, go to text field
         self.text_field_focused = true
-        self.move_lock_until = love.timer.getTime() + 0.06
+        self.move_lock_until = love.timer.getTime() + 0.12
         return true
       end
       local target_row = self.row - 1
       if target_row >= 1 then
         self.col = nearest_col_by_x(self.row, self.col, target_row)
         self.row = target_row
-        self.move_lock_until = love.timer.getTime() + 0.06
+        self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
       else
         self.row = 1
         self.col = math.min(self.col, #layout[self.row])
-        self.move_lock_until = love.timer.getTime() + 0.06
+        self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
       end
     elseif key == 'down' then
       if movement_locked() then return true end
       if self.row == #layout then
         self.row = 1
         self.col = math.min(self.col, #layout[self.row])
-        self.move_lock_until = love.timer.getTime() + 0.06
+        self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
         return true
       end
       local target_row = self.row + 1
       if target_row <= #layout then
         self.col = nearest_col_by_x(self.row, self.col, target_row)
         self.row = target_row
-        self.move_lock_until = love.timer.getTime() + 0.06
+        self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
       else
         self.row = #layout
         self.col = math.min(self.col, #layout[self.row])
-        self.move_lock_until = love.timer.getTime() + 0.06
+        self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
       end
     elseif key == 'left' then
       if movement_locked() then return true end
       self.col = self.col > 1 and (self.col - 1) or #layout[self.row]
-      self.move_lock_until = love.timer.getTime() + 0.06
+      self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
     elseif key == 'right' then
       if movement_locked() then return true end
       self.col = self.col < #layout[self.row] and (self.col + 1) or 1
-      self.move_lock_until = love.timer.getTime() + 0.06
+      self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
     elseif key == 'space' then
+      if movement_locked() then return true end
       insert_at_cursor(' ')
       return true
     elseif key == 'backspace' or key == 'y' then
+      if movement_locked() then return true end
       -- Y button or backspace deletes character at cursor
       delete_at_cursor()
+      self.move_lock_until = love.timer.getTime() + 0.12
       return true
     elseif key == 'x' then
+      if movement_locked() then return true end
       -- X button cycles keyboard layout: lower → upper → symbol → lower
       if self.mode == 'lower' then self.mode = 'upper'
       elseif self.mode == 'upper' then self.mode = 'symbol'
       else self.mode = 'lower' end
+      self.move_lock_until = love.timer.getTime() + 0.12
       return true
     elseif key == 'ok_now' then
       self:hide(true)
       return true
     elseif key == 'confirm' then
+      if movement_locked() then return true end
       local keydef = layout[self.row][self.col]
       if type(keydef) == 'table' then
         if keydef.t == 'space' then 
@@ -365,7 +377,7 @@ local function create_vk(config)
       else
         insert_at_cursor(tostring(keydef))
       end
-      self.move_lock_until = love.timer.getTime() + 0.08
+      self.move_lock_until = love.timer.getTime() + 0.12
       self.hold_dir = nil
       return true
     elseif key == 'cancel' then
@@ -384,21 +396,32 @@ local function create_vk(config)
     self.fade = (self.fade or 0) + (1 - (self.fade or 0)) * 12 * dt
     if self.fade > 0.999 then self.fade = 1 end
     
-    local held = nil
-    if love.keyboard.isDown('up') then held = 'up'
-    elseif love.keyboard.isDown('down') then held = 'down'
-    elseif love.keyboard.isDown('left') then held = 'left'
-    elseif love.keyboard.isDown('right') then held = 'right' end
-    if not held then
-      local sticks = love.joystick and love.joystick.getJoysticks and love.joystick.getJoysticks() or {}
-      for i = 1, #sticks do
-        local j = sticks[i]
-        if j:isGamepadDown('dpup') then held = 'up' break end
-        if j:isGamepadDown('dpdown') then held = 'down' break end
-        if j:isGamepadDown('dpleft') then held = 'left' break end
-        if j:isGamepadDown('dpright') then held = 'right' break end
-      end
+    self.icon_scales = self.icon_scales or { a = 1, b = 1, x = 1, y = 1, dpad = 1 }
+    local icon_input = require("helpers.input")
+    local hold_keys = { a = "return", b = "escape", x = "x", y = "y", dpad = "up" }
+    
+    for k, v in pairs(hold_keys) do
+        local pressed = false
+        if k == "dpad" then
+            pressed = icon_input.isEventDown("up") or icon_input.isEventDown("down") or icon_input.isEventDown("left") or icon_input.isEventDown("right")
+        else
+            pressed = icon_input.isEventDown(v)
+        end
+        if pressed then
+            self.icon_scales[k] = self.icon_scales[k] + (0.6 - self.icon_scales[k]) * 30 * dt
+        else
+            self.icon_scales[k] = self.icon_scales[k] + (1 - self.icon_scales[k]) * 15 * dt
+        end
     end
+    
+    local held = nil
+    if icon_input.isEventDown('up') then held = 'up'
+    elseif icon_input.isEventDown('down') then held = 'down'
+    elseif icon_input.isEventDown('left') then held = 'left'
+    elseif icon_input.isEventDown('right') then held = 'right' 
+    elseif icon_input.isEventDown('return') then held = 'confirm'
+    elseif icon_input.isEventDown('x') then held = 'x'
+    elseif icon_input.isEventDown('y') then held = 'backspace' end
     if held then
       if self.hold_dir ~= held then
         self.hold_dir = held
@@ -416,9 +439,13 @@ local function create_vk(config)
         end
       else
         self.hold_acc = self.hold_acc + dt
-        while self.hold_acc >= self.repeat_rate do
+        local current_rate = self.repeat_rate
+        if held == 'up' or held == 'down' or held == 'left' or held == 'right' then
+          current_rate = self.nav_repeat_rate
+        end
+        while self.hold_acc >= current_rate do
           self:handle_key(held)
-          self.hold_acc = self.hold_acc - self.repeat_rate
+          self.hold_acc = self.hold_acc - current_rate
         end
       end
     else
@@ -705,8 +732,10 @@ local function create_vk(config)
       local ih = line_h
       if icon then
         local w0,h0 = icon:getDimensions()
-        local sx, sy = iw / w0, ih / h0
-        love.graphics.draw(icon, ix, iy, 0, sx, sy)
+        local scale_mult = self.icon_scales and self.icon_scales[icon_key] or 1
+        local sx, sy = (iw / w0) * scale_mult, (ih / h0) * scale_mult
+        local cx, cy = ix + iw / 2, iy + ih / 2
+        love.graphics.draw(icon, cx - (w0 * sx) / 2, cy - (h0 * sy) / 2, 0, sx, sy)
       else
         love.graphics.rectangle('line', ix, iy, iw, ih, 6, 6)
         love.graphics.printf(icon_key:upper(), ix, iy + ih*0.25, iw, 'center')

@@ -167,4 +167,20 @@ function love.gamepadreleased(js, button)
     end
 end
 
+function input.isEventDown(event)
+    -- Check keyboard
+    if love.keyboard.isDown(event) then return true end
+    
+    -- Check joystick if available
+    if joystick then
+        for js_button, mapped_event in pairs(input.joystick_mapping) do
+            if mapped_event == event then
+                if joystick:isGamepadDown(js_button) then return true end
+            end
+        end
+    end
+    
+    return false
+end
+
 return input

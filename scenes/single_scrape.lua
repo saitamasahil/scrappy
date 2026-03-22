@@ -240,6 +240,10 @@ local function on_cancel_refine()
     state.refine_attempted = false
 end
 
+local function stop_refining()
+    state.refine_confirm_visible = false
+end
+
 -- Draw the refine search confirmation popup
 local function draw_refine_confirm_popup()
     if not state.refine_confirm_visible then
@@ -1004,11 +1008,11 @@ function single_scrape:load()
 
     -- Create footer with button hints
     footer = component { row = true, gap = 40 }
-        + label { text = "Select", icon = "button_a" }
-        + label { text = "Back", icon = "button_b" }
-        + label { text = "Get Manual", icon = "button_x" }
-        + label { text = "Navigate", icon = "dpad" }
-        + label { text = "Settings", icon = "select" }
+        + label { id = "footer_a", text = "Select", icon = "button_a" }
+        + label { id = "footer_b", text = "Back", icon = "button_b" }
+        + label { id = "footer_x", text = "Get Manual", icon = "button_x" }
+        + label { id = "footer_dpad", text = "Navigate", icon = "dpad" }
+        + label { id = "footer_select", text = "Settings", icon = "select" }
     footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - 20, w_height - footer.height - 10)
 
     -- Setup scraping window
@@ -1051,6 +1055,7 @@ end
 
 function single_scrape:update(dt)
     menu:update(dt)
+    if footer then footer:update(dt) end
     update_scrape_state()
     process_fetched_game()
 
@@ -1086,28 +1091,7 @@ function single_scrape:draw()
 end
 
 function single_scrape:keypressed(key)
-    -- Handle info popup first (highest priority)
-    if info_window.visible then
-        if key == "escape" or key == "return" or key == "a" or key == "b" then
-            toggle_info()
-            return
-        end
-        return -- Block all other keys
-    end
-
-    -- Handle confirmation popup
-    if state.refine_confirm_visible then
-        if key == 'return' or key == 'a' then
-            on_confirm_refine()
-            return
-        elseif key == 'escape' or key == 'b' then
-            on_cancel_refine()
-            return
-        end
-        return -- Block all other keys while popup is visible
-    end
-
-    -- Handle virtual keyboard input first if visible
+    -- Handle virtual keyboard input first if visible (highest priority)
     if vk and vk.visible then
         local mapped = nil
         if key == 'up' or key == 'down' or key == 'left' or key == 'right' then
@@ -1129,6 +1113,27 @@ function single_scrape:keypressed(key)
             return
         end
         return
+    end
+
+    -- Handle info popup first (highest priority)
+    if info_window.visible then
+        if key == "escape" or key == "return" or key == "a" or key == "b" then
+            toggle_info()
+            return
+        end
+        return -- Block all other keys
+    end
+
+    -- Handle confirmation popup
+    if state.refine_confirm_visible then
+        if key == 'return' or key == 'a' then
+            on_confirm_refine()
+            return
+        elseif key == 'escape' or key == 'b' then
+            on_cancel_refine()
+            return
+        end
+        return -- Block all other keys while popup is visible
     end
 
     if key == "escape" then

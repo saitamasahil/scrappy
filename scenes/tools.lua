@@ -1214,13 +1214,14 @@ function tools:load()
     menu:focusFirstElement()
     -- Create help footer
     footer = component { row = true, gap = 40 }
-        + label { text = "Select", icon = "button_a" }
-        + label { text = "Back", icon = "button_b" }
-        + label { text = "Navigate", icon = "dpad" }
+        + label { id = "footer_a", text = "Select", icon = "button_a" }
+        + label { id = "footer_b", text = "Back", icon = "button_b" }
+        + label { id = "footer_dpad", text = "Navigate", icon = "dpad" }
     footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - 20, w_height - footer.height - 10)
 end
 
 function tools:update(dt)
+    if footer then footer:update(dt) end
     if vk and vk.visible then
         vk:update(dt)
     end
@@ -1569,6 +1570,30 @@ function tools:draw()
 end
 
 function tools:keypressed(key)
+    -- Handle virtual keyboard input first if visible (highest priority for text input)
+    if vk and vk.visible then
+        local mapped = nil
+        if key == 'up' or key == 'down' or key == 'left' or key == 'right' then
+            mapped = key
+        end
+        if key == 'return' then
+            mapped = 'confirm'
+        end
+        if key == 'escape' then
+            mapped = 'cancel'
+        end
+        if key == 'backspace' then mapped = 'backspace' end
+        if key == 'x' then mapped = 'x' end
+        if key == 'y' then mapped = 'y' end
+        if key == 'space' then mapped = 'space' end
+        
+        if mapped then
+            vk:handle_key(mapped)
+            return
+        end
+        return
+    end
+
     -- 1. Handle info popup (highest priority)
     if info_window.visible then
         if key == "return" or key == "a" or key == "escape" or key == "b" then
@@ -1692,7 +1717,19 @@ end
 function tools:gamepadpressed(joystick, button)
     local btn = type(button) == 'string' and button:lower() or button
 
-    -- Handle info popup first
+    -- Virtual Keyboard (highest priority)
+    if vk and vk.visible then
+        local map = {
+            dpup = 'up', dpdown = 'down', dpleft = 'left', dpright = 'right',
+            a = 'confirm', b = 'cancel', x = 'x', y = 'y'
+        }
+        if map[btn] then
+            vk:handle_key(map[btn])
+            return true
+        end
+        return true
+    end
+
     -- 1. Handle info popup (highest priority)
     if info_window.visible then
         if btn == "a" or btn == "b" then

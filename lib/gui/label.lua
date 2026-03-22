@@ -2,6 +2,16 @@ local component = require("lib.gui.badr")
 local icon      = require("lib.gui.icon")
 local configs   = require("helpers.config")
 
+local icon_to_event = {
+  ["button_a"] = "return",
+  ["button_b"] = "escape",
+  ["button_x"] = "x",
+  ["button_y"] = "y",
+  ["select"] = "lalt",
+  ["dpad"] = {"up", "down", "left", "right"},
+  ["dpad_horizontal"] = {"left", "right"}
+}
+
 local function label(props)
   local _font = props.font or love.graphics.getFont()
   local color = props.color
@@ -29,6 +39,41 @@ local function label(props)
     height = textHeight,
     font = _font,
     icon = props.icon,
+    trigger_bounce = function(self)
+        self.icon_scale = 0.6 -- Fallback trigger, but normally self-driven now
+    end,
+    onUpdate = function(self, dt)
+        self.icon_scale = self.icon_scale or 1
+        
+        local pressed = false
+        if self.icon and icon_to_event[self.icon] then
+            local icon_input = require("helpers.input")
+            local ev = icon_to_event[self.icon]
+            if type(ev) == "table" then
+                for _, e in ipairs(ev) do
+                    if icon_input.isEventDown and icon_input.isEventDown(e) then
+                        pressed = true
+                        break
+                    end
+                end
+            else
+                if icon_input.isEventDown and icon_input.isEventDown(ev) then
+                    pressed = true
+                end
+            end
+        end
+        
+        if pressed then
+            -- Snap down quickly while held
+            self.icon_scale = self.icon_scale + (0.6 - self.icon_scale) * 30 * dt
+        else
+            -- Spring back to 1.0 organically when released
+            if self.icon_scale < 1 then
+                self.icon_scale = self.icon_scale + (1 - self.icon_scale) * 15 * dt
+                if self.icon_scale > 0.99 then self.icon_scale = 1 end
+            end
+        end
+    end,
     draw = function(self)
       if not self.visible then return end
 
@@ -37,6 +82,16 @@ local function label(props)
 
       -- Draw the icon on the left if icon is provided
       if self.icon then
+        love.graphics.push()
+        self.icon_scale = self.icon_scale or 1
+        
+        -- Translate to icon center to scale locally, then draw icon, then restore matrix
+        local cx = self.x + iconSize / 2
+        local cy = self.y + self.height / 2
+        love.graphics.translate(cx, cy)
+        love.graphics.scale(self.icon_scale, self.icon_scale)
+        love.graphics.translate(-cx, -cy)
+
         local leftIcon = icon {
           name = self.icon,
           x = self.x,
@@ -44,6 +99,8 @@ local function label(props)
           size = iconSize
         }
         leftIcon:draw()
+        
+        love.graphics.pop()
       end
 
       -- Calculate the position of the text based on the presence of an icon
