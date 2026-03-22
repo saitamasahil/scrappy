@@ -167,6 +167,17 @@ function love.gamepadreleased(js, button)
     end
 end
 
+local current_button_states = {}
+local last_button_states = {}
+
+function input.isEventJustPressed(event)
+    return current_button_states[event] and not last_button_states[event]
+end
+
+function input.isEventJustReleased(event)
+    return last_button_states[event] and not current_button_states[event]
+end
+
 function input.isEventDown(event)
     -- Check keyboard
     if love.keyboard.isDown(event) then return true end
@@ -181,6 +192,14 @@ function input.isEventDown(event)
     end
     
     return false
+end
+
+-- Call this at the end of every frame to update state for the NEXT frame
+function input.postUpdate()
+    for _, event in pairs(input.events) do
+        last_button_states[event] = current_button_states[event] or false
+        current_button_states[event] = input.isEventDown(event)
+    end
 end
 
 return input

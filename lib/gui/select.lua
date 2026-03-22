@@ -68,6 +68,27 @@ return function(props)
       local target_p = self.focused and 1 or 0
       self.anim_p = self.anim_p + (target_p - self.anim_p) * 15 * dt
 
+      -- Liquid UI: Compression (Squish)
+      local input_helper = require("helpers.input")
+      local is_pressed = self.focused and (input_helper.isEventDown("return") or input_helper.isEventDown("left") or input_helper.isEventDown("right"))
+      
+      self.squish_x = self.squish_x or 1
+      self.squish_y = self.squish_y or 1
+      local target_sx = is_pressed and 1.05 or 1
+      local target_sy = is_pressed and 0.92 or 1
+      self.squish_x = self.squish_x + (target_sx - self.squish_x) * 20 * dt
+      self.squish_y = self.squish_y + (target_sy - self.squish_y) * 20 * dt
+
+      -- Liquid UI: Ripple
+      if self.focused and (input_helper.isEventJustPressed("return") or input_helper.isEventJustPressed("left") or input_helper.isEventJustPressed("right")) then
+          self.ripple_r = 0
+          self.ripple_a = 0.25
+      end
+      if self.ripple_a and self.ripple_a > 0 then
+          self.ripple_r = self.ripple_r + 250 * dt
+          self.ripple_a = self.ripple_a - 1.5 * dt
+      end
+
       -- Update scroll offset if text is wider than the button
       local textWidth = font:getWidth(self.options[self.currentIndex] or "")
       -- Only scroll if the button is focused and the text is longer than the button width
@@ -85,11 +106,11 @@ return function(props)
       if not self.visible then return end
       love.graphics.push()
 
-      -- Scale bump on focus
+      -- Scale bump on focus + Liquid Squish
       local cx, cy = self.x + self.width/2, self.y + self.height/2
       local scale = 1.0 + (self.anim_p or 0) * 0.02
       love.graphics.translate(cx, cy)
-      love.graphics.scale(scale, scale)
+      love.graphics.scale(scale * (self.squish_x or 1), scale * (self.squish_y or 1))
       love.graphics.translate(-cx, -cy)
 
       love.graphics.setFont(font)
@@ -109,6 +130,13 @@ return function(props)
 
       -- Draw background rectangle
       love.graphics.rectangle('fill', self.x, self.y, self.width, self.height)
+
+      -- Liquid UI: Ripple
+      if self.ripple_a and self.ripple_a > 0 then
+          love.graphics.setColor(textColor[1], textColor[2], textColor[3], self.ripple_a)
+          love.graphics.setLineWidth(1)
+          love.graphics.circle("line", cx, cy, self.ripple_r)
+      end
 
       -- Draw caret icons using the icon component
       local leftIcon = icon {

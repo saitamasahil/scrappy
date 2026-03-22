@@ -43,7 +43,9 @@ local anim = {
     author_y_offset = 20,
     fade_out = 1,          -- Final sequence to exit
     wave_1_x = 0,
-    wave_2_x = 0
+    wave_2_x = 0,
+    reveal_style = "wave",  -- wave | bubbles
+    bubble_progress = 0
 }
 
 local configs = require("helpers.config")
@@ -73,6 +75,11 @@ function splash.load(delay)
     anim.fade_out = 1
     anim.wave_1_x = 0
     anim.wave_2_x = 0
+    anim.bubble_progress = 0
+    
+    local styles = {"wave", "bubbles"}
+    anim.reveal_style = styles[math.random(#styles)]
+    
     splash.finished = false
     splash.is_revealing = false
 
@@ -100,21 +107,28 @@ function splash.load(delay)
         timer.tween(0.5, anim, { author_alpha = 0.5, author_y_offset = 0 }, 'out-quad')
     end)
 
-    -- EXIT PHASE: Water wave transition
+    -- EXIT PHASE: Randomized Liquid transition
     timer.after(delay + cascade_start + 0.5, function()
-        local w = love.graphics.getWidth()
+        local w, h = love.graphics.getDimensions()
         splash.is_revealing = true
-        anim.wave_1_x = w + 100
-        anim.wave_2_x = w + 250
         
-        timer.tween(0.8, anim, { wave_1_x = -150 }, 'in-out-sine')
-        
-        timer.after(0.15, function()
-            timer.tween(0.8, anim, { wave_2_x = -150 }, 'in-out-sine', function()
+        if anim.reveal_style == "wave" then
+            anim.wave_1_x = w + 100
+            anim.wave_2_x = w + 250
+            timer.tween(0.8, anim, { wave_1_x = -150 }, 'in-out-sine')
+            timer.after(0.15, function()
+                timer.tween(0.8, anim, { wave_2_x = -150 }, 'in-out-sine', function()
+                    splash.finished = true
+                    splash.is_revealing = false
+                end)
+            end)
+            
+        elseif anim.reveal_style == "bubbles" then
+            timer.tween(1.0, anim, { bubble_progress = 1 }, 'out-quad', function()
                 splash.finished = true
                 splash.is_revealing = false
             end)
-        end)
+        end
     end)
     
     refresh_texts()
@@ -135,7 +149,7 @@ function splash.draw()
     -- Global Fade out control
     local r, g, b = colors.main[1], colors.main[2], colors.main[3]
 
-    if splash.is_revealing then
+    if splash.is_revealing and anim.reveal_style == "wave" then
         love.graphics.stencil(function()
             local points = { 0, 0, 0, height }
             local segments = 40
@@ -151,6 +165,8 @@ function splash.draw()
         
         love.graphics.setColor(colors.background)
         love.graphics.rectangle("fill", 0, 0, width, height)
+    elseif anim.reveal_style == "bubbles" and splash.is_revealing then
+        love.graphics.clear(colors.background)
     else
         love.graphics.clear(colors.background)
     end
@@ -158,9 +174,10 @@ function splash.draw()
     love.graphics.push()
     love.graphics.translate(width * 0.5, height * 0.5)
     
-    -- Draw Logo (Scale handled by pop_scale, Y sliding handled by slide_y)
+    -- Draw Logo (Scale handled by pop_scale, Y sliding handled by slide_y + Buoyancy)
+    local buoyancy = math.sin(love.timer.getTime() * 2) * 4
     love.graphics.setColor(r, g, b, anim.fade_out)
-    love.graphics.draw(logo, 0, -anim.slide_y * half_logo_height, 0, anim.pop_scale, anim.pop_scale, half_logo_width, half_logo_height)
+    love.graphics.draw(logo, 0, -anim.slide_y * half_logo_height + buoyancy, 0, anim.pop_scale, anim.pop_scale, half_logo_width, half_logo_height)
     
     -- Draw App Name (Title)
     love.graphics.setColor(r, g, b, anim.title_alpha * anim.fade_out)
@@ -199,7 +216,7 @@ function splash.draw()
     love.graphics.setColor(colors.background)
     love.graphics.pop()
 
-    if splash.is_revealing then
+    if splash.is_revealing and anim.reveal_style == "wave" then
         love.graphics.setStencilTest()
         
         local points = {}
@@ -220,6 +237,20 @@ function splash.draw()
         local accent_color = theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f")
         love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
         love.graphics.polygon("fill", points)
+    end
+
+    -- Draw Bubbles if active
+    if anim.reveal_style == "bubbles" and splash.is_revealing then
+        local accent_color = theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f")
+        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], anim.bubble_progress * 2)
+        local num_bubbles = 20
+        for i = 1, num_bubbles do
+            local bx = (i / num_bubbles) * width
+            local seed = i * 123.45
+            local by = height - (anim.bubble_progress * height * (1 + math.sin(seed) * 0.3))
+            local br = 10 + math.abs(math.sin(seed * 2)) * 30
+            love.graphics.circle("fill", bx, by, br * (1 - anim.bubble_progress))
+        end
     end
 end
 

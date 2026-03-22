@@ -73,10 +73,11 @@ local function moving_stencil()
 end
 
 function loading:draw(x, y, scale)
+    local buoyancy = math.sin(love.timer.getTime() * 4) * 3
     if self.type == "spinner" then
         love.graphics.push()
         love.graphics.setColor(1, 1, 1)
-        love.graphics.translate(x, y)
+        love.graphics.translate(x, y + buoyancy)
         love.graphics.rotate(rotation.value)
         love.graphics
             .draw(logo, 0, 0, rotation.value * math.pi, scale, scale, logo:getWidth() / 2, logo:getHeight() / 2)
@@ -85,7 +86,7 @@ function loading:draw(x, y, scale)
 
     if self.type == "flash" then
         love.graphics.push()
-        love.graphics.translate(x, y)
+        love.graphics.translate(x, y + buoyancy)
         love.graphics.setColor(1, 1, 1, opacity.value)
         love.graphics.draw(logo, 0, 0, 0, scale, scale, logo:getWidth() * 0.5, logo:getHeight() * 0.5)
         love.graphics.pop()
@@ -93,7 +94,7 @@ function loading:draw(x, y, scale)
 
     if self.type == "highlight" then
         love.graphics.push()
-        love.graphics.translate(x, y)
+        love.graphics.translate(x, y + buoyancy)
 
         love.graphics.setColor(1, 1, 1, 0.3)
         love.graphics.draw(logo, 0, 0, 0, scale, scale, logo:getWidth() * 0.5, logo:getHeight() * 0.5)

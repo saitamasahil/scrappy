@@ -49,7 +49,12 @@ return function(props)
     last_focused = false,
     -- Events
     onFocus = props.onFocus,
-    onClick = props.onClick,
+    onClick = function(self)
+      if self.disabled then return end
+      self.ripple_r = 0
+      self.ripple_a = 0.25
+      if props.onClick then props.onClick() end
+    end,
     -- Key press handling for toggling checkbox with Enter/Return key
     onKeyPress = function(self, key)
       if key == "return" and self.focused and not self.disabled then
@@ -75,6 +80,26 @@ return function(props)
       self.anim_p = self.anim_p or (self.focused and 1 or 0)
       local target_p = self.focused and 1 or 0
       self.anim_p = self.anim_p + (target_p - self.anim_p) * 15 * dt
+
+      -- Liquid UI: Compression (Squish)
+      local input_helper = require("helpers.input")
+      local is_pressed = self.focused and input_helper.isEventDown("return")
+      
+      self.squish_x = self.squish_x or 1
+      self.squish_y = self.squish_y or 1
+      local target_sx = is_pressed and 1.05 or 1
+      local target_sy = is_pressed and 0.92 or 1
+      self.squish_x = self.squish_x + (target_sx - self.squish_x) * 20 * dt
+      self.squish_y = self.squish_y + (target_sy - self.squish_y) * 20 * dt
+
+      if self.focused and input_helper.isEventJustPressed("return") then
+          self.ripple_r = 0
+          self.ripple_a = 0.25
+      end
+      if self.ripple_a and self.ripple_a > 0 then
+          self.ripple_r = self.ripple_r + 250 * dt
+          self.ripple_a = self.ripple_a - 1.5 * dt
+      end
 
       -- Resolve text if it's a function
       if type(self.text) == "function" then
@@ -102,11 +127,11 @@ return function(props)
       if not self.visible then return end
       love.graphics.push()
       
-      -- Match the modern scale bump from button.lua
+      -- Apply scale bump on focus + Liquid Squish
       local cx, cy = self.x + self.width/2, self.y + self.height/2
-      local scale = 1.0 + (self.anim_p or 0) * 0.02
+      local scale = 1.0 + (self.anim_p or 0) * 0.01
       love.graphics.translate(cx, cy)
-      love.graphics.scale(scale, scale)
+      love.graphics.scale(scale * (self.squish_x or 1), scale * (self.squish_y or 1))
       love.graphics.translate(-cx, -cy)
       
       love.graphics.setFont(font)
@@ -138,12 +163,27 @@ return function(props)
       local indicatorColor = indicators[props.indicator or 1]
 
       -- Background and focus styling
+      -- Draw background
+      love.graphics.setColor(backgroundColor)
+      love.graphics.rectangle('fill', self.x, self.y, self.width, self.height, props.cornerRadius or 4)
+
+      -- Focus styling
       if (self.anim_p or 0) > 0.01 then
         love.graphics.setColor(focusColor[1], focusColor[2], focusColor[3], (focusColor[4] or 1) * self.anim_p)
-        love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+        love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, props.cornerRadius or 4)
       end
 
-      -- Draw indicator pill (e.g., green for found, red for missing)
+      -- Liquid UI: Ripple
+      if self.ripple_a and self.ripple_a > 0 then
+          love.graphics.setColor(textColor[1], textColor[2], textColor[3], self.ripple_a)
+          love.graphics.setLineWidth(1)
+          
+          local textX = self.x + 2 * leftPadding + iconSize
+          local tw = font:getWidth(displayText)
+          local content_cx = textX + math.min(tw, self.width - padding.horizontal) / 2
+          love.graphics.circle("line", content_cx, cy, self.ripple_r)
+      end
+    -- Draw indicator pill (e.g., green for found, red for missing)
       if props.indicator and props.indicator > 1 then
         love.graphics.setColor(indicatorColor)
         local pillWidth = 4

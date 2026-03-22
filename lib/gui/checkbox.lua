@@ -42,13 +42,11 @@ return function(props)
       if (key == "return" or key == "a") and self.focused then
         local now = love.timer.getTime()
         self.last_toggle = self.last_toggle or 0
-        if now - self.last_toggle < 0.25 then
-            print(string.format("[DEBUG] Debounced toggle (key: %s, dt: %.3f)", key, now - self.last_toggle))
-            return 
-        end
+        if now - self.last_toggle < 0.25 then return end
         self.last_toggle = now
         self.checked = not self.checked
-        print(string.format("[DEBUG] Toggle ON (key: %s, state: %s)", key, tostring(self.checked)))
+        self.ripple_r = 0
+        self.ripple_a = 0.25
         if self.onToggle then self:onToggle(self.checked) end
       end
     end,
@@ -57,13 +55,11 @@ return function(props)
       if self.disabled then return end
       local now = love.timer.getTime()
       self.last_toggle = self.last_toggle or 0
-      if now - self.last_toggle < 0.25 then
-          print(string.format("[DEBUG] Debounced toggle (click, dt: %.3f)", now - self.last_toggle))
-          return 
-      end
+      if now - self.last_toggle < 0.25 then return end
       self.last_toggle = now
       self.checked = not self.checked
-      print(string.format("[DEBUG] Toggle ON (click, state: %s)", tostring(self.checked)))
+      self.ripple_r = 0
+      self.ripple_a = 0.25
       if self.onToggle then self:onToggle(self.checked) end
     end,
     onUpdate = function(self, dt)
@@ -73,8 +69,14 @@ return function(props)
 
       self.check_p = self.check_p or (self.checked and 1 or 0)
       local check_target = self.checked and 1 or 0
-      -- Snappier animation for checking (25x speed for a responsive feel)
-      self.check_p = self.check_p + (check_target - self.check_p) * 25 * dt
+      -- Snappier animation for checking (18x speed for organic feel)
+      self.check_p = self.check_p + (check_target - self.check_p) * 18 * dt
+
+      -- Liquid UI: Ripple
+      if self.ripple_a and self.ripple_a > 0 then
+          self.ripple_r = self.ripple_r + 250 * dt
+          self.ripple_a = self.ripple_a - 1.5 * dt
+      end
     end,
     draw = function(self)
       if not self.visible then return end
@@ -127,15 +129,34 @@ return function(props)
 
       local check_p = self.check_p or (self.checked and 1 or 0)
 
-      -- Checkbox mark if checked
+      -- Liquid UI: Water Fill
       if check_p > 0.001 then
-        love.graphics.setColor(checkColor[1], checkColor[2], checkColor[3], (checkColor[4] or 1) * check_p)
+          local fill_h = checkboxSize * check_p
+          local fill_y = self.y + (self.height - checkboxSize) / 2 + checkboxSize - fill_h
+          local fill_x = self.x + padding.horizontal / 2
+          
+          love.graphics.setColor(checkColor[1], checkColor[2], checkColor[3], (checkColor[4] or 1) * 0.4)
+          -- Draw a slightly rounded water fill
+          love.graphics.rectangle("fill", fill_x + 1, fill_y + 1, checkboxSize - 2, fill_h - 2, 2)
+          
+          -- Surface waves if not full
+          if check_p < 0.99 then
+              love.graphics.setLineWidth(1)
+              local wave_y = fill_y + math.sin(love.timer.getTime() * 12) * 1
+              love.graphics.line(fill_x + 2, wave_y, fill_x + checkboxSize - 2, wave_y)
+          end
+      end
+
+      -- Checkbox mark if checked
+      if check_p > 0.5 then
+        local mark_iv = (check_p - 0.5) * 2 -- starts appearing after 50% fill
+        love.graphics.setColor(checkColor[1], checkColor[2], checkColor[3], (checkColor[4] or 1) * mark_iv)
         love.graphics.push()
         local icon_cx = self.x + padding.horizontal / 2 + checkboxSize / 2
         local icon_cy = self.y + (self.height - checkboxSize) / 2 + checkboxSize / 2
         love.graphics.translate(icon_cx, icon_cy)
-        -- Start from 0.3 scale for a more pronounced "pop"
-        local c_scale = 0.3 + check_p * 0.7
+        -- Pop-in scale
+        local c_scale = 0.2 + mark_iv * 0.8
         love.graphics.scale(c_scale, c_scale)
         love.graphics.translate(-icon_cx, -icon_cy)
         
@@ -147,6 +168,15 @@ return function(props)
         }
         fgIcon:draw()
         love.graphics.pop()
+      end
+
+      -- Liquid UI: Ripple
+      if self.ripple_a and self.ripple_a > 0 then
+          love.graphics.setColor(textColor[1], textColor[2], textColor[3], self.ripple_a)
+          love.graphics.setLineWidth(1)
+          local icx = self.x + padding.horizontal / 2 + checkboxSize / 2
+          local icy = self.y + self.height / 2
+          love.graphics.circle("line", icx, icy, self.ripple_r)
       end
 
       -- Draw optional icon and label next to the checkbox

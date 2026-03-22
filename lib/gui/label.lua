@@ -45,24 +45,40 @@ local function label(props)
     onUpdate = function(self, dt)
         self.icon_scale = self.icon_scale or 1
         
+        local first_press = false
         local pressed = false
         if self.icon and icon_to_event[self.icon] then
             local icon_input = require("helpers.input")
             local ev = icon_to_event[self.icon]
             if type(ev) == "table" then
                 for _, e in ipairs(ev) do
+                    if icon_input.isEventJustPressed and icon_input.isEventJustPressed(e) then
+                        first_press = true
+                        break
+                    end
                     if icon_input.isEventDown and icon_input.isEventDown(e) then
                         pressed = true
-                        break
                     end
                 end
             else
+                if icon_input.isEventJustPressed and icon_input.isEventJustPressed(ev) then
+                    first_press = true
+                end
                 if icon_input.isEventDown and icon_input.isEventDown(ev) then
                     pressed = true
                 end
             end
         end
         
+        if first_press then
+            self.ripple_r = 0
+            self.ripple_a = 0.25
+        end
+        if self.ripple_a and self.ripple_a > 0 then
+            self.ripple_r = self.ripple_r + 250 * dt
+            self.ripple_a = self.ripple_a - 1.5 * dt
+        end
+
         if pressed then
             -- Snap down quickly while held
             self.icon_scale = self.icon_scale + (0.6 - self.icon_scale) * 30 * dt
@@ -73,11 +89,27 @@ local function label(props)
                 if self.icon_scale > 0.99 then self.icon_scale = 1 end
             end
         end
+
+        -- Buoyancy: Floating effect
+        if self.buoyant then
+            -- Use X position to stagger the waves
+            local stagger = (self.x or 0) * 0.05
+            self.buoyancy_y = math.sin(love.timer.getTime() * 2.5 + stagger) * 2
+        else
+            self.buoyancy_y = 0
+        end
+    end,
+    onClick = function(self)
+        if self.disabled then return end
+        self.ripple_r = 0
+        self.ripple_a = 0.25
+        if props.onClick then props.onClick() end
     end,
     draw = function(self)
       if not self.visible then return end
 
       love.graphics.push()
+      love.graphics.translate(0, self.buoyancy_y or 0)
       love.graphics.setFont(self.font)
 
       -- Draw the icon on the left if icon is provided
@@ -173,6 +205,20 @@ local function label(props)
       end
 
       love.graphics.setColor({ 1, 1, 1 }) -- Reset color to white
+
+      -- Liquid UI: Ripple (for footer/icon feedback)
+      if self.ripple_a and self.ripple_a > 0 then
+          love.graphics.setColor(c[1], c[2], c[3], self.ripple_a)
+          love.graphics.setLineWidth(1)
+          
+          local txt = (self.get_text and self.get_text()) or self.text or ""
+          local tw = self.font:getWidth(txt)
+          local content_w = (self.icon and (iconSize + padding) or 0) + tw
+          local icx = self.x + content_w / 2
+          local icy = self.y + self.height / 2
+          love.graphics.circle("line", icx, icy, self.ripple_r)
+      end
+
       love.graphics.pop()
     end,
   }

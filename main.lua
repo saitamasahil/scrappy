@@ -23,6 +23,7 @@ local footer = require("lib.gui.footer")()
 local w_width, w_height = love.window.getMode()
 
 function love.load(args)
+    math.randomseed(os.time())
     splash.load()
 
     if #args > 0 then
@@ -62,6 +63,7 @@ function love.update(dt)
     input.onEvent(function(key)
         scenes:keypressed(key)
     end)
+    input.postUpdate()
 end
 
 function love.draw()
