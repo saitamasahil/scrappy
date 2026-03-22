@@ -206,15 +206,20 @@ local function label(props)
 
       love.graphics.setColor({ 1, 1, 1 }) -- Reset color to white
 
-      -- Liquid UI: Ripple (for footer/icon feedback)
+      -- Liquid UI: Ripple (focused on icon if present, otherwise text)
       if self.ripple_a and self.ripple_a > 0 then
           love.graphics.setColor(c[1], c[2], c[3], self.ripple_a)
           love.graphics.setLineWidth(1)
           
-          local txt = (self.get_text and self.get_text()) or self.text or ""
-          local tw = self.font:getWidth(txt)
-          local content_w = (self.icon and (iconSize + padding) or 0) + tw
-          local icx = self.x + content_w / 2
+          local icx = self.x
+          if self.icon then
+              icx = self.x + iconSize / 2
+          else
+              local txt = (self.get_text and self.get_text()) or self.text or ""
+              local tw = self.font:getWidth(txt)
+              icx = self.x + tw / 2
+          end
+
           local icy = self.y + self.height / 2
           love.graphics.circle("line", icx, icy, self.ripple_r)
       end

@@ -42,10 +42,11 @@ local anim = {
     author_alpha = 0,
     author_y_offset = 20,
     fade_out = 1,          -- Final sequence to exit
-    wave_1_x = 0,
     wave_2_x = 0,
-    reveal_style = "wave",  -- wave | bubbles
-    bubble_progress = 0
+    reveal_style = "wave",  -- wave | bubbles | droplet
+    bubble_progress = 0,
+    drop_y = -100,
+    impact_r = 0
 }
 
 local configs = require("helpers.config")
@@ -73,11 +74,12 @@ function splash.load(delay)
     anim.author_alpha = 0
     anim.author_y_offset = 20
     anim.fade_out = 1
-    anim.wave_1_x = 0
     anim.wave_2_x = 0
     anim.bubble_progress = 0
+    anim.drop_y = -100
+    anim.impact_r = 0
     
-    local styles = {"wave", "bubbles"}
+    local styles = {"wave", "bubbles", "droplet"}
     anim.reveal_style = styles[math.random(#styles)]
     
     splash.finished = false
@@ -123,10 +125,17 @@ function splash.load(delay)
                 end)
             end)
             
-        elseif anim.reveal_style == "bubbles" then
             timer.tween(1.0, anim, { bubble_progress = 1 }, 'out-quad', function()
                 splash.finished = true
                 splash.is_revealing = false
+            end)
+        elseif anim.reveal_style == "droplet" then
+            local h = love.graphics.getHeight()
+            timer.tween(0.4, anim, { drop_y = h / 2 }, 'in-quad', function()
+                timer.tween(0.8, anim, { impact_r = math.max(w, h) * 1.5 }, 'out-quad', function()
+                    splash.finished = true
+                    splash.is_revealing = false
+                end)
             end)
         end
     end)
@@ -167,6 +176,13 @@ function splash.draw()
         love.graphics.rectangle("fill", 0, 0, width, height)
     elseif anim.reveal_style == "bubbles" and splash.is_revealing then
         love.graphics.clear(colors.background)
+    elseif anim.reveal_style == "droplet" and splash.is_revealing and anim.impact_r > 0 then
+        love.graphics.stencil(function()
+            love.graphics.circle("fill", width / 2, height / 2, anim.impact_r)
+        end, "replace", 1)
+        love.graphics.setStencilTest("greater", 0)
+        love.graphics.setColor(colors.background)
+        love.graphics.rectangle("fill", 0, 0, width, height)
     else
         love.graphics.clear(colors.background)
     end
@@ -250,6 +266,25 @@ function splash.draw()
             local by = height - (anim.bubble_progress * height * (1 + math.sin(seed) * 0.3))
             local br = 10 + math.abs(math.sin(seed * 2)) * 30
             love.graphics.circle("fill", bx, by, br * (1 - anim.bubble_progress))
+        end
+    end
+
+    -- Draw Droplet/Impact if active
+    if anim.reveal_style == "droplet" and splash.is_revealing then
+        local accent_color = theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f")
+        if anim.impact_r == 0 then
+            -- Falling drop
+            love.graphics.setColor(accent_color)
+            love.graphics.circle("fill", width / 2, anim.drop_y, 12)
+            -- Trail
+            love.graphics.setLineWidth(4)
+            love.graphics.line(width / 2, anim.drop_y, width / 2, anim.drop_y - 20)
+        else
+            -- Expanding Impact ring
+            love.graphics.setStencilTest()
+            love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1 - (anim.impact_r / (math.max(width, height) * 1.5)))
+            love.graphics.setLineWidth(10)
+            love.graphics.circle("line", width / 2, height / 2, anim.impact_r)
         end
     end
 end
