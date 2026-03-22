@@ -35,6 +35,7 @@ local muos_accent = true -- legacy (derived from accent_mode)
 
 local accent_mode = "muos" -- off | muos | custom
 local custom_accent = "cbaa0f"
+local initial_accent_mode, initial_custom_accent
 local offline_mode = false -- Offline mode setting
 local vk = nil
 
@@ -179,7 +180,13 @@ local function sync_accent_to_config()
     user_config:save()
 end
 
-local function apply_theme_now()
+local function apply_theme_now(restore_id)
+    -- Capture current focus if no specific ID was provided
+    local last_id = restore_id
+    if not last_id and menu and menu:getRoot().focusedElement then
+        last_id = menu:getRoot().focusedElement.id
+    end
+
     local theme_name = theme_opts[theme_index] or "dark"
     local muos_on = accent_mode ~= "off"
     configs.reload_theme(theme_name, muos_on)
@@ -198,6 +205,14 @@ local function apply_theme_now()
     vk = nil
 
     tools:load()
+
+    -- Restore focus if we have an ID
+    if last_id and menu then
+        local element = menu ^ last_id
+        if element then
+            menu:setFocus(element)
+        end
+    end
 end
 
 local function update_accent_menu_text()
@@ -274,8 +289,13 @@ local function close_accent_popup()
         accent_popup.visible = false
         sync_accent_to_config()
         update_accent_menu_text()
-        apply_theme_now()
-        dispatch_info("Accent", "Changes saved.")
+        apply_theme_now("accent_settings")
+        
+        -- Only notify if something actually changed
+        local changed = (accent_mode ~= initial_accent_mode) or (custom_accent ~= initial_custom_accent)
+        if changed then
+            dispatch_info("Accent", "Changes saved.")
+        end
     end
 end
 
@@ -283,6 +303,11 @@ local function open_accent_settings()
     if not menu or not user_config then
         return
     end
+    
+    -- Capture initial state to detect changes on close
+    initial_accent_mode = accent_mode
+    initial_custom_accent = custom_accent
+
     local item_width = math.min(w_width - 120, 560)
 
     -- Helper to apply a preset color
@@ -1730,9 +1755,12 @@ function tools:keypressed(key)
 
     -- 3. Accent popup
     if accent_popup and accent_popup.visible then
-        if key == "escape" then
+        if key == "escape" or key == "b" then
             close_accent_popup()
             return
+        end
+        if key == "left" or key == "right" then
+            return -- Block L/R navigation
         end
         if accent_menu then
             accent_menu:keypressed(key)
@@ -1876,6 +1904,22 @@ function tools:gamepadpressed(joystick, button)
             vk:handle_key(m)
             return true
         end
+        return true
+    end
+
+    -- Handle accent popup
+    if accent_popup and accent_popup.visible then
+        if btn == "b" then
+            close_accent_popup()
+            return true
+        end
+        if btn == "dpleft" or btn == "dpright" then
+            return true -- Block L/R navigation
+        end
+        if btn == "dpup" or btn == "dpdown" or btn == "a" then
+            return false -- Allow standard vertical navigation and selection
+        end
+        -- Block other buttons while popup is visible
         return true
     end
 
