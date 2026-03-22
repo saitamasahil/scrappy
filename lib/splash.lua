@@ -124,7 +124,7 @@ function splash.load(delay)
                     splash.is_revealing = false
                 end)
             end)
-            
+        elseif anim.reveal_style == "bubbles" then
             timer.tween(1.0, anim, { bubble_progress = 1 }, 'out-quad', function()
                 splash.finished = true
                 splash.is_revealing = false
