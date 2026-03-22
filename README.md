@@ -121,7 +121,18 @@ Requirements:
 
 Build:
 ```bash
+# Build both packages (default)
 ./build.sh
+
+# Build ONLY the full package
+./build.sh 1
+# or
+./build.sh --full
+
+# Build ONLY the update package
+./build.sh 2
+# or
+./build.sh --update
 ```
 
 Troubleshooting:

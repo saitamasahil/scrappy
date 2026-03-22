@@ -5,6 +5,41 @@ set -e
 # Get project root directory
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Build options
+BUILD_FULL=true
+BUILD_UPDATE=true
+
+usage() {
+    echo "Usage: bash build.sh [option]"
+    echo "Options:"
+    echo "  1, --full     Build ONLY the full package"
+    echo "  2, --update   Build ONLY the update package"
+    echo "  (none)        Build BOTH packages (default)"
+    echo "  -h, --help    Show this help message"
+}
+
+# Parse arguments
+case "$1" in
+    1|--full)
+        BUILD_UPDATE=false
+        ;;
+    2|--update)
+        BUILD_FULL=false
+        ;;
+    -h|--help)
+        usage
+        exit 0
+        ;;
+    "")
+        # Default: build both
+        ;;
+    *)
+        echo "Error: Unknown option '$1'"
+        usage
+        exit 1
+        ;;
+esac
+
 # Create build directory if it doesn't exist
 BUILD_DIR="$PROJECT_ROOT/build"
 if [ ! -d "$BUILD_DIR" ]; then
@@ -34,8 +69,8 @@ WORKDIR="$BUILD_DIR/pkg_${MAJOR}${MINOR}${PATCH}"
 rm -rf "$WORKDIR" "$FULL" "$UPDATE"
 mkdir -p "$WORKDIR/Scrappy/.scrappy"
 
-# Copy all necessary files
-echo "Copying files..."
+# Copy all necessary files (Base files for both packages)
+echo "Copying base files..."
 cp "$PROJECT_ROOT/mux_launch.sh" "$WORKDIR/Scrappy/"
 
 # Copy core directories
@@ -60,7 +95,6 @@ cp "$PROJECT_ROOT/theme_light_classic.ini" "$WORKDIR/Scrappy/.scrappy/"
 mkdir -p "$WORKDIR/Scrappy/.scrappy/assets"
 if [ -d "$PROJECT_ROOT/assets" ]; then
     echo "Copying assets..."
-    # Copy all contents of assets, including hidden files
     (
         shopt -s dotglob
         cp -r "$PROJECT_ROOT/assets/"* "$WORKDIR/Scrappy/.scrappy/assets/" 2>/dev/null || true
@@ -87,33 +121,38 @@ else
     echo "Warning: scrappy.png not found in expected locations"
 fi
 
-# Create update package
-echo "Creating update package..."
-(cd "$WORKDIR" && zip -qr "$UPDATE" ./Scrappy)
-
-# Copy additional files for full package
-cp -r "$PROJECT_ROOT/bin" "$WORKDIR/Scrappy/.scrappy/"
-cp -r "$PROJECT_ROOT/data" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
-cp -r "$PROJECT_ROOT/logs" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
-cp -r "$PROJECT_ROOT/sample" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
-cp -r "$PROJECT_ROOT/static" "$WORKDIR/Scrappy/.scrappy/"
-
-# Copy any additional glyph files from assets/glyph if they exist
-if [ -d "$PROJECT_ROOT/assets/glyph" ]; then
-    echo "Copying additional glyph files from assets..."
-    (
-        shopt -s dotglob
-        cp -r "$PROJECT_ROOT/assets/glyph/"* "$WORKDIR/Scrappy/glyph/" 2>/dev/null || true
-    )
+if [ "$BUILD_UPDATE" = true ]; then
+    # Create update package
+    echo "Creating update package..."
+    (cd "$WORKDIR" && zip -qr "$UPDATE" ./Scrappy)
 fi
 
-# Create full package
-echo "Creating full package..."
-(cd "$WORKDIR" && zip -qr "$FULL" ./Scrappy)
+if [ "$BUILD_FULL" = true ]; then
+    # Copy additional files for full package
+    echo "Copying additional files for full package..."
+    cp -r "$PROJECT_ROOT/bin" "$WORKDIR/Scrappy/.scrappy/"
+    cp -r "$PROJECT_ROOT/data" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
+    cp -r "$PROJECT_ROOT/logs" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
+    cp -r "$PROJECT_ROOT/sample" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
+    cp -r "$PROJECT_ROOT/static" "$WORKDIR/Scrappy/.scrappy/"
+
+    # Copy any additional glyph files from assets/glyph if they exist
+    if [ -d "$PROJECT_ROOT/assets/glyph" ]; then
+        echo "Copying additional glyph files from assets..."
+        (
+            shopt -s dotglob
+            cp -r "$PROJECT_ROOT/assets/glyph/"* "$WORKDIR/Scrappy/glyph/" 2>/dev/null || true
+        )
+    fi
+
+    # Create full package
+    echo "Creating full package..."
+    (cd "$WORKDIR" && zip -qr "$FULL" ./Scrappy)
+fi
 
 # Clean up
 rm -rf "$WORKDIR"
 
-echo -e "\nBuild complete! Created:"
-ls -lh "$FULL"
-ls -lh "$UPDATE"
+echo -e "\nBuild complete!"
+[ "$BUILD_FULL" = true ] && [ -f "$FULL" ] && ls -lh "$FULL"
+[ "$BUILD_UPDATE" = true ] && [ -f "$UPDATE" ] && ls -lh "$UPDATE"
