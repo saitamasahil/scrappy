@@ -19,9 +19,9 @@ local function refresh_texts()
     local title_size = math.max(18, math.min(96, math.floor(h * 0.10)))
     local sub_size = math.max(12, math.min(48, math.floor(h * 0.035)))
 
-    local title_font = love.graphics.newFont(title_size)
-    local sub_font = love.graphics.newFont(sub_size)
-    credits_font = love.graphics.newFont(sub_size + 2) -- slight increase for credits
+    local title_font = love.graphics.newFont(_G.MAIN_FONT_PATH or title_size, title_size)
+    local sub_font = love.graphics.newFont(_G.MAIN_FONT_PATH or sub_size, sub_size)
+    credits_font = love.graphics.newFont(_G.MAIN_FONT_PATH or (sub_size + 2), sub_size + 2) -- slight increase for credits
 
     app_name = love.graphics.newText(title_font, "Scrappy")
     app_version_text = love.graphics.newText(sub_font, _G.version)

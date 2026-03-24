@@ -15,8 +15,8 @@ log.start()
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 local theme = configs.theme
 
-local font = love.graphics.newFont(theme:read("main", "FONT") or "assets/ChakraPetch-Regular.ttf",
-    theme:read_number("main", "FONT_SIZE") or 20)
+_G.MAIN_FONT_PATH = theme:read("main", "FONT") or "assets/Inter-Medium.ttf"
+local font = love.graphics.newFont(_G.MAIN_FONT_PATH, theme:read_number("main", "FONT_SIZE") or 20)
 love.graphics.setFont(font)
 
 local footer = require("lib.gui.footer")()

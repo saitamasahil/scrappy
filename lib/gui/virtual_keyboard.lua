@@ -8,7 +8,7 @@ local configs = require("helpers.config")
 local MASK_CHAR = "*"
 
 -- Smaller font for virtual keyboard labels
-local vk_font = love.graphics.newFont(12)
+local vk_font = love.graphics.newFont(_G.MAIN_FONT_PATH or 12, 12)
 
 -- Optional button prompt icons (A/B)
 local INPUT_ICONS = {}
@@ -656,7 +656,7 @@ local function create_vk(config)
     local function draw_label(cx, cy, kw, kh, text)
       local desired = math.max(14, math.floor(key_h * 0.70))
       if desired ~= self.char_font_size then
-        self.char_font = love.graphics.newFont(desired)
+        self.char_font = love.graphics.newFont(_G.MAIN_FONT_PATH or desired, desired)
         self.char_font_size = desired
       end
       local prev = love.graphics.getFont()

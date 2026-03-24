@@ -18,9 +18,9 @@ local user_config       = configs.user_config
 local theme             = configs.theme
 local w_width, w_height = love.window.getMode()
 -- Smaller font for virtual keyboard labels
-local vk_font = love.graphics.newFont(12)
+local vk_font = love.graphics.newFont(_G.MAIN_FONT_PATH or 12, 12)
 -- Larger font for password preview (bigger asterisks)
-local vk_password_font = love.graphics.newFont(18)
+local vk_password_font = love.graphics.newFont(_G.MAIN_FONT_PATH or 18, 18)
 
 local settings          = {}
 
