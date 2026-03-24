@@ -128,8 +128,25 @@ class ArtworkManagerHandler(http.server.BaseHTTPRequestHandler):
                 filepath = q.get("filepath")
                 id = q.get("id")
                 if filepath and id:
-                    filename = os.path.basename(filepath)
-                    rom_map[id] = filename
+                    # Resolve relative path from absolute path if possible
+                    rel_path = filepath
+                    if rel_path.startswith("./"):
+                        rel_path = rel_path[2:]
+                    elif "/ROMS/" in rel_path:
+                        # Extract part after [PlatformName]/ if it exists
+                        try:
+                            roms_part = rel_path.split("/ROMS/", 1)[1]
+                            parts = roms_part.split("/")
+                            if len(parts) > 1:
+                                rel_path = "/".join(parts[1:])
+                        except:
+                            pass
+                            
+                    # If still absolute, take basename as fallback
+                    if rel_path.startswith("/"):
+                        rel_path = os.path.basename(rel_path)
+                        
+                    rom_map[id] = rel_path
         except Exception as e:
             print(f"Error parsing quickid.xml: {e}")
 
@@ -245,7 +262,8 @@ class ArtworkManagerHandler(http.server.BaseHTTPRequestHandler):
             return
         
         platform = urllib.parse.unquote(parts[3])
-        rom_base = urllib.parse.unquote(parts[4])
+        # Join all remaining parts to get the full relative path inside media/covers
+        rom_base = "/".join([urllib.parse.unquote(p) for p in parts[4:]])
         
         # Output is usually in data/output relative to work_dir
         work_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -954,7 +972,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             </div>
             <div class="media-list" id="modal-media-list"></div>
             <div id="modal-actions">
-                <button class="btn btn-regen" id="btn-regen-global">Regenerate Final Artwork</button>
+                <button class="btn btn-regen" id="btn-regen-global">Generate Final Artwork</button>
             </div>
         </div>
     </div>
@@ -1176,7 +1194,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             modalMediaList.appendChild(regenSection);
 
             regenSection.querySelector('#btn-regen-modal').onclick = async () => {{
-                showToast('Requesting regeneration...');
+                showToast('Requesting generation...');
                 const res = await fetch('/api/regenerate', {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
@@ -1188,7 +1206,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
                 }});
 
                 if (res.ok) {{
-                    showToast('Regeneration started in Scrappy!');
+                    showToast('Generate Artwork started!');
                     setTimeout(() => refreshFinalPreview(), 2500);
                 }}
             }};
@@ -1221,7 +1239,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 
                 if (res.ok) {{
                     const data = await res.json();
-                    showToast('Media replaced! Tap Regenerate to apply.');
+                    showToast('Media replaced! Click Generate Artwork to apply.');
                     
                     // Update source label in the UI instantly
                     const item = document.querySelector(`.media-item:has(button[onclick*="'${{type}}'"])`);
@@ -1257,7 +1275,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         document.getElementById('btn-regen-global').onclick = async () => {{
             if (!activeGame) return;
             
-            showToast('Requesting regeneration...');
+            showToast('Requesting generation...');
             const res = await fetch('/api/regenerate', {{
                 method: 'POST',
                 headers: {{ 'Content-Type': 'application/json' }},
@@ -1268,7 +1286,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             }});
 
             if (res.ok) {{
-                showToast('Regeneration started in Scrappy!');
+                showToast('Generate Artwork started!');
                 setTimeout(() => refreshFinalPreview(), 2500);
             }}
         }};

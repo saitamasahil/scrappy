@@ -1848,6 +1848,7 @@ function main:gamepadpressed(joystick, button)
         showing_core_reminder = false
     elseif info_window.visible and button == "a" then
         info_window.visible = false
+        return true
     end
     return false -- Let global input handle D-pad navigation
 end
