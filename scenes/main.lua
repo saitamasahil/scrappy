@@ -975,6 +975,31 @@ local function update_state(t)
                     end
                     -- Clear queued_games after processing to prevent reprocessing
                     state.queued_games = {}
+
+                    -- If sync resulted in 0 tasks, finish immediately
+                    if state.tasks == 0 then
+                        log.write("No tasks to process, finishing scrape")
+                        state.scraping = false
+                        if scraping_window then
+                            scraping_window.visible = false
+                        end
+                        state.log = {}
+                        if scraping_window then
+                            local scraping_log = scraping_window ^ "scraping_log"
+                            if scraping_log then
+                                scraping_log.text = ""
+                            end
+                        end
+
+                        local msg
+                        if #state.failed_tasks > 0 then
+                            msg = string.format("Scraped 0 games, %d failed or skipped! %s", #state.failed_tasks, table.concat(state.failed_tasks, ", "))
+                        else
+                            msg = "All selected platforms already have complete artwork or no new games were found!"
+                        end
+                        show_info_window("Finished scraping", msg)
+                        channels.SKYSCRAPER_OUTPUT:clear()
+                    end
                 end
             end
         end
