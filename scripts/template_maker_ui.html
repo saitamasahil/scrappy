@@ -938,8 +938,8 @@
                     <span class="section-title">🗂️ Layers</span>
                     <div class="section-header-actions">
                         <button class="btn btn-sm" onclick="addMaskBetween()" title="Add global mask layer">🎭 Global Mask</button>
-                        <button class="btn btn-sm" onclick="triggerUpload('mask')" title="Upload mask file">📤 Upload
-                            Mask</button>
+                        <button class="btn btn-sm" onclick="addFrameBetween()" title="Add global frame layer">🖼️ Global Frame</button>
+                        <button class="btn btn-sm" onclick="triggerUpload('mask')" title="Upload mask file">📤 Upload Mask</button>
                         <button class="btn btn-sm" onclick="triggerUpload('frames')" title="Upload frame file">🖼️
                             Upload Frame</button>
                         <button class="btn btn-sm btn-accent" onclick="addLayer()">+ Layer</button>
@@ -1086,14 +1086,14 @@
             },
             {
                 key: 'mask', label: '🎭 Layer Mask', fields: [
-                    { n: 'file', t: 'mask-select', d: '' }, { n: 'width', t: 'number', d: 0 }, { n: 'height', t: 'number', d: 0 },
-                    { n: 'x', t: 'number', d: 0 }, { n: 'y', t: 'number', d: 0 }
+                    { n: 'file', t: 'mask-select', d: '' }, { n: 'width', t: 'number', d: '' }, { n: 'height', t: 'number', d: '' },
+                    { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' }
                 ]
             },
             {
                 key: 'frame', label: '🖼️ Frame', fields: [
-                    { n: 'file', t: 'frame-select', d: '' }, { n: 'width', t: 'number', d: 0 }, { n: 'height', t: 'number', d: 0 },
-                    { n: 'x', t: 'number', d: 0 }, { n: 'y', t: 'number', d: 0 }
+                    { n: 'file', t: 'frame-select', d: '' }, { n: 'width', t: 'number', d: '' }, { n: 'height', t: 'number', d: '' },
+                    { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' }
                 ]
             },
             {
@@ -1174,6 +1174,15 @@
                         xml += `${indent}<mask file="${layer.file}"`;
                         if (layer.width) xml += ` width="${layer.width}"`;
                         if (layer.height) xml += ` height="${layer.height}"`;
+                        xml += `/>\n`;
+                        continue;
+                    }
+                    if (layer.type === 'frame-between') {
+                        xml += `${indent}<frame file="${layer.file}"`;
+                        if (layer.width) xml += ` width="${layer.width}"`;
+                        if (layer.height) xml += ` height="${layer.height}"`;
+                        if (layer.x) xml += ` x="${layer.x}"`;
+                        if (layer.y) xml += ` y="${layer.y}"`;
                         xml += `/>\n`;
                         continue;
                     }
@@ -1367,6 +1376,17 @@
                             height: child.getAttribute('height') || '',
                             visible: true
                         });
+                    } else if (child.tagName === 'frame') {
+                        list.push({
+                            id: layerIdCounter++,
+                            type: 'frame-between',
+                            file: child.getAttribute('file') || '',
+                            width: child.getAttribute('width') || '',
+                            height: child.getAttribute('height') || '',
+                            x: child.getAttribute('x') || '',
+                            y: child.getAttribute('y') || '',
+                            visible: true
+                        });
                     }
                 }
             }
@@ -1433,6 +1453,52 @@
                         </div>
                     </div>
                 </div>`;
+                } else if (layer.type === 'frame-between') {
+                    card.innerHTML = `
+                <div class="layer-header" onclick="toggleLayer(${layer.id})">
+                    <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '👁️' : '👁️‍🗨️'}</button>
+                    <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}">🖼️</div>
+                    <div class="layer-info" style="opacity:${layer.visible ? 1 : 0.4}">
+                        <div class="layer-name">Global Frame</div>
+                        <div class="layer-meta">${layer.file || 'No file set'}</div>
+                    </div>
+                    <div class="layer-actions">
+                        <button class="btn btn-sm" title="Move Up (XML Down)" onclick="event.stopPropagation();moveLayerById(${layer.id},1)" ${idx === list.length - 1 ? 'disabled' : ''}>▲</button>
+                        <button class="btn btn-sm" title="Move Down (XML Up)" onclick="event.stopPropagation();moveLayerById(${layer.id},-1)" ${idx === 0 ? 'disabled' : ''}>▼</button>
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeLayerById(${layer.id})">✕</button>
+                    </div>
+                </div>
+                <div class="layer-body" style="display: ${layer.expanded ? 'block' : 'none'}; border-top: 1px solid var(--card-border); padding: 18px 12px 14px;">
+                    <div class="field">
+                        <div class="field-with-btn">
+                            <select oninput="onResourceSelect(${layer.id}, this.value)">
+                                <option value="">Select frame...</option>
+                                ${resourcesList.frames.map(m => `<option value="frames/${m.name}" ${layer.file === `frames/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
+                            </select>
+                            <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layer.id}, fieldName:'file'})" title="Upload frame">📤</button>
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field" style="min-width:70px; flex:1">
+                            <label class="field-label">Width</label>
+                            <input type="number" value="${layer.width}" oninput="findLayer(${layer.id}).width=this.value;schedulePreview()">
+                        </div>
+                        <div class="field" style="min-width:70px; flex:1">
+                            <label class="field-label">Height</label>
+                            <input type="number" value="${layer.height}" oninput="findLayer(${layer.id}).height=this.value;schedulePreview()">
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field" style="min-width:70px; flex:1">
+                            <label class="field-label">X</label>
+                            <input type="number" value="${layer.x}" oninput="findLayer(${layer.id}).x=this.value;schedulePreview()">
+                        </div>
+                        <div class="field" style="min-width:70px; flex:1">
+                            <label class="field-label">Y</label>
+                            <input type="number" value="${layer.y}" oninput="findLayer(${layer.id}).y=this.value;schedulePreview()">
+                        </div>
+                    </div>
+                </div>`;
                 } else {
                     const resIcon = { 'screenshot': '📸', 'cover': '📦', 'wheel': '🎰', 'marquee': '🏷️', 'texture': '🧱', '': '📄' }[layer.resource] || '📄';
                     const effectTags = (layer.effects || []).map((e, ei) =>
@@ -1447,7 +1513,11 @@
                         <div class="layer-name">${layer.name || layer.resource || 'Empty Layer'}</div>
                         <div class="layer-meta">
                             ${layer.width || 'auto'}×${layer.height || 'auto'} 
-                            ${layer.effects && layer.effects.length > 0 ? ' • ' + layer.effects.map(e => EFFECTS_LIST.find(d => d.key === e.type)?.label.split(' ')[1] || e.type).join(', ') : ''}
+                            ${layer.effects && layer.effects.length > 0 ? ' • ' + layer.effects.map(e => {
+                                const l = EFFECTS_LIST.find(d => d.key === e.type)?.label || e.type;
+                                const p = l.split(' ');
+                                return p[p.length - 1];
+                            }).join(', ') : ''}
                         </div>
                     </div>
                     <div class="layer-actions">
@@ -1654,6 +1724,13 @@
             layers.push({
                 id: layerIdCounter++, type: 'mask-between',
                 file: '', width: '', height: '', visible: true
+            });
+            renderLayers();
+        }
+        function addFrameBetween() {
+            layers.push({
+                id: layerIdCounter++, type: 'frame-between',
+                file: '', width: '', height: '', x: '', y: '', visible: true
             });
             renderLayers();
         }
