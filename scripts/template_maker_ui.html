@@ -409,9 +409,11 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
             cursor: pointer;
             user-select: none;
+            gap: 8px;
         }
 
         .section-title {
@@ -420,6 +422,12 @@
             text-transform: uppercase;
             letter-spacing: 0.06em;
             color: var(--text-secondary);
+            flex-shrink: 0;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding-top: 6px;
         }
 
         .section-toggle {
@@ -430,7 +438,11 @@
 
         .section-header-actions {
             display: flex;
-            gap: 4px;
+            gap: 5px;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            width: 100%;
+            margin-top: 4px;
         }
 
         /* ─── Form Controls ─── */
@@ -1197,6 +1209,7 @@
                     if (layer.valign && layer.valign !== 'top') xml += ` valign="${layer.valign}"`;
                     if (layer.opacity && layer.opacity != 100) xml += ` opacity="${layer.opacity}"`;
                     if (layer.mpixels) xml += ` mpixels="${layer.mpixels}"`;
+                    if (layer.aspect) xml += ` aspect="${layer.aspect}"`;
                     xml += `>\n`;
 
                     // Effects
@@ -1337,6 +1350,7 @@
                             valign: child.getAttribute('valign') || 'top',
                             opacity: child.getAttribute('opacity') || 100,
                             mpixels: child.getAttribute('mpixels') || '',
+                            aspect: child.getAttribute('aspect') || 'keep',
                             visible: true,
                             name: '',
                             effects: [],
@@ -1582,6 +1596,15 @@
                             <label class="field-label">Opacity</label>
                             <input type="number" value="${layer.opacity}" min="0" max="100" oninput="findLayer(${layer.id}).opacity=this.value;schedulePreview()">
                         </div>
+                        <div class="field" style="min-width:70px; flex:1">
+                            <label class="field-label">Aspect</label>
+                            <select oninput="findLayer(${layer.id}).aspect=this.value;schedulePreview()">
+                                <option value="" ${!layer.aspect ? 'selected' : ''}>Auto</option>
+                                <option value="keep" ${layer.aspect === 'keep' ? 'selected' : ''}>Keep</option>
+                                <option value="stretch" ${layer.aspect === 'stretch' ? 'selected' : ''}>Stretch</option>
+                                <option value="crop" ${layer.aspect === 'crop' ? 'selected' : ''}>Crop</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Effects -->
@@ -1713,6 +1736,7 @@
                 id: layerIdCounter++, type: 'layer',
                 resource: '', width: '', height: '',
                 x: '', y: '', align: 'left', valign: 'top',
+                aspect: 'keep',
                 opacity: 100, mpixels: '', effects: [], expanded: true,
                 visible: true, name: '', layers: []
             });
