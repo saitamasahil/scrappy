@@ -937,7 +937,7 @@
                 <div class="section-header">
                     <span class="section-title">🗂️ Layers</span>
                     <div class="section-header-actions">
-                        <button class="btn btn-sm" onclick="addMaskBetween()" title="Add mask layer">🎭 Mask</button>
+                        <button class="btn btn-sm" onclick="addMaskBetween()" title="Add global mask layer">🎭 Global Mask</button>
                         <button class="btn btn-sm" onclick="triggerUpload('mask')" title="Upload mask file">📤 Upload
                             Mask</button>
                         <button class="btn btn-sm" onclick="triggerUpload('frames')" title="Upload frame file">🖼️
@@ -1085,7 +1085,7 @@
                 ]
             },
             {
-                key: 'mask', label: '🎭 Mask', fields: [
+                key: 'mask', label: '🎭 Layer Mask', fields: [
                     { n: 'file', t: 'mask-select', d: '' }, { n: 'width', t: 'number', d: 0 }, { n: 'height', t: 'number', d: 0 },
                     { n: 'x', t: 'number', d: 0 }, { n: 'y', t: 'number', d: 0 }
                 ]
@@ -1403,7 +1403,7 @@
                     <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '👁️' : '👁️‍🗨️'}</button>
                     <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}">🎭</div>
                     <div class="layer-info" style="opacity:${layer.visible ? 1 : 0.4}">
-                        <div class="layer-name">Mask</div>
+                        <div class="layer-name">Global Mask</div>
                         <div class="layer-meta">${layer.file || 'No file set'}</div>
                     </div>
                     <div class="layer-actions">
@@ -1415,7 +1415,7 @@
                 <div class="layer-body" style="display: ${layer.expanded ? 'block' : 'none'}; border-top: 1px solid var(--card-border); padding: 18px 12px 14px;">
                     <div class="field">
                         <div class="field-with-btn">
-                            <select oninput="findLayer(${layer.id}).file=this.value;schedulePreview()">
+                            <select oninput="onResourceSelect(${layer.id}, this.value)">
                                 <option value="">Select mask...</option>
                                 ${resourcesList.masks.map(m => `<option value="mask/${m.name}" ${layer.file === `mask/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
                             </select>
@@ -1558,7 +1558,7 @@
                         if (f.t === 'mask-select') {
                             return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
                                 <div class="field-with-btn">
-                                    <select oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
+                                    <select oninput="onResourceSelect(${layerId}, this.value, ${ei})">
                                         <option value="">Select...</option>
                                         ${resourcesList.masks.map(m => `<option value="mask/${m.name}" ${eff.values[f.n] === `mask/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
                                     </select>
@@ -1568,7 +1568,7 @@
                         if (f.t === 'frame-select') {
                             return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
                                 <div class="field-with-btn">
-                                    <select oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
+                                    <select oninput="onResourceSelect(${layerId}, this.value, ${ei})">
                                         <option value="">Select...</option>
                                         ${resourcesList.frames.map(m => `<option value="frames/${m.name}" ${eff.values[f.n] === `frames/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
                                         ${resourcesList.other.map(m => `<option value="${m.name}" ${eff.values[f.name] === m.name ? 'selected' : ''}>${m.name}</option>`).join('')}
@@ -1599,6 +1599,45 @@
         }
 
         // ─── Layer Actions ──────────────────────────────────────────
+        async function onResourceSelect(layerId, value, effectIdx = null) {
+            const layer = findLayer(layerId);
+            if (!layer) return;
+
+            if (effectIdx !== null) {
+                const eff = layer.effects[effectIdx];
+                eff.values['file'] = value;
+                if (value) {
+                    const img = new Image();
+                    img.onload = () => {
+                        eff.values['width'] = img.naturalWidth;
+                        eff.values['height'] = img.naturalHeight;
+                        // Also auto-size the parent layer if it's currently empty/auto
+                        if (!layer.width || layer.width === 'auto' || layer.width === 0) layer.width = img.naturalWidth;
+                        if (!layer.height || layer.height === 'auto' || layer.height === 0) layer.height = img.naturalHeight;
+                        renderLayers();
+                        schedulePreview();
+                    };
+                    img.src = `/api/resource/${encodeURIComponent(value)}`; // Path already contains prefix
+                } else {
+                    schedulePreview();
+                }
+            } else {
+                layer.file = value;
+                if (value) {
+                    const img = new Image();
+                    img.onload = () => {
+                        layer.width = img.naturalWidth;
+                        layer.height = img.naturalHeight;
+                        renderLayers();
+                        schedulePreview();
+                    };
+                    img.src = `/api/resource/${encodeURIComponent(value)}`;
+                } else {
+                    schedulePreview();
+                }
+            }
+        }
+
         function addLayer() {
             layers.push({
                 id: layerIdCounter++, type: 'layer',
@@ -1629,7 +1668,7 @@
             if (card) {
                 const nameEl = card.querySelector('.layer-name');
                 if (nameEl) {
-                    nameEl.textContent = val || layer.resource || (layer.type === 'mask-between' ? 'Mask' : 'Empty Layer');
+                    nameEl.textContent = val || layer.resource || (layer.type === 'mask-between' ? 'Global Mask' : 'Empty Layer');
                 }
             }
         }
