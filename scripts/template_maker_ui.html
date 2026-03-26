@@ -1350,7 +1350,7 @@
                             valign: child.getAttribute('valign') || 'top',
                             opacity: child.getAttribute('opacity') || 100,
                             mpixels: child.getAttribute('mpixels') || '',
-                            aspect: child.getAttribute('aspect') || 'keep',
+                            aspect: child.getAttribute('aspect') || '',
                             visible: true,
                             name: '',
                             effects: [],
@@ -1736,7 +1736,7 @@
                 id: layerIdCounter++, type: 'layer',
                 resource: '', width: '', height: '',
                 x: '', y: '', align: 'left', valign: 'top',
-                aspect: 'keep',
+                aspect: '',
                 opacity: 100, mpixels: '', effects: [], expanded: true,
                 visible: true, name: '', layers: []
             });
