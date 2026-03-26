@@ -1423,11 +1423,11 @@
                         </div>
                     </div>
                     <div class="field-row">
-                        <div class="field">
+                        <div class="field" style="min-width:70px; flex:1">
                             <label class="field-label">Width</label>
                             <input type="number" value="${layer.width}" oninput="findLayer(${layer.id}).width=this.value;schedulePreview()">
                         </div>
-                        <div class="field">
+                        <div class="field" style="min-width:70px; flex:1">
                             <label class="field-label">Height</label>
                             <input type="number" value="${layer.height}" oninput="findLayer(${layer.id}).height=this.value;schedulePreview()">
                         </div>
@@ -1472,21 +1472,21 @@
                         </select>
                     </div>
                     <div class="field-row">
-                        <div class="field">
+                        <div class="field" style="min-width:70px; flex:1">
                             <label class="field-label">Width</label>
                             <input type="number" value="${layer.width}" placeholder="auto" oninput="findLayer(${layer.id}).width=this.value;schedulePreview()">
                         </div>
-                        <div class="field">
+                        <div class="field" style="min-width:70px; flex:1">
                             <label class="field-label">Height</label>
                             <input type="number" value="${layer.height}" placeholder="auto" oninput="findLayer(${layer.id}).height=this.value;schedulePreview()">
                         </div>
                     </div>
                     <div class="field-row">
-                        <div class="field">
+                        <div class="field" style="min-width:70px; flex:1">
                             <label class="field-label">X</label>
                             <input type="number" value="${layer.x}" placeholder="0" oninput="findLayer(${layer.id}).x=this.value;schedulePreview()">
                         </div>
-                        <div class="field">
+                        <div class="field" style="min-width:70px; flex:1">
                             <label class="field-label">Y</label>
                             <input type="number" value="${layer.y}" placeholder="0" oninput="findLayer(${layer.id}).y=this.value;schedulePreview()">
                         </div>
@@ -1508,7 +1508,7 @@
                                 <option value="bottom" ${layer.valign === 'bottom' ? 'selected' : ''}>Bottom</option>
                             </select>
                         </div>
-                        <div class="field">
+                        <div class="field" style="min-width:70px; flex:1">
                             <label class="field-label">Opacity</label>
                             <input type="number" value="${layer.opacity}" min="0" max="100" oninput="findLayer(${layer.id}).opacity=this.value;schedulePreview()">
                         </div>
@@ -1542,48 +1542,58 @@
             return layer.effects.map((eff, ei) => {
                 const def = EFFECTS_LIST.find(d => d.key === eff.type);
                 if (!def) return '';
+
+                // Group fields into rows of 3
+                const fields = def.fields;
+                const fieldChunks = [];
+                for (let i = 0; i < fields.length; i += 3) {
+                    fieldChunks.push(fields.slice(i, i + 3));
+                }
+
                 return `<div class="effect-props" style="background:var(--panel-bg);border-radius:8px;padding:8px;margin:4px 0">
             <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px">${def.label}</div>
-            <div class="field-row" style="flex-wrap:wrap">
-                ${def.fields.map(f => {
-                    if (f.t === 'mask-select') {
-                        return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
-                            <div class="field-with-btn">
+            ${fieldChunks.map(chunk => `
+                <div class="field-row" style="margin-bottom: 8px">
+                    ${chunk.map(f => {
+                        if (f.t === 'mask-select') {
+                            return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
+                                <div class="field-with-btn">
+                                    <select oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
+                                        <option value="">Select...</option>
+                                        ${resourcesList.masks.map(m => `<option value="mask/${m.name}" ${eff.values[f.n] === `mask/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
+                                    </select>
+                                    <button class="btn btn-icon" onclick="triggerUpload('mask', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload mask">📤</button>
+                                </div></div>`;
+                        }
+                        if (f.t === 'frame-select') {
+                            return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
+                                <div class="field-with-btn">
+                                    <select oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
+                                        <option value="">Select...</option>
+                                        ${resourcesList.frames.map(m => `<option value="frames/${m.name}" ${eff.values[f.n] === `frames/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
+                                        ${resourcesList.other.map(m => `<option value="${m.name}" ${eff.values[f.name] === m.name ? 'selected' : ''}>${m.name}</option>`).join('')}
+                                    </select>
+                                    <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload frame">📤</button>
+                                </div></div>`;
+                        }
+                        if (f.t === 'color') {
+                            return `<div class="field"><label class="field-label">${f.n}</label>
+                                <input type="color" value="${eff.values[f.n] || f.d}" oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()"></div>`;
+                        }
+                        if (f.t === 'select') {
+                            return `<div class="field"><label class="field-label">${f.n}</label>
                                 <select oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
-                                    <option value="">Select...</option>
-                                    ${resourcesList.masks.map(m => `<option value="mask/${m.name}" ${eff.values[f.n] === `mask/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
-                                </select>
-                                <button class="btn btn-icon" onclick="triggerUpload('mask', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload mask">📤</button>
-                            </div></div>`;
-                    }
-                    if (f.t === 'frame-select') {
-                        return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
-                            <div class="field-with-btn">
-                                <select oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
-                                    <option value="">Select...</option>
-                                    ${resourcesList.frames.map(m => `<option value="frames/${m.name}" ${eff.values[f.n] === `frames/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
-                                    ${resourcesList.other.map(m => `<option value="${m.name}" ${eff.values[f.name] === m.name ? 'selected' : ''}>${m.name}</option>`).join('')}
-                                </select>
-                                <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload frame">📤</button>
-                            </div></div>`;
-                    }
-                    if (f.t === 'color') {
-                        return `<div class="field"><label class="field-label">${f.n}</label>
-                            <input type="color" value="${eff.values[f.n] || f.d}" oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()"></div>`;
-                    }
-                    if (f.t === 'select') {
-                        return `<div class="field"><label class="field-label">${f.n}</label>
-                            <select oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
-                                ${f.options.map(o => `<option value="${o}" ${eff.values[f.n] === o ? 'selected' : ''}>${o}</option>`).join('')}
-                            </select></div>`;
-                    }
-                    return `<div class="field"><label class="field-label">${f.n}</label>
-                        <input type="number" value="${eff.values[f.n] || f.d}" 
-                            ${f.min !== undefined ? `min="${f.min}"` : ''} 
-                            ${f.max !== undefined ? `max="${f.max}"` : ''}
-                            oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()"></div>`;
-                }).join('')}
-            </div>
+                                    ${f.options.map(o => `<option value="${o}" ${eff.values[f.n] === o ? 'selected' : ''}>${o}</option>`).join('')}
+                                </select></div>`;
+                        }
+                        return `<div class="field" style="min-width:70px; flex:1"><label class="field-label">${f.n}</label>
+                            <input type="number" value="${eff.values[f.n] || f.d}" 
+                                ${f.min !== undefined ? `min="${f.min}"` : ''} 
+                                ${f.max !== undefined ? `max="${f.max}"` : ''}
+                                oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()"></div>`;
+                    }).join('')}
+                </div>
+            `).join('')}
         </div>`;
             }).join('');
         }
@@ -1592,7 +1602,7 @@
         function addLayer() {
             layers.push({
                 id: layerIdCounter++, type: 'layer',
-                resource: 'screenshot', width: '', height: '',
+                resource: '', width: '', height: '',
                 x: '', y: '', align: 'left', valign: 'top',
                 opacity: 100, mpixels: '', effects: [], expanded: true,
                 visible: true, name: '', layers: []
