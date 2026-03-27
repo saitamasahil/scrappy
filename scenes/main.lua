@@ -1763,14 +1763,6 @@ function main:draw()
         local font = love.graphics.getFont()
         local parts = utils.split(time_str, ":")
 
-        -- Helper for faux-bold
-        local function print_bold(text, x, y)
-            love.graphics.print(text, x + 1, y)
-            love.graphics.print(text, x, y + 1)
-            love.graphics.print(text, x + 1, y + 1)
-            love.graphics.print(text, x, y)
-        end
-
         local margin = 10
         local colon_pad = 2 -- Extra padding around colon
         local t_width = 0
@@ -1784,7 +1776,7 @@ function main:draw()
         end
 
         -- Calculate position (Top-Right)
-        local x_pos = cw - t_width - margin
+        local x_pos = cw - (t_width or 0) - margin
         local y_pos = margin
 
         -- Shift left if status icon (offline or no-WiFi) is visible
@@ -1797,13 +1789,13 @@ function main:draw()
 
         if #parts == 2 then
             local x_cursor = x_pos
-            print_bold(parts[1], x_cursor, y_pos)
+            love.graphics.print(parts[1], x_cursor, y_pos)
             x_cursor = x_cursor + font:getWidth(parts[1]) + colon_pad
-            print_bold(":", x_cursor, y_pos)
+            love.graphics.print(":", x_cursor, y_pos)
             x_cursor = x_cursor + font:getWidth(":") + colon_pad
-            print_bold(parts[2], x_cursor, y_pos)
+            love.graphics.print(parts[2], x_cursor, y_pos)
         else
-            print_bold(time_str, x_pos, y_pos)
+            love.graphics.print(time_str, x_pos, y_pos)
         end
     end
 end
