@@ -534,27 +534,23 @@ local function scrape_platforms()
                 goto continue_rom
             end
 
-            -- For games that need scraping, verify if required missing pieces are in Skyscraper's cache
+            -- For games that need scraping, verify if the game is already in Skyscraper's cache
             if not uncached_games then
-                local pea_key = utils.normalize_platform(dest):lower()
-                local cached_res = artwork.cached_game_ids[pea_key] and artwork.cached_game_ids[pea_key][rom:lower()]
+                local pea_key = utils.normalize_platform(dest)
+                local rom_lower = rom:lower()
+                local platform_cache = artwork.cached_game_ids[pea_key]
+                
+                -- Check for the game in the cache (matches by full path or just filename for backward compatibility/subfolders)
+                local cached_res = platform_cache and (platform_cache[rom_lower] or platform_cache[rom_lower:match("([^/]+)$")])
 
                 if not cached_res then
+                    -- Game not found in cache at all, definitely need to fetch
                     uncached_games = true
-                else
-                    -- cached_res is now a table of types { cover = true, screenshot = true, ... }
-                    for art_type, is_missing in pairs(missing_in_catalogue) do
-                        if is_missing then
-                            -- Map Scrappy types to Skyscraper resource types
-                            local sky_type = (art_type == "box" and "cover") or (art_type == "preview" and "screenshot") or (art_type == "splash" and "wheel")
-                            if not cached_res[sky_type] then
-                                -- Missing required media from local cache, MUST fetch from server
-                                uncached_games = true
-                                break
-                            end
-                        end
-                    end
                 end
+                
+                -- NOTE: We no longer check specific resource types (cover, screenshot, etc.) here.
+                -- If the game is in the cache but missing artwork, it usually means it's not available 
+                -- on the server. Forcing a fetch every time wastes time and bandwidth for the user.
             end
 
             -- Save in reference map

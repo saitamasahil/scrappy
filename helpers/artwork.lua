@@ -269,10 +269,16 @@ function artwork.process_cached_by_platform(platform, cache_folder)
             if filepath then
                 local filename = filepath:match("([^/]+)$")
                 local id = line:match('id="([^"]+)"')
-                if filename and id then
-                    filename = xml_decode(filename)
+                if id then
                     id = xml_decode(id)
-                    quick_id_entries[filename:lower()] = id -- Store filename in lowercase
+                    -- Store by full filepath if available
+                    filepath = xml_decode(filepath):lower()
+                    quick_id_entries[filepath] = id
+                    -- Also store by filename as a fallback for simple lookups
+                    if filename then
+                        filename = xml_decode(filename):lower()
+                        quick_id_entries[filename] = id
+                    end
                 end
             end
         end
@@ -295,14 +301,10 @@ function artwork.process_cached_by_platform(platform, cache_folder)
         end
     end
 
-    -- Remove entries without matching resources
+    -- Keep entries even if no resources are found (means it was scraped but no art found)
     for filename, id in pairs(quick_id_entries) do
-        if not cached_games[id] then
-            quick_id_entries[filename] = nil
-        else
-            -- Store the resource types for this game filename
-            quick_id_entries[filename] = cached_games[id]
-        end
+        -- Store the resource types for this game filename; fallback to empty table if no resources
+        quick_id_entries[filename] = cached_games[id] or {}
     end
 
 
