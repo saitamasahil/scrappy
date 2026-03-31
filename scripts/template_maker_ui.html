@@ -897,6 +897,10 @@
                 <button class="btn btn-accent"
                     style="width:100%; justify-content:center; font-size:16px; padding:12px; border-radius:8px"
                     onclick="requestPreview()">▶ Generate Preview</button>
+                <label style="display:flex; align-items:center; gap:8px; margin-top:10px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
+                    <input type="checkbox" id="autoPreviewToggle" style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
+                    Auto Generate Preview
+                </label>
             </div>
 
             <!-- Template Name -->
@@ -1931,8 +1935,10 @@
         }
 
         function schedulePreview() {
-            // Auto-preview removed per user request.
-            // Wait for manual "Generate Preview" button click to prevent device slowdowns.
+            const toggle = document.getElementById('autoPreviewToggle');
+            if (!toggle || !toggle.checked) return;
+            clearTimeout(previewTimer);
+            previewTimer = setTimeout(() => requestPreview(), 600);
         }
 
         async function requestPreview(fromQueue = false) {
@@ -2196,7 +2202,8 @@
                 parseXml(document.getElementById('xmlTextarea').value);
                 closeModals();
                 showToast('XML imported successfully');
-                schedulePreview();
+                // Always generate preview after import
+                requestPreview();
             } catch (e) {
                 showToast('Parse error: ' + e.message);
             }
