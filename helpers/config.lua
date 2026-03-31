@@ -281,6 +281,43 @@ function user_config:load_platforms()
                                 result = "msx"
                             end
                         end
+                        -- Handle multi-system umbrella cores (e.g., SMS Plus GX -> "SVI - ColecoVision - SG1000")
+                        -- These map to "coleco_" which is not a valid Skyscraper platform.
+                        -- Disambiguate using the folder name and file extensions.
+                        if result == "coleco_" or result == "coleco" then
+                            local leaf_l = tostring(leaf):lower():gsub("[%W_]", "")
+                            -- Check folder name first for quick match
+                            if leaf_l:find("mastersystem") or leaf_l:find("sms") or leaf_l:find("segamastersystem") then
+                                result = "mastersystem"
+                            elseif leaf_l:find("sg1000") or leaf_l:find("sg 1000") then
+                                result = "sg-1000"
+                            elseif leaf_l:find("gamegear") or leaf_l:find("gg") then
+                                result = "gamegear"
+                            elseif leaf_l:find("coleco") then
+                                result = "coleco"
+                            elseif leaf_l:find("msx") then
+                                result = "msx"
+                            else
+                                -- Folder name didn't help, check file extensions
+                                local platform_path = string.format("%s/%s", rom_path, item)
+                                local files = nativefs.getDirectoryItems(platform_path) or {}
+                                local has_sms, has_sg, has_col, has_gg = false, false, false, false
+                                for _, f in ipairs(files) do
+                                    local fl = f:lower()
+                                    if fl:match("%.sms$") then has_sms = true end
+                                    if fl:match("%.sg$") then has_sg = true end
+                                    if fl:match("%.col$") then has_col = true end
+                                    if fl:match("%.gg$") then has_gg = true end
+                                end
+                                if has_sms then result = "mastersystem"
+                                elseif has_gg then result = "gamegear"
+                                elseif has_col then result = "coleco"
+                                elseif has_sg then result = "sg-1000"
+                                else result = "mastersystem" -- Default for SMS Plus GX
+                                end
+                            end
+                            log.write(string.format("Multi-system core resolved: '%s' -> '%s' for folder '%s'", folder_name, result, item))
+                        end
                         return result
                     end
                 end
@@ -320,10 +357,12 @@ function user_config:load_platforms()
                 ["arcade"] = "arcade",
                 ["mame"] = "arcade",
                 ["genesis"] = "megadrive",
+                ["sega genesis"] = "megadrive",
                 ["md"] = "megadrive",
                 ["smd"] = "megadrive",
                 ["megadrive"] = "megadrive",
                 ["sms"] = "mastersystem",
+                ["sega master system"] = "mastersystem",
                 ["mastersystem"] = "mastersystem",
                 ["sg-1000"] = "sg-1000",
                 ["sg1000"] = "sg-1000", -- legacy alias
