@@ -973,11 +973,12 @@
                 <div class="section-body" style="display:none">
                     <div style="font-size:12px;color:var(--text-secondary);line-height:1.8">
                         <b>Resources:</b> screenshot, cover, wheel, marquee, texture<br>
-                        <b>Align:</b> left, center, right<br>
-                        <b>VAlign:</b> top, middle, bottom<br>
-                        <b>Effects:</b> shadow, stroke, rounded, blur, mask, frame, gamebox, balance, brightness,
-                        contrast, opacity, rotate, saturation, hue, colorize, scanlines<br>
-                        <b>Mask tip:</b> Transparency (Alpha) determines mask.
+                        <b>Alignment:</b> left, center, right (Align) | top, middle, bottom (VAlign)<br>
+                        <b>Aspect:</b> ignore (stretch to fill), keep (maintain ratio), keepexpand (crop to fill)<br>
+                        <b>Transform:</b> Smooth (bilinear filtering), Fast (sharp pixel scaling)<br>
+                        <b>Gamebox Side:</b> To use a custom side image, place the file in your <code>~/.skyscraper/resources</code> folder and type its filename (e.g. <code>spine.png</code>).<br>
+                        <b>Mask tip:</b> Transparency (Alpha) of the mask image determines what is shown.<br>
+                        <b>Effects:</b> balance, blur, brightness, colorize, contrast, frame, gamebox, hue, mask, opacity, rotate, rounded, saturation, scanlines, shadow, stroke.
                     </div>
                 </div>
             </div>
@@ -1104,20 +1105,20 @@
                 key: 'mask', label: '🎭 Layer Mask', fields: [
                     { n: 'file', t: 'mask-select', d: '' }, { n: 'width', t: 'number', d: '' }, { n: 'height', t: 'number', d: '' },
                     { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' },
-                    { n: 'aspect', t: 'select', d: '', options: ['', 'keep', 'stretch', 'crop'] }
+                    { n: 'aspect', t: 'select', d: '', options: ['', 'ignore', 'keep', 'keepexpand'] }
                 ]
             },
             {
                 key: 'frame', label: '🖼️ Frame', fields: [
                     { n: 'file', t: 'frame-select', d: '' }, { n: 'width', t: 'number', d: '' }, { n: 'height', t: 'number', d: '' },
                     { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' },
-                    { n: 'aspect', t: 'select', d: '', options: ['', 'keep', 'stretch', 'crop'] }
+                    { n: 'aspect', t: 'select', d: '', options: ['', 'ignore', 'keep', 'keepexpand'] }
                 ]
             },
             {
                 key: 'gamebox', label: '📦 Gamebox', fields: [
-                    { n: 'side', t: 'select', d: 'wheel', options: ['wheel', 'marquee', 'cover', 'screenshot', 'texture'] }, { n: 'rotate', t: 'number', d: 90, min: -360, max: 360 },
-                    { n: 'sidescaling', t: 'select', d: '', options: ['', 'width', 'height'] }
+                    { n: 'side', t: 'text', d: '' }, { n: 'rotate', t: 'number', d: 90, min: -360, max: 360 },
+                    { n: 'sidescaling', t: 'select', d: '', options: ['', 'width', 'height', 'both'] }
                 ]
             },
             {
@@ -1128,7 +1129,7 @@
             { key: 'brightness', label: '☀️ Brightness', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
             { key: 'contrast', label: '◐ Contrast', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
             { key: 'saturation', label: '🌈 Saturation', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
-            { key: 'hue', label: '🔄 Hue', fields: [{ n: 'value', t: 'number', d: 0, min: -360, max: 360 }] },
+            { key: 'hue', label: '🔄 Hue', fields: [{ n: 'value', t: 'number', d: 0, min: 0, max: 359 }] },
             { key: 'opacity', label: '👁 Opacity', fields: [{ n: 'value', t: 'number', d: 100, min: 0, max: 100 }] },
             {
                 key: 'rotate', label: '🔃 Rotate', fields: [
@@ -1137,7 +1138,7 @@
             },
             {
                 key: 'colorize', label: '🎨 Colorize', fields: [
-                    { n: 'hue', t: 'number', d: 0, min: -360, max: 360 }, { n: 'saturation', t: 'number', d: 100, min: 0, max: 100 }
+                    { n: 'hue', t: 'number', d: 0, min: 0, max: 360 }, { n: 'saturation', t: 'number', d: 0, min: -127, max: 127 }
                 ]
             },
             {
@@ -1611,9 +1612,9 @@
                             <label class="field-label">Aspect</label>
                             <select oninput="findLayer(${layer.id}).aspect=this.value;schedulePreview()">
                                 <option value="" ${!layer.aspect ? 'selected' : ''}>Auto</option>
+                                <option value="ignore" ${layer.aspect === 'ignore' ? 'selected' : ''}>Ignore</option>
                                 <option value="keep" ${layer.aspect === 'keep' ? 'selected' : ''}>Keep</option>
-                                <option value="stretch" ${layer.aspect === 'stretch' ? 'selected' : ''}>Stretch</option>
-                                <option value="crop" ${layer.aspect === 'crop' ? 'selected' : ''}>Crop</option>
+                                <option value="keepexpand" ${layer.aspect === 'keepexpand' ? 'selected' : ''}>Keep Expand</option>
                             </select>
                         </div>
                     </div>
@@ -1641,10 +1642,8 @@
                         <div class="field">
                             <label class="field-label">Transform</label>
                             <select oninput="findLayer(${layer.id}).transform=this.value;schedulePreview()">
-                                <option value="" ${!layer.transform ? 'selected' : ''}>None</option>
-                                <option value="hflip" ${layer.transform === 'hflip' ? 'selected' : ''}>Flip Horizontal</option>
-                                <option value="vflip" ${layer.transform === 'vflip' ? 'selected' : ''}>Flip Vertical</option>
-                                <option value="hflip;vflip" ${layer.transform === 'hflip;vflip' ? 'selected' : ''}>Flip Both</option>
+                                <option value="" ${!layer.transform ? 'selected' : ''}>Smooth</option>
+                                <option value="fast" ${layer.transform === 'fast' ? 'selected' : ''}>Fast</option>
                             </select>
                         </div>
                     </div>
@@ -1720,6 +1719,11 @@
                                 <select oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
                                     ${f.options.map(o => `<option value="${o}" ${eff.values[f.n] === o ? 'selected' : ''}>${o}</option>`).join('')}
                                 </select></div>`;
+                        }
+                        if (f.t === 'text') {
+                            return `<div class="field" style="min-width:70px; flex:1"><label class="field-label">${f.n}</label>
+                                <input type="text" value="${eff.values[f.n] || f.d}" placeholder="${f.placeholder || ''}"
+                                    oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()"></div>`;
                         }
                         return `<div class="field" style="min-width:70px; flex:1"><label class="field-label">${f.n}</label>
                             <input type="number" value="${eff.values[f.n] || f.d}" 
