@@ -1099,18 +1099,21 @@
             {
                 key: 'mask', label: '🎭 Layer Mask', fields: [
                     { n: 'file', t: 'mask-select', d: '' }, { n: 'width', t: 'number', d: '' }, { n: 'height', t: 'number', d: '' },
-                    { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' }
+                    { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' },
+                    { n: 'aspect', t: 'select', d: '', options: ['', 'keep', 'stretch', 'crop'] }
                 ]
             },
             {
                 key: 'frame', label: '🖼️ Frame', fields: [
                     { n: 'file', t: 'frame-select', d: '' }, { n: 'width', t: 'number', d: '' }, { n: 'height', t: 'number', d: '' },
-                    { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' }
+                    { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' },
+                    { n: 'aspect', t: 'select', d: '', options: ['', 'keep', 'stretch', 'crop'] }
                 ]
             },
             {
                 key: 'gamebox', label: '📦 Gamebox', fields: [
-                    { n: 'side', t: 'select', d: 'wheel', options: ['wheel', 'marquee', 'cover', 'screenshot', 'texture'] }, { n: 'rotate', t: 'number', d: 90, min: -360, max: 360 }
+                    { n: 'side', t: 'select', d: 'wheel', options: ['wheel', 'marquee', 'cover', 'screenshot', 'texture'] }, { n: 'rotate', t: 'number', d: 90, min: -360, max: 360 },
+                    { n: 'sidescaling', t: 'select', d: '', options: ['', 'width', 'height'] }
                 ]
             },
             {
@@ -1210,6 +1213,8 @@
                     if (layer.opacity && layer.opacity != 100) xml += ` opacity="${layer.opacity}"`;
                     if (layer.mpixels) xml += ` mpixels="${layer.mpixels}"`;
                     if (layer.aspect) xml += ` aspect="${layer.aspect}"`;
+                    if (layer.mode) xml += ` mode="${layer.mode}"`;
+                    if (layer.transform) xml += ` transform="${layer.transform}"`;
                     xml += `>\n`;
 
                     // Effects
@@ -1351,6 +1356,8 @@
                             opacity: child.getAttribute('opacity') || 100,
                             mpixels: child.getAttribute('mpixels') || '',
                             aspect: child.getAttribute('aspect') || '',
+                            mode: child.getAttribute('mode') || '',
+                            transform: child.getAttribute('transform') || '',
                             visible: true,
                             name: '',
                             effects: [],
@@ -1606,6 +1613,37 @@
                             </select>
                         </div>
                     </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field-label">Mode</label>
+                            <select oninput="findLayer(${layer.id}).mode=this.value;schedulePreview()">
+                                <option value="" ${!layer.mode ? 'selected' : ''}>Normal</option>
+                                <option value="multiply" ${layer.mode === 'multiply' ? 'selected' : ''}>Multiply</option>
+                                <option value="screen" ${layer.mode === 'screen' ? 'selected' : ''}>Screen</option>
+                                <option value="overlay" ${layer.mode === 'overlay' ? 'selected' : ''}>Overlay</option>
+                                <option value="darken" ${layer.mode === 'darken' ? 'selected' : ''}>Darken</option>
+                                <option value="lighten" ${layer.mode === 'lighten' ? 'selected' : ''}>Lighten</option>
+                                <option value="colordodge" ${layer.mode === 'colordodge' ? 'selected' : ''}>Color Dodge</option>
+                                <option value="colorburn" ${layer.mode === 'colorburn' ? 'selected' : ''}>Color Burn</option>
+                                <option value="hardlight" ${layer.mode === 'hardlight' ? 'selected' : ''}>Hard Light</option>
+                                <option value="softlight" ${layer.mode === 'softlight' ? 'selected' : ''}>Soft Light</option>
+                                <option value="difference" ${layer.mode === 'difference' ? 'selected' : ''}>Difference</option>
+                                <option value="exclusion" ${layer.mode === 'exclusion' ? 'selected' : ''}>Exclusion</option>
+                                <option value="saturation" ${layer.mode === 'saturation' ? 'selected' : ''}>Saturation</option>
+                                <option value="color" ${layer.mode === 'color' ? 'selected' : ''}>Color</option>
+                                <option value="luminosity" ${layer.mode === 'luminosity' ? 'selected' : ''}>Luminosity</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Transform</label>
+                            <select oninput="findLayer(${layer.id}).transform=this.value;schedulePreview()">
+                                <option value="" ${!layer.transform ? 'selected' : ''}>None</option>
+                                <option value="hflip" ${layer.transform === 'hflip' ? 'selected' : ''}>Flip Horizontal</option>
+                                <option value="vflip" ${layer.transform === 'vflip' ? 'selected' : ''}>Flip Vertical</option>
+                                <option value="hflip;vflip" ${layer.transform === 'hflip;vflip' ? 'selected' : ''}>Flip Both</option>
+                            </select>
+                        </div>
+                    </div>
 
                     <!-- Effects -->
                     <div style="margin-top:8px">
@@ -1736,7 +1774,7 @@
                 id: layerIdCounter++, type: 'layer',
                 resource: '', width: '', height: '',
                 x: '', y: '', align: 'left', valign: 'top',
-                aspect: '',
+                aspect: '', mode: '', transform: '',
                 opacity: 100, mpixels: '', effects: [], expanded: true,
                 visible: true, name: '', layers: []
             });
