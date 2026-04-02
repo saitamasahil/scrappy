@@ -189,8 +189,9 @@
 
         .btn-icon {
             padding: 5px 8px;
-            font-size: 14px;
-            min-width: 32px;
+            font-size: 16px;
+            min-width: 36px;
+            min-height: 36px;
             justify-content: center;
         }
 
@@ -290,7 +291,9 @@
             max-width: 100%;
             max-height: calc(100vh - 160px);
             position: relative;
-            background: repeating-conic-gradient(rgba(128, 128, 128, 0.06) 0% 25%, transparent 0% 50%) 0 0 / 16px 16px;
+            background-color: transparent;
+            background-image: repeating-conic-gradient(rgba(128, 128, 128, 0.06) 0% 25%, transparent 0% 50%);
+            background-size: 16px 16px;
             border-radius: 14px;
             overflow: hidden;
             border: 1px solid var(--card-border);
@@ -299,7 +302,7 @@
             justify-content: center;
             min-width: 200px;
             min-height: 200px;
-            transition: border-color 0.3s;
+            transition: border-color 0.3s, background-color 0.3s;
         }
 
         .preview-container:hover {
@@ -945,6 +948,29 @@
                                 oninput="onOutputChange()">
                         </div>
                     </div>
+            </div>
+            
+            <!-- Preview Settings (Visual only) -->
+            <div class="section" id="previewSettingsSection">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <span class="section-title">🖼️ Preview Background</span>
+                    <span class="section-toggle">▼</span>
+                </div>
+                <div class="section-body">
+                    <div class="field">
+                        <label class="field-label">Background Style</label>
+                        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px">
+                            <button class="btn btn-sm" onclick="setPreviewBg('checker')">🏁 Checker</button>
+                            <button class="btn btn-sm" onclick="setPreviewBg('dark')">⬛ Dark</button>
+                            <button class="btn btn-sm" onclick="setPreviewBg('light')">⬜ Light</button>
+                            <button class="btn btn-sm" onclick="setPreviewBg('accent')">✨ Accent</button>
+                        </div>
+                        <label class="field-label">Custom Color</label>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <input type="color" id="previewBgColor" value="#000000" oninput="setPreviewBg('custom')" style="width:40px; height:32px; cursor:pointer">
+                            <span id="previewBgLabel" style="font-size:12px; color:var(--text-secondary)">Custom</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1191,6 +1217,7 @@
                 for (const layer of list) {
                     if (!layer.visible) continue;
                     if (layer.type === 'mask-between') {
+                        if (!layer.file) continue; // Skip empty masks to prevent renderer errors
                         xml += `${indent}<mask file="${layer.file}"`;
                         if (layer.width) xml += ` width="${layer.width}"`;
                         if (layer.height) xml += ` height="${layer.height}"`;
@@ -1198,6 +1225,7 @@
                         continue;
                     }
                     if (layer.type === 'frame-between') {
+                        if (!layer.file) continue; // Skip empty frames
                         xml += `${indent}<frame file="${layer.file}"`;
                         if (layer.width) xml += ` width="${layer.width}"`;
                         if (layer.height) xml += ` height="${layer.height}"`;
@@ -1280,7 +1308,15 @@
                     xml += `    </layer>\n`;
                 } else {
                     // Main Artwork or specific template design
-                    xml += getLayersXml(layers);
+                    let content = getLayersXml(layers);
+                    if (!content.includes('<layer')) {
+                        // If no actual layers are present (only masks/frames or nothing), 
+                        // add a tiny transparent placeholder layer with full dimensions.
+                        // We use opacity="1" (1% instead of 0%) which is practically invisible but 
+                        // more likely to trigger a render pass in the backend.
+                        content += `    <layer resource="screenshot" width="${w}" height="${h}" opacity="1"></layer>\n`;
+                    }
+                    xml += content;
                 }
                 xml += `  </output>\n`;
             }
@@ -1868,8 +1904,9 @@
         }
 
         function findLayerInfo(id, list = layers) {
+            if (!list) return null;
             for (let i = 0; i < list.length; i++) {
-                if (list[i].id === id) return { item: list[i], list: list, index: i };
+                if (list[i].id == id) return { item: list[i], list: list, index: i };
                 if (list[i].layers) {
                     const res = findLayerInfo(id, list[i].layers);
                     if (res) return res;
@@ -1934,8 +1971,12 @@
         // ─── Preview ────────────────────────────────────────────────
         function setPreviewStatus(status) {
             const el = document.getElementById('previewStatus');
+            if (!el) return;
             el.className = 'preview-status ' + status;
-            el.innerHTML = `<span class="dot"></span>${status === 'generating' ? 'Generating...' : status === 'ready' ? 'Ready' : 'Idle'}`;
+            let text = 'Idle';
+            if (status === 'generating') text = 'Generating...';
+            else if (status === 'ready') text = 'Ready';
+            el.innerHTML = `<span class="dot"></span>${text}`;
         }
 
         function schedulePreview() {
@@ -1961,6 +2002,7 @@
 
             document.getElementById('previewLoading').style.display = 'flex';
             document.getElementById('previewPlaceholder').style.display = 'none';
+            document.getElementById('previewImg').style.opacity = '0.4';
             setPreviewStatus('generating');
 
             try {
@@ -2014,6 +2056,7 @@
                         img.style.display = 'block';
                         img.onload = () => {
                             if (reqTime === previewRequestTime) {
+                                img.style.opacity = '1';
                                 generating = false;
                                 document.getElementById('previewLoading').style.display = 'none';
                                 setPreviewStatus('ready');
@@ -2024,7 +2067,7 @@
                                 badge.style.display = 'block';
 
                                 // Check queue
-                                if (previewQueued) setTimeout(() => requestPreview(true), 100);
+                                if (previewQueued) setTimeout(() => requestPreview(true), 1000);
                             }
                         };
                     } else {
@@ -2251,6 +2294,35 @@
             } else {
                 body.style.display = 'none';
                 toggle.textContent = '►';
+            }
+        }
+
+        // --- Preview Background Controls ---
+        function setPreviewBg(theme) {
+            const container = document.querySelector('.preview-container');
+            const colorInput = document.getElementById('previewBgColor');
+            const label = document.getElementById('previewBgLabel');
+            
+            if (theme === 'checker') {
+                container.style.backgroundColor = 'transparent';
+                container.style.backgroundImage = 'repeating-conic-gradient(rgba(128, 128, 128, 0.06) 0% 25%, transparent 0% 50%)';
+                label.textContent = 'Checkerboard';
+            } else if (theme === 'dark') {
+                container.style.backgroundColor = '#111';
+                container.style.backgroundImage = 'none';
+                label.textContent = 'Dark';
+            } else if (theme === 'light') {
+                container.style.backgroundColor = '#eee';
+                container.style.backgroundImage = 'none';
+                label.textContent = 'Light';
+            } else if (theme === 'accent') {
+                container.style.backgroundColor = 'var(--accent)';
+                container.style.backgroundImage = 'none';
+                label.textContent = 'Accent';
+            } else if (theme === 'custom') {
+                container.style.backgroundColor = colorInput.value;
+                container.style.backgroundImage = 'none';
+                label.textContent = colorInput.value;
             }
         }
 
