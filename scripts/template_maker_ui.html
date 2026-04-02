@@ -2303,22 +2303,22 @@
             const colorInput = document.getElementById('previewBgColor');
             const label = document.getElementById('previewBgLabel');
             
+            if (theme !== 'custom') {
+                label.textContent = 'Custom';
+            }
+
             if (theme === 'checker') {
                 container.style.backgroundColor = 'transparent';
                 container.style.backgroundImage = 'repeating-conic-gradient(rgba(128, 128, 128, 0.06) 0% 25%, transparent 0% 50%)';
-                label.textContent = 'Checkerboard';
             } else if (theme === 'dark') {
                 container.style.backgroundColor = '#111';
                 container.style.backgroundImage = 'none';
-                label.textContent = 'Dark';
             } else if (theme === 'light') {
                 container.style.backgroundColor = '#eee';
                 container.style.backgroundImage = 'none';
-                label.textContent = 'Light';
             } else if (theme === 'accent') {
                 container.style.backgroundColor = 'var(--accent)';
                 container.style.backgroundImage = 'none';
-                label.textContent = 'Accent';
             } else if (theme === 'custom') {
                 container.style.backgroundColor = colorInput.value;
                 container.style.backgroundImage = 'none';

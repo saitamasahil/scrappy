@@ -311,7 +311,7 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
             return
 
         # Sanitize name
-        safe_name = "".join(c for c in name if c.isalnum() or c in "-_ ").strip()
+        safe_name = "".join(c for c in name if c.isalnum() or c in "-_ ,.()").strip()
         if not safe_name:
             self.send_json({"status": "error", "message": "Invalid name"}, 400)
             return
