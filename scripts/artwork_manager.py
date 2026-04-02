@@ -533,6 +533,8 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
     thumb_bg = "#000000" if is_dark else "#f0f0f5"
     modal_item_bg = "rgba(0, 0, 0, 0.2)" if is_dark else "rgba(0, 0, 0, 0.03)"
     tpl_select_bg = "rgba(0, 0, 0, 0.1)" if is_dark else "rgba(0, 0, 0, 0.02)"
+    logo_filter = "none" if is_dark else "invert(1)"
+
 
     return f"""
 <!DOCTYPE html>
@@ -561,6 +563,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             --thumb-bg: {thumb_bg};
             --modal-item-bg: {modal_item_bg};
             --tpl-select-bg: {tpl_select_bg};
+            --logo-filter: {logo_filter};
         }}
         
         * {{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }}
@@ -594,7 +597,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             animation: logoReveal 1s cubic-bezier(0.2, 0.8, 0.2, 1);
         }}
 
-        .logo {{ height: 40px; }}
+        .logo {{ height: 40px; filter: var(--logo-filter); }}
         .title-group {{ text-align: center; }}
         h1 {{ margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }}
         .status-dot {{

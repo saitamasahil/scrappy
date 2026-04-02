@@ -23,6 +23,7 @@
             --header-bg: %%HEADER_BG%%;
             --panel-bg: %%PANEL_BG%%;
             --hover-bg: %%HOVER_BG%%;
+            --logo-filter: %%LOGO_FILTER%%;
             --danger: #e85555;
             --success: #4ade80;
             --accent-glow: color-mix(in srgb, var(--accent) 30%, transparent);
@@ -63,10 +64,12 @@
             align-items: center;
             gap: 10px;
             flex-shrink: 0;
+            animation: logoReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
         .logo {
             height: 28px;
+            filter: var(--logo-filter);
         }
 
         .header-title {
@@ -86,15 +89,35 @@
             animation: pulse 2s ease-in-out infinite;
         }
 
-        @keyframes pulse {
+        @keyframes logoReveal {
+            0% {
+                opacity: 0;
+                transform: scale(0);
+            }
 
+            40% {
+                opacity: 1;
+                transform: scale(1.15);
+            }
+
+            70% {
+                transform: scale(0.95);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes pulse {
             0%,
             100% {
-                opacity: 1
+                opacity: 1;
             }
 
             50% {
-                opacity: 0.3
+                opacity: 0.3;
             }
         }
 
@@ -900,8 +923,10 @@
                 <button class="btn btn-accent"
                     style="width:100%; justify-content:center; font-size:16px; padding:12px; border-radius:8px"
                     onclick="requestPreview()">▶ Generate Preview</button>
-                <label style="display:flex; align-items:center; gap:8px; margin-top:10px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
-                    <input type="checkbox" id="autoPreviewToggle" style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
+                <label
+                    style="display:flex; align-items:center; gap:8px; margin-top:10px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
+                    <input type="checkbox" id="autoPreviewToggle"
+                        style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
                     Auto Generate Preview
                 </label>
             </div>
@@ -948,539 +973,548 @@
                                 oninput="onOutputChange()">
                         </div>
                     </div>
-            </div>
-            
-            <!-- Preview Settings (Visual only) -->
-            <div class="section" id="previewSettingsSection">
-                <div class="section-header" onclick="toggleSection(this)">
-                    <span class="section-title">🖼️ Preview Background</span>
-                    <span class="section-toggle">▼</span>
                 </div>
-                <div class="section-body">
-                    <div class="field">
-                        <label class="field-label">Background Style</label>
-                        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px">
-                            <button class="btn btn-sm" onclick="setPreviewBg('checker')">🏁 Checker</button>
-                            <button class="btn btn-sm" onclick="setPreviewBg('dark')">⬛ Dark</button>
-                            <button class="btn btn-sm" onclick="setPreviewBg('light')">⬜ Light</button>
-                            <button class="btn btn-sm" onclick="setPreviewBg('accent')">✨ Accent</button>
+
+                <!-- Preview Settings (Visual only) -->
+                <div class="section" id="previewSettingsSection">
+                    <div class="section-header" onclick="toggleSection(this)">
+                        <span class="section-title">🖼️ Preview Background</span>
+                        <span class="section-toggle">▼</span>
+                    </div>
+                    <div class="section-body">
+                        <div class="field">
+                            <label class="field-label">Background Style</label>
+                            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px">
+                                <button class="btn btn-sm" onclick="setPreviewBg('checker')">🏁 Checker</button>
+                                <button class="btn btn-sm" onclick="setPreviewBg('dark')">⬛ Dark</button>
+                                <button class="btn btn-sm" onclick="setPreviewBg('light')">⬜ Light</button>
+                                <button class="btn btn-sm" onclick="setPreviewBg('accent')">✨ Accent</button>
+                            </div>
+                            <label class="field-label">Custom Color</label>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <input type="color" id="previewBgColor" value="#000000" oninput="setPreviewBg('custom')"
+                                    style="width:40px; height:32px; cursor:pointer">
+                                <span id="previewBgLabel"
+                                    style="font-size:12px; color:var(--text-secondary)">Custom</span>
+                            </div>
                         </div>
-                        <label class="field-label">Custom Color</label>
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <input type="color" id="previewBgColor" value="#000000" oninput="setPreviewBg('custom')" style="width:40px; height:32px; cursor:pointer">
-                            <span id="previewBgLabel" style="font-size:12px; color:var(--text-secondary)">Custom</span>
+                    </div>
+                </div>
+
+                <!-- Layers -->
+                <div class="section" id="layersSection">
+                    <div class="section-header">
+                        <span class="section-title">🗂️ Layers</span>
+                        <div class="section-header-actions">
+                            <button class="btn btn-sm" onclick="addMaskBetween()" title="Add global mask layer">🎭
+                                Global Mask</button>
+                            <button class="btn btn-sm" onclick="addFrameBetween()" title="Add global frame layer">🖼️
+                                Global Frame</button>
+                            <button class="btn btn-sm" onclick="triggerUpload('mask')" title="Upload mask file">📤
+                                Upload Mask</button>
+                            <button class="btn btn-sm" onclick="triggerUpload('frames')" title="Upload frame file">🖼️
+                                Upload Frame</button>
+                            <button class="btn btn-sm btn-accent" onclick="addLayer()">+ Layer</button>
+                        </div>
+                    </div>
+                    <div id="layerStack"></div>
+                </div>
+
+                <!-- Quick Reference -->
+                <div class="section">
+                    <div class="section-header" onclick="toggleSection(this)">
+                        <span class="section-title">📖 Quick Reference</span>
+                        <span class="section-toggle">►</span>
+                    </div>
+                    <div class="section-body" style="display:none">
+                        <div style="font-size:12px;color:var(--text-secondary);line-height:1.8">
+                            <b>Resources:</b> screenshot, cover, wheel, marquee, texture<br>
+                            <b>Alignment:</b> left, center, right (Align) | top, middle, bottom (VAlign)<br>
+                            <b>Aspect:</b> ignore (stretch to fill), keep (maintain ratio), keepexpand (crop to
+                            fill)<br>
+                            <b>Transform:</b> Smooth (bilinear filtering), Fast (sharp pixel scaling)<br>
+                            <b>Gamebox Side:</b> To use a custom side image, place the file in your
+                            <code>~/.skyscraper/resources</code> folder and type its filename (e.g.
+                            <code>spine.png</code>).<br>
+                            <b>Mask tip:</b> Transparency (Alpha) of the mask image determines what is shown.<br>
+                            <b>Effects:</b> balance, blur, brightness, colorize, contrast, frame, gamebox, hue, mask,
+                            opacity, rotate, rounded, saturation, scanlines, shadow, stroke.
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Layers -->
-            <div class="section" id="layersSection">
-                <div class="section-header">
-                    <span class="section-title">🗂️ Layers</span>
-                    <div class="section-header-actions">
-                        <button class="btn btn-sm" onclick="addMaskBetween()" title="Add global mask layer">🎭 Global Mask</button>
-                        <button class="btn btn-sm" onclick="addFrameBetween()" title="Add global frame layer">🖼️ Global Frame</button>
-                        <button class="btn btn-sm" onclick="triggerUpload('mask')" title="Upload mask file">📤 Upload Mask</button>
-                        <button class="btn btn-sm" onclick="triggerUpload('frames')" title="Upload frame file">🖼️
-                            Upload Frame</button>
-                        <button class="btn btn-sm btn-accent" onclick="addLayer()">+ Layer</button>
-                    </div>
+        <!-- Load Template Modal -->
+        <div class="modal-overlay" id="loadModal">
+            <div class="modal">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                    <h2>📂 Load Template</h2>
+                    <button class="btn btn-sm" onclick="closeModals()">✕</button>
                 </div>
-                <div id="layerStack"></div>
+                <input type="text" id="loadSearch" placeholder="Search templates..." oninput="filterTemplates()"
+                    style="margin-bottom:10px">
+                <div id="templateList"></div>
             </div>
+        </div>
 
-            <!-- Quick Reference -->
-            <div class="section">
-                <div class="section-header" onclick="toggleSection(this)">
-                    <span class="section-title">📖 Quick Reference</span>
-                    <span class="section-toggle">►</span>
+        <!-- XML Import/Export Modal -->
+        <div class="modal-overlay" id="xmlModal">
+            <div class="modal">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                    <h2 id="xmlModalTitle">XML</h2>
+                    <button class="btn btn-sm" onclick="closeModals()">✕</button>
                 </div>
-                <div class="section-body" style="display:none">
-                    <div style="font-size:12px;color:var(--text-secondary);line-height:1.8">
-                        <b>Resources:</b> screenshot, cover, wheel, marquee, texture<br>
-                        <b>Alignment:</b> left, center, right (Align) | top, middle, bottom (VAlign)<br>
-                        <b>Aspect:</b> ignore (stretch to fill), keep (maintain ratio), keepexpand (crop to fill)<br>
-                        <b>Transform:</b> Smooth (bilinear filtering), Fast (sharp pixel scaling)<br>
-                        <b>Gamebox Side:</b> To use a custom side image, place the file in your <code>~/.skyscraper/resources</code> folder and type its filename (e.g. <code>spine.png</code>).<br>
-                        <b>Mask tip:</b> Transparency (Alpha) of the mask image determines what is shown.<br>
-                        <b>Effects:</b> balance, blur, brightness, colorize, contrast, frame, gamebox, hue, mask, opacity, rotate, rounded, saturation, scanlines, shadow, stroke.
-                    </div>
+                <textarea class="xml-textarea" id="xmlTextarea" spellcheck="false"></textarea>
+                <div style="display:flex;gap:8px;margin-top:12px">
+                    <button class="btn btn-accent" id="xmlActionBtn" onclick="xmlAction()">Apply</button>
+                    <button class="btn" onclick="copyXml()">📋 Copy</button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Load Template Modal -->
-    <div class="modal-overlay" id="loadModal">
-        <div class="modal">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-                <h2>📂 Load Template</h2>
-                <button class="btn btn-sm" onclick="closeModals()">✕</button>
-            </div>
-            <input type="text" id="loadSearch" placeholder="Search templates..." oninput="filterTemplates()"
-                style="margin-bottom:10px">
-            <div id="templateList"></div>
-        </div>
-    </div>
-
-    <!-- XML Import/Export Modal -->
-    <div class="modal-overlay" id="xmlModal">
-        <div class="modal">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                <h2 id="xmlModalTitle">XML</h2>
-                <button class="btn btn-sm" onclick="closeModals()">✕</button>
-            </div>
-            <textarea class="xml-textarea" id="xmlTextarea" spellcheck="false"></textarea>
-            <div style="display:flex;gap:8px;margin-top:12px">
-                <button class="btn btn-accent" id="xmlActionBtn" onclick="xmlAction()">Apply</button>
-                <button class="btn" onclick="copyXml()">📋 Copy</button>
+        <!-- Save Modal -->
+        <div class="modal-overlay" id="saveModal">
+            <div class="modal">
+                <h2 style="margin-bottom:16px">Save Template</h2>
+                <div class="field">
+                    <label class="field-label">Template Name</label>
+                    <input type="text" id="saveName" placeholder="my-template">
+                </div>
+                <div id="saveWarning" style="color:var(--danger);font-size:12px;margin:8px 0;display:none"></div>
+                <div style="display:flex;gap:8px;margin-top:16px">
+                    <button class="btn btn-accent" onclick="confirmSave(false)">Save</button>
+                    <button class="btn" id="overwriteBtn" style="display:none"
+                        onclick="confirmSave(true)">Overwrite</button>
+                    <button class="btn" onclick="closeModals()">Cancel</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Save Modal -->
-    <div class="modal-overlay" id="saveModal">
-        <div class="modal">
-            <h2 style="margin-bottom:16px">Save Template</h2>
-            <div class="field">
-                <label class="field-label">Template Name</label>
-                <input type="text" id="saveName" placeholder="my-template">
-            </div>
-            <div id="saveWarning" style="color:var(--danger);font-size:12px;margin:8px 0;display:none"></div>
-            <div style="display:flex;gap:8px;margin-top:16px">
-                <button class="btn btn-accent" onclick="confirmSave(false)">Save</button>
-                <button class="btn" id="overwriteBtn" style="display:none"
-                    onclick="confirmSave(true)">Overwrite</button>
-                <button class="btn" onclick="closeModals()">Cancel</button>
+        <!-- Restart Required Modal -->
+        <div class="modal-overlay" id="restartModal">
+            <div class="modal" style="text-align:center; padding:30px;">
+                <div style="font-size:40px; margin-bottom:15px;">🔄</div>
+                <h2 style="margin-bottom:10px;">Restart Required</h2>
+                <p style="color:var(--text-secondary); font-size:14px; line-height:1.5;">
+                    If you want to reflect your changes right now then restart Scrappy,<br>
+                    otherwise you can continue using the web server.
+                </p>
+                <div style="margin-top:20px; font-size:12px; opacity:0.6;" id="restartTimer">Closing in 10s...</div>
             </div>
         </div>
-    </div>
 
-    <!-- Restart Required Modal -->
-    <div class="modal-overlay" id="restartModal">
-        <div class="modal" style="text-align:center; padding:30px;">
-            <div style="font-size:40px; margin-bottom:15px;">🔄</div>
-            <h2 style="margin-bottom:10px;">Restart Required</h2>
-            <p style="color:var(--text-secondary); font-size:14px; line-height:1.5;">
-                If you want to reflect your changes right now then restart Scrappy,<br>
-                otherwise you can continue using the web server.
-            </p>
-            <div style="margin-top:20px; font-size:12px; opacity:0.6;" id="restartTimer">Closing in 10s...</div>
-        </div>
-    </div>
+        <div id="toast"></div>
 
-    <div id="toast"></div>
+        <script>
+            // ─── State ──────────────────────────────────────────────────
+            let layers = [];
+            let layerIdCounter = 0;
+            let templatesList = [];
+            let resourcesList = { masks: [], frames: [], other: [] };
+            let previewTimer = null;
+            let generating = false;
+            let xmlModalMode = 'export';
+            let previewRequestTime = 0;
+            let uploadPendingTarget = null; // {layerIdx, effectIdx, fieldName} or 'standalone'
+            let primaryOutputType = 'cover'; // Track the output being edited
+            let restartPopupTimer = null;
 
-    <script>
-        // ─── State ──────────────────────────────────────────────────
-        let layers = [];
-        let layerIdCounter = 0;
-        let templatesList = [];
-        let resourcesList = { masks: [], frames: [], other: [] };
-        let previewTimer = null;
-        let generating = false;
-        let xmlModalMode = 'export';
-        let previewRequestTime = 0;
-        let uploadPendingTarget = null; // {layerIdx, effectIdx, fieldName} or 'standalone'
-        let primaryOutputType = 'cover'; // Track the output being edited
-        let restartPopupTimer = null;
+            function showRestartPopup() {
+                const modal = document.getElementById('restartModal');
+                const timerText = document.getElementById('restartTimer');
+                modal.classList.add('visible');
 
-        function showRestartPopup() {
-            const modal = document.getElementById('restartModal');
-            const timerText = document.getElementById('restartTimer');
-            modal.classList.add('visible');
-
-            let seconds = 10;
-            timerText.textContent = `Closing in ${seconds}s...`;
-
-            if (restartPopupTimer) clearInterval(restartPopupTimer);
-
-            restartPopupTimer = setInterval(() => {
-                seconds--;
+                let seconds = 10;
                 timerText.textContent = `Closing in ${seconds}s...`;
-                if (seconds <= 0) {
-                    clearInterval(restartPopupTimer);
-                    modal.classList.remove('visible');
-                }
-            }, 1000);
-        }
 
-        const EFFECTS_LIST = [
-            {
-                key: 'shadow', label: '💫 Shadow', fields: [
-                    { n: 'distance', t: 'number', d: 5, min: -50, max: 50 }, { n: 'softness', t: 'number', d: 5, min: 0, max: 100 }, { n: 'opacity', t: 'number', d: 70, min: 0, max: 100 }
-                ]
-            },
-            {
-                key: 'stroke', label: '✏️ Stroke', fields: [
-                    { n: 'width', t: 'number', d: 2, min: 0, max: 20 }, { n: 'color', t: 'color', d: '#000000' }
-                ]
-            },
-            {
-                key: 'rounded', label: '⬜ Rounded', fields: [
-                    { n: 'radius', t: 'number', d: 7, min: 0, max: 500 }
-                ]
-            },
-            {
-                key: 'blur', label: '🌫️ Blur', fields: [
-                    { n: 'softness', t: 'number', d: 5, min: 0, max: 100 }
-                ]
-            },
-            {
-                key: 'mask', label: '🎭 Layer Mask', fields: [
-                    { n: 'file', t: 'mask-select', d: '' }, { n: 'width', t: 'number', d: '' }, { n: 'height', t: 'number', d: '' },
-                    { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' },
-                    { n: 'aspect', t: 'select', d: '', options: ['', 'ignore', 'keep', 'keepexpand'] }
-                ]
-            },
-            {
-                key: 'frame', label: '🖼️ Frame', fields: [
-                    { n: 'file', t: 'frame-select', d: '' }, { n: 'width', t: 'number', d: '' }, { n: 'height', t: 'number', d: '' },
-                    { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' },
-                    { n: 'aspect', t: 'select', d: '', options: ['', 'ignore', 'keep', 'keepexpand'] }
-                ]
-            },
-            {
-                key: 'gamebox', label: '📦 Gamebox', fields: [
-                    { n: 'side', t: 'text', d: '' }, { n: 'rotate', t: 'number', d: 90, min: -360, max: 360 },
-                    { n: 'sidescaling', t: 'select', d: '', options: ['', 'width', 'height', 'both'] }
-                ]
-            },
-            {
-                key: 'balance', label: '🎨 Balance', fields: [
-                    { n: 'red', t: 'number', d: 0, min: -255, max: 255 }, { n: 'green', t: 'number', d: 0, min: -255, max: 255 }, { n: 'blue', t: 'number', d: 0, min: -255, max: 255 }
-                ]
-            },
-            { key: 'brightness', label: '☀️ Brightness', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
-            { key: 'contrast', label: '◐ Contrast', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
-            { key: 'saturation', label: '🌈 Saturation', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
-            { key: 'hue', label: '🔄 Hue', fields: [{ n: 'value', t: 'number', d: 0, min: 0, max: 359 }] },
-            { key: 'opacity', label: '👁 Opacity', fields: [{ n: 'value', t: 'number', d: 100, min: 0, max: 100 }] },
-            {
-                key: 'rotate', label: '🔃 Rotate', fields: [
-                    { n: 'degrees', t: 'number', d: 0, min: -360, max: 360 }, { n: 'axis', t: 'select', d: 'z', options: ['x', 'y', 'z'] }
-                ]
-            },
-            {
-                key: 'colorize', label: '🎨 Colorize', fields: [
-                    { n: 'hue', t: 'number', d: 0, min: 0, max: 360 }, { n: 'saturation', t: 'number', d: 0, min: -127, max: 127 }
-                ]
-            },
-            {
-                key: 'scanlines', label: '📺 Scanlines', fields: [
-                    { n: 'file', t: 'text', d: 'scanlines1.png' }, { n: 'scale', t: 'number', d: 1, min: 0.1, max: 10 },
-                    { n: 'opacity', t: 'number', d: 50, min: 0, max: 100 }, { n: 'mode', t: 'text', d: 'overlay' }
-                ]
-            }
-        ];
+                if (restartPopupTimer) clearInterval(restartPopupTimer);
 
-        // ─── Init ───────────────────────────────────────────────────
-        async function init() {
-            try {
-                const [tRes, rRes] = await Promise.all([
-                    fetch('/api/templates'), fetch('/api/resources')
-                ]);
-                templatesList = await tRes.json();
-                resourcesList = await rRes.json();
-                populateQuickTemplateSelect();
-            } catch (e) {
-                console.error('Init error:', e);
-            }
-        }
-
-        function populateQuickTemplateSelect() {
-            const sel = document.getElementById('quickTemplateSelect');
-            sel.innerHTML = '<option value="">— Select template —</option>';
-            templatesList.forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t.name;
-                opt.textContent = t.name + (t.resolution ? ` (${t.resolution})` : '');
-                sel.appendChild(opt);
-            });
-        }
-
-        async function quickLoadTemplate(name) {
-            if (!name) return;
-            await loadTemplate(name);
-        }
-
-        init();
-
-        // ─── XML Generation ─────────────────────────────────────────
-        function generateXml() {
-            const w = document.getElementById('outputWidth').value;
-            const h = document.getElementById('outputHeight').value;
-
-            function getLayersXml(list, indent = '    ') {
-                let xml = '';
-                for (const layer of list) {
-                    if (!layer.visible) continue;
-                    if (layer.type === 'mask-between') {
-                        if (!layer.file) continue; // Skip empty masks to prevent renderer errors
-                        xml += `${indent}<mask file="${layer.file}"`;
-                        if (layer.width) xml += ` width="${layer.width}"`;
-                        if (layer.height) xml += ` height="${layer.height}"`;
-                        xml += `/>\n`;
-                        continue;
+                restartPopupTimer = setInterval(() => {
+                    seconds--;
+                    timerText.textContent = `Closing in ${seconds}s...`;
+                    if (seconds <= 0) {
+                        clearInterval(restartPopupTimer);
+                        modal.classList.remove('visible');
                     }
-                    if (layer.type === 'frame-between') {
-                        if (!layer.file) continue; // Skip empty frames
-                        xml += `${indent}<frame file="${layer.file}"`;
+                }, 1000);
+            }
+
+            const EFFECTS_LIST = [
+                {
+                    key: 'shadow', label: '💫 Shadow', fields: [
+                        { n: 'distance', t: 'number', d: 5, min: -50, max: 50 }, { n: 'softness', t: 'number', d: 5, min: 0, max: 100 }, { n: 'opacity', t: 'number', d: 70, min: 0, max: 100 }
+                    ]
+                },
+                {
+                    key: 'stroke', label: '✏️ Stroke', fields: [
+                        { n: 'width', t: 'number', d: 2, min: 0, max: 20 }, { n: 'color', t: 'color', d: '#000000' }
+                    ]
+                },
+                {
+                    key: 'rounded', label: '⬜ Rounded', fields: [
+                        { n: 'radius', t: 'number', d: 7, min: 0, max: 500 }
+                    ]
+                },
+                {
+                    key: 'blur', label: '🌫️ Blur', fields: [
+                        { n: 'softness', t: 'number', d: 5, min: 0, max: 100 }
+                    ]
+                },
+                {
+                    key: 'mask', label: '🎭 Layer Mask', fields: [
+                        { n: 'file', t: 'mask-select', d: '' }, { n: 'width', t: 'number', d: '' }, { n: 'height', t: 'number', d: '' },
+                        { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' },
+                        { n: 'aspect', t: 'select', d: '', options: ['', 'ignore', 'keep', 'keepexpand'] }
+                    ]
+                },
+                {
+                    key: 'frame', label: '🖼️ Frame', fields: [
+                        { n: 'file', t: 'frame-select', d: '' }, { n: 'width', t: 'number', d: '' }, { n: 'height', t: 'number', d: '' },
+                        { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' },
+                        { n: 'aspect', t: 'select', d: '', options: ['', 'ignore', 'keep', 'keepexpand'] }
+                    ]
+                },
+                {
+                    key: 'gamebox', label: '📦 Gamebox', fields: [
+                        { n: 'side', t: 'text', d: '' }, { n: 'rotate', t: 'number', d: 90, min: -360, max: 360 },
+                        { n: 'sidescaling', t: 'select', d: '', options: ['', 'width', 'height', 'both'] }
+                    ]
+                },
+                {
+                    key: 'balance', label: '🎨 Balance', fields: [
+                        { n: 'red', t: 'number', d: 0, min: -255, max: 255 }, { n: 'green', t: 'number', d: 0, min: -255, max: 255 }, { n: 'blue', t: 'number', d: 0, min: -255, max: 255 }
+                    ]
+                },
+                { key: 'brightness', label: '☀️ Brightness', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
+                { key: 'contrast', label: '◐ Contrast', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
+                { key: 'saturation', label: '🌈 Saturation', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
+                { key: 'hue', label: '🔄 Hue', fields: [{ n: 'value', t: 'number', d: 0, min: 0, max: 359 }] },
+                { key: 'opacity', label: '👁 Opacity', fields: [{ n: 'value', t: 'number', d: 100, min: 0, max: 100 }] },
+                {
+                    key: 'rotate', label: '🔃 Rotate', fields: [
+                        { n: 'degrees', t: 'number', d: 0, min: -360, max: 360 }, { n: 'axis', t: 'select', d: 'z', options: ['x', 'y', 'z'] }
+                    ]
+                },
+                {
+                    key: 'colorize', label: '🎨 Colorize', fields: [
+                        { n: 'hue', t: 'number', d: 0, min: 0, max: 360 }, { n: 'saturation', t: 'number', d: 0, min: -127, max: 127 }
+                    ]
+                },
+                {
+                    key: 'scanlines', label: '📺 Scanlines', fields: [
+                        { n: 'file', t: 'text', d: 'scanlines1.png' }, { n: 'scale', t: 'number', d: 1, min: 0.1, max: 10 },
+                        { n: 'opacity', t: 'number', d: 50, min: 0, max: 100 }, { n: 'mode', t: 'text', d: 'overlay' }
+                    ]
+                }
+            ];
+
+            // ─── Init ───────────────────────────────────────────────────
+            async function init() {
+                try {
+                    const [tRes, rRes] = await Promise.all([
+                        fetch('/api/templates'), fetch('/api/resources')
+                    ]);
+                    templatesList = await tRes.json();
+                    resourcesList = await rRes.json();
+                    populateQuickTemplateSelect();
+                } catch (e) {
+                    console.error('Init error:', e);
+                }
+            }
+
+            function populateQuickTemplateSelect() {
+                const sel = document.getElementById('quickTemplateSelect');
+                sel.innerHTML = '<option value="">— Select template —</option>';
+                templatesList.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.name;
+                    opt.textContent = t.name + (t.resolution ? ` (${t.resolution})` : '');
+                    sel.appendChild(opt);
+                });
+            }
+
+            async function quickLoadTemplate(name) {
+                if (!name) return;
+                await loadTemplate(name);
+            }
+
+            init();
+
+            // ─── XML Generation ─────────────────────────────────────────
+            function generateXml() {
+                const w = document.getElementById('outputWidth').value;
+                const h = document.getElementById('outputHeight').value;
+
+                function getLayersXml(list, indent = '    ') {
+                    let xml = '';
+                    for (const layer of list) {
+                        if (!layer.visible) continue;
+                        if (layer.type === 'mask-between') {
+                            if (!layer.file) continue; // Skip empty masks to prevent renderer errors
+                            xml += `${indent}<mask file="${layer.file}"`;
+                            if (layer.width) xml += ` width="${layer.width}"`;
+                            if (layer.height) xml += ` height="${layer.height}"`;
+                            xml += `/>\n`;
+                            continue;
+                        }
+                        if (layer.type === 'frame-between') {
+                            if (!layer.file) continue; // Skip empty frames
+                            xml += `${indent}<frame file="${layer.file}"`;
+                            if (layer.width) xml += ` width="${layer.width}"`;
+                            if (layer.height) xml += ` height="${layer.height}"`;
+                            if (layer.x) xml += ` x="${layer.x}"`;
+                            if (layer.y) xml += ` y="${layer.y}"`;
+                            xml += `/>\n`;
+                            continue;
+                        }
+                        if (layer.name) xml += `${indent}<!-- ${layer.name} -->\n`;
+                        xml += `${indent}<layer`;
+                        if (layer.resource) xml += ` resource="${layer.resource}"`;
                         if (layer.width) xml += ` width="${layer.width}"`;
                         if (layer.height) xml += ` height="${layer.height}"`;
                         if (layer.x) xml += ` x="${layer.x}"`;
                         if (layer.y) xml += ` y="${layer.y}"`;
-                        xml += `/>\n`;
-                        continue;
-                    }
-                    if (layer.name) xml += `${indent}<!-- ${layer.name} -->\n`;
-                    xml += `${indent}<layer`;
-                    if (layer.resource) xml += ` resource="${layer.resource}"`;
-                    if (layer.width) xml += ` width="${layer.width}"`;
-                    if (layer.height) xml += ` height="${layer.height}"`;
-                    if (layer.x) xml += ` x="${layer.x}"`;
-                    if (layer.y) xml += ` y="${layer.y}"`;
-                    if (layer.align && layer.align !== 'left') xml += ` align="${layer.align}"`;
-                    if (layer.valign && layer.valign !== 'top') xml += ` valign="${layer.valign}"`;
-                    if (layer.opacity && layer.opacity != 100) xml += ` opacity="${layer.opacity}"`;
-                    if (layer.mpixels) xml += ` mpixels="${layer.mpixels}"`;
-                    if (layer.aspect) xml += ` aspect="${layer.aspect}"`;
-                    if (layer.mode) xml += ` mode="${layer.mode}"`;
-                    if (layer.transform) xml += ` transform="${layer.transform}"`;
-                    xml += `>\n`;
+                        if (layer.align && layer.align !== 'left') xml += ` align="${layer.align}"`;
+                        if (layer.valign && layer.valign !== 'top') xml += ` valign="${layer.valign}"`;
+                        if (layer.opacity && layer.opacity != 100) xml += ` opacity="${layer.opacity}"`;
+                        if (layer.mpixels) xml += ` mpixels="${layer.mpixels}"`;
+                        if (layer.aspect) xml += ` aspect="${layer.aspect}"`;
+                        if (layer.mode) xml += ` mode="${layer.mode}"`;
+                        if (layer.transform) xml += ` transform="${layer.transform}"`;
+                        xml += `>\n`;
 
-                    // Effects
-                    for (const eff of (layer.effects || [])) {
-                        const def = EFFECTS_LIST.find(e => e.key === eff.type);
-                        if (!def) continue;
-                        xml += `${indent}  <${eff.type}`;
-                        for (const f of def.fields) {
-                            const val = eff.values[f.n];
-                            if (val !== undefined && val !== '') {
-                                if (f.n === 'color' && eff.type === 'stroke') {
-                                    const hex = val.replace('#', '');
-                                    const r = parseInt(hex.substring(0, 2), 16);
-                                    const g = parseInt(hex.substring(2, 4), 16);
-                                    const b = parseInt(hex.substring(4, 6), 16);
-                                    xml += ` red="${r}" green="${g}" blue="${b}"`;
-                                } else {
-                                    xml += ` ${f.n}="${val}"`;
+                        // Effects
+                        for (const eff of (layer.effects || [])) {
+                            const def = EFFECTS_LIST.find(e => e.key === eff.type);
+                            if (!def) continue;
+                            xml += `${indent}  <${eff.type}`;
+                            for (const f of def.fields) {
+                                const val = eff.values[f.n];
+                                if (val !== undefined && val !== '') {
+                                    if (f.n === 'color' && eff.type === 'stroke') {
+                                        const hex = val.replace('#', '');
+                                        const r = parseInt(hex.substring(0, 2), 16);
+                                        const g = parseInt(hex.substring(2, 4), 16);
+                                        const b = parseInt(hex.substring(4, 6), 16);
+                                        xml += ` red="${r}" green="${g}" blue="${b}"`;
+                                    } else {
+                                        xml += ` ${f.n}="${val}"`;
+                                    }
                                 }
                             }
+                            xml += `/>\n`;
                         }
-                        xml += `/>\n`;
-                    }
 
-                    // Nested Layers
-                    if (layer.layers && layer.layers.length > 0) {
-                        xml += getLayersXml(layer.layers, indent + '  ');
-                    }
+                        // Nested Layers
+                        if (layer.layers && layer.layers.length > 0) {
+                            xml += getLayersXml(layer.layers, indent + '  ');
+                        }
 
-                    xml += `${indent}</layer>\n`;
+                        xml += `${indent}</layer>\n`;
+                    }
+                    return xml;
                 }
+
+                const enabledTypes = [];
+                if (document.getElementById('outBox').checked) enabledTypes.push('cover');
+                if (document.getElementById('outPreview').checked) enabledTypes.push('screenshot');
+                if (document.getElementById('outSplash').checked) enabledTypes.push('wheel');
+
+                // Fallback if none checked
+                if (enabledTypes.length === 0) enabledTypes.push(primaryOutputType);
+
+                let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<artwork>\n';
+
+                for (const type of enabledTypes) {
+                    xml += `  <output type="${type}" width="${w}" height="${h}">\n`;
+
+                    if (type === 'screenshot' && primaryOutputType !== 'screenshot') {
+                        // Automated Pattern: Single centered screenshot
+                        xml += `    <layer resource="screenshot" height="${h}" valign="center"></layer>\n`;
+                    } else if (type === 'wheel' && primaryOutputType !== 'wheel') {
+                        // Automated Pattern: Fluent-style splash (black background + centered wheel)
+                        xml += `    <layer resource="screenshot" width="${w}" height="${h}">\n`;
+                        xml += `      <balance red="-255" green="-255" blue="-255"/>\n`;
+                        xml += `    </layer>\n`;
+                        xml += `    <layer resource="wheel" width="${Math.round(w * 0.47)}" valign="middle" align="center">\n`;
+                        xml += `      <stroke width="1" color="#ffffff"/>\n`;
+                        xml += `    </layer>\n`;
+                    } else {
+                        // Main Artwork or specific template design
+                        let content = getLayersXml(layers);
+                        if (!content.includes('<layer')) {
+                            // If no actual layers are present (only masks/frames or nothing), 
+                            // add a tiny transparent placeholder layer with full dimensions.
+                            // We use opacity="1" (1% instead of 0%) which is practically invisible but 
+                            // more likely to trigger a render pass in the backend.
+                            content += `    <layer resource="screenshot" width="${w}" height="${h}" opacity="1"></layer>\n`;
+                        }
+                        xml += content;
+                    }
+                    xml += `  </output>\n`;
+                }
+                xml += `</artwork>`;
                 return xml;
             }
 
-            const enabledTypes = [];
-            if (document.getElementById('outBox').checked) enabledTypes.push('cover');
-            if (document.getElementById('outPreview').checked) enabledTypes.push('screenshot');
-            if (document.getElementById('outSplash').checked) enabledTypes.push('wheel');
+            function onOutputChange() {
+                // Ensure at least one output is checked
+                const anyChecked = document.getElementById('outBox').checked ||
+                    document.getElementById('outPreview').checked ||
+                    document.getElementById('outSplash').checked;
 
-            // Fallback if none checked
-            if (enabledTypes.length === 0) enabledTypes.push(primaryOutputType);
-
-            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<artwork>\n';
-
-            for (const type of enabledTypes) {
-                xml += `  <output type="${type}" width="${w}" height="${h}">\n`;
-
-                if (type === 'screenshot' && primaryOutputType !== 'screenshot') {
-                    // Automated Pattern: Single centered screenshot
-                    xml += `    <layer resource="screenshot" height="${h}" valign="center"></layer>\n`;
-                } else if (type === 'wheel' && primaryOutputType !== 'wheel') {
-                    // Automated Pattern: Fluent-style splash (black background + centered wheel)
-                    xml += `    <layer resource="screenshot" width="${w}" height="${h}">\n`;
-                    xml += `      <balance red="-255" green="-255" blue="-255"/>\n`;
-                    xml += `    </layer>\n`;
-                    xml += `    <layer resource="wheel" width="${Math.round(w * 0.47)}" valign="middle" align="center">\n`;
-                    xml += `      <stroke width="1" color="#ffffff"/>\n`;
-                    xml += `    </layer>\n`;
-                } else {
-                    // Main Artwork or specific template design
-                    let content = getLayersXml(layers);
-                    if (!content.includes('<layer')) {
-                        // If no actual layers are present (only masks/frames or nothing), 
-                        // add a tiny transparent placeholder layer with full dimensions.
-                        // We use opacity="1" (1% instead of 0%) which is practically invisible but 
-                        // more likely to trigger a render pass in the backend.
-                        content += `    <layer resource="screenshot" width="${w}" height="${h}" opacity="1"></layer>\n`;
-                    }
-                    xml += content;
+                if (!anyChecked) {
+                    // Fallback to primary being edited
+                    if (primaryOutputType === 'cover') document.getElementById('outBox').checked = true;
+                    else if (primaryOutputType === 'screenshot') document.getElementById('outPreview').checked = true;
+                    else if (primaryOutputType === 'wheel') document.getElementById('outSplash').checked = true;
                 }
-                xml += `  </output>\n`;
             }
-            xml += `</artwork>`;
-            return xml;
-        }
 
-        function onOutputChange() {
-            // Ensure at least one output is checked
-            const anyChecked = document.getElementById('outBox').checked ||
-                document.getElementById('outPreview').checked ||
-                document.getElementById('outSplash').checked;
+            // ─── XML Parsing ────────────────────────────────────────────
+            function parseXml(xmlStr) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(xmlStr, 'text/xml');
+                const err = doc.querySelector('parsererror');
+                if (err) throw new Error('Invalid XML: ' + err.textContent.substring(0, 100));
 
-            if (!anyChecked) {
-                // Fallback to primary being edited
-                if (primaryOutputType === 'cover') document.getElementById('outBox').checked = true;
-                else if (primaryOutputType === 'screenshot') document.getElementById('outPreview').checked = true;
-                else if (primaryOutputType === 'wheel') document.getElementById('outSplash').checked = true;
-            }
-        }
+                const allOutputs = Array.from(doc.querySelectorAll('artwork > output'));
+                if (allOutputs.length === 0) throw new Error('No <output> element found');
 
-        // ─── XML Parsing ────────────────────────────────────────────
-        function parseXml(xmlStr) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(xmlStr, 'text/xml');
-            const err = doc.querySelector('parsererror');
-            if (err) throw new Error('Invalid XML: ' + err.textContent.substring(0, 100));
+                // Find the primary output (the one with the most layers) to load into the editor
+                let firstOutput = allOutputs[0];
+                let maxChildren = -1;
+                const typePriority = { "cover": 3, "wheel": 2, "marquee": 1, "screenshot": 0, "texture": 0 };
 
-            const allOutputs = Array.from(doc.querySelectorAll('artwork > output'));
-            if (allOutputs.length === 0) throw new Error('No <output> element found');
+                for (const out of allOutputs) {
+                    const len = out.children.length;
+                    const currentType = firstOutput.getAttribute('type') || '';
+                    const thisType = out.getAttribute('type') || '';
 
-            // Find the primary output (the one with the most layers) to load into the editor
-            let firstOutput = allOutputs[0];
-            let maxChildren = -1;
-            const typePriority = { "cover": 3, "wheel": 2, "marquee": 1, "screenshot": 0, "texture": 0 };
-
-            for (const out of allOutputs) {
-                const len = out.children.length;
-                const currentType = firstOutput.getAttribute('type') || '';
-                const thisType = out.getAttribute('type') || '';
-
-                if (len > maxChildren) {
-                    maxChildren = len;
-                    firstOutput = out;
-                } else if (len === maxChildren) {
-                    if ((typePriority[thisType] || 0) > (typePriority[currentType] || 0)) {
+                    if (len > maxChildren) {
+                        maxChildren = len;
                         firstOutput = out;
-                    }
-                }
-            }
-            primaryOutputType = firstOutput.getAttribute('type') || 'cover';
-            document.getElementById('outputWidth').value = firstOutput.getAttribute('width') || 640;
-            document.getElementById('outputHeight').value = firstOutput.getAttribute('height') || 480;
-
-            // Synchronize checkboxes
-            const types = allOutputs.map(o => o.getAttribute('type'));
-            document.getElementById('outBox').checked = types.includes('cover');
-            document.getElementById('outPreview').checked = types.includes('screenshot');
-            document.getElementById('outSplash').checked = types.includes('wheel');
-
-            layers = [];
-            layers = [];
-            layerIdCounter = 0;
-
-            function parseNode(node, list) {
-                for (const child of node.children) {
-                    if (child.tagName === 'layer') {
-                        const layer = {
-                            id: layerIdCounter++,
-                            type: 'layer',
-                            resource: child.getAttribute('resource') || '',
-                            width: child.getAttribute('width') || '',
-                            height: child.getAttribute('height') || '',
-                            x: child.getAttribute('x') || '',
-                            y: child.getAttribute('y') || '',
-                            align: child.getAttribute('align') || 'left',
-                            valign: child.getAttribute('valign') || 'top',
-                            opacity: child.getAttribute('opacity') || 100,
-                            mpixels: child.getAttribute('mpixels') || '',
-                            aspect: child.getAttribute('aspect') || '',
-                            mode: child.getAttribute('mode') || '',
-                            transform: child.getAttribute('transform') || '',
-                            visible: true,
-                            name: '',
-                            effects: [],
-                            layers: [],
-                            expanded: false
-                        };
-                        for (const eff of child.children) {
-                            if (eff.tagName === 'layer') {
-                                // Nested layer
-                                parseNode({ children: [eff] }, layer.layers);
-                                continue;
-                            }
-                            const def = EFFECTS_LIST.find(e => e.key === eff.tagName);
-                            if (!def) continue;
-                            const values = {};
-                            for (const f of def.fields) {
-                                if (f.n === 'color' && eff.tagName === 'stroke') {
-                                    const r = eff.getAttribute('red') || 0;
-                                    const g = eff.getAttribute('green') || 0;
-                                    const b = eff.getAttribute('blue') || 0;
-                                    const hex = [r, g, b].map(v =>
-                                        parseInt(v).toString(16).padStart(2, '0')).join('');
-                                    values.color = '#' + hex;
-                                } else {
-                                    values[f.n] = eff.getAttribute(f.n) || f.d;
-                                }
-                            }
-                            layer.effects.push({ type: eff.tagName, values });
+                    } else if (len === maxChildren) {
+                        if ((typePriority[thisType] || 0) > (typePriority[currentType] || 0)) {
+                            firstOutput = out;
                         }
-                        list.push(layer);
-                    } else if (child.tagName === 'mask') {
-                        list.push({
-                            id: layerIdCounter++,
-                            type: 'mask-between',
-                            file: child.getAttribute('file') || '',
-                            width: child.getAttribute('width') || '',
-                            height: child.getAttribute('height') || '',
-                            visible: true
-                        });
-                    } else if (child.tagName === 'frame') {
-                        list.push({
-                            id: layerIdCounter++,
-                            type: 'frame-between',
-                            file: child.getAttribute('file') || '',
-                            width: child.getAttribute('width') || '',
-                            height: child.getAttribute('height') || '',
-                            x: child.getAttribute('x') || '',
-                            y: child.getAttribute('y') || '',
-                            visible: true
-                        });
                     }
+                }
+                primaryOutputType = firstOutput.getAttribute('type') || 'cover';
+                document.getElementById('outputWidth').value = firstOutput.getAttribute('width') || 640;
+                document.getElementById('outputHeight').value = firstOutput.getAttribute('height') || 480;
+
+                // Synchronize checkboxes
+                const types = allOutputs.map(o => o.getAttribute('type'));
+                document.getElementById('outBox').checked = types.includes('cover');
+                document.getElementById('outPreview').checked = types.includes('screenshot');
+                document.getElementById('outSplash').checked = types.includes('wheel');
+
+                layers = [];
+                layers = [];
+                layerIdCounter = 0;
+
+                function parseNode(node, list) {
+                    for (const child of node.children) {
+                        if (child.tagName === 'layer') {
+                            const layer = {
+                                id: layerIdCounter++,
+                                type: 'layer',
+                                resource: child.getAttribute('resource') || '',
+                                width: child.getAttribute('width') || '',
+                                height: child.getAttribute('height') || '',
+                                x: child.getAttribute('x') || '',
+                                y: child.getAttribute('y') || '',
+                                align: child.getAttribute('align') || 'left',
+                                valign: child.getAttribute('valign') || 'top',
+                                opacity: child.getAttribute('opacity') || 100,
+                                mpixels: child.getAttribute('mpixels') || '',
+                                aspect: child.getAttribute('aspect') || '',
+                                mode: child.getAttribute('mode') || '',
+                                transform: child.getAttribute('transform') || '',
+                                visible: true,
+                                name: '',
+                                effects: [],
+                                layers: [],
+                                expanded: false
+                            };
+                            for (const eff of child.children) {
+                                if (eff.tagName === 'layer') {
+                                    // Nested layer
+                                    parseNode({ children: [eff] }, layer.layers);
+                                    continue;
+                                }
+                                const def = EFFECTS_LIST.find(e => e.key === eff.tagName);
+                                if (!def) continue;
+                                const values = {};
+                                for (const f of def.fields) {
+                                    if (f.n === 'color' && eff.tagName === 'stroke') {
+                                        const r = eff.getAttribute('red') || 0;
+                                        const g = eff.getAttribute('green') || 0;
+                                        const b = eff.getAttribute('blue') || 0;
+                                        const hex = [r, g, b].map(v =>
+                                            parseInt(v).toString(16).padStart(2, '0')).join('');
+                                        values.color = '#' + hex;
+                                    } else {
+                                        values[f.n] = eff.getAttribute(f.n) || f.d;
+                                    }
+                                }
+                                layer.effects.push({ type: eff.tagName, values });
+                            }
+                            list.push(layer);
+                        } else if (child.tagName === 'mask') {
+                            list.push({
+                                id: layerIdCounter++,
+                                type: 'mask-between',
+                                file: child.getAttribute('file') || '',
+                                width: child.getAttribute('width') || '',
+                                height: child.getAttribute('height') || '',
+                                visible: true
+                            });
+                        } else if (child.tagName === 'frame') {
+                            list.push({
+                                id: layerIdCounter++,
+                                type: 'frame-between',
+                                file: child.getAttribute('file') || '',
+                                width: child.getAttribute('width') || '',
+                                height: child.getAttribute('height') || '',
+                                x: child.getAttribute('x') || '',
+                                y: child.getAttribute('y') || '',
+                                visible: true
+                            });
+                        }
+                    }
+                }
+
+                parseNode(firstOutput, layers);
+                renderLayers();
+            }
+
+            // ─── Layer Rendering ────────────────────────────────────────
+            function renderLayers() {
+                const stack = document.getElementById('layerStack');
+                stack.innerHTML = '';
+                renderLayerList(layers, stack, 0);
+
+                if (layers.length === 0) {
+                    stack.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px">No layers yet. Click "+ Add Layer" to start.</div>';
                 }
             }
 
-            parseNode(firstOutput, layers);
-            renderLayers();
-        }
+            function renderLayerList(list, container, depth) {
+                // Draw in reverse order (bottom-first in XML = bottom-most in UI)
+                const reversed = [...list].reverse();
 
-        // ─── Layer Rendering ────────────────────────────────────────
-        function renderLayers() {
-            const stack = document.getElementById('layerStack');
-            stack.innerHTML = '';
-            renderLayerList(layers, stack, 0);
+                reversed.forEach((layer, revIdx) => {
+                    const idx = list.length - 1 - revIdx;
+                    const card = document.createElement('div');
+                    card.className = `layer-card fade-in${layer.expanded ? ' expanded' : ''}${!layer.visible ? ' hidden' : ''}`;
+                    card.setAttribute('data-id', layer.id);
+                    card.style.marginLeft = (depth * 20) + 'px';
 
-            if (layers.length === 0) {
-                stack.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px">No layers yet. Click "+ Add Layer" to start.</div>';
-            }
-        }
-
-        function renderLayerList(list, container, depth) {
-            // Draw in reverse order (bottom-first in XML = bottom-most in UI)
-            const reversed = [...list].reverse();
-
-            reversed.forEach((layer, revIdx) => {
-                const idx = list.length - 1 - revIdx;
-                const card = document.createElement('div');
-                card.className = `layer-card fade-in${layer.expanded ? ' expanded' : ''}${!layer.visible ? ' hidden' : ''}`;
-                card.setAttribute('data-id', layer.id);
-                card.style.marginLeft = (depth * 20) + 'px';
-
-                if (layer.type === 'mask-between') {
-                    card.innerHTML = `
+                    if (layer.type === 'mask-between') {
+                        card.innerHTML = `
                 <div class="layer-header" onclick="toggleLayer(${layer.id})">
                     <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '👁️' : '👁️‍🗨️'}</button>
                     <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}">🎭</div>
@@ -1515,8 +1549,8 @@
                         </div>
                     </div>
                 </div>`;
-                } else if (layer.type === 'frame-between') {
-                    card.innerHTML = `
+                    } else if (layer.type === 'frame-between') {
+                        card.innerHTML = `
                 <div class="layer-header" onclick="toggleLayer(${layer.id})">
                     <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '👁️' : '👁️‍🗨️'}</button>
                     <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}">🖼️</div>
@@ -1561,13 +1595,13 @@
                         </div>
                     </div>
                 </div>`;
-                } else {
-                    const resIcon = { 'screenshot': '📸', 'cover': '📦', 'wheel': '🎰', 'marquee': '🏷️', 'texture': '🧱', '': '📄' }[layer.resource] || '📄';
-                    const effectTags = (layer.effects || []).map((e, ei) =>
-                        `<span class="effect-tag">${EFFECTS_LIST.find(d => d.key === e.type)?.label || e.type}<span class="remove" onclick="event.stopPropagation();removeEffectById(${layer.id},${ei})">×</span></span>`
-                    ).join('');
+                    } else {
+                        const resIcon = { 'screenshot': '📸', 'cover': '📦', 'wheel': '🎰', 'marquee': '🏷️', 'texture': '🧱', '': '📄' }[layer.resource] || '📄';
+                        const effectTags = (layer.effects || []).map((e, ei) =>
+                            `<span class="effect-tag">${EFFECTS_LIST.find(d => d.key === e.type)?.label || e.type}<span class="remove" onclick="event.stopPropagation();removeEffectById(${layer.id},${ei})">×</span></span>`
+                        ).join('');
 
-                    card.innerHTML = `
+                        card.innerHTML = `
                 <div class="layer-header" onclick="toggleLayer(${layer.id})">
                     <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '👁️' : '👁️‍🗨️'}</button>
                     <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}">${resIcon}</div>
@@ -1576,10 +1610,10 @@
                         <div class="layer-meta">
                             ${layer.width || 'auto'}×${layer.height || 'auto'} 
                             ${layer.effects && layer.effects.length > 0 ? ' • ' + layer.effects.map(e => {
-                                const l = EFFECTS_LIST.find(d => d.key === e.type)?.label || e.type;
-                                const p = l.split(' ');
-                                return p[p.length - 1];
-                            }).join(', ') : ''}
+                            const l = EFFECTS_LIST.find(d => d.key === e.type)?.label || e.type;
+                            const p = l.split(' ');
+                            return p[p.length - 1];
+                        }).join(', ') : ''}
                         </div>
                     </div>
                     <div class="layer-actions">
@@ -1698,29 +1732,29 @@
                         </div>
                     </div>
                 </div>`;
-                }
-                container.appendChild(card);
-                if (layer.layers && layer.layers.length > 0) {
-                    renderLayerList(layer.layers, container, depth + 1);
-                }
-            });
-        }
+                    }
+                    container.appendChild(card);
+                    if (layer.layers && layer.layers.length > 0) {
+                        renderLayerList(layer.layers, container, depth + 1);
+                    }
+                });
+            }
 
-        function renderEffectPropsById(layerId) {
-            const layer = findLayer(layerId);
-            if (!layer || !layer.effects || layer.effects.length === 0) return '';
-            return layer.effects.map((eff, ei) => {
-                const def = EFFECTS_LIST.find(d => d.key === eff.type);
-                if (!def) return '';
+            function renderEffectPropsById(layerId) {
+                const layer = findLayer(layerId);
+                if (!layer || !layer.effects || layer.effects.length === 0) return '';
+                return layer.effects.map((eff, ei) => {
+                    const def = EFFECTS_LIST.find(d => d.key === eff.type);
+                    if (!def) return '';
 
-                // Group fields into rows of 3
-                const fields = def.fields;
-                const fieldChunks = [];
-                for (let i = 0; i < fields.length; i += 3) {
-                    fieldChunks.push(fields.slice(i, i + 3));
-                }
+                    // Group fields into rows of 3
+                    const fields = def.fields;
+                    const fieldChunks = [];
+                    for (let i = 0; i < fields.length; i += 3) {
+                        fieldChunks.push(fields.slice(i, i + 3));
+                    }
 
-                return `<div class="effect-props" style="background:var(--panel-bg);border-radius:8px;padding:8px;margin:4px 0">
+                    return `<div class="effect-props" style="background:var(--panel-bg);border-radius:8px;padding:8px;margin:4px 0">
             <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px">${def.label}</div>
             ${fieldChunks.map(chunk => `
                 <div class="field-row" style="margin-bottom: 8px">
@@ -1770,101 +1804,375 @@
                 </div>
             `).join('')}
         </div>`;
-            }).join('');
-        }
+                }).join('');
+            }
 
-        // ─── Layer Actions ──────────────────────────────────────────
-        async function onResourceSelect(layerId, value, effectIdx = null) {
-            const layer = findLayer(layerId);
-            if (!layer) return;
+            // ─── Layer Actions ──────────────────────────────────────────
+            async function onResourceSelect(layerId, value, effectIdx = null) {
+                const layer = findLayer(layerId);
+                if (!layer) return;
 
-            if (effectIdx !== null) {
-                const eff = layer.effects[effectIdx];
-                eff.values['file'] = value;
-                if (value) {
-                    const img = new Image();
-                    img.onload = () => {
-                        eff.values['width'] = img.naturalWidth;
-                        eff.values['height'] = img.naturalHeight;
-                        // Also auto-size the parent layer if it's currently empty/auto
-                        if (!layer.width || layer.width === 'auto' || layer.width === 0) layer.width = img.naturalWidth;
-                        if (!layer.height || layer.height === 'auto' || layer.height === 0) layer.height = img.naturalHeight;
-                        renderLayers();
+                if (effectIdx !== null) {
+                    const eff = layer.effects[effectIdx];
+                    eff.values['file'] = value;
+                    if (value) {
+                        const img = new Image();
+                        img.onload = () => {
+                            eff.values['width'] = img.naturalWidth;
+                            eff.values['height'] = img.naturalHeight;
+                            // Also auto-size the parent layer if it's currently empty/auto
+                            if (!layer.width || layer.width === 'auto' || layer.width === 0) layer.width = img.naturalWidth;
+                            if (!layer.height || layer.height === 'auto' || layer.height === 0) layer.height = img.naturalHeight;
+                            renderLayers();
+                            schedulePreview();
+                        };
+                        img.src = `/api/resource/${encodeURIComponent(value)}`; // Path already contains prefix
+                    } else {
                         schedulePreview();
-                    };
-                    img.src = `/api/resource/${encodeURIComponent(value)}`; // Path already contains prefix
+                    }
                 } else {
-                    schedulePreview();
-                }
-            } else {
-                layer.file = value;
-                if (value) {
-                    const img = new Image();
-                    img.onload = () => {
-                        layer.width = img.naturalWidth;
-                        layer.height = img.naturalHeight;
-                        renderLayers();
+                    layer.file = value;
+                    if (value) {
+                        const img = new Image();
+                        img.onload = () => {
+                            layer.width = img.naturalWidth;
+                            layer.height = img.naturalHeight;
+                            renderLayers();
+                            schedulePreview();
+                        };
+                        img.src = `/api/resource/${encodeURIComponent(value)}`;
+                    } else {
                         schedulePreview();
-                    };
-                    img.src = `/api/resource/${encodeURIComponent(value)}`;
-                } else {
-                    schedulePreview();
+                    }
                 }
             }
-        }
 
-        function addLayer() {
-            layers.push({
-                id: layerIdCounter++, type: 'layer',
-                resource: '', width: '', height: '',
-                x: '', y: '', align: 'left', valign: 'top',
-                aspect: '', mode: '', transform: '',
-                opacity: 100, mpixels: '', effects: [], expanded: true,
-                visible: true, name: '', layers: []
-            });
-            renderLayers();
-            schedulePreview();
-        }
+            function addLayer() {
+                layers.push({
+                    id: layerIdCounter++, type: 'layer',
+                    resource: '', width: '', height: '',
+                    x: '', y: '', align: 'left', valign: 'top',
+                    aspect: '', mode: '', transform: '',
+                    opacity: 100, mpixels: '', effects: [], expanded: true,
+                    visible: true, name: '', layers: []
+                });
+                renderLayers();
+                schedulePreview();
+            }
 
-        function addMaskBetween() {
-            layers.push({
-                id: layerIdCounter++, type: 'mask-between',
-                file: '', width: '', height: '', visible: true
-            });
-            renderLayers();
-        }
-        function addFrameBetween() {
-            layers.push({
-                id: layerIdCounter++, type: 'frame-between',
-                file: '', width: '', height: '', x: '', y: '', visible: true
-            });
-            renderLayers();
-        }
+            function addMaskBetween() {
+                layers.push({
+                    id: layerIdCounter++, type: 'mask-between',
+                    file: '', width: '', height: '', visible: true
+                });
+                renderLayers();
+            }
+            function addFrameBetween() {
+                layers.push({
+                    id: layerIdCounter++, type: 'frame-between',
+                    file: '', width: '', height: '', x: '', y: '', visible: true
+                });
+                renderLayers();
+            }
 
-        function updateLayerName(id, val) {
-            const layer = findLayer(id);
-            if (!layer) return;
-            layer.name = val;
+            function updateLayerName(id, val) {
+                const layer = findLayer(id);
+                if (!layer) return;
+                layer.name = val;
 
-            // Update header title without re-rendering everything (prevents focus loss)
-            const card = document.querySelector(`.layer-card[data-id="${id}"]`);
-            if (card) {
-                const nameEl = card.querySelector('.layer-name');
-                if (nameEl) {
-                    nameEl.textContent = val || layer.resource || (layer.type === 'mask-between' ? 'Global Mask' : 'Empty Layer');
+                // Update header title without re-rendering everything (prevents focus loss)
+                const card = document.querySelector(`.layer-card[data-id="${id}"]`);
+                if (card) {
+                    const nameEl = card.querySelector('.layer-name');
+                    if (nameEl) {
+                        nameEl.textContent = val || layer.resource || (layer.type === 'mask-between' ? 'Global Mask' : 'Empty Layer');
+                    }
                 }
             }
-        }
 
-        function handleUpload(event, category) {
-            const file = event.target.files[0];
-            if (!file) return;
+            function handleUpload(event, category) {
+                const file = event.target.files[0];
+                if (!file) return;
 
-            const fd = new FormData();
-            fd.append('file', file);
-            fd.append('category', category);
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('category', category);
 
-            async function doUpload() {
+                async function doUpload() {
+                    try {
+                        showToast(`Uploading ${file.name}...`);
+                        const res = await fetch('/api/upload-resource', {
+                            method: 'POST',
+                            body: fd
+                        });
+                        const data = await res.json();
+                        if (data.status === 'ok') {
+                            showToast('Upload complete');
+                            // Refresh resources
+                            const rRes = await fetch('/api/resources');
+                            resourcesList = await rRes.json();
+
+                            // Update the UI target
+                            if (uploadPendingTarget !== 'standalone') {
+                                const t = uploadPendingTarget;
+                                const layer = findLayer(t.layerId);
+                                if (layer) {
+                                    if (t.effectIdx !== undefined) {
+                                        layer.effects[t.effectIdx].values[t.fieldName] = data.path;
+                                    } else {
+                                        layer[t.fieldName] = data.path;
+                                    }
+                                }
+                            }
+                            renderLayers();
+                            schedulePreview();
+                            showRestartPopup();
+                        } else {
+                            showToast(data.message || 'Upload failed');
+                        }
+                    } catch (e) {
+                        showToast('Upload error');
+                    }
+                }
+                doUpload();
+            }
+
+            function findLayerInfo(id, list = layers) {
+                if (!list) return null;
+                for (let i = 0; i < list.length; i++) {
+                    if (list[i].id == id) return { item: list[i], list: list, index: i };
+                    if (list[i].layers) {
+                        const res = findLayerInfo(id, list[i].layers);
+                        if (res) return res;
+                    }
+                }
+                return null;
+            }
+            function findLayer(id) { return findLayerInfo(id)?.item; }
+
+            function removeLayerById(id) {
+                const info = findLayerInfo(id);
+                if (info) info.list.splice(info.index, 1);
+                renderLayers();
+                schedulePreview();
+            }
+
+            function moveLayerById(id, dir) {
+                const info = findLayerInfo(id);
+                if (!info) return;
+                const target = info.index + dir;
+                if (target < 0 || target >= info.list.length) return;
+                [info.list[info.index], info.list[target]] = [info.list[target], info.list[info.index]];
+                renderLayers();
+                schedulePreview();
+            }
+
+            function toggleLayer(id) {
+                const layer = findLayer(id);
+                if (layer) layer.expanded = !layer.expanded;
+                renderLayers();
+            }
+
+            function toggleVisibility(id) {
+                const layer = findLayer(id);
+                if (layer) layer.visible = !layer.visible;
+                renderLayers();
+                schedulePreview();
+            }
+
+            function renderLayerHeaders() { renderLayers(); }
+
+            function addEffectById(layerId) {
+                const layer = findLayer(layerId);
+                const sel = document.getElementById('addEffect' + layerId);
+                const key = sel.value;
+                const def = EFFECTS_LIST.find(e => e.key === key);
+                if (!layer || !def) return;
+                const values = {};
+                def.fields.forEach(f => values[f.n] = f.d);
+                layer.effects.push({ type: key, values });
+                renderLayers();
+                schedulePreview();
+            }
+
+            function removeEffectById(layerId, effectIdx) {
+                const layer = findLayer(layerId);
+                if (layer) layer.effects.splice(effectIdx, 1);
+                renderLayers();
+                schedulePreview();
+            }
+
+            // ─── Preview ────────────────────────────────────────────────
+            function setPreviewStatus(status) {
+                const el = document.getElementById('previewStatus');
+                if (!el) return;
+                el.className = 'preview-status ' + status;
+                let text = 'Idle';
+                if (status === 'generating') text = 'Generating...';
+                else if (status === 'ready') text = 'Ready';
+                el.innerHTML = `<span class="dot"></span>${text}`;
+            }
+
+            function schedulePreview() {
+                const toggle = document.getElementById('autoPreviewToggle');
+                if (!toggle || !toggle.checked) return;
+                clearTimeout(previewTimer);
+                previewTimer = setTimeout(() => requestPreview(), 600);
+            }
+
+            async function requestPreview(fromQueue = false) {
+                if (layers.length === 0) return;
+
+                // If we're already generating, queue this request to run next
+                if (generating && !fromQueue) {
+                    previewQueued = true;
+                    return;
+                }
+
+                previewQueued = false;
+                const xml = generateXml();
+                generating = true;
+                previewRequestTime = Date.now();
+
+                document.getElementById('previewLoading').style.display = 'flex';
+                document.getElementById('previewPlaceholder').style.display = 'none';
+                document.getElementById('previewImg').style.opacity = '0.4';
+                setPreviewStatus('generating');
+
+                try {
+                    await fetch('/api/preview', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ xml })
+                    });
+                    // Start polling for result, passing the time we requested it
+                    pollPreview(previewRequestTime);
+                } catch (e) {
+                    generating = false;
+                    document.getElementById('previewLoading').style.display = 'none';
+                    setPreviewStatus('idle');
+                    showToast('Preview generation failed');
+                    // Check queue
+                    if (previewQueued) setTimeout(() => requestPreview(true), 100);
+                }
+            }
+
+            function pollPreview(reqTime) {
+                // If a newer request was made while we were polling, abandon this one
+                if (reqTime < previewRequestTime) return;
+
+                if (Date.now() - reqTime > 30000) {
+                    if (reqTime === previewRequestTime) {
+                        generating = false;
+                        document.getElementById('previewLoading').style.display = 'none';
+                        setPreviewStatus('idle');
+                        showToast('Preview timed out');
+
+                        // Check queue
+                        if (previewQueued) setTimeout(() => requestPreview(true), 100);
+                    }
+                    return;
+                }
+
+                const type = primaryOutputType;
+                fetch(`/api/preview?t=${reqTime}&type=${type}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (reqTime < previewRequestTime) return; // check again after fetch
+
+                        // Convert mtime from seconds (Python) to ms
+                        const fileTime = (data.mtime || 0) * 1000;
+
+                        // Only accept if the file was modified AFTER our request
+                        if (data.ready && data.url && fileTime > reqTime) {
+                            const img = document.getElementById('previewImg');
+                            img.src = data.url + '?t=' + Date.now();
+                            img.style.display = 'block';
+                            img.onload = () => {
+                                if (reqTime === previewRequestTime) {
+                                    img.style.opacity = '1';
+                                    generating = false;
+                                    document.getElementById('previewLoading').style.display = 'none';
+                                    setPreviewStatus('ready');
+                                    const w = document.getElementById('outputWidth').value;
+                                    const h = document.getElementById('outputHeight').value;
+                                    const badge = document.getElementById('previewBadge');
+                                    badge.textContent = `${w}×${h}`;
+                                    badge.style.display = 'block';
+
+                                    // Check queue
+                                    if (previewQueued) setTimeout(() => requestPreview(true), 1000);
+                                }
+                            };
+                        } else {
+                            setTimeout(() => pollPreview(reqTime), 1000); // 1.5s -> 1s poll
+                        }
+                    })
+                    .catch(() => {
+                        setTimeout(() => pollPreview(reqTime), 1500);
+                    });
+            }
+
+            function onOutputChange() { schedulePreview(); }
+
+            // ─── Template Load ──────────────────────────────────────────
+            function openLoadModal() {
+                document.getElementById('loadModal').classList.add('visible');
+                renderTemplateList();
+            }
+
+            function renderTemplateList(filter = '') {
+                const list = document.getElementById('templateList');
+                const filtered = templatesList.filter(t =>
+                    t.name.toLowerCase().includes(filter.toLowerCase())
+                );
+                list.innerHTML = filtered.map(t => `
+        <div class="modal-item" onclick="loadTemplate('${t.name}')">
+            <div class="modal-item-name">${t.name}</div>
+            <div class="modal-item-meta">${t.types.join(', ')} ${t.resolution ? '• ' + t.resolution : ''}</div>
+        </div>
+    `).join('');
+                if (filtered.length === 0) {
+                    list.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>No templates found</p></div>';
+                }
+            }
+
+            function filterTemplates() {
+                renderTemplateList(document.getElementById('loadSearch').value);
+            }
+
+            async function loadTemplate(name) {
+                try {
+                    const res = await fetch(`/api/template/${encodeURIComponent(name)}`);
+                    const data = await res.json();
+                    document.getElementById('templateName').value = name;
+                    parseXml(data.xml);
+                    closeModals();
+                    showToast(`Loaded "${name}"`);
+                    // Force immediate preview without debounce
+                    requestPreview();
+                } catch (e) {
+                    showToast('Failed to load template');
+                }
+            }
+
+            // ─── Resources Upload ───────────────────────────────────────
+            function triggerUpload(category, target = 'standalone') {
+                uploadPendingTarget = target;
+                const inputId = category === 'mask' ? 'uploadMaskInput' : 'uploadFrameInput';
+                const input = document.getElementById(inputId);
+                input.value = ''; // reset so same file can be selected again
+                input.click();
+            }
+
+            async function handleUpload(event, category) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('category', category);
+
                 try {
                     showToast(`Uploading ${file.name}...`);
                     const res = await fetch('/api/upload-resource', {
@@ -1881,12 +2189,13 @@
                         // Update the UI target
                         if (uploadPendingTarget !== 'standalone') {
                             const t = uploadPendingTarget;
-                            const layer = findLayer(t.layerId);
-                            if (layer) {
+                            if (t.layerIdx !== undefined) {
                                 if (t.effectIdx !== undefined) {
-                                    layer.effects[t.effectIdx].values[t.fieldName] = data.path;
+                                    // It's an effect
+                                    layers[t.layerIdx].effects[t.effectIdx].values[t.fieldName] = data.path;
                                 } else {
-                                    layer[t.fieldName] = data.path;
+                                    // It's a mask-between layer
+                                    layers[t.layerIdx][t.fieldName] = data.path;
                                 }
                             }
                         }
@@ -1900,447 +2209,172 @@
                     showToast('Upload error');
                 }
             }
-            doUpload();
-        }
 
-        function findLayerInfo(id, list = layers) {
-            if (!list) return null;
-            for (let i = 0; i < list.length; i++) {
-                if (list[i].id == id) return { item: list[i], list: list, index: i };
-                if (list[i].layers) {
-                    const res = findLayerInfo(id, list[i].layers);
-                    if (res) return res;
-                }
-            }
-            return null;
-        }
-        function findLayer(id) { return findLayerInfo(id)?.item; }
+            // Attach upload listeners
+            document.getElementById('uploadMaskInput').addEventListener('change', e => handleUpload(e, 'mask'));
+            document.getElementById('uploadFrameInput').addEventListener('change', e => handleUpload(e, 'frames'));
 
-        function removeLayerById(id) {
-            const info = findLayerInfo(id);
-            if (info) info.list.splice(info.index, 1);
-            renderLayers();
-            schedulePreview();
-        }
-
-        function moveLayerById(id, dir) {
-            const info = findLayerInfo(id);
-            if (!info) return;
-            const target = info.index + dir;
-            if (target < 0 || target >= info.list.length) return;
-            [info.list[info.index], info.list[target]] = [info.list[target], info.list[info.index]];
-            renderLayers();
-            schedulePreview();
-        }
-
-        function toggleLayer(id) {
-            const layer = findLayer(id);
-            if (layer) layer.expanded = !layer.expanded;
-            renderLayers();
-        }
-
-        function toggleVisibility(id) {
-            const layer = findLayer(id);
-            if (layer) layer.visible = !layer.visible;
-            renderLayers();
-            schedulePreview();
-        }
-
-        function renderLayerHeaders() { renderLayers(); }
-
-        function addEffectById(layerId) {
-            const layer = findLayer(layerId);
-            const sel = document.getElementById('addEffect' + layerId);
-            const key = sel.value;
-            const def = EFFECTS_LIST.find(e => e.key === key);
-            if (!layer || !def) return;
-            const values = {};
-            def.fields.forEach(f => values[f.n] = f.d);
-            layer.effects.push({ type: key, values });
-            renderLayers();
-            schedulePreview();
-        }
-
-        function removeEffectById(layerId, effectIdx) {
-            const layer = findLayer(layerId);
-            if (layer) layer.effects.splice(effectIdx, 1);
-            renderLayers();
-            schedulePreview();
-        }
-
-        // ─── Preview ────────────────────────────────────────────────
-        function setPreviewStatus(status) {
-            const el = document.getElementById('previewStatus');
-            if (!el) return;
-            el.className = 'preview-status ' + status;
-            let text = 'Idle';
-            if (status === 'generating') text = 'Generating...';
-            else if (status === 'ready') text = 'Ready';
-            el.innerHTML = `<span class="dot"></span>${text}`;
-        }
-
-        function schedulePreview() {
-            const toggle = document.getElementById('autoPreviewToggle');
-            if (!toggle || !toggle.checked) return;
-            clearTimeout(previewTimer);
-            previewTimer = setTimeout(() => requestPreview(), 600);
-        }
-
-        async function requestPreview(fromQueue = false) {
-            if (layers.length === 0) return;
-
-            // If we're already generating, queue this request to run next
-            if (generating && !fromQueue) {
-                previewQueued = true;
-                return;
+            // ─── Save ───────────────────────────────────────────────────
+            function saveTemplate() {
+                document.getElementById('saveName').value = document.getElementById('templateName').value;
+                document.getElementById('saveWarning').style.display = 'none';
+                document.getElementById('overwriteBtn').style.display = 'none';
+                document.getElementById('saveModal').classList.add('visible');
             }
 
-            previewQueued = false;
-            const xml = generateXml();
-            generating = true;
-            previewRequestTime = Date.now();
-
-            document.getElementById('previewLoading').style.display = 'flex';
-            document.getElementById('previewPlaceholder').style.display = 'none';
-            document.getElementById('previewImg').style.opacity = '0.4';
-            setPreviewStatus('generating');
-
-            try {
-                await fetch('/api/preview', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ xml })
-                });
-                // Start polling for result, passing the time we requested it
-                pollPreview(previewRequestTime);
-            } catch (e) {
-                generating = false;
-                document.getElementById('previewLoading').style.display = 'none';
-                setPreviewStatus('idle');
-                showToast('Preview generation failed');
-                // Check queue
-                if (previewQueued) setTimeout(() => requestPreview(true), 100);
-            }
-        }
-
-        function pollPreview(reqTime) {
-            // If a newer request was made while we were polling, abandon this one
-            if (reqTime < previewRequestTime) return;
-
-            if (Date.now() - reqTime > 30000) {
-                if (reqTime === previewRequestTime) {
-                    generating = false;
-                    document.getElementById('previewLoading').style.display = 'none';
-                    setPreviewStatus('idle');
-                    showToast('Preview timed out');
-
-                    // Check queue
-                    if (previewQueued) setTimeout(() => requestPreview(true), 100);
-                }
-                return;
-            }
-
-            const type = primaryOutputType;
-            fetch(`/api/preview?t=${reqTime}&type=${type}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (reqTime < previewRequestTime) return; // check again after fetch
-
-                    // Convert mtime from seconds (Python) to ms
-                    const fileTime = (data.mtime || 0) * 1000;
-
-                    // Only accept if the file was modified AFTER our request
-                    if (data.ready && data.url && fileTime > reqTime) {
-                        const img = document.getElementById('previewImg');
-                        img.src = data.url + '?t=' + Date.now();
-                        img.style.display = 'block';
-                        img.onload = () => {
-                            if (reqTime === previewRequestTime) {
-                                img.style.opacity = '1';
-                                generating = false;
-                                document.getElementById('previewLoading').style.display = 'none';
-                                setPreviewStatus('ready');
-                                const w = document.getElementById('outputWidth').value;
-                                const h = document.getElementById('outputHeight').value;
-                                const badge = document.getElementById('previewBadge');
-                                badge.textContent = `${w}×${h}`;
-                                badge.style.display = 'block';
-
-                                // Check queue
-                                if (previewQueued) setTimeout(() => requestPreview(true), 1000);
-                            }
-                        };
+            async function confirmSave(overwrite) {
+                const name = document.getElementById('saveName').value.trim();
+                if (!name) { showToast('Enter a name'); return; }
+                const xml = generateXml();
+                try {
+                    const res = await fetch('/api/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, xml, overwrite })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'exists') {
+                        document.getElementById('saveWarning').textContent = data.message;
+                        document.getElementById('saveWarning').style.display = 'block';
+                        document.getElementById('overwriteBtn').style.display = 'inline-flex';
+                        return;
+                    }
+                    if (data.status === 'ok') {
+                        document.getElementById('templateName').value = data.name;
+                        closeModals();
+                        showToast(`Saved "${data.name}.xml"`);
+                        // Refresh templates list
+                        const tRes = await fetch('/api/templates');
+                        templatesList = await tRes.json();
+                        showRestartPopup();
                     } else {
-                        setTimeout(() => pollPreview(reqTime), 1000); // 1.5s -> 1s poll
+                        showToast(data.message || 'Save failed');
                     }
-                })
-                .catch(() => {
-                    setTimeout(() => pollPreview(reqTime), 1500);
-                });
-        }
-
-        function onOutputChange() { schedulePreview(); }
-
-        // ─── Template Load ──────────────────────────────────────────
-        function openLoadModal() {
-            document.getElementById('loadModal').classList.add('visible');
-            renderTemplateList();
-        }
-
-        function renderTemplateList(filter = '') {
-            const list = document.getElementById('templateList');
-            const filtered = templatesList.filter(t =>
-                t.name.toLowerCase().includes(filter.toLowerCase())
-            );
-            list.innerHTML = filtered.map(t => `
-        <div class="modal-item" onclick="loadTemplate('${t.name}')">
-            <div class="modal-item-name">${t.name}</div>
-            <div class="modal-item-meta">${t.types.join(', ')} ${t.resolution ? '• ' + t.resolution : ''}</div>
-        </div>
-    `).join('');
-            if (filtered.length === 0) {
-                list.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>No templates found</p></div>';
+                } catch (e) {
+                    showToast('Save error');
+                }
             }
-        }
 
-        function filterTemplates() {
-            renderTemplateList(document.getElementById('loadSearch').value);
-        }
+            // ─── XML Import/Export ──────────────────────────────────────
+            function openXmlModal(mode) {
+                xmlModalMode = mode;
+                const title = document.getElementById('xmlModalTitle');
+                const textarea = document.getElementById('xmlTextarea');
+                const btn = document.getElementById('xmlActionBtn');
 
-        async function loadTemplate(name) {
-            try {
-                const res = await fetch(`/api/template/${encodeURIComponent(name)}`);
-                const data = await res.json();
-                document.getElementById('templateName').value = name;
-                parseXml(data.xml);
-                closeModals();
-                showToast(`Loaded "${name}"`);
-                // Force immediate preview without debounce
-                requestPreview();
-            } catch (e) {
-                showToast('Failed to load template');
-            }
-        }
-
-        // ─── Resources Upload ───────────────────────────────────────
-        function triggerUpload(category, target = 'standalone') {
-            uploadPendingTarget = target;
-            const inputId = category === 'mask' ? 'uploadMaskInput' : 'uploadFrameInput';
-            const input = document.getElementById(inputId);
-            input.value = ''; // reset so same file can be selected again
-            input.click();
-        }
-
-        async function handleUpload(event, category) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const fd = new FormData();
-            fd.append('file', file);
-            fd.append('category', category);
-
-            try {
-                showToast(`Uploading ${file.name}...`);
-                const res = await fetch('/api/upload-resource', {
-                    method: 'POST',
-                    body: fd
-                });
-                const data = await res.json();
-                if (data.status === 'ok') {
-                    showToast('Upload complete');
-                    // Refresh resources
-                    const rRes = await fetch('/api/resources');
-                    resourcesList = await rRes.json();
-
-                    // Update the UI target
-                    if (uploadPendingTarget !== 'standalone') {
-                        const t = uploadPendingTarget;
-                        if (t.layerIdx !== undefined) {
-                            if (t.effectIdx !== undefined) {
-                                // It's an effect
-                                layers[t.layerIdx].effects[t.effectIdx].values[t.fieldName] = data.path;
-                            } else {
-                                // It's a mask-between layer
-                                layers[t.layerIdx][t.fieldName] = data.path;
-                            }
-                        }
-                    }
-                    renderLayers();
-                    schedulePreview();
-                    showRestartPopup();
+                if (mode === 'export') {
+                    title.textContent = 'Export XML';
+                    textarea.value = generateXml();
+                    textarea.readOnly = true;
+                    btn.textContent = 'Close';
                 } else {
-                    showToast(data.message || 'Upload failed');
+                    title.textContent = 'Import XML';
+                    textarea.value = '';
+                    textarea.readOnly = false;
+                    textarea.placeholder = 'Paste Skyscraper artwork XML here...';
+                    btn.textContent = 'Import';
                 }
-            } catch (e) {
-                showToast('Upload error');
+                document.getElementById('xmlModal').classList.add('visible');
             }
-        }
 
-        // Attach upload listeners
-        document.getElementById('uploadMaskInput').addEventListener('change', e => handleUpload(e, 'mask'));
-        document.getElementById('uploadFrameInput').addEventListener('change', e => handleUpload(e, 'frames'));
-
-        // ─── Save ───────────────────────────────────────────────────
-        function saveTemplate() {
-            document.getElementById('saveName').value = document.getElementById('templateName').value;
-            document.getElementById('saveWarning').style.display = 'none';
-            document.getElementById('overwriteBtn').style.display = 'none';
-            document.getElementById('saveModal').classList.add('visible');
-        }
-
-        async function confirmSave(overwrite) {
-            const name = document.getElementById('saveName').value.trim();
-            if (!name) { showToast('Enter a name'); return; }
-            const xml = generateXml();
-            try {
-                const res = await fetch('/api/save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, xml, overwrite })
-                });
-                const data = await res.json();
-                if (data.status === 'exists') {
-                    document.getElementById('saveWarning').textContent = data.message;
-                    document.getElementById('saveWarning').style.display = 'block';
-                    document.getElementById('overwriteBtn').style.display = 'inline-flex';
-                    return;
-                }
-                if (data.status === 'ok') {
-                    document.getElementById('templateName').value = data.name;
+            function xmlAction() {
+                if (xmlModalMode === 'export') { closeModals(); return; }
+                try {
+                    parseXml(document.getElementById('xmlTextarea').value);
                     closeModals();
-                    showToast(`Saved "${data.name}.xml"`);
-                    // Refresh templates list
-                    const tRes = await fetch('/api/templates');
-                    templatesList = await tRes.json();
-                    showRestartPopup();
+                    showToast('XML imported successfully');
+                    // Always generate preview after import
+                    requestPreview();
+                } catch (e) {
+                    showToast('Parse error: ' + e.message);
+                }
+            }
+
+            function copyXml() {
+                const ta = document.getElementById('xmlTextarea');
+                ta.select();
+                ta.setSelectionRange(0, 99999); // For mobile devices
+
+                // Attempt standard execCommand first (more robust on non-HTTPS local IPs)
+                try {
+                    if (document.execCommand('copy')) {
+                        showToast('Copied to clipboard');
+                        return;
+                    }
+                } catch (err) { }
+
+                // Fallback to modern Clipboard API
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(ta.value).then(
+                        () => showToast('Copied to clipboard'),
+                        () => showToast('Browser refused copy. Use Ctrl+C.')
+                    );
                 } else {
-                    showToast(data.message || 'Save failed');
+                    showToast('Press Ctrl+C to copy');
                 }
-            } catch (e) {
-                showToast('Save error');
             }
-        }
 
-        // ─── XML Import/Export ──────────────────────────────────────
-        function openXmlModal(mode) {
-            xmlModalMode = mode;
-            const title = document.getElementById('xmlModalTitle');
-            const textarea = document.getElementById('xmlTextarea');
-            const btn = document.getElementById('xmlActionBtn');
-
-            if (mode === 'export') {
-                title.textContent = 'Export XML';
-                textarea.value = generateXml();
-                textarea.readOnly = true;
-                btn.textContent = 'Close';
-            } else {
-                title.textContent = 'Import XML';
-                textarea.value = '';
-                textarea.readOnly = false;
-                textarea.placeholder = 'Paste Skyscraper artwork XML here...';
-                btn.textContent = 'Import';
+            // ─── Utility ────────────────────────────────────────────────
+            function closeModals() {
+                document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('visible'));
             }
-            document.getElementById('xmlModal').classList.add('visible');
-        }
 
-        function xmlAction() {
-            if (xmlModalMode === 'export') { closeModals(); return; }
-            try {
-                parseXml(document.getElementById('xmlTextarea').value);
-                closeModals();
-                showToast('XML imported successfully');
-                // Always generate preview after import
-                requestPreview();
-            } catch (e) {
-                showToast('Parse error: ' + e.message);
-            }
-        }
-
-        function copyXml() {
-            const ta = document.getElementById('xmlTextarea');
-            ta.select();
-            ta.setSelectionRange(0, 99999); // For mobile devices
-
-            // Attempt standard execCommand first (more robust on non-HTTPS local IPs)
-            try {
-                if (document.execCommand('copy')) {
-                    showToast('Copied to clipboard');
-                    return;
+            function toggleSection(header) {
+                const body = header.nextElementSibling;
+                const toggle = header.querySelector('.section-toggle');
+                if (body.style.display === 'none') {
+                    body.style.display = 'block';
+                    toggle.textContent = '▼';
+                } else {
+                    body.style.display = 'none';
+                    toggle.textContent = '►';
                 }
-            } catch (err) { }
-
-            // Fallback to modern Clipboard API
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(ta.value).then(
-                    () => showToast('Copied to clipboard'),
-                    () => showToast('Browser refused copy. Use Ctrl+C.')
-                );
-            } else {
-                showToast('Press Ctrl+C to copy');
-            }
-        }
-
-        // ─── Utility ────────────────────────────────────────────────
-        function closeModals() {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('visible'));
-        }
-
-        function toggleSection(header) {
-            const body = header.nextElementSibling;
-            const toggle = header.querySelector('.section-toggle');
-            if (body.style.display === 'none') {
-                body.style.display = 'block';
-                toggle.textContent = '▼';
-            } else {
-                body.style.display = 'none';
-                toggle.textContent = '►';
-            }
-        }
-
-        // --- Preview Background Controls ---
-        function setPreviewBg(theme) {
-            const container = document.querySelector('.preview-container');
-            const colorInput = document.getElementById('previewBgColor');
-            const label = document.getElementById('previewBgLabel');
-            
-            if (theme !== 'custom') {
-                label.textContent = 'Custom';
             }
 
-            if (theme === 'checker') {
-                container.style.backgroundColor = 'transparent';
-                container.style.backgroundImage = 'repeating-conic-gradient(rgba(128, 128, 128, 0.06) 0% 25%, transparent 0% 50%)';
-            } else if (theme === 'dark') {
-                container.style.backgroundColor = '#111';
-                container.style.backgroundImage = 'none';
-            } else if (theme === 'light') {
-                container.style.backgroundColor = '#eee';
-                container.style.backgroundImage = 'none';
-            } else if (theme === 'accent') {
-                container.style.backgroundColor = 'var(--accent)';
-                container.style.backgroundImage = 'none';
-            } else if (theme === 'custom') {
-                container.style.backgroundColor = colorInput.value;
-                container.style.backgroundImage = 'none';
-                label.textContent = colorInput.value;
+            // --- Preview Background Controls ---
+            function setPreviewBg(theme) {
+                const container = document.querySelector('.preview-container');
+                const colorInput = document.getElementById('previewBgColor');
+                const label = document.getElementById('previewBgLabel');
+
+                if (theme !== 'custom') {
+                    label.textContent = 'Custom';
+                }
+
+                if (theme === 'checker') {
+                    container.style.backgroundColor = 'transparent';
+                    container.style.backgroundImage = 'repeating-conic-gradient(rgba(128, 128, 128, 0.06) 0% 25%, transparent 0% 50%)';
+                } else if (theme === 'dark') {
+                    container.style.backgroundColor = '#111';
+                    container.style.backgroundImage = 'none';
+                } else if (theme === 'light') {
+                    container.style.backgroundColor = '#eee';
+                    container.style.backgroundImage = 'none';
+                } else if (theme === 'accent') {
+                    container.style.backgroundColor = 'var(--accent)';
+                    container.style.backgroundImage = 'none';
+                } else if (theme === 'custom') {
+                    container.style.backgroundColor = colorInput.value;
+                    container.style.backgroundImage = 'none';
+                    label.textContent = colorInput.value;
+                }
             }
-        }
 
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 3000);
-        }
+            function showToast(msg) {
+                const t = document.getElementById('toast');
+                t.textContent = msg;
+                t.style.display = 'block';
+                setTimeout(() => t.style.display = 'none', 3000);
+            }
 
-        // Close modals on overlay click
-        document.querySelectorAll('.modal-overlay').forEach(m => {
-            m.onclick = e => { if (e.target === m) closeModals(); };
-        });
+            // Close modals on overlay click
+            document.querySelectorAll('.modal-overlay').forEach(m => {
+                m.onclick = e => { if (e.target === m) closeModals(); };
+            });
 
-        // Initial render
-        renderLayers();
-    </script>
+            // Initial render
+            renderLayers();
+        </script>
 </body>
 
 </html>

@@ -424,6 +424,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         "%%PANEL_BG%%": "#12121a" if is_dark else "#f8f8fc",
         "%%HOVER_BG%%": "#2a2a38" if is_dark else "#e8e8f0",
         "%%LOGO_B64%%": logo_b64,
+        "%%LOGO_FILTER%%": "none" if is_dark else "invert(1)",
     }
 
     # Load template HTML file
