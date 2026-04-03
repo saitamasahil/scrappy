@@ -797,7 +797,8 @@ local function on_confirm_cache_clear()
 
     -- Save the pending region priorities
     if pending_region_prios then
-        local joined = table.concat(pending_region_prios, ", ")
+        -- Keep it strictly comma-separated for Skyscraper config parsing.
+        local joined = table.concat(pending_region_prios, ",")
         skyscraper_config:insert("main", "regionPrios", string.format('"%s"', joined))
         skyscraper_config:save()
         log.write("Region priorities saved")

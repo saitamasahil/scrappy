@@ -23,6 +23,125 @@ artwork.output_map = {
 
 local user_config, skyscraper_config = config.user_config, config.skyscraper_config
 
+local function shell_escape_double(s)
+    if s == nil then
+        return ""
+    end
+    local escaped = tostring(s):gsub('\\', '\\\\')
+    escaped = escaped:gsub('"', '\\"')
+    escaped = escaped:gsub('%$', '\\$')
+    escaped = escaped:gsub('`', '\\`')
+    escaped = escaped:gsub('\n', '\\n')
+    return escaped
+end
+
+local function run_igdb_regional_cover_override(platform, game, output_path)
+    local scraper_module = user_config:read("main", "scraperModule") or "screenscraper"
+    if scraper_module ~= "igdb" then
+        return false
+    end
+
+    local creds = skyscraper_config:read("igdb", "userCreds")
+    if not creds or creds == "\"\"" then
+        return false
+    end
+
+    local cleaned = tostring(creds):gsub('^%s*"', ""):gsub('"%s*$', "")
+    local client_id, client_secret = cleaned:match("^([^:]+):(.+)$")
+    if not client_id or not client_secret then
+        return false
+    end
+
+    local region_prios = utils.strip_quotes(skyscraper_config:read("main", "regionPrios") or "eu,wor,us")
+    region_prios = region_prios:gsub("%s+", "")
+
+    local script_path = string.format("%s/scripts/igdb_region_cover.py", WORK_DIR)
+    if not nativefs.getInfo(script_path) then
+        log.write("IGDB regional override script not found, skipping override")
+        return false
+    end
+
+    local override_log_path = "/tmp/scrappy_igdb_region_override.log"
+    local command = string.format(
+        'python3 "%s" --client-id "%s" --client-secret "%s" --game-title "%s" --platform "%s" --region-prios "%s" --output "%s" > "%s" 2>&1',
+        shell_escape_double(script_path),
+        shell_escape_double(client_id),
+        shell_escape_double(client_secret),
+        shell_escape_double(game),
+        shell_escape_double(platform),
+        shell_escape_double(region_prios),
+        shell_escape_double(output_path),
+        shell_escape_double(override_log_path)
+    )
+    local ok, why, code = os.execute(command)
+    local success = (ok == true or ok == 0)
+    if success and nativefs.getInfo(output_path) then
+        log.write(string.format("Applied IGDB regional cover override for '%s' with prios '%s'", game, region_prios))
+        return true
+    else
+        local detail = ""
+        local f = io.open(override_log_path, "r")
+        if f then
+            detail = f:read("*a") or ""
+            f:close()
+            detail = detail:gsub("%s+$", "")
+        end
+        if detail ~= "" then
+            log.write(string.format("IGDB regional cover override failed for '%s' (%s/%s). Details: %s",
+                game, tostring(why), tostring(code), detail))
+        else
+            log.write(string.format("IGDB regional cover override failed for '%s' (%s/%s)",
+                game, tostring(why), tostring(code)))
+        end
+        return false
+    end
+end
+
+function artwork.override_igdb_cover_in_cache(platform, game)
+    local scraper_module = user_config:read("main", "scraperModule") or "screenscraper"
+    if scraper_module ~= "igdb" then
+        return false
+    end
+
+    local cache_folder = skyscraper_config:read("main", "cacheFolder")
+    if not cache_folder or cache_folder == "\"\"" then
+        return false
+    end
+    cache_folder = utils.strip_quotes(cache_folder)
+
+    local pea_key = utils.normalize_platform(platform)
+    local covers_dir = string.format("%s/%s/covers/igdb", cache_folder, pea_key)
+    if not nativefs.getInfo(covers_dir) then
+        log.write(string.format("IGDB cache covers dir not found: %s", covers_dir))
+        return false
+    end
+
+    local newest_path = nil
+    local newest_time = -1
+    local items = nativefs.getDirectoryItems(covers_dir) or {}
+    for _, item in ipairs(items) do
+        local full = string.format("%s/%s", covers_dir, item)
+        local info = nativefs.getInfo(full)
+        if info and info.type == "file" then
+            local lower = item:lower()
+            if lower:match("%.png$") or lower:match("%.jpg$") or lower:match("%.jpeg$") or lower:match("%.webp$") then
+                local t = tonumber(info.modtime or info.modification or 0) or 0
+                if t >= newest_time then
+                    newest_time = t
+                    newest_path = full
+                end
+            end
+        end
+    end
+
+    if not newest_path then
+        log.write(string.format("No IGDB cover file found in cache dir: %s", covers_dir))
+        return false
+    end
+
+    return run_igdb_regional_cover_override(platform, game, newest_path)
+end
+
 local function xml_decode(s)
     if not s then return s end
     local entities = {

@@ -820,6 +820,10 @@ local function process_fetched_game()
             return
         end
 
+        -- For IGDB, patch localized cover in cache before template generation.
+        -- This preserves XML effects (background/fade/cart overlays) in final output.
+        artwork.override_igdb_cover_in_cache(t.platform, state.current_game or utils.get_filename(last_selected_rom))
+
         state.generate_stage = true
 
         local ui_status = scraping_window ^ "status"
