@@ -214,6 +214,13 @@ local function show_info_window(title, content)
 end
 
 local function get_required_output_types_for_current_template()
+    if #templates == 0 or not templates[current_template] then
+        return {
+            box = true,
+            preview = true,
+            splash = true
+        }
+    end
     local curr_template_path = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
     local output_types = artwork.get_output_types(curr_template_path)
     if not output_types then
@@ -235,6 +242,9 @@ end
 
 local function resolve_preview_output(preferred_type)
     local outputs = get_required_output_types_for_current_template()
+    if not outputs then
+        return artwork.output_map["box"], "box"
+    end
     if preferred_type and outputs[preferred_type] then
         return artwork.output_map[preferred_type], preferred_type
     end
@@ -295,6 +305,10 @@ end
 -- Internal: perform the actual preview generation now
 local function generate_preview_now()
     state.loading = true
+    if not templates[current_template] then
+        state.loading = false
+        return
+    end
     local sample_artwork = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
     prepare_sample_media()
     skyscraper.change_artwork(sample_artwork)
@@ -368,6 +382,7 @@ end
 
 -- Updates feedback for template outputs
 local function update_output_types()
+    if not templates[current_template] then return end
     local sample_artwork = WORK_DIR .. "/templates/" .. templates[current_template] .. ".xml"
     local keys = {"box", "preview", "splash"}
     local outputs = artwork.get_output_types(sample_artwork)
@@ -1141,6 +1156,21 @@ local function get_templates()
                 table.insert(templates, template_name)
             end
         end
+    end
+
+    -- If filtering is enabled but no templates matched, fall back to including all templates
+    if #templates == 0 and user_config:read("main", "filterTemplates") == "1" then
+        log.write("No templates matched current resolution filter, falling back to all templates")
+        for i = 1, #items do
+            local file = items[i]
+            if file:sub(-4) == ".xml" then
+                table.insert(templates, file:sub(1, -5))
+            end
+        end
+    end
+
+    if #templates == 0 then
+        log.write("WARNING: No templates found in templates directory!")
     end
 
     -- Get the previously selected template
