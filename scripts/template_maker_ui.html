@@ -368,6 +368,78 @@
             font-weight: 600;
             font-family: 'JetBrains Mono', monospace;
             backdrop-filter: blur(4px);
+            z-index: 10;
+        }
+
+        .preview-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .layer-handle {
+            position: absolute;
+            border: 1px dashed var(--accent);
+            background: color-mix(in srgb, var(--accent) 5%, transparent);
+            cursor: move;
+            pointer-events: auto;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .layer-handle:hover {
+            background: color-mix(in srgb, var(--accent) 15%, transparent);
+            border-style: solid;
+            border-width: 2px;
+        }
+
+        .layer-handle.active {
+            border: 2px solid var(--accent);
+            background: color-mix(in srgb, var(--accent) 25%, transparent);
+            box-shadow: 0 0 15px var(--accent-glow);
+            z-index: 10;
+        }
+
+        .layer-handle::after {
+            content: attr(data-label);
+            position: absolute;
+            top: -22px;
+            left: 0;
+            background: var(--accent);
+            color: #000;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        .layer-handle:hover::after,
+        .layer-handle.active::after {
+            opacity: 1;
+        }
+
+        .resize-handle {
+            position: absolute;
+            right: -5px;
+            bottom: -5px;
+            width: 12px;
+            height: 12px;
+            background: var(--accent);
+            border: 2px solid #000;
+            border-radius: 3px;
+            cursor: nwse-resize;
+            pointer-events: auto;
+            z-index: 11;
+            display: none;
+        }
+
+        .layer-handle:hover .resize-handle,
+        .layer-handle.active .resize-handle {
+            display: block;
         }
 
         .preview-generating {
@@ -599,6 +671,16 @@
         .layer-card.expanded {
             border-color: var(--accent);
             box-shadow: 0 0 0 1px var(--accent-glow), 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .layer-card.selected-pulse {
+            animation: selectedPulse 1.2s ease-out;
+        }
+
+        @keyframes selectedPulse {
+            0% { box-shadow: 0 0 0 0px var(--accent); }
+            30% { box-shadow: 0 0 0 6px var(--accent-glow); }
+            100% { box-shadow: 0 0 0 0px transparent; }
         }
 
         .layer-card.hidden {
@@ -912,6 +994,8 @@
                     <div class="spinner"></div>
                     <span>Generating preview…</span>
                 </div>
+                <!-- Drag-and-drop overlay container -->
+                <div id="previewOverlay" class="preview-overlay"></div>
             </div>
             <div class="preview-badge" id="previewBadge" style="display:none">640×480</div>
         </div>
@@ -923,12 +1007,16 @@
                 <button class="btn btn-accent"
                     style="width:100%; justify-content:center; font-size:16px; padding:12px; border-radius:8px"
                     onclick="requestPreview()">▶ Generate Preview</button>
-                <label
-                    style="display:flex; align-items:center; gap:8px; margin-top:10px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
-                    <input type="checkbox" id="autoPreviewToggle"
-                        style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
-                    Auto Generate Preview
-                </label>
+                <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:10px">
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
+                        <input type="checkbox" id="autoPreviewToggle" style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
+                        Auto Preview
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
+                        <input type="checkbox" id="layoutModeToggle" onchange="toggleLayoutMode(this.checked)" style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
+                        Layout Mode
+                    </label>
+                </div>
             </div>
 
             <!-- Template Name -->
@@ -1119,6 +1207,16 @@
             let uploadPendingTarget = null; // {layerIdx, effectIdx, fieldName} or 'standalone'
             let primaryOutputType = 'cover'; // Track the output being edited
             let restartPopupTimer = null;
+
+            // Drag-and-drop state
+            let draggingLayerId = null;
+            let resizingLayerId = null;
+            let selectedLayerId = null;
+            let layoutModeEnabled = false;
+            let dragStartPos = { x: 0, y: 0 };
+            let dragStartCoords = { x: 0, y: 0 };
+            let resizeStartDims = { w: 0, h: 0 };
+            let previewScale = 1;
 
             function showRestartPopup() {
                 const modal = document.getElementById('restartModal');
@@ -1969,8 +2067,16 @@
 
             function toggleLayer(id) {
                 const layer = findLayer(id);
-                if (layer) layer.expanded = !layer.expanded;
+                if (layer) {
+                    layer.expanded = !layer.expanded;
+                    if (layer.expanded) {
+                        selectedLayerId = id;
+                    } else if (selectedLayerId === id) {
+                        selectedLayerId = null;
+                    }
+                }
                 renderLayers();
+                if (layoutModeEnabled) updateOverlays();
             }
 
             function toggleVisibility(id) {
@@ -2099,6 +2205,9 @@
                                     const badge = document.getElementById('previewBadge');
                                     badge.textContent = `${w}×${h}`;
                                     badge.style.display = 'block';
+
+                                    // Refresh overlays to match the new image position/size
+                                    updateOverlays();
 
                                     // Check queue
                                     if (previewQueued) setTimeout(() => requestPreview(true), 1000);
@@ -2358,6 +2467,9 @@
                     container.style.backgroundImage = 'none';
                     label.textContent = colorInput.value;
                 }
+                
+                // Refresh overlays in case container size changed
+                if (typeof updateOverlays === 'function') updateOverlays();
             }
 
             function showToast(msg) {
@@ -2366,6 +2478,268 @@
                 t.style.display = 'block';
                 setTimeout(() => t.style.display = 'none', 3000);
             }
+
+            // --- Drag-and-Drop Implementation ---
+
+            function updateOverlays() {
+                const img = document.getElementById('previewImg');
+                const overlay = document.getElementById('previewOverlay');
+                if (!img || img.style.display === 'none' || !layoutModeEnabled) {
+                    overlay.innerHTML = '';
+                    overlay.style.display = 'none';
+                    return;
+                }
+
+                overlay.style.display = 'block';
+                const rect = img.getBoundingClientRect();
+                const containerRect = img.parentElement.getBoundingClientRect();
+
+                // Calculate relative offset of image within container
+                const offsetX = rect.left - containerRect.left;
+                const offsetY = rect.top - containerRect.top;
+
+                overlay.style.left = offsetX + 'px';
+                overlay.style.top = offsetY + 'px';
+                overlay.style.width = rect.width + 'px';
+                overlay.style.height = rect.height + 'px';
+
+                const outW = parseInt(document.getElementById('outputWidth').value) || 640;
+                const outH = parseInt(document.getElementById('outputHeight').value) || 480;
+
+                previewScale = rect.width / outW;
+                overlay.innerHTML = '';
+
+                // Add overlays for visible layers
+                function addLayerOverlays(list, parentAbsX = 0, parentAbsY = 0) {
+                    list.forEach(layer => {
+                        if (layer.visible && layer.type === 'layer') {
+                            const handle = document.createElement('div');
+                            const isActive = draggingLayerId === layer.id || resizingLayerId === layer.id || selectedLayerId === layer.id;
+                            handle.className = 'layer-handle' + (isActive ? ' active' : '');
+                            handle.setAttribute('data-id', layer.id);
+                            handle.setAttribute('data-label', layer.name || layer.resource || 'layer');
+
+                            // Calculate local dimensions with better fallbacks for auto layers
+                            // If it's a screenshot and no size is set, default to output resolution.
+                            // Otherwise default to a sensible fraction of the output.
+                            let w = parseInt(layer.width);
+                            if (isNaN(w) || w === 0) {
+                                w = layer.resource === 'screenshot' ? outW : (outW * 0.3);
+                            }
+                            let h = parseInt(layer.height);
+                            if (isNaN(h) || h === 0) {
+                                h = (layer.resource === 'screenshot' || !layer.resource) ? outH : (outH * 0.3);
+                            }
+
+                            let localX = parseInt(layer.x) || 0;
+                            let localY = parseInt(layer.y) || 0;
+
+                            let startX = localX;
+                            let startY = localY;
+
+                            if (layer.align === 'center') startX = (outW - w) / 2 + localX;
+                            else if (layer.align === 'right') startX = (outW - w) - localX;
+
+                            if (layer.valign === 'middle') startY = (outH - h) / 2 + localY;
+                            else if (layer.valign === 'bottom') startY = (outH - h) - localY;
+
+                            // Absolute position within the overlay
+                            const absX = parentAbsX + startX;
+                            const absY = parentAbsY + startY;
+
+                            handle.style.width = (w * previewScale) + 'px';
+                            handle.style.height = (h * previewScale) + 'px';
+                            handle.style.left = (absX * previewScale) + 'px';
+                            handle.style.top = (absY * previewScale) + 'px';
+
+                            // Click to select
+                            handle.onmousedown = (e) => {
+                                selectLayerById(layer.id, false);
+                                onDragStart(e, layer.id, parentAbsX, parentAbsY);
+                            };
+
+                            // Add resize handle
+                            const resizer = document.createElement('div');
+                            resizer.className = 'resize-handle';
+                            resizer.onmousedown = (e) => {
+                                e.stopPropagation();
+                                onResizeStart(e, layer.id);
+                            };
+                            handle.appendChild(resizer);
+
+                            overlay.appendChild(handle);
+                            
+                            // Recurse for nested layers
+                            if (layer.layers && layer.layers.length > 0) {
+                                addLayerOverlays(layer.layers, absX, absY);
+                            }
+                        } else if (layer.layers && layer.layers.length > 0) {
+                            addLayerOverlays(layer.layers, parentAbsX, parentAbsY);
+                        }
+                    });
+                }
+                addLayerOverlays(layers);
+            }
+
+            function toggleLayoutMode(enabled) {
+                layoutModeEnabled = enabled;
+                updateOverlays();
+            }
+
+            function selectLayerById(id, scroll = true) {
+                const layer = findLayer(id);
+                if (!layer) return;
+
+                selectedLayerId = id;
+
+                // Expand it
+                if (!layer.expanded) {
+                    layer.expanded = true;
+                    renderLayers();
+                }
+
+                // Visual highlight in sidebar
+                setTimeout(() => {
+                    const card = document.querySelector(`.layer-card[data-id="${id}"]`);
+                    if (card) {
+                        card.classList.remove('selected-pulse');
+                        void card.offsetWidth; // trigger reflow
+                        card.classList.add('selected-pulse');
+                        
+                        if (scroll) {
+                            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }
+                }, 10);
+            }
+
+            let dragParentAbs = { x: 0, y: 0 };
+
+            function onDragStart(e, layerId, parentAbsX, parentAbsY) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const layer = findLayer(layerId);
+                if (!layer) return;
+
+                draggingLayerId = layerId;
+                dragStartPos = { x: e.clientX, y: e.clientY };
+                dragParentAbs = { x: parentAbsX, y: parentAbsY };
+
+                // Calculate base local coordinates before dragging
+                const outW = parseInt(document.getElementById('outputWidth').value) || 640;
+                const outH = parseInt(document.getElementById('outputHeight').value) || 480;
+                let w = parseInt(layer.width) || (outW * 0.2);
+                let h = parseInt(layer.height) || (outH * 0.2);
+                let x = parseInt(layer.x) || 0;
+                let y = parseInt(layer.y) || 0;
+
+                // Convert alignment to absolute X/Y (local space) to prevent "jumping"
+                if (layer.align === 'center') x = (outW - w) / 2 + x;
+                else if (layer.align === 'right') x = (outW - w) - x;
+
+                if (layer.valign === 'middle') y = (outH - h) / 2 + y;
+                else if (layer.valign === 'bottom') y = (outH - h) - y;
+
+                dragStartCoords = { x, y };
+
+                // Reset alignment so dragging determines exact position
+                layer.align = 'left';
+                layer.valign = 'top';
+
+                document.body.style.cursor = 'move';
+                updateOverlays();
+            }
+
+            function onResizeStart(e, layerId) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const layer = findLayer(layerId);
+                if (!layer) return;
+
+                const outW = parseInt(document.getElementById('outputWidth').value) || 640;
+                const outH = parseInt(document.getElementById('outputHeight').value) || 480;
+
+                resizingLayerId = layerId;
+                dragStartPos = { x: e.clientX, y: e.clientY };
+                
+                // Get current dimensions (with fallbacks if empty)
+                let w = parseInt(layer.width);
+                if (isNaN(w) || w === 0) w = layer.resource === 'screenshot' ? outW : (outW * 0.3);
+                let h = parseInt(layer.height);
+                if (isNaN(h) || h === 0) h = (layer.resource === 'screenshot' || !layer.resource) ? outH : (outH * 0.3);
+                
+                resizeStartDims = { w, h };
+
+                document.body.style.cursor = 'nwse-resize';
+                updateOverlays();
+            }
+
+            window.addEventListener('mousemove', (e) => {
+                if (draggingLayerId !== null) {
+                    const dx = (e.clientX - dragStartPos.x) / previewScale;
+                    const dy = (e.clientY - dragStartPos.y) / previewScale;
+
+                    const layer = findLayer(draggingLayerId);
+                    if (layer) {
+                        layer.x = Math.round(dragStartCoords.x + dx);
+                        layer.y = Math.round(dragStartCoords.y + dy);
+
+                        // Update sidebar values in real-time
+                        const card = document.querySelector(`.layer-card[data-id="${draggingLayerId}"]`);
+                        if (card) {
+                            const fields = card.querySelectorAll('.field');
+                            fields.forEach(field => {
+                                const label = field.querySelector('.field-label');
+                                const input = field.querySelector('input[type="number"]');
+                                if (label && input) {
+                                    if (label.textContent === 'X') input.value = layer.x;
+                                    if (label.textContent === 'Y') input.value = layer.y;
+                                }
+                            });
+                        }
+                        updateOverlays();
+                    }
+                } else if (resizingLayerId !== null) {
+                    const dx = (e.clientX - dragStartPos.x) / previewScale;
+                    const dy = (e.clientY - dragStartPos.y) / previewScale;
+
+                    const layer = findLayer(resizingLayerId);
+                    if (layer) {
+                        layer.width = Math.max(10, Math.round(resizeStartDims.w + dx));
+                        layer.height = Math.max(10, Math.round(resizeStartDims.h + dy));
+
+                        // Update sidebar values in real-time
+                        const card = document.querySelector(`.layer-card[data-id="${resizingLayerId}"]`);
+                        if (card) {
+                            const fields = card.querySelectorAll('.field');
+                            fields.forEach(field => {
+                                const label = field.querySelector('.field-label');
+                                const input = field.querySelector('input[type="number"]');
+                                if (label && input) {
+                                    if (label.textContent === 'Width') input.value = layer.width;
+                                    if (label.textContent === 'Height') input.value = layer.height;
+                                }
+                            });
+                        }
+                        updateOverlays();
+                    }
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (draggingLayerId !== null || resizingLayerId !== null) {
+                    draggingLayerId = null;
+                    resizingLayerId = null;
+                    document.body.style.cursor = '';
+                    renderLayers(); // Sync UI
+                    schedulePreview(); // Update thumbnail
+                }
+            });
+
+            // Re-sync overlays on window resize
+            window.addEventListener('resize', updateOverlays);
 
             // Close modals on overlay click
             document.querySelectorAll('.modal-overlay').forEach(m => {
