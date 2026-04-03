@@ -681,6 +681,25 @@ function skyscraper_config:init()
             end
         end
 
+        -- Validate IGDB credentials (must be in CLIENT_ID:CLIENT_SECRET format)
+        local igdb_creds = self:read("igdb", "userCreds")
+        if igdb_creds then
+            local stripped_creds = igdb_creds:gsub('"', '')
+            local client_id, client_secret = stripped_creds:match("^([^:]+):(.+)$")
+            local lower_creds = stripped_creds:lower()
+            local is_placeholder = lower_creds:find("client%-id", 1, true) or
+                                   lower_creds:find("client%-secret", 1, true) or
+                                   lower_creds:find("clientid", 1, true) or
+                                   lower_creds:find("secretkey", 1, true)
+            if not client_id or not client_secret or is_placeholder then
+                log.write("Removing invalid/default IGDB credentials from config")
+                if self.values["igdb"] then
+                    self.values["igdb"] = nil
+                    self:save()
+                end
+            end
+        end
+
         -- Sync credentials to Skyscraper's native path so it doesn't fall back to anonymous
         self:sync_native_config()
     else
@@ -700,6 +719,20 @@ function skyscraper_config:has_credentials(module_name)
     local creds = self:read(module_name, "userCreds")
     if module_name == "thegamesdb" then
         return creds ~= nil and creds ~= "\"\""
+    elseif module_name == "igdb" then
+        if not creds or creds == "\"\"" then
+            return false
+        end
+        local stripped_creds = creds:gsub('"', '')
+        local client_id, client_secret = stripped_creds:match("^([^:]+):(.+)$")
+        if not client_id or not client_secret then
+            return false
+        end
+        local lower_creds = stripped_creds:lower()
+        return not (lower_creds:find("client%-id", 1, true) or
+                    lower_creds:find("client%-secret", 1, true) or
+                    lower_creds:find("clientid", 1, true) or
+                    lower_creds:find("secretkey", 1, true))
     end
     return creds and creds:find("USER:PASS") == nil
 end
@@ -739,6 +772,12 @@ function skyscraper_config:sync_native_config()
             if tgdb_creds then
                 f:write("\n[thegamesdb]\n")
                 f:write(string.format("userCreds = %s\n", tgdb_creds))
+            end
+
+            local igdb_creds = self:read("igdb", "userCreds")
+            if igdb_creds then
+                f:write("\n[igdb]\n")
+                f:write(string.format("userCreds = %s\n", igdb_creds))
             end
             f:close()
         end

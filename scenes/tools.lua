@@ -27,7 +27,7 @@ local dpad_h_icon = love.graphics.newImage("assets/inputs/switch_dpad_horizontal
 
 local tools = {}
 local theme = configs.theme
-local scraper_opts = {"screenscraper", "thegamesdb"}
+local scraper_opts = {"screenscraper", "thegamesdb", "igdb"}
 local scraper_index = 1
 local theme_opts = {"dark", "light"}
 local theme_index = 1

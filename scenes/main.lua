@@ -1036,6 +1036,7 @@ local function update_state(t)
                 local module_map = {
                     screenscraper = "ScreenScraper",
                     thegamesdb = "TheGamesDB",
+                    igdb = "IGDB",
                     import = "Import"
                 }
                 ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
@@ -1499,9 +1500,11 @@ function main:load()
     menu:focusFirstElement()
     local current_scraper = user_config:read("main", "scraperModule") or "screenscraper"
     if not skyscraper_config:has_credentials(current_scraper) then
-        local warn_text = current_scraper == "thegamesdb" 
-            and "TheGamesDB scraping is limited without an API key. Add it in Settings."
-            or "Open Settings and add your ScreenScraper credentials."
+        local warn_text = current_scraper == "thegamesdb" and
+            "TheGamesDB scraping is limited without an API key. Add it in Settings." or
+            (current_scraper == "igdb" and
+                "IGDB requires Client ID and Client Secret. Add them in Settings." or
+                "Open Settings and add your ScreenScraper credentials.")
         menu = menu + label {
             id = "ss_warning",
             text = warn_text,
@@ -1600,6 +1603,7 @@ local function process_game_queue()
                 local module_map = {
                     screenscraper = "ScreenScraper",
                     thegamesdb = "TheGamesDB",
+                    igdb = "IGDB",
                     import = "Import"
                 }
                 ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
@@ -1918,9 +1922,11 @@ function main:resume()
         end
     else
         -- If we don't have credentials, we need to show the correct warning
-        local warn_text = current_scraper == "thegamesdb" 
-            and "TheGamesDB scraping is limited without an API key. Add it in Settings."
-            or "Open Settings and add your ScreenScraper credentials."
+        local warn_text = current_scraper == "thegamesdb" and
+            "TheGamesDB scraping is limited without an API key. Add it in Settings." or
+            (current_scraper == "igdb" and
+                "IGDB requires Client ID and Client Secret. Add them in Settings." or
+                "Open Settings and add your ScreenScraper credentials.")
             
         if warning then
             if warning.text ~= warn_text then

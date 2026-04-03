@@ -3,15 +3,24 @@
 # ICON: scrappy
 # GRID: Scrappy
 
+SCRAPPY_BOOT_LOG="/tmp/scrappy_launch.log"
+: > "$SCRAPPY_BOOT_LOG"
+exec >>"$SCRAPPY_BOOT_LOG" 2>&1
+echo "==== Scrappy launcher start $(date) ===="
+echo "PWD before init: $(pwd)"
+
 STAGE_OVERLAY=0 . /opt/muos/script/var/func.sh
+echo "Loaded muOS func.sh"
 
 # Check for SETUP_APP (Jacaranda or newer)
 if command -v SETUP_APP >/dev/null 2>&1; then
+    echo "Branch: Jacaranda+ (SETUP_APP present)"
     # --- Jacaranda Logic ---
     APP_BIN="bin/love"
     SETUP_APP "love" ""
 
     APP_DIR="/run/muos/storage/application/Scrappy"
+    echo "APP_DIR=$APP_DIR"
     cd "$APP_DIR/.scrappy" || exit
 
     export SDL_GAMECONTROLLERCONFIG_FILE="/usr/lib/gamecontrollerdb.txt"
@@ -31,17 +40,22 @@ if command -v SETUP_APP >/dev/null 2>&1; then
     SCREEN_WIDTH="$(GET_VAR device mux/width)"
     SCREEN_HEIGHT="$(GET_VAR device mux/height)"
     SCREEN_RESOLUTION="${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
+    echo "Resolution: $SCREEN_RESOLUTION"
+    echo "Launching: ./bin/love . ${SCREEN_RESOLUTION}"
 
     $GPTOKEYB "love" &
     ./bin/love . "${SCREEN_RESOLUTION}"
+    echo "love exited with code $?"
     kill -9 "$(pidof gptokeyb2.armhf)" 2>/dev/null || true
 
 else
+    echo "Branch: Legacy (SETUP_APP not present)"
     # --- Legacy Logic (Loose Goose / Older) ---
 
     SCREEN_WIDTH=$(GET_VAR device mux/width)
     SCREEN_HEIGHT=$(GET_VAR device mux/height)
     SCREEN_RESOLUTION="${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
+    echo "Resolution: $SCREEN_RESOLUTION"
 
     if pgrep -f "playbgm.sh" >/dev/null; then
         killall -q "playbgm.sh" "mpg123"
@@ -83,8 +97,12 @@ else
 
     cd "$LOVEDIR" || exit
     SET_VAR "system" "foreground_process" "love"
+    echo "Launching: ./bin/love . ${SCREEN_RESOLUTION}"
 
     $GPTOKEYB "love" &
     ./bin/love . "${SCREEN_RESOLUTION}"
+    echo "love exited with code $?"
     kill -9 "$(pidof gptokeyb2.armhf)" 2>/dev/null || true
 fi
+
+echo "==== Scrappy launcher end $(date) ===="

@@ -173,6 +173,7 @@ local function on_refine_search_done(query, target)
             local module_map = {
                 screenscraper = "ScreenScraper",
                 thegamesdb = "TheGamesDB",
+                igdb = "IGDB",
                 import = "Import"
             }
             ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
@@ -481,6 +482,7 @@ local function on_rom_press(rom)
                     local module_map = {
                         screenscraper = "ScreenScraper",
                         thegamesdb = "TheGamesDB",
+                        igdb = "IGDB",
                         import = "Import"
                     }
                     ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
@@ -866,6 +868,7 @@ local function update_scrape_state()
                 local module_map = {
                     screenscraper = "ScreenScraper",
                     thegamesdb = "TheGamesDB",
+                    igdb = "IGDB",
                     import = "Import"
                 }
                 ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
