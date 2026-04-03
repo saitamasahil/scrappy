@@ -9,3 +9,7 @@ data/*
 docker/libs
 docker/out
 docker/Qt*
+
+__pycache__
+
+build/
