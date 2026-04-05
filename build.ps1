@@ -15,6 +15,61 @@ function Show-Usage {
     Write-Host "  -h, --help    Show this help message"
 }
 
+function Set-UnixLineEndings {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return
+    }
+    $text = [System.IO.File]::ReadAllText($Path)
+    $normalized = $text -replace "`r`n", "`n" -replace "`r", "`n"
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($Path, $normalized, $utf8NoBom)
+}
+
+function New-MuxappZip {
+    param(
+        [Parameter(Mandatory = $true)][string]$SourceScrappyDir,
+        [Parameter(Mandatory = $true)][string]$DestinationPath
+    )
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+    if (Test-Path -LiteralPath $DestinationPath) {
+        Remove-Item -LiteralPath $DestinationPath -Force
+    }
+
+    $sourceRoot = (Resolve-Path -LiteralPath $SourceScrappyDir).Path.TrimEnd('\', '/')
+    $rootName = Split-Path -Leaf $sourceRoot
+
+    $outStream = [System.IO.File]::Open($DestinationPath, [System.IO.FileMode]::CreateNew)
+    try {
+        $zip = New-Object System.IO.Compression.ZipArchive($outStream, [System.IO.Compression.ZipArchiveMode]::Create)
+        try {
+            $files = Get-ChildItem -LiteralPath $sourceRoot -Recurse -Force -File
+            foreach ($file in $files) {
+                $relative = $file.FullName.Substring($sourceRoot.Length).TrimStart('\', '/')
+                $entryName = $rootName + '/' + ($relative -replace '\\', '/')
+                $entry = $zip.CreateEntry($entryName, [System.IO.Compression.CompressionLevel]::Optimal)
+                $entryStream = $entry.Open()
+                try {
+                    $inStream = [System.IO.File]::OpenRead($file.FullName)
+                    try {
+                        $inStream.CopyTo($entryStream)
+                    } finally {
+                        $inStream.Dispose()
+                    }
+                } finally {
+                    $entryStream.Dispose()
+                }
+            }
+        } finally {
+            $zip.Dispose()
+        }
+    } finally {
+        $outStream.Dispose()
+    }
+}
+
 function Copy-DirectoryContents {
     param(
         [Parameter(Mandatory = $true)][string]$SourceDir,
@@ -116,6 +171,7 @@ New-Item -ItemType Directory -Force -Path $workHiddenDir | Out-Null
 # Copy all necessary files (Base files for both packages)
 Write-Host "Copying base files..."
 Copy-Item -LiteralPath (Join-Path $ProjectRoot "mux_launch.sh") -Destination $workScrappyDir -Force
+Set-UnixLineEndings -Path (Join-Path $workScrappyDir "mux_launch.sh")
 
 # Copy core directories
 Copy-Item -LiteralPath (Join-Path $ProjectRoot "helpers") -Destination $workHiddenDir -Recurse -Force
@@ -173,7 +229,7 @@ if ($glyphSource) {
 
 if ($buildUpdate) {
     Write-Host "Creating update package..."
-    Compress-Archive -Path (Join-Path $workDir "Scrappy") -DestinationPath $updatePackage -CompressionLevel Optimal -Force
+    New-MuxappZip -SourceScrappyDir $workScrappyDir -DestinationPath $updatePackage
 }
 
 if ($buildFull) {
@@ -195,7 +251,7 @@ if ($buildFull) {
     }
 
     Write-Host "Creating full package..."
-    Compress-Archive -Path (Join-Path $workDir "Scrappy") -DestinationPath $fullPackage -CompressionLevel Optimal -Force
+    New-MuxappZip -SourceScrappyDir $workScrappyDir -DestinationPath $fullPackage
 }
 
 # Clean up

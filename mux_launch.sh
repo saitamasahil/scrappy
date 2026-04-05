@@ -78,8 +78,8 @@ else
         ;;
     esac
 
-    mkdir -p $HOME/.skyscraper/resources
-    cp -r $LOVEDIR/templates/resources/* $HOME/.skyscraper/resources
+    mkdir -p "$HOME/.skyscraper/resources"
+    cp -r "$LOVEDIR/templates/resources/"* "$HOME/.skyscraper/resources/" 2>/dev/null || true
 
     cd "$LOVEDIR" || exit
     SET_VAR "system" "foreground_process" "love"
