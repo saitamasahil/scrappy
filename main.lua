@@ -94,6 +94,7 @@ function love.quit()
     os.execute("pkill -9 -f artwork_manager.py 2>/dev/null")
     os.execute("pkill -9 -f scrape_dashboard.py 2>/dev/null")
     os.execute("pkill -9 -f tgdb_server.py 2>/dev/null")
+    os.execute("pkill -9 -f igdb_server.py 2>/dev/null")
     os.execute("pkill -9 -f template_maker.py 2>/dev/null")
 
     skyscraper.shutdown()

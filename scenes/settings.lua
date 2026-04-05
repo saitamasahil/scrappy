@@ -42,11 +42,13 @@ local tgdb_server_ip = nil
 local tgdb_check_timer = 0
 local tgdb_key_exists = false
 local TMP_TGDB_KEY_FILE = "/tmp/scrappy_tgdb_key.txt"
-local IGDB_CRED_FILE_PATHS = {
-  WORK_DIR .. "/igdb_credentials.txt",
-  WORK_DIR .. "/static/igdb_credentials.txt",
-  "/tmp/scrappy_igdb_credentials.txt"
-}
+
+-- IGDB Credentials Server State
+local igdb_server_running = false
+local igdb_server_ip = nil
+local igdb_check_timer = 0
+local igdb_key_exists = false
+local TMP_IGDB_KEY_FILE = "/tmp/scrappy_igdb_key.txt"
 
 local MASK_CHAR = "*"
 local function load_screenscraper_creds()
@@ -100,8 +102,6 @@ local function vk_show(target, initial)
   vk:show(current, target)
   if target == 'pass' then
     vk.mask_input = not ss_show_password
-  elseif target == 'igdb_client_secret' then
-    vk.mask_input = true
   else
     vk.mask_input = false
   end
@@ -214,104 +214,40 @@ local function trim(s)
   return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
 end
 
-local function parse_igdb_credentials(raw)
-  if not raw or raw == "" then
-    return nil, nil
+local function on_enter_igdb_creds_web()
+  if igdb_server_running then
+    -- Cancel server
+    os.execute("pkill -f igdb_server.py")
+    igdb_server_running = false
+    dispatch_info("IGDB Web Server", "Server stopped.")
+    return
   end
 
-  local client_id = nil
-  local client_secret = nil
-  local fallback_line = nil
-
-  for line in tostring(raw):gmatch("[^\r\n]+") do
-    local cleaned = trim(line)
-    if cleaned ~= "" and cleaned:sub(1, 1) ~= "#" then
-      local key, value = cleaned:match("^([%w_%-]+)%s*=%s*(.+)$")
-      if key and value then
-        local k = trim(key):lower()
-        local v = trim(value):gsub('^"(.*)"$', "%1")
-        if k == "client_id" or k == "clientid" or k == "client-id" then
-          client_id = v
-        elseif k == "client_secret" or k == "clientsecret" or k == "client-secret" then
-          client_secret = v
-        end
-      elseif not fallback_line then
-        fallback_line = cleaned
-      end
+  local ip = utils.get_ip_address()
+  if ip then
+    -- Make sure temp file is clear
+    love.filesystem.remove(TMP_IGDB_KEY_FILE)
+    os.execute("rm -f " .. TMP_IGDB_KEY_FILE)
+    
+    -- Start python server in background
+    local server_path = WORK_DIR .. "/scripts/igdb_server.py"
+    local logo_path = WORK_DIR .. "/assets/scrappy_logo.png"
+    local theme_name = theme:get_current_name() or "dark"
+    local accent_color = configs.user_config:read("main", "customAccent") or "cbaa0f"
+    local accent_mode = tostring(configs.user_config:read("main", "accentMode") or "muos"):lower()
+    if accent_mode == "muos" then
+      accent_color = theme:read("button", "BUTTON_FOCUS") or "cbaa0f"
     end
-  end
-
-  if client_id and client_secret then
-    return client_id, client_secret
-  end
-
-  if fallback_line then
-    local id, secret = fallback_line:match("^([^:]+):(.+)$")
-    if id and secret then
-      return trim(id), trim(secret)
-    end
-  end
-
-  return nil, nil
-end
-
-local function on_edit_igdb_client_id()
-  vk_show('igdb_client_id', igdb_client_id)
-end
-
-local function on_edit_igdb_client_secret()
-  vk_show('igdb_client_secret', igdb_client_secret)
-end
-
-local function on_save_igdb()
-  local sk = configs.skyscraper_config
-  if igdb_client_id ~= '' and igdb_client_secret ~= '' then
-    sk:insert('igdb', 'userCreds', string.format('"%s:%s"', igdb_client_id, igdb_client_secret))
-    sk:save()
-    sk:sync_native_config()
-    dispatch_info("IGDB", "Saved client credentials.")
+    os.execute(string.format('python3 "%s" --theme %s --accent "%s" --logo "%s" > /dev/null 2>&1 &',
+      server_path, theme_name, accent_color, logo_path))
+    
+    igdb_server_running = true
+    igdb_server_ip = ip
+    dispatch_info("IGDB Web Server", 'Go to http://' .. ip .. ':8084 on phone/PC (same WiFi)\n\nWaiting for you to enter credentials...')
+    igdb_check_timer = 0
   else
-    dispatch_info("IGDB", "Enter both Client ID and Client Secret.")
+    dispatch_info("IGDB Web Server", "No IP found! Connect to WiFi.")
   end
-end
-
-local function on_load_igdb_from_file()
-  local found_path = nil
-  local contents = nil
-
-  for _, path in ipairs(IGDB_CRED_FILE_PATHS) do
-    local f = io.open(path, "r")
-    if f then
-      contents = f:read("*a")
-      f:close()
-      found_path = path
-      break
-    end
-  end
-
-  if not found_path then
-    dispatch_info("IGDB", "No credentials file found.\nCreate one of:\n" ..
-      IGDB_CRED_FILE_PATHS[1] .. "\n" .. IGDB_CRED_FILE_PATHS[2] .. "\n" .. IGDB_CRED_FILE_PATHS[3] ..
-      "\n\nFormat:\nclient_id=...\nclient_secret=...\n(or CLIENT_ID:CLIENT_SECRET)")
-    return
-  end
-
-  local client_id, client_secret = parse_igdb_credentials(contents)
-  if not client_id or not client_secret or client_id == "" or client_secret == "" then
-    dispatch_info("IGDB", "Invalid IGDB credentials file format at:\n" .. found_path ..
-      "\n\nUse either:\nclient_id=...\nclient_secret=...\n\nor\nCLIENT_ID:CLIENT_SECRET")
-    return
-  end
-
-  igdb_client_id = client_id
-  igdb_client_secret = client_secret
-
-  local sk = configs.skyscraper_config
-  sk:insert('igdb', 'userCreds', string.format('"%s:%s"', igdb_client_id, igdb_client_secret))
-  sk:save()
-  sk:sync_native_config()
-
-  dispatch_info("IGDB", "Loaded IGDB credentials from:\n" .. found_path)
 end
 
 local function on_enter_tgdb_key_web()
@@ -366,6 +302,9 @@ function settings:load()
   local tgdb_creds = configs.skyscraper_config:read("thegamesdb", "userCreds")
   tgdb_key_exists = (tgdb_creds ~= nil and tgdb_creds ~= "" and tgdb_creds ~= '""')
 
+  local igdb_creds = configs.skyscraper_config:read("igdb", "userCreds")
+  igdb_key_exists = (igdb_creds ~= nil and igdb_creds ~= "" and igdb_creds ~= '""')
+
   -- Root container holds just the scroller; content lives inside scroller
   menu = component:root { column = true, gap = 10 }
   content = component { column = true, gap = 10 }
@@ -386,28 +325,6 @@ function settings:load()
           + button { text = function() return ss_show_password and 'Hide Password' or 'Show Password' end, width = 180, onClick = on_toggle_show_password }
         )
 
-      + label { text = 'IGDB Account', icon = "user" }
-      + (component { column = true, gap = 6 }
-          + button {
-              text = function() return 'Client ID: ' .. (igdb_client_id ~= '' and igdb_client_id or '(set)') end,
-              width = w_width - 20,
-              onClick = on_edit_igdb_client_id
-            }
-          + button {
-              text = function() return 'Client Secret: ' .. masked(igdb_client_secret) end,
-              width = w_width - 20,
-              onClick = on_edit_igdb_client_secret
-            }
-        )
-      + (component { row = true, gap = 10 }
-          + button { text = 'Save IGDB', width = 180, onClick = on_save_igdb }
-        )
-      + button {
-          text = 'Load IGDB from text file',
-          width = w_width - 20,
-          onClick = on_load_igdb_from_file
-        }
-      
       + label { text = 'TheGamesDB Account', icon = "user" }
       + (component { column = true, gap = 6 }
           + button { 
@@ -422,6 +339,23 @@ function settings:load()
               end, 
               width = w_width - 20, 
               onClick = on_enter_tgdb_key_web 
+            }
+        )
+      
+      + label { text = 'IGDB Account', icon = "user" }
+      + (component { column = true, gap = 6 }
+          + button { 
+              text = function() 
+                if igdb_server_running then
+                  return 'Stop Server (IP: ' .. (igdb_server_ip or "") .. ')'
+                elseif igdb_key_exists then
+                  return 'Update Credentials via Web Server (Saved)'
+                else
+                  return 'Enter Credentials via Web Server'
+                end
+              end, 
+              width = w_width - 20, 
+              onClick = on_enter_igdb_creds_web 
             }
         )
       
@@ -515,6 +449,28 @@ function settings:update(dt)
           tgdb_server_running = false
           dispatch_info("TheGamesDB Web Server", "API Key saved successfully!")
           os.remove(TMP_TGDB_KEY_FILE)
+        end
+      end
+    end
+  end
+
+  if igdb_server_running then
+    igdb_check_timer = igdb_check_timer + dt
+    if igdb_check_timer >= 1.0 then
+      igdb_check_timer = 0
+      local f = io.open(TMP_IGDB_KEY_FILE, "r")
+      if f then
+        local key = f:read("*a")
+        f:close()
+        if key and key ~= "" then
+          local sk = configs.skyscraper_config
+          sk:insert('igdb', 'userCreds', '"' .. key:gsub("%s+", "") .. '"')
+          sk:save()
+          sk:sync_native_config()
+          igdb_key_exists = true
+          igdb_server_running = false
+          dispatch_info("IGDB Web Server", "Credentials saved successfully!")
+          os.remove(TMP_IGDB_KEY_FILE)
         end
       end
     end

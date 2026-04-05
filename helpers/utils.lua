@@ -113,7 +113,24 @@ local function __genOrderedIndex(t)
     for key in pairs(t) do
         table.insert(orderedIndex, key)
     end
-    table.sort(orderedIndex)
+
+    local priority = {
+        ["main"] = 1,
+        ["screenscraper"] = 2,
+        ["thegamesdb"] = 3,
+        ["igdb"] = 4,
+        ["platforms"] = 10,
+        ["platformsSelected"] = 11
+    }
+
+    table.sort(orderedIndex, function(a, b)
+        local pa = priority[a] or 99
+        local pb = priority[b] or 99
+        if pa ~= pb then
+            return pa < pb
+        end
+        return a:lower() < b:lower()
+    end)
     return orderedIndex
 end
 
