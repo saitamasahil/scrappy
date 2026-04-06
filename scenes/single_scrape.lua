@@ -766,7 +766,7 @@ local function process_fetched_game()
                 state.last_failed_rom = nil
                 state.last_failed_platform = nil
                 dispatch_info("Game Not Found",
-                    "Could not find game even with refined search. Try a different search term or check if the game exists in ScreenScraper/TheGamesDB database.")
+                    "Could not find game even with refined search. Try a different search term or check if the game exists in ScreenScraper/TheGamesDB/IGDB database.")
                 toggle_info()
                 return
             end
