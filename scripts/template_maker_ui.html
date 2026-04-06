@@ -1048,6 +1048,17 @@
                             </label>
                         </div>
                     </div>
+                    <div class="field" style="margin-bottom:12px">
+                        <label class="field-label" style="color:var(--accent); font-weight:700">Active Drafting Output</label>
+                        <select id="activeOutputSelect" onchange="switchActiveOutput(this.value)">
+                            <option value="cover">Box Art (cover)</option>
+                            <option value="screenshot">Preview (screenshot)</option>
+                            <option value="wheel">Splash (wheel)</option>
+                        </select>
+                        <div style="font-size:10px; color:var(--text-secondary); margin-top:4px">
+                            Switching this will swap the layers below.
+                        </div>
+                    </div>
                     <div class="field-row">
                         <!-- Preview Target removed per user request, handled internally now -->
                         <div class="field">
@@ -1205,6 +1216,7 @@
             let xmlModalMode = 'export';
             let previewRequestTime = 0;
             let uploadPendingTarget = null; // {layerIdx, effectIdx, fieldName} or 'standalone'
+            let allOutputsLayers = {}; // Store layers for each output type: { cover: {layers:[], width:640, height:480}, ... }
             let primaryOutputType = 'cover'; // Track the output being edited
             let restartPopupTimer = null;
 
@@ -1414,6 +1426,13 @@
                     return xml;
                 }
 
+                // Save current layers to the active output state before generating
+                allOutputsLayers[primaryOutputType] = {
+                    layers: JSON.parse(JSON.stringify(layers)),
+                    width: document.getElementById('outputWidth').value,
+                    height: document.getElementById('outputHeight').value
+                };
+
                 const enabledTypes = [];
                 if (document.getElementById('outBox').checked) enabledTypes.push('cover');
                 if (document.getElementById('outPreview').checked) enabledTypes.push('screenshot');
@@ -1425,35 +1444,61 @@
                 let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<artwork>\n';
 
                 for (const type of enabledTypes) {
-                    xml += `  <output type="${type}" width="${w}" height="${h}">\n`;
+                    const data = allOutputsLayers[type] || { 
+                        layers: [], 
+                        width: document.getElementById('outputWidth').value, 
+                        height: document.getElementById('outputHeight').value 
+                    };
+                    
+                    xml += `  <output type="${type}" width="${data.width}" height="${data.height}">\n`;
 
-                    if (type === 'screenshot' && primaryOutputType !== 'screenshot') {
-                        // Automated Pattern: Single centered screenshot
-                        xml += `    <layer resource="screenshot" height="${h}" valign="center"></layer>\n`;
-                    } else if (type === 'wheel' && primaryOutputType !== 'wheel') {
-                        // Automated Pattern: Fluent-style splash (black background + centered wheel)
-                        xml += `    <layer resource="screenshot" width="${w}" height="${h}">\n`;
-                        xml += `      <balance red="-255" green="-255" blue="-255"/>\n`;
-                        xml += `    </layer>\n`;
-                        xml += `    <layer resource="wheel" width="${Math.round(w * 0.47)}" valign="middle" align="center">\n`;
-                        xml += `      <stroke width="1" color="#ffffff"/>\n`;
-                        xml += `    </layer>\n`;
-                    } else {
-                        // Main Artwork or specific template design
-                        let content = getLayersXml(layers);
-                        if (!content.includes('<layer')) {
-                            // If no actual layers are present (only masks/frames or nothing), 
-                            // add a tiny transparent placeholder layer with full dimensions.
-                            // We use opacity="1" (1% instead of 0%) which is practically invisible but 
-                            // more likely to trigger a render pass in the backend.
-                            content += `    <layer resource="screenshot" width="${w}" height="${h}" opacity="1"></layer>\n`;
+                    if (data.layers.length === 0) {
+                        // Automated Pattern: Fallback for empty outputs
+                        if (type === 'screenshot') {
+                            xml += `    <layer resource="screenshot" height="${data.height}" valign="center"></layer>\n`;
+                        } else if (type === 'wheel') {
+                            xml += `    <layer resource="screenshot" width="${data.width}" height="${data.height}">\n`;
+                            xml += `      <balance red="-255" green="-255" blue="-255"/>\n`;
+                            xml += `    </layer>\n`;
+                            xml += `    <layer resource="wheel" width="${Math.round(data.width * 0.47)}" valign="middle" align="center">\n`;
+                            xml += `      <stroke width="1" color="#ffffff"/>\n`;
+                            xml += `    </layer>\n`;
+                        } else {
+                            xml += `    <layer resource="screenshot" width="${data.width}" height="${data.height}" opacity="1"></layer>\n`;
                         }
+                    } else {
+                        let content = getLayersXml(data.layers);
                         xml += content;
                     }
                     xml += `  </output>\n`;
                 }
                 xml += `</artwork>`;
                 return xml;
+            }
+
+            function switchActiveOutput(newType) {
+                // Save current
+                allOutputsLayers[primaryOutputType] = {
+                    layers: JSON.parse(JSON.stringify(layers)),
+                    width: document.getElementById('outputWidth').value,
+                    height: document.getElementById('outputHeight').value
+                };
+
+                // Load new
+                primaryOutputType = newType;
+                const data = allOutputsLayers[newType] || { layers: [], width: 640, height: 480 };
+                
+                layers = JSON.parse(JSON.stringify(data.layers));
+                document.getElementById('outputWidth').value = data.width;
+                document.getElementById('outputHeight').value = data.height;
+
+                // Sync checkbox if it wasn't already
+                if (newType === 'cover') document.getElementById('outBox').checked = true;
+                if (newType === 'screenshot') document.getElementById('outPreview').checked = true;
+                if (newType === 'wheel') document.getElementById('outSplash').checked = true;
+
+                renderLayers();
+                schedulePreview();
             }
 
             function onOutputChange() {
@@ -1503,15 +1548,48 @@
                 document.getElementById('outputWidth').value = firstOutput.getAttribute('width') || 640;
                 document.getElementById('outputHeight').value = firstOutput.getAttribute('height') || 480;
 
-                // Synchronize checkboxes
+                // Synchronize checkboxes and dropdown
                 const types = allOutputs.map(o => o.getAttribute('type'));
                 document.getElementById('outBox').checked = types.includes('cover');
                 document.getElementById('outPreview').checked = types.includes('screenshot');
                 document.getElementById('outSplash').checked = types.includes('wheel');
+                document.getElementById('activeOutputSelect').value = primaryOutputType;
 
-                layers = [];
-                layers = [];
+                allOutputsLayers = {};
                 layerIdCounter = 0;
+
+                allOutputs.forEach(outNode => {
+                    const type = outNode.getAttribute('type') || 'cover';
+                    const nodeLayers = [];
+                    parseNode(outNode, nodeLayers);
+
+                    // If the output tag itself has a 'resource' attribute and no child layers were found,
+                    // synthesize a base layer so the user has something to edit.
+                    if (nodeLayers.length === 0 && outNode.getAttribute('resource')) {
+                        nodeLayers.push({
+                            id: layerIdCounter++,
+                            type: 'layer',
+                            resource: outNode.getAttribute('resource'),
+                            width: outNode.getAttribute('width') || '',
+                            height: outNode.getAttribute('height') || '',
+                            x: '', y: '',
+                            align: 'left', valign: 'top',
+                            opacity: 100, visible: true, name: 'Base Layer',
+                            effects: [], layers: [], expanded: false
+                        });
+                    }
+
+                    allOutputsLayers[type] = {
+                        layers: nodeLayers,
+                        width: outNode.getAttribute('width') || 640,
+                        height: outNode.getAttribute('height') || 480
+                    };
+                });
+
+                const currentData = allOutputsLayers[primaryOutputType];
+                layers = JSON.parse(JSON.stringify(currentData.layers));
+                document.getElementById('outputWidth').value = currentData.width;
+                document.getElementById('outputHeight').value = currentData.height;
 
                 function parseNode(node, list) {
                     for (const child of node.children) {
@@ -1585,7 +1663,6 @@
                     }
                 }
 
-                parseNode(firstOutput, layers);
                 renderLayers();
             }
 

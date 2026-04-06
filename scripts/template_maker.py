@@ -217,6 +217,8 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
             type_map = { "cover": "covers", "screenshot": "screenshots", "wheel": "wheels", "marquee": "marquees", "texture": "textures" }
             target_folder = type_map.get(val, "covers")
             
+        # If a specific type is requested, ONLY check that folder.
+        # Otherwise check all common folders.
         folders_to_check = [target_folder] if target_folder else ["covers", "screenshots", "wheels", "marquees", "textures"]
 
         for folder in folders_to_check:
