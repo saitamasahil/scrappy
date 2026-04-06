@@ -1287,7 +1287,7 @@
                 },
                 {
                     key: 'gamebox', label: '📦 Gamebox', fields: [
-                        { n: 'side', t: 'text', d: '' }, { n: 'rotate', t: 'number', d: 90, min: -360, max: 360 },
+                        { n: 'side', t: 'side-select', d: '' }, { n: 'rotate', t: 'number', d: 90, min: -360, max: 360 },
                         { n: 'sidescaling', t: 'select', d: '', options: ['', 'width', 'height', 'both'] }
                     ]
                 },
@@ -1963,6 +1963,18 @@
                             return `<div class="field"><label class="field-label">${f.n}</label>
                                 <select oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
                                     ${f.options.map(o => `<option value="${o}" ${eff.values[f.n] === o ? 'selected' : ''}>${o}</option>`).join('')}
+                                </select></div>`;
+                        }
+                        if (f.t === 'side-select') {
+                            return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
+                                <select oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
+                                    <optgroup label="Resources">
+                                        <option value="screenshot" ${eff.values[f.n] === 'screenshot' ? 'selected' : ''}>Screenshot</option>
+                                        <option value="cover" ${eff.values[f.n] === 'cover' ? 'selected' : ''}>Cover</option>
+                                        <option value="wheel" ${eff.values[f.n] === 'wheel' ? 'selected' : ''}>Wheel</option>
+                                        <option value="marquee" ${eff.values[f.n] === 'marquee' ? 'selected' : ''}>Marquee</option>
+                                        <option value="texture" ${eff.values[f.n] === 'texture' ? 'selected' : ''}>Texture</option>
+                                    </optgroup>
                                 </select></div>`;
                         }
                         if (f.t === 'text') {
