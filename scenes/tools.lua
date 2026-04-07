@@ -1257,6 +1257,14 @@ function tools:load()
         width = item_width,
         onClick = on_toggle_template_maker,
         icon = "canvas"
+    } + listitem {
+        id = "about_scrappy",
+        text = "About Scrappy",
+        width = item_width,
+        onClick = function()
+            scenes:push("about")
+        end,
+        icon = "info"
     }))
 
     info_window = info_window + (component {
