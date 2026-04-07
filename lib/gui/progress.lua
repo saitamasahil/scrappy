@@ -33,20 +33,23 @@ return function(props)
       love.graphics.setColor(backgroundColor)
       love.graphics.rectangle('fill', self.x, self.y, self.width, self.height)
 
+      -- Determine displayed progress
+      local current_p = self.anim_progress or self.progress
+
       -- Draw progress bar (Liquid Style)
       love.graphics.setColor(barColor)
-      local barWidth = self.width * self.progress
+      local barWidth = self.width * current_p
       love.graphics.rectangle('fill', self.x, self.y, barWidth, self.height)
       
       -- Surface wave at the leading edge
-      if self.progress > 0 and self.progress < 1 then
+      if current_p > 0 and current_p < 1 then
           local wave_x = self.x + barWidth
           local segments = 10
           local wave_w = 4
           love.graphics.setLineWidth(1)
           for i = 0, segments do
               local py = self.y + (i / segments) * self.height
-              local offset = math.sin(py * 0.1 + love.timer.getTime() * 10) * wave_w * (1 - self.progress*0.5)
+              local offset = math.sin(py * 0.1 + love.timer.getTime() * 10) * wave_w * (1 - current_p*0.5)
               love.graphics.line(wave_x, py, wave_x + offset, py)
           end
       end
@@ -64,11 +67,22 @@ return function(props)
     onUpdate = function(self, dt)
       -- Update progress, clamping between 0 and 1
       self.progress = math.max(0, math.min(self.progress, 1))
+      
+      -- Smooth interpolation (prevent Euler explosion on lag spikes)
+      self.anim_progress = self.anim_progress or self.progress
+      local speed = 10 * dt
+      if speed >= 1 then
+          self.anim_progress = self.progress
+      else
+          self.anim_progress = self.anim_progress + (self.progress - self.anim_progress) * speed
+      end
+      -- Safe clamp
+      self.anim_progress = math.max(0, math.min(self.anim_progress, 1))
     end,
     -- Set progress
     setProgress = function(self, newProgress)
-      timer.tween(0.2, self, { progress = newProgress }, 'linear')
-      -- self.progress = math.max(0, math.min(newProgress, 1))
+      -- Use direct assignment instead of tween since onUpdate handles it
+      self.progress = math.max(0, math.min(newProgress, 1))
     end
   }
 end

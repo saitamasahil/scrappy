@@ -20,7 +20,7 @@ local listitem = require "lib.gui.listitem"
 local popup = require "lib.gui.popup"
 local output_log = require "lib.gui.output_log"
 local scroll_container = require "lib.gui.scroll_container"
-
+local progress = require "lib.gui.progress"
 local menu, info_window, scraping_window
 
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
@@ -876,6 +876,10 @@ local function update_state(t)
                 if ui_fetch_progress then
                     ui_fetch_progress.text = string.format("Fetching: %s / %s", current, total)
                 end
+                local ui_progress_bar = scraping_window ^ "progress_bar"
+                if ui_progress_bar and tonumber(total) > 0 then
+                    ui_progress_bar:setProgress(tonumber(current) / tonumber(total))
+                end
                 dashboard_fetch_progress = current .. "/" .. total
             end
         end
@@ -971,6 +975,10 @@ local function update_state(t)
                     local ui_progress = scraping_window ^ "progress"
                     if ui_progress then
                         ui_progress.text = string.format("Generating: %d / %d", (state.total - state.tasks), state.total)
+                    end
+                    local ui_progress_bar = scraping_window ^ "progress_bar"
+                    if ui_progress_bar and state.total > 0 then
+                        ui_progress_bar:setProgress((state.total - state.tasks) / state.total)
                     end
     
                     -- Start processing queued games by pushing them back to the queue
@@ -1069,6 +1077,10 @@ local function update_state(t)
             -- Update UI
             if ui_progress then
                 ui_progress.text = string.format("Generating: %d / %d", (state.total - state.tasks), state.total)
+            end
+            local ui_progress_bar = scraping_window ^ "progress_bar"
+            if ui_progress_bar and state.total > 0 then
+                ui_progress_bar:setProgress((state.total - state.tasks) / state.total)
             end
 
             -- Check if finished
@@ -1411,8 +1423,10 @@ function main:load()
         text = "Source: N/A",
         icon = "source",
         max_width = info_width
+    } + progress { 
+        id = "progress_bar", 
+        width = info_width
     }
-    -- + progress { id = "progress_bar", width = w_width * 0.5 - 30 }
 
     local top_layout = component {
         row = true,
