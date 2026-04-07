@@ -26,7 +26,18 @@ return function(props)
 
       -- Resolve colors dynamically
       local backgroundColor = self.backgroundColor or theme:read_color("progress", "BAR_BACKGROUND", "#2d3436")
-      local barColor = self.barColor or theme:read_color("progress", "BAR_COLOR", "#ffffff")
+      local accentColor = self.barColor or theme:read_color("button", "BUTTON_FOCUS", "#ffffff")
+      -- Avoid invisible bar: if accent is too close to background, fall back to theme BAR_COLOR
+      local function colors_similar(c1, c2)
+          local dr = math.abs((c1[1] or 0) - (c2[1] or 0))
+          local dg = math.abs((c1[2] or 0) - (c2[2] or 0))
+          local db = math.abs((c1[3] or 0) - (c2[3] or 0))
+          return (dr + dg + db) < 0.08
+      end
+      local barColor = accentColor
+      if colors_similar(accentColor, backgroundColor) then
+          barColor = theme:read_color("progress", "BAR_COLOR", "#ffffff")
+      end
       local borderColor = self.borderColor or theme:read_color("progress", "BAR_BORDER", "#636e72")
 
       -- Draw background
