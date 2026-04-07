@@ -72,6 +72,16 @@ local button_a_icon = love.graphics.newImage("assets/inputs/switch_button_a.png"
 local button_b_icon = love.graphics.newImage("assets/inputs/switch_button_b.png")
 local button_x_icon = love.graphics.newImage("assets/inputs/switch_button_x.png")
 
+local function format_time(seconds)
+    if not seconds or seconds < 0 or seconds == math.huge or seconds ~= seconds then
+        return "Calculating..."
+    end
+    seconds = math.floor(seconds)
+    local mins = math.floor(seconds / 60)
+    local secs = seconds % 60
+    return string.format("%02d:%02d", mins, secs)
+end
+
 -- Draw the core assignment reminder popup (matches Clear Cache style)
 local function draw_core_reminder_popup()
     if not showing_core_reminder then 
@@ -612,6 +622,7 @@ local function scrape_platforms()
     if state.total > 0 then
         state.scraping = true
         state.fetch_phase = true
+        state.phase_start_time = love.timer.getTime()
         -- NOTE: Do NOT clear queued_games here - it may have been populated above for cached platforms
 
         -- If no platforms need fetching, go straight to generation
@@ -880,6 +891,20 @@ local function update_state(t)
                 if ui_progress_bar and tonumber(total) > 0 then
                     ui_progress_bar:setProgress(tonumber(current) / tonumber(total))
                 end
+                
+                local ui_eta_label = scraping_window ^ "eta_label"
+                if ui_eta_label and state.phase_start_time then
+                    local elapsed = love.timer.getTime() - state.phase_start_time
+                    local current_num = tonumber(current)
+                    local total_num = tonumber(total)
+                    local eta = math.huge
+                    if current_num > 0 and elapsed > 0 then
+                        local speed = current_num / elapsed
+                        eta = (total_num - current_num) / speed
+                    end
+                    ui_eta_label.text = string.format("Phase: Fetching  |  Elapsed: %s  |  ETA: %s", format_time(elapsed), format_time(eta))
+                end
+
                 dashboard_fetch_progress = current .. "/" .. total
             end
         end
@@ -957,6 +982,7 @@ local function update_state(t)
                 -- When all fetches complete, transition to generation phase
                 if state.pending_platforms == 0 and state.fetch_phase then
                     state.fetch_phase = false
+                    state.phase_start_time = love.timer.getTime()
                     print(string.format("==== FETCH PHASE COMPLETE ===="))
     
                     
@@ -1081,6 +1107,18 @@ local function update_state(t)
             local ui_progress_bar = scraping_window ^ "progress_bar"
             if ui_progress_bar and state.total > 0 then
                 ui_progress_bar:setProgress((state.total - state.tasks) / state.total)
+            end
+
+            local ui_eta_label = scraping_window ^ "eta_label"
+            if ui_eta_label and state.phase_start_time then
+                local elapsed = love.timer.getTime() - state.phase_start_time
+                local done_tasks = state.total - state.tasks
+                local eta = math.huge
+                if done_tasks > 0 and elapsed > 0 then
+                    local speed = done_tasks / elapsed
+                    eta = state.tasks / speed
+                end
+                ui_eta_label.text = string.format("Phase: Generating  |  Elapsed: %s  |  ETA: %s", format_time(elapsed), format_time(eta))
             end
 
             -- Check if finished
@@ -1422,6 +1460,11 @@ function main:load()
         id = "scraper_source",
         text = "Source: N/A",
         icon = "source",
+        max_width = info_width
+    } + label {
+        id = "eta_label",
+        text = "Phase: Pending | Elapsed: 00:00 | ETA: Calculating...",
+        icon = "timer",
         max_width = info_width
     } + progress { 
         id = "progress_bar", 

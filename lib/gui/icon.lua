@@ -41,6 +41,7 @@ local icons = {
   select       = love.graphics.newImage("assets/inputs/switch_button_sl.png"),
   clock        = love.graphics.newImage("assets/icons/clock.png"),
   time         = love.graphics.newImage("assets/icons/time.png"),
+  timer        = love.graphics.newImage("assets/icons/timer.png"),
   offline      = love.graphics.newImage("assets/icons/offline.png"),
   downloading  = love.graphics.newImage("assets/icons/download-solid.png"),
   generating   = love.graphics.newImage("assets/icons/generate.png"),
