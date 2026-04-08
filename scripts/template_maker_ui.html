@@ -1694,7 +1694,7 @@
                     <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '👁️' : '👁️‍🗨️'}</button>
                     <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}">🎭</div>
                     <div class="layer-info" style="opacity:${layer.visible ? 1 : 0.4}">
-                        <div class="layer-name">Global Mask</div>
+                        <div class="layer-name">${idx + 1}. Global Mask</div>
                         <div class="layer-meta">${layer.file || 'No file set'}</div>
                     </div>
                     <div class="layer-actions">
@@ -1730,7 +1730,7 @@
                     <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '👁️' : '👁️‍🗨️'}</button>
                     <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}">🖼️</div>
                     <div class="layer-info" style="opacity:${layer.visible ? 1 : 0.4}">
-                        <div class="layer-name">Global Frame</div>
+                        <div class="layer-name">${idx + 1}. Global Frame</div>
                         <div class="layer-meta">${layer.file || 'No file set'}</div>
                     </div>
                     <div class="layer-actions">
@@ -1781,7 +1781,7 @@
                     <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '👁️' : '👁️‍🗨️'}</button>
                     <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}">${resIcon}</div>
                     <div class="layer-info" style="opacity:${layer.visible ? 1 : 0.4}">
-                        <div class="layer-name">${layer.name || layer.resource || 'Empty Layer'}</div>
+                        <div class="layer-name">${idx + 1}. ${layer.name || layer.resource || 'Empty Layer'}</div>
                         <div class="layer-meta">
                             ${layer.width || 'auto'}×${layer.height || 'auto'} 
                             ${layer.effects && layer.effects.length > 0 ? ' • ' + layer.effects.map(e => {
