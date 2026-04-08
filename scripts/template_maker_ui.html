@@ -2608,16 +2608,26 @@
                             handle.setAttribute('data-id', layer.id);
                             handle.setAttribute('data-label', layer.name || layer.resource || 'layer');
 
-                            // Calculate local dimensions with better fallbacks for auto layers
-                            // If it's a screenshot and no size is set, default to output resolution.
-                            // Otherwise default to a sensible fraction of the output.
+                            // Accurately guess native dimensions for overlay bounds if 'auto'
+                            const nativeSizes = {
+                                'cover': { w: 220, h: 310 },
+                                'screenshot': { w: 320, h: 224 },
+                                'wheel': { w: 600, h: 190 },
+                                'marquee': { w: 600, h: 190 },
+                                'texture': { w: 512, h: 512 }
+                            };
+                            const native = nativeSizes[layer.resource] || { w: outW, h: outH };
+                            
                             let w = parseInt(layer.width);
-                            if (isNaN(w) || w === 0) {
-                                w = layer.resource === 'screenshot' ? outW : (outW * 0.3);
-                            }
                             let h = parseInt(layer.height);
-                            if (isNaN(h) || h === 0) {
-                                h = (layer.resource === 'screenshot' || !layer.resource) ? outH : (outH * 0.3);
+                            
+                            if (isNaN(w) && isNaN(h)) {
+                                w = native.w;
+                                h = native.h;
+                            } else if (isNaN(w)) {
+                                w = Math.round(h * (native.w / native.h));
+                            } else if (isNaN(h)) {
+                                h = Math.round(w * (native.h / native.w));
                             }
 
                             let localX = parseInt(layer.x) || 0;
@@ -2627,10 +2637,10 @@
                             let startY = localY;
 
                             if (layer.align === 'center') startX = (outW - w) / 2 + localX;
-                            else if (layer.align === 'right') startX = (outW - w) - localX;
+                            else if (layer.align === 'right') startX = (outW - w) + localX;
 
                             if (layer.valign === 'middle') startY = (outH - h) / 2 + localY;
-                            else if (layer.valign === 'bottom') startY = (outH - h) - localY;
+                            else if (layer.valign === 'bottom') startY = (outH - h) + localY;
 
                             // Absolute position within the overlay
                             const absX = parentAbsX + startX;
@@ -2718,23 +2728,42 @@
                 // Calculate base local coordinates before dragging
                 const outW = parseInt(document.getElementById('outputWidth').value) || 640;
                 const outH = parseInt(document.getElementById('outputHeight').value) || 480;
-                let w = parseInt(layer.width) || (outW * 0.2);
-                let h = parseInt(layer.height) || (outH * 0.2);
+                const nativeSizes = {
+                    'cover': { w: 220, h: 310 },
+                    'screenshot': { w: 320, h: 224 },
+                    'wheel': { w: 600, h: 190 },
+                    'marquee': { w: 600, h: 190 },
+                    'texture': { w: 512, h: 512 }
+                };
+                const native = nativeSizes[layer.resource] || { w: outW, h: outH };
+                
+                let w = parseInt(layer.width);
+                let h = parseInt(layer.height);
+                
+                if (isNaN(w) && isNaN(h)) {
+                    w = native.w; h = native.h;
+                } else if (isNaN(w)) {
+                    w = Math.round(h * (native.w / native.h));
+                } else if (isNaN(h)) {
+                    h = Math.round(w * (native.h / native.w));
+                }
                 let x = parseInt(layer.x) || 0;
                 let y = parseInt(layer.y) || 0;
 
                 // Convert alignment to absolute X/Y (local space) to prevent "jumping"
                 if (layer.align === 'center') x = (outW - w) / 2 + x;
-                else if (layer.align === 'right') x = (outW - w) - x;
+                else if (layer.align === 'right') x = (outW - w) + x;
 
                 if (layer.valign === 'middle') y = (outH - h) / 2 + y;
-                else if (layer.valign === 'bottom') y = (outH - h) - y;
+                else if (layer.valign === 'bottom') y = (outH - h) + y;
 
                 dragStartCoords = { x, y };
 
                 // Reset alignment so dragging determines exact position
                 layer.align = 'left';
                 layer.valign = 'top';
+                layer.x = Math.round(x);
+                layer.y = Math.round(y);
 
                 document.body.style.cursor = 'move';
                 updateOverlays();
@@ -2753,13 +2782,29 @@
                 resizingLayerId = layerId;
                 dragStartPos = { x: e.clientX, y: e.clientY };
                 
-                // Get current dimensions (with fallbacks if empty)
-                let w = parseInt(layer.width);
-                if (isNaN(w) || w === 0) w = layer.resource === 'screenshot' ? outW : (outW * 0.3);
-                let h = parseInt(layer.height);
-                if (isNaN(h) || h === 0) h = (layer.resource === 'screenshot' || !layer.resource) ? outH : (outH * 0.3);
+                // Get current dimensions using the same precise native fallbacks
+                const nativeSizes = {
+                    'cover': { w: 220, h: 310 },
+                    'screenshot': { w: 320, h: 224 },
+                    'wheel': { w: 600, h: 190 },
+                    'marquee': { w: 600, h: 190 },
+                    'texture': { w: 512, h: 512 }
+                };
+                const native = nativeSizes[layer.resource] || { w: outW, h: outH };
                 
-                resizeStartDims = { w, h };
+                let w = parseInt(layer.width);
+                let h = parseInt(layer.height);
+                
+                if (isNaN(w) && isNaN(h)) {
+                    w = native.w; h = native.h;
+                } else if (isNaN(w)) {
+                    w = Math.round(h * (native.w / native.h));
+                } else if (isNaN(h)) {
+                    h = Math.round(w * (native.h / native.w));
+                }
+                
+                // Track ratio to resize proportionally
+                resizeStartDims = { w, h, ratio: w / h };
 
                 document.body.style.cursor = 'nwse-resize';
                 updateOverlays();
@@ -2796,8 +2841,23 @@
 
                     const layer = findLayer(resizingLayerId);
                     if (layer) {
-                        layer.width = Math.max(10, Math.round(resizeStartDims.w + dx));
-                        layer.height = Math.max(10, Math.round(resizeStartDims.h + dy));
+                        // Proportionally resize based on drag vector
+                        const newW = resizeStartDims.w + dx;
+                        const newH = resizeStartDims.h + dy;
+                        const ratio = resizeStartDims.ratio;
+                        
+                        let finalW, finalH;
+                        if (Math.abs(dx) > Math.abs(dy)) {
+                            finalW = Math.max(10, Math.round(newW));
+                            finalH = Math.round(finalW / ratio);
+                        } else {
+                            finalH = Math.max(10, Math.round(newH));
+                            finalW = Math.round(finalH * ratio);
+                        }
+
+                        // Save only Width and leave Height explicit to avoid constraint battles inside Skyscraper engine
+                        layer.width = finalW;
+                        layer.height = ''; // Auto
 
                         // Update sidebar values in real-time
                         const card = document.querySelector(`.layer-card[data-id="${resizingLayerId}"]`);
@@ -2808,7 +2868,7 @@
                                 const input = field.querySelector('input[type="number"]');
                                 if (label && input) {
                                     if (label.textContent === 'Width') input.value = layer.width;
-                                    if (label.textContent === 'Height') input.value = layer.height;
+                                    if (label.textContent === 'Height') input.value = '';
                                 }
                             });
                         }
