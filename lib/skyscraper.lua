@@ -227,8 +227,15 @@ function skyscraper.init(config_path, binary)
     local sample_check = WORK_DIR .. "/sample/media/covers/fake-rom.png"
     local info = nativefs.getInfo(sample_check)
     if not info then
-        log.write("Fake-rom artwork missing, initializing with default preset")
-        if skyscraper.apply_sample_preset("Streets of Rage") then
+        local saved_preset = "Streets of Rage"
+        if user_config then
+            local p = user_config:read("main", "samplePreset")
+            if p and p ~= "" then
+                saved_preset = p
+            end
+        end
+        log.write("Fake-rom artwork missing, initializing with preset: " .. saved_preset)
+        if skyscraper.apply_sample_preset(saved_preset) then
             local artwork_xml = "box2d"
             if skyscraper_config then
                 local saved = skyscraper_config:read("main", "artworkXml")

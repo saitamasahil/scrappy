@@ -130,6 +130,9 @@ function user_config:fill_defaults()
             self:insert("main", "accentMode", (src == "custom") and "custom" or "muos")
         end
     end
+    if not self:read("main", "samplePreset") then
+        self:insert("main", "samplePreset", "Streets of Rage")
+    end
     self:save()
 end
 

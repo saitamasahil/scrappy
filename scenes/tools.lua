@@ -976,6 +976,10 @@ end
 
 local function on_select_preset(name)
     skyscraper.apply_sample_preset(name)
+    if user_config then
+        user_config:insert("main", "samplePreset", name)
+        user_config:save()
+    end
     local artwork_xml = skyscraper_config:read("main", "artworkXml")
     artwork_xml = utils.strip_quotes(artwork_xml or "box2d")
     skyscraper.update_sample(artwork_xml)
