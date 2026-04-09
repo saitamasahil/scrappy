@@ -62,6 +62,10 @@ local template_maker_ip = nil
 local template_maker_status = ""
 local TPL_REGEN_FILE = "/tmp/scrappy_tpl_regen.json"
 local tpl_regen_check_timer = 0
+local preset_popup, preset_menu
+local preset_popup_visible = false
+local preset_fade = 0
+
 local pending_region_prios = nil
 local selected_region_index = 1
 local region_prios = {}
@@ -956,6 +960,61 @@ local function on_reset_configs()
     dispatch_info("Configs reset", "Configs have been reset.")
 end
 
+local function on_select_preset(name)
+    skyscraper.apply_sample_preset(name)
+    local artwork_xml = skyscraper_config:read("main", "artworkXml")
+    artwork_xml = utils.strip_quotes(artwork_xml or "box2d")
+    skyscraper.update_sample(artwork_xml)
+    preset_popup_visible = false
+    dispatch_info("Preview Updated", "Artwork preset changed to: " .. name)
+end
+
+local function open_preset_selector()
+    local presets = skyscraper.get_sample_presets()
+    if #presets == 0 then
+        dispatch_info("No Presets", "No presets found in sample/presets folder.")
+        return
+    end
+
+    local item_width = math.min(w_width - 120, 560)
+    preset_menu = component:root{
+        column = true,
+        gap = 8,
+        width = item_width
+    }
+
+    for _, name in ipairs(presets) do
+        preset_menu = preset_menu + listitem {
+            text = name,
+            width = item_width,
+            onClick = function()
+                on_select_preset(name)
+            end
+        }
+    end
+
+    preset_menu = preset_menu + listitem {
+        text = "Cancel",
+        width = item_width,
+        onClick = function()
+            preset_popup_visible = false
+        end,
+        icon = "refresh"
+    }
+
+    preset_menu:updatePosition(0, 0)
+    preset_menu:focusFirstElement()
+    
+    preset_popup = popup {
+        visible = true,
+        title = "Select Preview Preset",
+        id = "preset_popup"
+    }
+    preset_popup.children = {preset_menu}
+    preset_popup_visible = true
+    preset_fade = 0
+end
+
 local function on_backup_cache()
     log.write("Backing up cache to ARCHIVE folder")
     dispatch_info("Backing up cache to SD2/ARCHIVE folder", "Please wait...")
@@ -1215,6 +1274,11 @@ function tools:load()
         onClick = on_import_press,
         icon = "file_import"
     } + listitem {
+        text = "Change Preview Artwork",
+        width = item_width,
+        onClick = open_preset_selector,
+        icon = "preview"
+    } + listitem {
         text = "Rescan ROMs folders (overwrites [platforms] config)",
         width = item_width,
         onClick = on_refresh_press,
@@ -1355,6 +1419,8 @@ function tools:update(dt)
         end
     elseif accent_popup and accent_popup.visible and accent_menu then
         accent_menu:update(dt)
+    elseif preset_popup and preset_popup_visible and preset_menu then
+        preset_menu:update(dt)
     else
         menu:update(dt)
     end
@@ -1673,6 +1739,9 @@ function tools:draw()
     if accent_popup and accent_popup.visible then
         accent_popup:draw()
     end
+    if preset_popup and preset_popup_visible then
+        preset_popup:draw()
+    end
     -- Draw confirmation popup on top of everything
     draw_confirm_popup()
     draw_clear_cache_popup()
@@ -1681,6 +1750,7 @@ function tools:draw()
     -- Draw footer (hidden if any popup/VK is visible)
     local popup_active = (region_popup and region_popup.visible) or 
                          (accent_popup and accent_popup.visible) or 
+                         preset_popup_visible or
                          confirm_popup_visible or 
                          clear_cache_popup_visible or 
                          offline_popup_visible
@@ -1780,7 +1850,22 @@ function tools:keypressed(key)
         return
     end
 
-    -- 4. Virtual Keyboard
+    -- 4. Preset popup
+    if preset_popup and preset_popup_visible then
+        if key == "escape" or key == "b" then
+            preset_popup_visible = false
+            return
+        end
+        if key == "left" or key == "right" then
+            return -- Block L/R navigation
+        end
+        if preset_menu then
+            preset_menu:keypressed(key)
+        end
+        return
+    end
+
+    -- 5. Virtual Keyboard
     if vk and vk.visible then
         local mapped = nil
         if key == 'up' or key == 'down' or key == 'left' or key == 'right' then
@@ -1923,6 +2008,22 @@ function tools:gamepadpressed(joystick, button)
     if accent_popup and accent_popup.visible then
         if btn == "b" then
             close_accent_popup()
+            return true
+        end
+        if btn == "dpleft" or btn == "dpright" then
+            return true -- Block L/R navigation
+        end
+        if btn == "dpup" or btn == "dpdown" or btn == "a" then
+            return false -- Allow standard vertical navigation and selection
+        end
+        -- Block other buttons while popup is visible
+        return true
+    end
+
+    -- Handle preset popup
+    if preset_popup and preset_popup_visible then
+        if btn == "b" then
+            preset_popup_visible = false
             return true
         end
         if btn == "dpleft" or btn == "dpright" then

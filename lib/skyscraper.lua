@@ -222,6 +222,24 @@ function skyscraper.init(config_path, binary)
         command = string.format("%s -v", skyscraper.base_command),
         version = true
     })
+
+    -- Check if fake-rom artwork is missing and initialize if necessary
+    local sample_check = WORK_DIR .. "/sample/media/covers/fake-rom.png"
+    local info = nativefs.getInfo(sample_check)
+    if not info then
+        log.write("Fake-rom artwork missing, initializing with default preset")
+        if skyscraper.apply_sample_preset("Streets of Rage") then
+            local artwork_xml = "box2d"
+            if skyscraper_config then
+                local saved = skyscraper_config:read("main", "artworkXml")
+                if saved and saved ~= "" then
+                    local utils = require("helpers.utils")
+                    artwork_xml = utils.strip_quotes(saved)
+                end
+            end
+            skyscraper.update_sample(artwork_xml)
+        end
+    end
 end
 
 -- Shutdown function to clean up backend processes on app exit
@@ -481,6 +499,49 @@ function skyscraper.fetch_single_manual(rom_path, rom, input_folder, platform, q
     skyscraper.run(command, input_folder, platform, "fetch", rom)
 end
 
+function skyscraper.get_sample_presets()
+    local presets_dir = WORK_DIR .. "/sample/presets"
+    return nativefs.getDirectoryItems(presets_dir) or {}
+end
+
+function skyscraper.apply_sample_preset(preset_name)
+    local preset_dir = WORK_DIR .. "/sample/presets/" .. preset_name
+    local types = {"cover", "marquee", "screenshot", "texture", "wheel"}
+    
+    for _, t in ipairs(types) do
+        local src = preset_dir .. "/" .. t .. ".png"
+        local dest_dir = WORK_DIR .. "/sample/" .. t .. "s/screenscraper"
+        local dest = dest_dir .. "/fake-rom"
+        
+        -- Copy file if it exists
+        local info = nativefs.getInfo(src)
+        if info then
+             local data = nativefs.read(src)
+             if data then
+                 -- Ensure destination directory exists
+                 nativefs.createDirectory(WORK_DIR .. "/sample/" .. t .. "s")
+                 nativefs.createDirectory(dest_dir)
+                 nativefs.write(dest, data)
+             end
+        end
+    end
+
+    -- Update db.xml
+    local db_path = WORK_DIR .. "/sample/db.xml"
+    local db_content = nativefs.read(db_path)
+    if db_content then
+        -- Find the title resource line and replace its content
+        local pattern = '(<resource [^>]*type="title"[^>]*>)(.-)(</resource>)'
+        local new_content = db_content:gsub(pattern, function(a, b, c)
+            return a .. preset_name .. c
+        end)
+        nativefs.write(db_path, new_content)
+    end
+    
+    return true
+end
+
 skyscraper.get_module_name = get_default_module_for
+
 
 return skyscraper
