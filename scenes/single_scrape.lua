@@ -998,7 +998,7 @@ function single_scrape:load()
         id = "missing_filter",
         icon = "button_y",
         iconSize = 22,
-        text = string.format("Show only missing artwork: %s", show_missing_only and "ON" or "OFF"),
+        text = string.format("Show Only Missing Artwork: %s", show_missing_only and "ON" or "OFF"),
         onToggle = toggle_missing_filter,
         checked = show_missing_only,
         focusable = false,

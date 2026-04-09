@@ -594,7 +594,7 @@ local function on_change_scraper()
 
     skyscraper.module = scraper_opts[index]
     scraper_index = index
-    item.text = "Change Skyscraper module (current: " .. scraper_opts[scraper_index] .. ")"
+    item.text = "Change Skyscraper Module (current: " .. scraper_opts[scraper_index] .. ")"
 
     -- Persist the selection to config
     user_config:insert("main", "scraperModule", scraper_opts[index])
@@ -609,7 +609,7 @@ local function on_change_theme()
     local item = menu ^ "theme_toggle"
 
     theme_index = index
-    item.text = "Change theme (current: " .. theme_opts[theme_index] .. ")"
+    item.text = "Change Theme (current: " .. theme_opts[theme_index] .. ")"
 
     -- Persist the selection to config
     user_config:insert("main", "theme", theme_opts[index])
@@ -1189,29 +1189,29 @@ function tools:load()
         onClick = on_app_update,
         icon = "download"
     } + listitem {
-        text = "Migrate cache to SD2",
+        text = "Migrate Cache to SD2",
         width = item_width,
         onClick = on_migrate_cache,
         icon = "sd_card"
     } + listitem {
-        text = "Backup cache to SD1/ARCHIVE folder",
+        text = "Backup Cache to SD1/ARCHIVE Folder",
         width = item_width,
         onClick = on_backup_cache_sd1,
         icon = "backup"
     } + listitem {
-        text = "Backup cache to SD2/ARCHIVE folder",
+        text = "Backup Cache to SD2/ARCHIVE Folder",
         width = item_width,
         onClick = on_backup_cache,
         icon = "backup"
     } + listitem {
         id = "scraper_module",
-        text = "Change Skyscraper module (current: " .. scraper_opts[scraper_index] .. ")",
+        text = "Change Skyscraper Module (current: " .. scraper_opts[scraper_index] .. ")",
         width = item_width,
         onClick = on_change_scraper,
         icon = "canvas"
     } + listitem {
         id = "theme_toggle",
-        text = "Change theme (current: " .. theme_opts[theme_index] .. ")",
+        text = "Change Theme (current: " .. theme_opts[theme_index] .. ")",
         width = item_width,
         onClick = on_change_theme,
         icon = "theme"
@@ -1259,17 +1259,17 @@ function tools:load()
             end
         end
     } + listitem {
-        text = "Edit region priorities",
+        text = "Edit Region Priorities",
         width = item_width,
         onClick = open_region_editor,
         icon = "region"
     } + listitem {
-        text = "Update cache (uses threads, doesn't generate artwork)",
+        text = "Update Cache (uses threads, doesn't generate artwork)",
         width = item_width,
         onClick = on_update_press,
         icon = "cache"
     } + listitem {
-        text = "Run custom import (adds custom data to cache, read Wiki!)",
+        text = "Run Custom Import (adds custom data to cache, read Wiki!)",
         width = item_width,
         onClick = on_import_press,
         icon = "file_import"
@@ -1279,17 +1279,17 @@ function tools:load()
         onClick = open_preset_selector,
         icon = "preview"
     } + listitem {
-        text = "Rescan ROMs folders (overwrites [platforms] config)",
+        text = "Rescan ROMs Folders (overwrites [platforms] config)",
         width = item_width,
         onClick = on_refresh_press,
         icon = "folder"
     } + listitem {
-        text = "Reset configs (can't be undone!)",
+        text = "Reset Configs (can't be undone!)",
         width = item_width,
         onClick = on_reset_configs,
         icon = "refresh"
     } + listitem {
-        text = "Clear Skyscraper cache (can't be undone!)",
+        text = "Clear Skyscraper Cache (can't be undone!)",
         width = item_width,
         onClick = on_clear_cache_press,
         icon = "cache_clean"

@@ -50,7 +50,7 @@ local preview_debounce = 0.6
 local scheduled_preview_at = nil
 local scheduled_template_index = nil
 
-local scrape_modes = {"Scrape all", "Scrape only missing artwork"}
+local scrape_modes = {"Scrape All", "Scrape Only Missing Artwork"}
 local current_scrape_mode = 1
 local scrape_missing_only = false
 local showing_core_reminder = false -- Tracks if the core assignment reminder popup is active
@@ -1399,7 +1399,7 @@ function main:load()
         onChange = on_scrape_mode_change,
         onFocus = function() on_output_focus("box") end
     } + button {
-        text = "Start scraping",
+        text = "Start Scraping",
         width = w_width * 0.5 - 30,
         onClick = scrape_platforms,
         onFocus = function() on_output_focus("box") end
@@ -1493,7 +1493,7 @@ function main:load()
         row = true,
         gap = 10
     } + button {
-        text = "Scrape single ROM",
+        text = "Scrape Single ROM",
         width = w_width * 0.5,
         icon = "mag_glass",
         onClick = function()
@@ -1501,7 +1501,7 @@ function main:load()
         end,
         onFocus = function() on_output_focus("box") end
     } + button {
-        text = "Advanced tools",
+        text = "Advanced Tools",
         width = w_width * 0.5 - 30,
         icon = "wrench",
         onClick = function()
