@@ -392,8 +392,17 @@ local function open_accent_settings()
         icon = "mode"
     }
 
+    -- Use scroll container for presets to handle smaller screens or long lists
+    local scroll_height = math.min(w_height - 280, 240)
+    local preset_list = component {
+        column = true,
+        gap = 8,
+        width = item_width,
+        height = 0
+    }
+
     -- Presets header
-    accent_menu = accent_menu + listitem {
+    preset_list = preset_list + listitem {
         id = "accent_presets",
         text = "Presets",
         width = item_width,
@@ -402,10 +411,9 @@ local function open_accent_settings()
         icon = "presets"
     }
 
-    -- Preset color buttons (using indicator style like region priorities)
+    -- Preset color buttons
     for i, preset in ipairs(accent_presets) do
-        local is_active = (accent_mode == "custom" and custom_accent == preset.hex)
-        accent_menu = accent_menu + listitem {
+        preset_list = preset_list + listitem {
             id = "preset_" .. i,
             text = preset.name,
             width = item_width,
@@ -414,6 +422,12 @@ local function open_accent_settings()
             end
         }
     end
+
+    accent_menu = accent_menu + (scroll_container {
+        width = item_width,
+        height = scroll_height,
+        scroll_speed = 30
+    } + preset_list)
 
     -- Custom color editor
     accent_menu = accent_menu + listitem {
@@ -977,14 +991,23 @@ local function open_preset_selector()
     end
 
     local item_width = math.min(w_width - 120, 560)
+    local list_height = math.min(w_height - 220, 380)
+
     preset_menu = component:root{
         column = true,
         gap = 8,
         width = item_width
     }
 
+    local preset_list = component {
+        column = true,
+        gap = 8,
+        width = item_width,
+        height = 0
+    }
+
     for _, name in ipairs(presets) do
-        preset_menu = preset_menu + listitem {
+        preset_list = preset_list + listitem {
             text = name,
             width = item_width,
             onClick = function()
@@ -992,6 +1015,12 @@ local function open_preset_selector()
             end
         }
     end
+
+    preset_menu = preset_menu + (scroll_container {
+        width = item_width,
+        height = list_height,
+        scroll_speed = 30
+    } + preset_list)
 
     preset_menu = preset_menu + listitem {
         text = "Cancel",
