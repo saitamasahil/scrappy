@@ -17,7 +17,7 @@ return function(props)
     maxTextWidth = math.max(maxTextWidth, font:getWidth(option))
   end
 
-  local iconSize = 16 -- Define the size of the icons
+  local iconSize = 22 -- Define the size of the icons
   local width = props.width or 0
   local height = math.max(props.height or 0, font:getHeight() + padding.vertical)
 

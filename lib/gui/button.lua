@@ -12,7 +12,7 @@ return function(props)
   local width = props.width or 0
   local height = math.max(props.height or 0, font:getHeight() + padding.vertical)
 
-  local iconSize = props.iconSize or 16
+  local iconSize = props.iconSize or 22
 
   -- Scroll-related variables
   local scrollOffset = 0

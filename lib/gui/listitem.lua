@@ -9,7 +9,7 @@ return function(props)
     horizontal = (props.leftPadding or 4) + (props.rightPadding or 4),
     vertical = (props.topPadding or 8) + (props.bottomPadding or 8)
   }
-  local iconSize = props.icon and 16 or 0
+  local iconSize = props.icon and 22 or 0
   local text = props.text or ""
 
   local itemHeight = theme:read_number("listitem", "ITEM_HEIGHT", 16)

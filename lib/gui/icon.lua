@@ -1,74 +1,110 @@
 local component = require 'lib.gui.badr'
-local configs = require 'helpers.config'
+local configs   = require 'helpers.config'
 
--- Icons table
-local icons = {
-  caret_left   = love.graphics.newImage("assets/icons/caret-left-solid.png"),
-  caret_right  = love.graphics.newImage("assets/icons/caret-right-solid.png"),
-  folder       = love.graphics.newImage("assets/icons/folder-open-regular.png"),
-  display      = love.graphics.newImage("assets/icons/display-solid.png"),
-  canvas       = love.graphics.newImage("assets/icons/object-group-solid.png"),
-  image        = love.graphics.newImage("assets/icons/image-regular.png"),
-  controller   = love.graphics.newImage("assets/icons/gamepad-solid.png"),
-  warn         = love.graphics.newImage("assets/icons/triangle-exclamation-solid.png"),
-  info         = love.graphics.newImage("assets/icons/circle-info-solid.png"),
-  cd           = love.graphics.newImage("assets/icons/compact-disc-solid.png"),
-  square       = love.graphics.newImage("assets/icons/square-regular.png"),
-  square_check = love.graphics.newImage("assets/icons/square-check-solid.png"),
-  sd_card      = love.graphics.newImage("assets/icons/sd-card-solid.png"),
-  file_import  = love.graphics.newImage("assets/icons/file-import-solid.png"),
-  refresh      = love.graphics.newImage("assets/icons/rotate-right-solid.png"),
-  download     = love.graphics.newImage("assets/icons/download-solid.png"),
-  wrench       = love.graphics.newImage("assets/icons/wrench-solid.png"),
-  mag_glass    = love.graphics.newImage("assets/icons/magnifying-glass-solid.png"),
-  user         = love.graphics.newImage("assets/icons/user.png"),
-  performance  = love.graphics.newImage("assets/icons/performance.png"),
-  region       = love.graphics.newImage("assets/icons/region.png"),
-  cache_clean  = love.graphics.newImage("assets/icons/cache-clean.png"),
-  backup       = love.graphics.newImage("assets/icons/backup.png"),
-  cache        = love.graphics.newImage("assets/icons/cache.png"),
-  theme        = love.graphics.newImage("assets/icons/theme.png"),
-  accent       = love.graphics.newImage("assets/icons/accent.png"),
-  mode         = love.graphics.newImage("assets/icons/mode.png"),
-  presets      = love.graphics.newImage("assets/icons/presets.png"),
-  custom       = love.graphics.newImage("assets/icons/custom.png"),
-  button_a     = love.graphics.newImage("assets/inputs/switch_button_a.png"),
-  button_b     = love.graphics.newImage("assets/inputs/switch_button_b.png"),
-  button_x     = love.graphics.newImage("assets/inputs/switch_button_x.png"),
-  button_y     = love.graphics.newImage("assets/inputs/switch_button_y.png"),
-  dpad         = love.graphics.newImage("assets/inputs/switch_dpad_vertical_outline.png"),
-  dpad_horizontal = love.graphics.newImage("assets/inputs/switch_dpad_horizontal_outline.png"),
-  select       = love.graphics.newImage("assets/inputs/switch_button_sl.png"),
-  clock        = love.graphics.newImage("assets/icons/clock.png"),
-  time         = love.graphics.newImage("assets/icons/time.png"),
-  timer        = love.graphics.newImage("assets/icons/timer.png"),
-  offline      = love.graphics.newImage("assets/icons/offline.png"),
-  downloading  = love.graphics.newImage("assets/icons/download-solid.png"),
-  generating   = love.graphics.newImage("assets/icons/generate.png"),
-  source       = love.graphics.newImage("assets/icons/source.png"),
-  artwork      = love.graphics.newImage("assets/icons/artwork.png"),
-  save         = love.graphics.newImage("assets/icons/save.png"),
-  preview      = love.graphics.newImage("assets/icons/preview.png"),
-  manage       = love.graphics.newImage("assets/icons/manage.png"),
-  capture      = love.graphics.newImage("assets/icons/capture.png"),
-  remove       = love.graphics.newImage("assets/icons/remove.png"),
+-- Icons definition (Paths)
+local icon_paths = {
+  caret_left   = "assets/icons/caret-left-solid.png",
+  caret_right  = "assets/icons/caret-right-solid.png",
+  folder       = "assets/icons/folder-open-regular.png",
+  display      = "assets/icons/display-solid.png",
+  canvas       = "assets/icons/object-group-solid.png",
+  image        = "assets/icons/image-regular.png",
+  controller   = "assets/icons/gamepad-solid.png",
+  warn         = "assets/icons/triangle-exclamation-solid.png",
+  info         = "assets/icons/circle-info-solid.png",
+  cd           = "assets/icons/compact-disc-solid.png",
+  square       = "assets/icons/square-regular.png",
+  square_check = "assets/icons/square-check-solid.png",
+  sd_card      = "assets/icons/sd-card-solid.png",
+  file_import  = "assets/icons/file-import-solid.png",
+  refresh      = "assets/icons/rotate-right-solid.png",
+  download     = "assets/icons/download-solid.png",
+  wrench       = "assets/icons/wrench-solid.png",
+  mag_glass    = "assets/icons/magnifying-glass-solid.png",
+  user         = "assets/icons/user.png",
+  performance  = "assets/icons/performance.png",
+  region       = "assets/icons/region.png",
+  cache_clean  = "assets/icons/cache-clean.png",
+  backup       = "assets/icons/backup.png",
+  cache        = "assets/icons/cache.png",
+  theme        = "assets/icons/theme.png",
+  accent       = "assets/icons/accent.png",
+  mode         = "assets/icons/mode.png",
+  presets      = "assets/icons/presets.png",
+  custom       = "assets/icons/custom.png",
+  button_a     = "assets/inputs/switch_button_a.png",
+  button_b     = "assets/inputs/switch_button_b.png",
+  button_x     = "assets/inputs/switch_button_x.png",
+  button_y     = "assets/inputs/switch_button_y.png",
+  dpad         = "assets/inputs/switch_dpad_vertical_outline.png",
+  dpad_horizontal = "assets/inputs/switch_dpad_horizontal_outline.png",
+  select       = "assets/inputs/switch_button_sl.png",
+  clock        = "assets/icons/clock.png",
+  time         = "assets/icons/time.png",
+  timer        = "assets/icons/timer.png",
+  offline      = "assets/icons/offline.png",
+  downloading  = "assets/icons/download-solid.png",
+  generating   = "assets/icons/generate.png",
+  source       = "assets/icons/source.png",
+  artwork      = "assets/icons/artwork.png",
+  save         = "assets/icons/save.png",
+  preview      = "assets/icons/preview.png",
+  manage       = "assets/icons/manage.png",
+  capture      = "assets/icons/capture.png",
+  remove       = "assets/icons/remove.png",
 }
+
+local icons = {}
+local icon_metadata = {}
+
+-- Helper to scan image data for content bounds (trimmed of transparency)
+local function get_content_bounds(data)
+  local w, h = data:getDimensions()
+  local x_min, y_min = w, h
+  local x_max, y_max = 0, 0
+  local found = false
+  for x = 0, w - 1 do
+    for y = 0, h - 1 do
+      local _, _, _, a = data:getPixel(x, y)
+      if a > 0 then
+        x_min = math.min(x_min, x)
+        y_min = math.min(y_min, y)
+        x_max = math.max(x_max, x)
+        y_max = math.max(y_max, y)
+        found = true
+      end
+    end
+  end
+  if not found then return 0, 0, w, h end
+  return x_min, y_min, (x_max - x_min) + 1, (y_max - y_min) + 1
+end
+
+-- Initialize icons and metadata
+for name, path in pairs(icon_paths) do
+  local info = love.filesystem.getInfo(path)
+  if info then
+    local data = love.image.newImageData(path)
+    icons[name] = love.graphics.newImage(data)
+    local x, y, w, h = get_content_bounds(data)
+    icon_metadata[name] = { x = x, y = y, w = w, h = h }
+  end
+end
 
 return function(props)
   local name = props.name
-  local icon = icons[name]
-
-  if not icon then
-    icon = icons["warn"]
-  end
+  local img = icons[name] or icons["warn"]
+  local meta = icon_metadata[name] or icon_metadata["warn"]
 
   local boxSize = props.size or 24
-  local iconWidth, iconHeight = icon:getWidth(), icon:getHeight()
-  local sx, sy = boxSize / iconWidth, boxSize / iconHeight
+  
+  -- Normalization Scaling: 
+  -- We scale based on the ACTUAL content bounds to ensure consistent visual weight
+  local scale = boxSize / math.max(meta.w, meta.h)
+  local sx, sy = scale, scale
 
-  -- Calculate the position to center the icon within the box
-  local offsetX = (boxSize - iconWidth * sx) / 2
-  local offsetY = (boxSize - iconHeight * sy) / 2
+  -- Center accurately based on content bounds
+  local offsetX = (boxSize - meta.w * sx) / 2 - meta.x * sx
+  local offsetY = (boxSize - meta.h * sy) / 2 - meta.y * sy
 
   return component {
     id = props.id or tostring(love.timer.getTime()),
@@ -79,18 +115,15 @@ return function(props)
     focusable = false,
     draw = function(self)
       love.graphics.push()
-
-      -- Draw transparent box as the icon background
-      love.graphics.setColor(1, 1, 1, 0) -- Fully transparent background
+      -- Transparent background box
+      love.graphics.setColor(1, 1, 1, 0)
       love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
 
-      -- Draw the icon with theme-based tint color
+      -- Normalized icon with theme tint
       local icon_color = configs.theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
       love.graphics.setColor(icon_color)
-      love.graphics.draw(icon, self.x + offsetX, self.y + offsetY, 0, sx, sy)
-
+      love.graphics.draw(img, self.x + offsetX, self.y + offsetY, 0, sx, sy)
       love.graphics.pop()
     end,
   }
 end
-
