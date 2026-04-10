@@ -920,47 +920,86 @@ local function open_region_editor()
         row = true,
         gap = 6
     } + (component {
-        width = 24, height = 32,
+        width = 22, height = 32,
+        onUpdate = function(self, dt)
+            self.icon_scale = self.icon_scale or 1
+            local pressed = icon_input.isEventDown("up") or icon_input.isEventDown("down")
+            if pressed then
+                self.icon_scale = self.icon_scale + (0.6 - self.icon_scale) * 30 * dt
+            else
+                if self.icon_scale < 1 then
+                    self.icon_scale = self.icon_scale + (1 - self.icon_scale) * 15 * dt
+                    if self.icon_scale > 0.99 then self.icon_scale = 1 end
+                end
+            end
+        end,
         draw = function(self)
-            local scale = region_icon_scales.navigate or 1
-            local w0, h0 = dpad_v_icon:getDimensions()
-            local box = 24 * scale
-            local sx, sy = box / w0, box / h0
-            local icon_color = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
-            love.graphics.setColor(icon_color)
-            love.graphics.draw(dpad_v_icon, self.x + 12, self.y + 16, 0, sx, sy, w0/2, h0/2)
+            love.graphics.push()
+            love.graphics.translate(self.x + 11, self.y + 16)
+            love.graphics.scale(self.icon_scale or 1)
+            love.graphics.translate(-(self.x + 11), -(self.y + 16))
+            local dpad = icon { name = "dpad", size = 22 }
+            dpad.x, dpad.y = self.x, self.y + (self.height - 22) / 2
+            dpad:draw()
+            love.graphics.pop()
         end
     }) + label {
         text = "Navigate •",
-        y = 6
+        y = (32 - love.graphics.getFont():getHeight()) / 2
     } + (component {
-        width = 24, height = 32,
+        width = 22, height = 32,
+        onUpdate = function(self, dt)
+            self.icon_scale = self.icon_scale or 1
+            local pressed = icon_input.isEventDown("left") or icon_input.isEventDown("right")
+            if pressed then
+                self.icon_scale = self.icon_scale + (0.6 - self.icon_scale) * 30 * dt
+            else
+                if self.icon_scale < 1 then
+                    self.icon_scale = self.icon_scale + (1 - self.icon_scale) * 15 * dt
+                    if self.icon_scale > 0.99 then self.icon_scale = 1 end
+                end
+            end
+        end,
         draw = function(self)
-            local scale = region_icon_scales.reorder or 1
-            local w0, h0 = dpad_h_icon:getDimensions()
-            local box = 24 * scale
-            local sx, sy = box / w0, box / h0
-            local icon_color = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
-            love.graphics.setColor(icon_color)
-            love.graphics.draw(dpad_h_icon, self.x + 12, self.y + 16, 0, sx, sy, w0/2, h0/2)
+            love.graphics.push()
+            love.graphics.translate(self.x + 11, self.y + 16)
+            love.graphics.scale(self.icon_scale or 1)
+            love.graphics.translate(-(self.x + 11), -(self.y + 16))
+            local dpad = icon { name = "dpad_horizontal", size = 22 }
+            dpad.x, dpad.y = self.x, self.y + (self.height - 22) / 2
+            dpad:draw()
+            love.graphics.pop()
         end
     }) + label {
         text = "Reorder •",
-        y = 6
+        y = (32 - love.graphics.getFont():getHeight()) / 2
     } + (component {
-        width = 24, height = 32,
+        width = 22, height = 32,
+        onUpdate = function(self, dt)
+            self.icon_scale = self.icon_scale or 1
+            local pressed = icon_input.isEventDown("return")
+            if pressed then
+                self.icon_scale = self.icon_scale + (0.6 - self.icon_scale) * 30 * dt
+            else
+                if self.icon_scale < 1 then
+                    self.icon_scale = self.icon_scale + (1 - self.icon_scale) * 15 * dt
+                    if self.icon_scale > 0.99 then self.icon_scale = 1 end
+                end
+            end
+        end,
         draw = function(self)
-            local scale = region_icon_scales.confirm or 1
-            local w0, h0 = button_a_icon:getDimensions()
-            local box = 24 * scale
-            local sx, sy = box / w0, box / h0
-            local icon_color = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
-            love.graphics.setColor(icon_color)
-            love.graphics.draw(button_a_icon, self.x + 12, self.y + 16, 0, sx, sy, w0/2, h0/2)
+            love.graphics.push()
+            love.graphics.translate(self.x + 11, self.y + 16)
+            love.graphics.scale(self.icon_scale or 1)
+            love.graphics.translate(-(self.x + 11), -(self.y + 16))
+            local btn = icon { name = "button_a", size = 22 }
+            btn.x, btn.y = self.x, self.y + (self.height - 22) / 2
+            btn:draw()
+            love.graphics.pop()
         end
     }) + label {
         text = "Confirm",
-        y = 6
+        y = (32 - love.graphics.getFont():getHeight()) / 2
     }) + (scroll_container {
         width = item_width,
         height = list_height,

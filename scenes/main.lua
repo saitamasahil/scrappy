@@ -21,6 +21,10 @@ local popup = require "lib.gui.popup"
 local output_log = require "lib.gui.output_log"
 local scroll_container = require "lib.gui.scroll_container"
 local progress = require "lib.gui.progress"
+local icon = require "lib.gui.icon"
+local icon_input = require "helpers.input"
+
+
 local menu, info_window, scraping_window
 
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
@@ -1527,18 +1531,33 @@ function main:load()
         id = "dashboard_hint",
         width = w_width * 0.85,
         height = 20,
+        onUpdate = function(self, dt)
+            self.icon_scale = self.icon_scale or 1
+            local pressed = icon_input.isEventDown("x")
+            if pressed then
+                self.icon_scale = self.icon_scale + (0.6 - self.icon_scale) * 30 * dt
+            else
+                if self.icon_scale < 1 then
+                    self.icon_scale = self.icon_scale + (1 - self.icon_scale) * 15 * dt
+                    if self.icon_scale > 0.99 then self.icon_scale = 1 end
+                end
+            end
+        end,
         draw = function(self)
             if not self.visible then return end
             love.graphics.push()
-            local icon_size = 20
+            local icon_size = 22
             local gap = 6
             -- Draw X button icon
             if button_x_icon then
-                local iw, ih = button_x_icon:getDimensions()
-                local sx, sy = icon_size / iw, icon_size / ih
-                local c = configs.theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
-                love.graphics.setColor(c)
-                love.graphics.draw(button_x_icon, self.x, self.y, 0, sx, sy)
+                love.graphics.push()
+                love.graphics.translate(self.x + 11, self.y + 11)
+                love.graphics.scale(self.icon_scale or 1)
+                love.graphics.translate(-(self.x + 11), -(self.y + 11))
+                local btn = icon { name = "button_x", size = 22 }
+                btn.x, btn.y = self.x, self.y
+                btn:draw()
+                love.graphics.pop()
             end
             -- Draw text
             local txt
@@ -1551,6 +1570,7 @@ function main:load()
             love.graphics.setColor(1, 1, 1)
             love.graphics.pop()
         end
+
     })
     menu:updatePosition(10, 10)
 
