@@ -1404,7 +1404,7 @@ function main:load()
         onClick = scrape_platforms,
         onFocus = function() on_output_focus("box") end
     } + label {
-        text = "Select to preview outputs:"
+        text = "Processed Results:"
     } + listitem {
         id = "output_box",
         text = "Boxart",
