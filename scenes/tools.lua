@@ -1179,7 +1179,7 @@ local function open_capture_platform_selector()
     manage_presets_popup.children = {selector_menu}
 end
 
-local function open_delete_preset_selector()
+local function open_delete_preset_selector(is_refresh)
     local presets = skyscraper.get_sample_presets()
     local custom_presets = {}
     for _, p in ipairs(presets) do
@@ -1187,7 +1187,9 @@ local function open_delete_preset_selector()
     end
     
     if #custom_presets == 0 then
-        dispatch_info("No Custom Presets", "Only default preset found. You can't delete it.")
+        if not is_refresh then
+            dispatch_info("No Custom Presets", "Only default preset found. You can't delete it.")
+        end
         if manage_presets_popup then manage_presets_popup.visible = false end
         return
     end
@@ -1205,7 +1207,7 @@ local function open_delete_preset_selector()
             onClick = function()
                 skyscraper.delete_preset(p)
                 dispatch_info("Deleted", "Deleted preset: " .. p)
-                open_delete_preset_selector() -- Refresh list
+                open_delete_preset_selector(true) -- Refresh list
             end
         }
     end
