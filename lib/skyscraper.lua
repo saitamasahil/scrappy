@@ -548,6 +548,154 @@ function skyscraper.apply_sample_preset(preset_name)
     return true
 end
 
+function skyscraper.get_cache_platforms()
+    local cache_dir = WORK_DIR .. "/data/cache"
+    local items = nativefs.getDirectoryItems(cache_dir)
+    local platforms = {}
+    for _, item in ipairs(items or {}) do
+        local info = nativefs.getInfo(cache_dir .. "/" .. item)
+        if info and info.type == "directory" then
+            table.insert(platforms, item)
+        end
+    end
+    table.sort(platforms)
+    return platforms
+end
+
+function skyscraper.parse_cache_db(platform)
+    local db_path = WORK_DIR .. "/data/cache/" .. platform .. "/db.xml"
+    if not nativefs.getInfo(db_path) then return {} end
+    
+    local f = nativefs.newFile(db_path)
+    if not f:open("r") then return {} end
+    local content = f:read()
+    f:close()
+
+    local titles = {}
+    -- Matches <resource id="HASH" type="title" ... >TITLE</resource>
+    for id, title in content:gmatch('<resource id="([^"]+)" type="title"[^>]*>([^<]+)</resource>') do
+        titles[id] = title
+    end
+    return titles
+end
+
+function skyscraper.get_cache_roms(platform)
+    local titles = skyscraper.parse_cache_db(platform)
+    local roms = {}
+    
+    -- Check all source subfolders in covers/ to find which hashes exist
+    local covers_base = WORK_DIR .. "/data/cache/" .. platform .. "/covers"
+    local source_modules = nativefs.getDirectoryItems(covers_base)
+    local existing_hashes = {}
+    for _, module in ipairs(source_modules or {}) do
+        local items = nativefs.getDirectoryItems(covers_base .. "/" .. module)
+        for _, h in ipairs(items or {}) do
+            existing_hashes[h] = true
+        end
+    end
+
+    for id, title in pairs(titles) do
+        if existing_hashes[id] then
+            table.insert(roms, { title = title, hash = id })
+        end
+    end
+    
+    table.sort(roms, function(a, b) return a.title:lower() < b.title:lower() end)
+    return roms
+end
+
+-- Internal helper to find media across various Skyscraper modules
+local function find_media_in_cache(platform, type_name, hash)
+    local type_to_folder = {
+        cover = "covers",
+        marquee = "marquees",
+        screenshot = "screenshots",
+        texture = "textures",
+        wheel = "wheels"
+    }
+    local folder_name = type_to_folder[type_name]
+    if not folder_name then return nil end
+    
+    local base_path = WORK_DIR .. "/data/cache/" .. platform .. "/" .. folder_name
+    if not nativefs.getInfo(base_path) then return nil end
+    
+    -- Priority modules
+    local modules = {"screenscraper", "thegamesdb", "igdb", "local", "raw", "import"}
+    
+    for _, mod in ipairs(modules) do
+        local path = base_path .. "/" .. mod .. "/" .. hash
+        if nativefs.getInfo(path) then
+            return path
+        end
+    end
+    
+    -- Fallback: check any other subfolders
+    local all_subs = nativefs.getDirectoryItems(base_path)
+    for _, sub in ipairs(all_subs or {}) do
+        -- Skip if we already checked it in priority
+        local checked = false
+        for _, p in ipairs(modules) do if p == sub then checked = true break end end
+        
+        if not checked then
+            local path = base_path .. "/" .. sub .. "/" .. hash
+            if nativefs.getInfo(path) then
+                return path
+            end
+        end
+    end
+    
+    return nil
+end
+
+function skyscraper.get_missing_media(platform, hash)
+    local missing = {}
+    local order = {"cover", "marquee", "screenshot", "texture", "wheel"}
+    for _, type in ipairs(order) do
+        if not find_media_in_cache(platform, type, hash) then
+            table.insert(missing, type)
+        end
+    end
+    return missing
+end
+
+function skyscraper.create_preset(platform, hash, preset_name)
+    local preset_dir = WORK_DIR .. "/sample/presets/" .. preset_name
+    if not nativefs.createDirectory(preset_dir) then
+        -- Second attempt in case it already exists or simple creation fails
+        local info = nativefs.getInfo(preset_dir)
+        if not (info and info.type == "directory") then
+            return false
+        end
+    end
+    
+    local types = {"cover", "marquee", "screenshot", "texture", "wheel"}
+    
+    for _, type in ipairs(types) do
+        local src = find_media_in_cache(platform, type, hash)
+        if src then
+            local dest = preset_dir .. "/" .. type .. ".png"
+            local data = nativefs.read(src)
+            if data then
+                nativefs.write(dest, data)
+            end
+        end
+    end
+    return true
+end
+
+function skyscraper.delete_preset(preset_name)
+    -- Protect the default preset
+    if preset_name == "Streets of Rage" then return false end
+    
+    local preset_dir = WORK_DIR .. "/sample/presets/" .. preset_name
+    local info = nativefs.getInfo(preset_dir)
+    if not info then return false end
+    
+    -- Use rm -rf for recursive deletion on Linux/MuOS
+    os.execute(string.format('rm -rf "%s"', preset_dir))
+    return true
+end
+
 skyscraper.get_module_name = get_default_module_for
 
 

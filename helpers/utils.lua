@@ -222,4 +222,13 @@ function utils.get_ip_address()
     return nil
 end
 
+function utils.sanitize_filename(name)
+    if not name then return "untitled" end
+    -- Strip common illegal characters: < > : " / \ | ? *
+    local res = name:gsub("[<>:\"/\\|%?%*]", "")
+    -- Trim leading/trailing whitespace
+    res = res:gsub("^%s+", ""):gsub("%s+$", "")
+    return res ~= "" and res or "untitled"
+end
+
 return utils

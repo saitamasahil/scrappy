@@ -49,6 +49,9 @@ local icons = {
   artwork      = love.graphics.newImage("assets/icons/artwork.png"),
   save         = love.graphics.newImage("assets/icons/save.png"),
   preview      = love.graphics.newImage("assets/icons/preview.png"),
+  manage       = love.graphics.newImage("assets/icons/manage.png"),
+  capture      = love.graphics.newImage("assets/icons/capture.png"),
+  remove       = love.graphics.newImage("assets/icons/remove.png"),
 }
 
 return function(props)

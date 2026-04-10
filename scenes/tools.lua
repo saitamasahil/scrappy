@@ -66,6 +66,14 @@ local preset_popup, preset_menu
 local preset_popup_visible = false
 local preset_fade = 0
 
+local missing_media_popup_visible = false
+local missing_media_list = ""
+local missing_media_fade = 0
+local pending_capture_data = nil
+local manage_presets_view = "main"
+local manage_presets_platform = nil
+local manage_presets_popup, manage_presets_menu
+
 local pending_region_prios = nil
 local selected_region_index = 1
 local region_prios = {}
@@ -809,6 +817,26 @@ local function clear_all_caches()
 end
 
 -- Called when user confirms cache deletion
+local function on_confirm_missing_media()
+    if pending_capture_data then
+        local p = pending_capture_data
+        local ok = skyscraper.create_preset(p.platform, p.hash, p.name)
+        if ok then
+            if manage_presets_popup then manage_presets_popup.visible = false end
+            dispatch_info("Success", "Captured preset: " .. p.name .. "\n(Note: Some media was missing)")
+        else
+            dispatch_info("Error", "Could not create preset: " .. p.name .. "\n(Folder creation failed)")
+        end
+        pending_capture_data = nil
+    end
+    missing_media_popup_visible = false
+end
+
+local function on_cancel_missing_media()
+    pending_capture_data = nil
+    missing_media_popup_visible = false
+end
+
 local function on_confirm_cache_clear()
     -- Clear all potential caches
     clear_all_caches()
@@ -1046,6 +1074,187 @@ local function open_preset_selector()
     preset_popup.children = {preset_menu}
     preset_popup_visible = true
     preset_fade = 0
+end
+
+
+local function open_capture_name_input(platform, hash, title)
+    if not vk then
+        vk = virtual_keyboard.create({
+            title = "Preset Name",
+            placeholder = "Enter name"
+        })
+    end
+
+    -- Update callbacks on every call to avoid stale closure (bug fix)
+    vk.on_done = function(text)
+        if text == "" then return end
+        
+        -- Sanitize the preset name for filesystem compatibility
+        local safe_name = utils.sanitize_filename(text)
+        
+        local missing = skyscraper.get_missing_media(platform, hash)
+        if #missing > 0 then
+            pending_capture_data = { platform = platform, hash = hash, name = safe_name }
+            missing_media_list = table.concat(missing, ", ")
+            missing_media_popup_visible = true
+            -- VK will automatically hide
+        else
+            local ok = skyscraper.create_preset(platform, hash, safe_name)
+            if ok then
+                if manage_presets_popup then manage_presets_popup.visible = false end
+                dispatch_info("Success", "Captured preset: " .. safe_name .. "\n(You can now select it in Change Preview Artwork)")
+            else
+                dispatch_info("Error", "Could not create preset: " .. safe_name .. "\n(Folder creation failed)")
+            end
+        end
+    end
+    vk.on_cancel = function() end
+
+    vk.title = "Step 3/3: Preset Name"
+    vk:show(title or hash, "preset_name")
+end
+
+local function open_capture_rom_selector(platform)
+    local roms = skyscraper.get_cache_roms(platform)
+    if #roms == 0 then
+        dispatch_info("No Media", "No artwork found in cache for platform: " .. platform)
+        if manage_presets_popup then manage_presets_popup.visible = false end
+        return
+    end
+    
+    local item_width = math.min(w_width - 120, 560)
+    local list_height = math.min(w_height - 220, 380)
+    
+    local selector_menu = component:root{ column = true, gap = 8, width = item_width }
+    local rom_list = component { column = true, gap = 8, width = item_width, height = 0 }
+    
+    for _, r in ipairs(roms) do
+        rom_list = rom_list + listitem {
+            text = r.title,
+            width = item_width,
+            onClick = function() open_capture_name_input(platform, r.hash, r.title) end
+        }
+    end
+    
+    selector_menu = selector_menu + (scroll_container { width = item_width, height = list_height, scroll_speed = 30 } + rom_list)
+    
+    selector_menu:updatePosition(0, 0)
+    selector_menu:focusFirstElement()
+    manage_presets_menu = selector_menu -- Keep reference for update
+    manage_presets_view = "capture_roms"
+    manage_presets_platform = platform -- Store for back navigation if needed
+    manage_presets_popup.title = "Step 2/3: Select Game ROM"
+    manage_presets_popup.children = {selector_menu}
+end
+
+local function open_capture_platform_selector()
+    local platforms = skyscraper.get_cache_platforms()
+    if #platforms == 0 then
+        dispatch_info("No Data", "No scraped data found in your cache.\n(Scrape some ROMs first!)")
+        if manage_presets_popup then manage_presets_popup.visible = false end
+        return
+    end
+    
+    local item_width = math.min(w_width - 120, 560)
+    local list_height = math.min(w_height - 220, 380)
+    
+    local selector_menu = component:root{ column = true, gap = 8, width = item_width }
+    local platform_list = component { column = true, gap = 8, width = item_width, height = 0 }
+    
+    for _, p in ipairs(platforms) do
+        platform_list = platform_list + listitem {
+            text = p,
+            width = item_width,
+            onClick = function() open_capture_rom_selector(p) end
+        }
+    end
+    
+    selector_menu = selector_menu + (scroll_container { width = item_width, height = list_height, scroll_speed = 30 } + platform_list)
+    
+    selector_menu:updatePosition(0, 0)
+    selector_menu:focusFirstElement()
+    manage_presets_menu = selector_menu -- Keep reference for update
+    manage_presets_view = "capture_platforms"
+    manage_presets_popup.title = "Step 1/3: Select Platform"
+    manage_presets_popup.children = {selector_menu}
+end
+
+local function open_delete_preset_selector()
+    local presets = skyscraper.get_sample_presets()
+    local custom_presets = {}
+    for _, p in ipairs(presets) do
+        if p ~= "Streets of Rage" then table.insert(custom_presets, p) end
+    end
+    
+    if #custom_presets == 0 then
+        dispatch_info("No Custom Presets", "Only default presets found. You can't delete them.")
+        if manage_presets_popup then manage_presets_popup.visible = false end
+        return
+    end
+    
+    local item_width = math.min(w_width - 120, 560)
+    local list_height = math.min(w_height - 220, 380)
+    
+    local selector_menu = component:root{ column = true, gap = 8, width = item_width }
+    local p_list = component { column = true, gap = 8, width = item_width, height = 0 }
+    
+    for _, p in ipairs(custom_presets) do
+        p_list = p_list + listitem {
+            text = p,
+            width = item_width,
+            onClick = function()
+                skyscraper.delete_preset(p)
+                dispatch_info("Deleted", "Deleted preset: " .. p)
+                open_delete_preset_selector() -- Refresh list
+            end
+        }
+    end
+    
+    selector_menu = selector_menu + (scroll_container { width = item_width, height = list_height, scroll_speed = 30 } + p_list)
+    
+    selector_menu:updatePosition(0, 0)
+    selector_menu:focusFirstElement()
+    manage_presets_menu = selector_menu -- Keep reference for update
+    manage_presets_view = "delete_presets"
+    manage_presets_popup.title = "Select Preset to Remove"
+    manage_presets_popup.children = {selector_menu}
+end
+
+local function open_manage_presets_menu()
+    local item_width = math.min(w_width - 120, 560)
+    local menu_root = component:root{
+        column = true,
+        gap = 8,
+        width = item_width
+    }
+    
+    menu_root = menu_root + listitem {
+        text = "Capture Preset from ROM",
+        width = item_width,
+        onClick = open_capture_platform_selector,
+        icon = "capture"
+    } + listitem {
+        text = "Remove Existing Preset",
+        width = item_width,
+        onClick = open_delete_preset_selector,
+        icon = "remove"
+    }
+    
+    menu_root:updatePosition(0, 0)
+    menu_root:focusFirstElement()
+    manage_presets_menu = menu_root -- Keep reference for update
+    manage_presets_view = "main"
+    
+    if not manage_presets_popup then
+        manage_presets_popup = popup {
+            visible = true,
+            title = "Manage Preview Presets",
+            id = "manage_presets_popup"
+        }
+    end
+    manage_presets_popup.title = "Manage Preview Presets"
+    manage_presets_popup.children = {menu_root}
+    manage_presets_popup.visible = true
 end
 
 local function on_backup_cache()
@@ -1307,6 +1516,11 @@ function tools:load()
         onClick = on_import_press,
         icon = "file_import"
     } + listitem {
+        text = "Manage Preview Presets",
+        width = item_width,
+        onClick = open_manage_presets_menu,
+        icon = "manage"
+    } + listitem {
         text = "Change Preview Artwork",
         width = item_width,
         onClick = open_preset_selector,
@@ -1450,6 +1664,8 @@ function tools:update(dt)
         else
             region_hold_dir = nil
         end
+    elseif manage_presets_popup and manage_presets_popup.visible and manage_presets_menu then
+        manage_presets_menu:update(dt)
     elseif accent_popup and accent_popup.visible and accent_menu then
         accent_menu:update(dt)
     elseif preset_popup and preset_popup_visible and preset_menu then
@@ -1460,6 +1676,11 @@ function tools:update(dt)
     -- Update info window components (enables marquee scrolling in log)
     if info_window and info_window.visible then
         info_window:update(dt)
+    end
+    if missing_media_popup_visible then
+        missing_media_fade = missing_media_fade + (1 - missing_media_fade) * 20 * dt
+    else
+        missing_media_fade = 0
     end
     update_state()
     update_task_state()
@@ -1762,15 +1983,93 @@ local function draw_offline_popup()
 end
 
 
+local function draw_missing_media_popup()
+    if not missing_media_popup_visible then return end
+
+    local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
+    local font = love.graphics.getFont()
+    local font_h = font:getHeight()
+
+    love.graphics.push()
+    love.graphics.origin()
+
+    -- Dim background
+    love.graphics.setColor(0, 0, 0, 0.8 * missing_media_fade)
+    love.graphics.rectangle("fill", 0, 0, sw, sh)
+
+    local popup_scale = 0.85 + 0.15 * missing_media_fade
+    love.graphics.translate(sw / 2, sh / 2)
+    love.graphics.scale(popup_scale, popup_scale)
+    love.graphics.translate(-sw / 2, -sh / 2)
+
+    -- Popup box dimensions
+    local box_w = math.min(sw - 40, 380)
+    local box_h = 220
+    local box_x = (sw - box_w) / 2
+    local box_y = (sh - box_h) / 2
+
+    -- Draw box background
+    love.graphics.setColor(0.18, 0.18, 0.18, 1)
+    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8, 8)
+
+    -- Draw border
+    love.graphics.setColor(0.4, 0.4, 0.4, 1)
+    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8, 8)
+
+    love.graphics.setColor(1, 1, 1, 1)
+
+    -- Title
+    love.graphics.printf("Missing Artwork", box_x, box_y + 15, box_w, "center")
+
+    -- Warning message
+    love.graphics.setColor(0.9, 0.9, 0.9, 1)
+    local main_msg = "The following files were not found in cache:"
+    love.graphics.printf(main_msg, box_x + 20, box_y + 45, box_w - 40, "center")
+    
+    love.graphics.setColor(0.9, 0.4, 0.4, 1)
+    love.graphics.printf(missing_media_list or "", box_x + 20, box_y + 90, box_w - 40, "center")
+    
+    love.graphics.setColor(0.9, 0.9, 0.9, 1)
+    love.graphics.printf("Import this preset anyway?", box_x + 20, box_y + 125, box_w - 40, "center")
+
+    -- Buttons
+    local icon_size = 24
+    local btn_y = box_y + box_h - 45
+    local left_center = box_x + box_w * 0.25
+    local right_center = box_x + box_w * 0.75
+
+    local proceed_total_w = icon_size + 6 + font:getWidth("Import")
+    local proceed_x = left_center - proceed_total_w / 2
+    if button_a_icon then
+        local iw, ih = button_a_icon:getDimensions()
+        local sx, sy = icon_size / iw, icon_size / ih
+        love.graphics.draw(button_a_icon, proceed_x, btn_y, 0, sx, sy)
+    end
+    love.graphics.print("Import", proceed_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+
+    local cancel_total_w = icon_size + 6 + font:getWidth("Cancel")
+    local cancel_x = right_center - cancel_total_w / 2
+    if button_b_icon then
+        local iw, ih = button_b_icon:getDimensions()
+        local sx, sy = icon_size / iw, icon_size / ih
+        love.graphics.draw(button_b_icon, cancel_x, btn_y, 0, sx, sy)
+    end
+    love.graphics.print("Cancel", cancel_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+
+    love.graphics.pop()
+end
+
 function tools:draw()
     love.graphics.clear(theme:read_color("main", "BACKGROUND", "#000000"))
     menu:draw()
-    info_window:draw()
     if region_popup and region_popup.visible then
         region_popup:draw()
     end
     if accent_popup and accent_popup.visible then
         accent_popup:draw()
+    end
+    if manage_presets_popup and manage_presets_popup.visible then
+        manage_presets_popup:draw()
     end
     if preset_popup and preset_popup_visible then
         preset_popup:draw()
@@ -1779,10 +2078,13 @@ function tools:draw()
     draw_confirm_popup()
     draw_clear_cache_popup()
     draw_offline_popup()
+    draw_missing_media_popup()
+    info_window:draw()
 
     -- Draw footer (hidden if any popup/VK is visible)
     local popup_active = (region_popup and region_popup.visible) or 
                          (accent_popup and accent_popup.visible) or 
+                         (manage_presets_popup and manage_presets_popup.visible) or
                          preset_popup_visible or
                          confirm_popup_visible or 
                          clear_cache_popup_visible or 
@@ -1822,7 +2124,19 @@ function tools:keypressed(key)
         return
     end
 
-    -- 1. Handle info popup (highest priority)
+    -- 1. Missing Media Popup (High Priority)
+    if missing_media_popup_visible then
+        if key == "return" or key == "a" then
+            on_confirm_missing_media()
+            return
+        elseif key == "escape" or key == "b" then
+            on_cancel_missing_media()
+            return
+        end
+        return -- Block all other keys
+    end
+
+    -- 2. Handle info popup (highest priority)
     if info_window.visible then
         if key == "return" or key == "a" or key == "escape" or key == "b" then
             info_window.visible = false
@@ -1883,7 +2197,28 @@ function tools:keypressed(key)
         return
     end
 
-    -- 4. Preset popup
+    -- 4. Manage presets popup (Hierarchical Navigation)
+    if manage_presets_popup and manage_presets_popup.visible then
+        if key == "escape" or key == "b" then
+            if manage_presets_view == "capture_roms" then
+                open_capture_platform_selector()
+            elseif manage_presets_view == "capture_platforms" or manage_presets_view == "delete_presets" then
+                open_manage_presets_menu()
+            else
+                manage_presets_popup.visible = false
+            end
+            return
+        end
+        if key == "left" or key == "right" then
+            return -- Block L/R navigation
+        end
+        if manage_presets_menu then
+            manage_presets_menu:keypressed(key)
+        end
+        return
+    end
+
+    -- 5. Preset popup
     if preset_popup and preset_popup_visible then
         if key == "escape" or key == "b" then
             preset_popup_visible = false
@@ -1898,7 +2233,7 @@ function tools:keypressed(key)
         return
     end
 
-    -- 5. Virtual Keyboard
+    -- 6. Virtual Keyboard
     if vk and vk.visible then
         local mapped = nil
         if key == 'up' or key == 'down' or key == 'left' or key == 'right' then
@@ -1962,6 +2297,18 @@ function tools:gamepadpressed(joystick, button)
         }
         if map[btn] then
             vk:handle_key(map[btn])
+            return true
+        end
+        return true
+    end
+
+    -- Handle missing media popup
+    if missing_media_popup_visible then
+        if btn == "a" then
+            on_confirm_missing_media()
+            return true
+        elseif btn == "b" then
+            on_cancel_missing_media()
             return true
         end
         return true
@@ -2037,6 +2384,24 @@ function tools:gamepadpressed(joystick, button)
         return true
     end
 
+    -- Handle manage presets popup
+    if manage_presets_popup and manage_presets_popup.visible then
+        if btn == "b" then
+            if manage_presets_view == "capture_roms" then
+                open_capture_platform_selector()
+            elseif manage_presets_view == "capture_platforms" or manage_presets_view == "delete_presets" then
+                open_manage_presets_menu()
+            else
+                manage_presets_popup.visible = false
+            end
+            return true
+        end
+        if btn == "dpup" or btn == "dpdown" or btn == "a" then
+            return false
+        end
+        return true
+    end
+
     -- Handle accent popup
     if accent_popup and accent_popup.visible then
         if btn == "b" then
@@ -2047,10 +2412,24 @@ function tools:gamepadpressed(joystick, button)
             return true -- Block L/R navigation
         end
         if btn == "dpup" or btn == "dpdown" or btn == "a" then
-            return false -- Allow standard vertical navigation and selection
+            return false -- Let input.lua emit virtual key events for keypressed
         end
-        -- Block other buttons while popup is visible
-        return true
+        return true -- Block other buttons
+    end
+
+    -- Handle manage presets popup
+    if manage_presets_popup and manage_presets_popup.visible then
+        if btn == "b" then
+            manage_presets_popup.visible = false
+            return true
+        end
+        if btn == "dpleft" or btn == "dpright" then
+            return true -- Block L/R navigation
+        end
+        if btn == "dpup" or btn == "dpdown" or btn == "a" then
+            return false -- Let input.lua emit virtual key events for keypressed
+        end
+        return true -- Block other buttons
     end
 
     -- Handle preset popup
@@ -2063,10 +2442,9 @@ function tools:gamepadpressed(joystick, button)
             return true -- Block L/R navigation
         end
         if btn == "dpup" or btn == "dpdown" or btn == "a" then
-            return false -- Allow standard vertical navigation and selection
+            return false -- Let input.lua emit virtual key events for keypressed
         end
-        -- Block other buttons while popup is visible
-        return true
+        return true -- Block other buttons
     end
 
     -- Handle region popup (mostly handled in tools:update)
