@@ -1187,7 +1187,7 @@ local function open_delete_preset_selector()
     end
     
     if #custom_presets == 0 then
-        dispatch_info("No Custom Presets", "Only default presets found. You can't delete them.")
+        dispatch_info("No Custom Presets", "Only default preset found. You can't delete it.")
         if manage_presets_popup then manage_presets_popup.visible = false end
         return
     end
