@@ -23,9 +23,10 @@ local scroll_container = require "lib.gui.scroll_container"
 local progress = require "lib.gui.progress"
 local icon = require "lib.gui.icon"
 local icon_input = require "helpers.input"
+local footer_factory = require "lib.gui.footer"
 
 
-local menu, info_window, scraping_window
+local menu, info_window, scraping_window, footer
 
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 local theme = configs.theme
@@ -782,6 +783,11 @@ local function toggle_dashboard_server()
         return
     end
 
+    if offline_mode then
+        log.write("Action blocked: Dashboard is unavailable in Offline Mode.")
+        return
+    end
+
     local ip = dashboard_cached_ip or utils.get_ip_address()
     if ip then
         -- Ensure any zombie servers are gone before starting
@@ -1531,7 +1537,16 @@ function main:load()
         id = "dashboard_hint",
         width = w_width * 0.85,
         height = 20,
+        visible = not offline_mode,
         onUpdate = function(self, dt)
+            if offline_mode then
+                self.visible = false
+                self.height = 0
+                return
+            else
+                self.visible = true
+                self.height = 20
+            end
             self.icon_scale = self.icon_scale or 1
             local pressed = icon_input.isEventDown("x")
             if pressed then
@@ -1562,9 +1577,14 @@ function main:load()
             -- Draw text
             local txt
             if dashboard_server_running and dashboard_server_ip then
-                txt = "Go to http://" .. dashboard_server_ip .. ":8081 on phone/PC (same WiFi)"
+                txt = "Dashboard: http://" .. dashboard_server_ip .. ":8081 (Same WiFi)"
             else
-                txt = "Launch Live Dashboard"
+                local ip = dashboard_cached_ip or utils.get_ip_address()
+                if not ip then
+                    txt = "Launch Live Dashboard (No WiFi Connection!)"
+                else
+                    txt = "Launch Live Dashboard"
+                end
             end
             love.graphics.print(txt, self.x + icon_size + gap, self.y + (icon_size - love.graphics.getFont():getHeight()) / 2)
             love.graphics.setColor(1, 1, 1)
@@ -1598,6 +1618,16 @@ function main:load()
 
     update_output_types()
     -- Flag for initial preview generation after splash
+    footer = footer_factory({
+        hints = {
+            b = "Quit",
+            x = not offline_mode and "Live Dashboard" or nil,
+            select = "Settings"
+        }
+    })
+    footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - 20, w_height - footer.height - 10)
+    footer:update(0)
+
     initial_preview_triggered = false
 end
 
@@ -1838,6 +1868,10 @@ function main:update(dt)
         initial_preview_triggered = true
         update_preview(0)
     end
+    
+    if footer then
+        footer:update(dt)
+    end
 end
 
 function main:draw()
@@ -1846,6 +1880,11 @@ function main:draw()
     info_window:draw()
     scraping_window:draw()
     draw_core_reminder_popup()
+    
+    local popup_active = info_window.visible or scraping_window.visible or showing_core_reminder
+    if footer and not popup_active then
+        footer:draw()
+    end
 
     -- Show status icon: offline icon when in offline mode, wifi icon when disconnected
     local status_icon = nil
