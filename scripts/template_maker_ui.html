@@ -978,6 +978,7 @@
 
     <input type="file" id="uploadMaskInput" class="upload-input" accept=".png,.jpg,.jpeg">
     <input type="file" id="uploadFrameInput" class="upload-input" accept=".png,.jpg,.jpeg">
+    <input type="file" id="previewBgInput" class="upload-input" accept=".png,.jpg,.jpeg" onchange="handlePreviewBgUpload(event)">
 
     <div class="editor">
         <!-- Preview Panel -->
@@ -1088,6 +1089,7 @@
                                 <button class="btn btn-sm" onclick="setPreviewBg('dark')">⬛ Dark</button>
                                 <button class="btn btn-sm" onclick="setPreviewBg('light')">⬜ Light</button>
                                 <button class="btn btn-sm" onclick="setPreviewBg('accent')">✨ Accent</button>
+                                <button class="btn btn-sm" onclick="document.getElementById('previewBgInput').click()">🖼️ Image</button>
                             </div>
                             <label class="field-label">Custom Color</label>
                             <div style="display:flex; align-items:center; gap:10px;">
@@ -2539,6 +2541,11 @@
                     label.textContent = 'Custom';
                 }
 
+                // Reset background properties that might have been changed by image upload
+                container.style.backgroundSize = '';
+                container.style.backgroundPosition = '';
+                container.style.backgroundRepeat = '';
+
                 if (theme === 'checker') {
                     container.style.backgroundColor = 'transparent';
                     container.style.backgroundImage = 'repeating-conic-gradient(rgba(128, 128, 128, 0.06) 0% 25%, transparent 0% 50%)';
@@ -2559,6 +2566,29 @@
                 
                 // Refresh overlays in case container size changed
                 if (typeof updateOverlays === 'function') updateOverlays();
+            }
+
+            function handlePreviewBgUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const container = document.querySelector('.preview-container');
+                    container.style.backgroundColor = 'transparent';
+                    container.style.backgroundImage = `url(${e.target.result})`;
+                    container.style.backgroundSize = 'contain';
+                    container.style.backgroundPosition = 'center';
+                    container.style.backgroundRepeat = 'no-repeat';
+                    
+                    document.getElementById('previewBgLabel').textContent = 'Custom Image';
+                    
+                    if (typeof updateOverlays === 'function') updateOverlays();
+                };
+                reader.readAsDataURL(file);
+                
+                // Reset the input so the same file can be selected again if needed
+                event.target.value = '';
             }
 
             function showToast(msg) {
