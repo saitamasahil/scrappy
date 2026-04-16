@@ -8,9 +8,8 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <style>
         :root {
             --bg: %%BG%%;
@@ -27,6 +26,27 @@
             --danger: #e85555;
             --success: #4ade80;
             --accent-glow: color-mix(in srgb, var(--accent) 30%, transparent);
+            /* M3 Surface tonal elevation */
+            --md-surface-container-lowest: color-mix(in srgb, var(--bg) 97%, var(--text-primary) 3%);
+            --md-surface-container-low: color-mix(in srgb, var(--bg) 94%, var(--text-primary) 6%);
+            --md-surface-container: color-mix(in srgb, var(--bg) 90%, var(--text-primary) 10%);
+            --md-surface-container-high: color-mix(in srgb, var(--bg) 86%, var(--text-primary) 14%);
+            --md-surface-container-highest: color-mix(in srgb, var(--bg) 82%, var(--text-primary) 18%);
+            /* M3 State layers */
+            --md-state-hover: color-mix(in srgb, var(--text-primary) 8%, transparent);
+            --md-state-pressed: color-mix(in srgb, var(--text-primary) 12%, transparent);
+            --md-state-focus: color-mix(in srgb, var(--text-primary) 12%, transparent);
+            /* M3 Elevation shadows */
+            --md-elevation-1: 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15);
+            --md-elevation-2: 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 2px 6px 2px rgba(0,0,0,0.15);
+            --md-elevation-3: 0px 1px 3px 0px rgba(0,0,0,0.3), 0px 4px 8px 3px rgba(0,0,0,0.15);
+            /* M3 Shape scale */
+            --md-shape-xs: 4px;
+            --md-shape-sm: 8px;
+            --md-shape-md: 12px;
+            --md-shape-lg: 16px;
+            --md-shape-xl: 28px;
+            --md-shape-full: 9999px;
         }
 
         * {
@@ -38,19 +58,20 @@
         body {
             background: var(--bg);
             color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Roboto', system-ui, sans-serif;
+            font-size: 14px;
+            line-height: 20px;
+            letter-spacing: 0.25px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
-        /* ─── Header ─── */
+        /* ─── Header (M3 Top App Bar) ─── */
         header {
-            background: var(--header-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            padding: 10px 20px;
-            border-bottom: 1px solid var(--card-border);
+            background: var(--md-surface-container);
+            padding: 12px 16px;
+            border-bottom: none;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -73,9 +94,9 @@
         }
 
         .header-title {
-            font-size: 15px;
-            font-weight: 700;
-            letter-spacing: -0.3px;
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: 0;
         }
 
         .header-dot {
@@ -84,41 +105,20 @@
             height: 7px;
             background: var(--accent);
             border-radius: 50%;
-            margin-right: 5px;
-            box-shadow: 0 0 8px var(--accent);
+            margin-right: 6px;
             animation: pulse 2s ease-in-out infinite;
         }
 
         @keyframes logoReveal {
-            0% {
-                opacity: 0;
-                transform: scale(0);
-            }
-
-            40% {
-                opacity: 1;
-                transform: scale(1.15);
-            }
-
-            70% {
-                transform: scale(0.95);
-            }
-
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
+            0% { opacity: 0; transform: scale(0); }
+            40% { opacity: 1; transform: scale(1.15); }
+            70% { transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
         @keyframes pulse {
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.3;
-            }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
 
         .header-center {
@@ -132,90 +132,127 @@
         .header-center select {
             flex: 1;
             max-width: 260px;
-            padding: 7px 10px;
-            background: var(--input-bg);
+            padding: 8px 12px;
+            background: var(--md-surface-container-highest);
             border: 1px solid var(--card-border);
-            border-radius: 8px;
+            border-radius: var(--md-shape-xs);
             color: var(--text-primary);
             font-family: inherit;
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
             outline: none;
+            transition: border-color 0.2s;
         }
 
         .header-center select:focus {
             border-color: var(--accent);
+            border-width: 2px;
+            padding: 7px 11px;
         }
 
         .header-actions {
             display: flex;
-            gap: 6px;
+            gap: 8px;
             flex-shrink: 0;
         }
 
-        /* ─── Buttons ─── */
+        /* ─── M3 Buttons ─── */
+
+        /* Tonal Button (default) */
         .btn {
-            padding: 7px 14px;
-            border-radius: 10px;
-            border: 1px solid var(--card-border);
-            background: var(--card-bg);
+            height: 40px;
+            padding: 0 24px;
+            border-radius: var(--md-shape-full);
+            background: var(--md-surface-container-highest);
+            border: none;
             color: var(--text-primary);
             font-family: inherit;
-            font-weight: 600;
-            font-size: 12px;
+            font-weight: 500;
+            font-size: 14px;
+            letter-spacing: 0.1px;
+            line-height: 20px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
             white-space: nowrap;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn:hover {
-            border-color: var(--accent);
-            background: var(--hover-bg);
-            transform: translateY(-1px);
+            background: color-mix(in srgb, var(--md-surface-container-highest) 92%, var(--text-primary) 8%);
+            box-shadow: var(--md-elevation-1);
         }
 
         .btn:active {
-            transform: scale(0.97) translateY(0);
+            background: color-mix(in srgb, var(--md-surface-container-highest) 88%, var(--text-primary) 12%);
+            box-shadow: none;
         }
 
+        /* Filled Button (primary actions) */
         .btn-accent {
             background: var(--accent);
             color: #000;
-            border-color: var(--accent);
-            font-weight: 700;
+            font-weight: 500;
         }
 
         .btn-accent:hover {
-            opacity: 0.9;
-            background: var(--accent);
-            box-shadow: 0 4px 12px var(--accent-glow);
+            background: color-mix(in srgb, var(--accent) 92%, #000 8%);
+            box-shadow: var(--md-elevation-1);
         }
 
+        .btn-accent:active {
+            background: color-mix(in srgb, var(--accent) 88%, #000 12%);
+            box-shadow: none;
+        }
+
+        /* Error/Danger buttons */
         .btn-danger {
             color: var(--danger);
-            border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+            background: color-mix(in srgb, var(--danger) 8%, transparent);
         }
 
         .btn-danger:hover {
-            background: rgba(232, 85, 85, 0.1);
-            border-color: var(--danger);
+            background: color-mix(in srgb, var(--danger) 16%, transparent);
         }
 
         .btn-sm {
-            padding: 5px 10px;
-            font-size: 11px;
-            border-radius: 8px;
+            height: 32px;
+            padding: 0 16px;
+            font-size: 12px;
+            letter-spacing: 0.1px;
         }
 
         .btn-icon {
-            padding: 5px 8px;
-            font-size: 16px;
-            min-width: 36px;
-            min-height: 36px;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
             justify-content: center;
+            border-radius: var(--md-shape-full);
+            background: transparent;
+        }
+
+        .btn-icon:hover {
+            background: var(--md-state-hover);
+            box-shadow: none;
+        }
+
+        .btn-icon.btn-sm {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+        }
+
+        /* M3 Material Symbols */
+        .material-symbols-rounded {
+            font-size: 20px;
+            line-height: 1;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
         }
 
         /* ─── Layout ─── */
@@ -259,15 +296,15 @@
             }
 
             .btn {
-                padding: 6px 10px;
-                font-size: 11px;
+                height: 36px;
+                padding: 0 16px;
+                font-size: 12px;
             }
         }
 
         /* ─── Preview Panel ─── */
         .preview-panel {
-            background: var(--panel-bg);
-            border-right: 1px solid var(--card-border);
+            background: var(--md-surface-container-lowest);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -284,14 +321,13 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 5px 12px;
-            border-radius: 20px;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            font-size: 11px;
-            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: var(--md-shape-sm);
+            background: var(--md-surface-container-high);
+            font-size: 12px;
+            font-weight: 500;
             color: var(--text-secondary);
-            backdrop-filter: blur(8px);
+            box-shadow: var(--md-elevation-1);
         }
 
         .preview-status .dot {
@@ -317,19 +353,19 @@
             background-color: transparent;
             background-image: repeating-conic-gradient(rgba(128, 128, 128, 0.06) 0% 25%, transparent 0% 50%);
             background-size: 16px 16px;
-            border-radius: 14px;
+            border-radius: var(--md-shape-lg);
             overflow: hidden;
-            border: 1px solid var(--card-border);
+            border: 1px solid color-mix(in srgb, var(--card-border) 50%, transparent);
             display: flex;
             align-items: center;
             justify-content: center;
             min-width: 200px;
             min-height: 200px;
-            transition: border-color 0.3s, background-color 0.3s;
+            transition: box-shadow 0.3s, background-color 0.3s;
         }
 
         .preview-container:hover {
-            border-color: color-mix(in srgb, var(--accent) 40%, var(--card-border));
+            box-shadow: var(--md-elevation-1);
         }
 
         .preview-container img {
@@ -360,14 +396,14 @@
             position: absolute;
             bottom: 12px;
             right: 12px;
-            background: rgba(0, 0, 0, 0.65);
-            color: #fff;
+            background: var(--md-surface-container-highest);
+            color: var(--text-primary);
             padding: 4px 10px;
-            border-radius: 6px;
+            border-radius: var(--md-shape-xs);
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 500;
             font-family: 'JetBrains Mono', monospace;
-            backdrop-filter: blur(4px);
+            box-shadow: var(--md-elevation-1);
             z-index: 10;
         }
 
@@ -445,17 +481,16 @@
         .preview-generating {
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(6px);
+            background: rgba(0, 0, 0, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
             gap: 8px;
             color: #fff;
-            font-weight: 600;
-            font-size: 13px;
-            border-radius: 14px;
+            font-weight: 500;
+            font-size: 14px;
+            border-radius: var(--md-shape-lg);
         }
 
         .spinner {
@@ -475,7 +510,7 @@
 
         /* ─── Properties Panel ─── */
         .props-panel {
-            background: var(--bg);
+            background: var(--md-surface-container-low);
             overflow-y: auto;
             overflow-x: hidden;
             height: calc(100vh - 53px);
@@ -499,8 +534,8 @@
         }
 
         .section {
-            border-bottom: 1px solid var(--card-border);
-            padding: 14px 16px;
+            border-bottom: 1px solid color-mix(in srgb, var(--card-border) 50%, transparent);
+            padding: 16px;
         }
 
         .section-header {
@@ -515,32 +550,36 @@
         }
 
         .section-title {
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 12px;
+            font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.5px;
             color: var(--text-secondary);
             flex-shrink: 0;
             white-space: nowrap;
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding-top: 6px;
+            gap: 8px;
         }
 
         .section-toggle {
             color: var(--text-secondary);
-            font-size: 11px;
+            display: flex;
+            align-items: center;
             transition: transform 0.2s;
+        }
+
+        .section-toggle .material-symbols-rounded {
+            font-size: 20px;
         }
 
         .section-header-actions {
             display: flex;
-            gap: 5px;
+            gap: 6px;
             flex-wrap: wrap;
             justify-content: flex-start;
             width: 100%;
-            margin-top: 4px;
+            margin-top: 8px;
         }
 
         /* ─── Form Controls ─── */
@@ -550,12 +589,11 @@
 
         .field-label {
             display: block;
-            font-size: 10px;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 500;
             color: var(--text-secondary);
-            margin-bottom: 3px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
         }
 
         .field-row {
@@ -583,21 +621,22 @@
         input[type="number"],
         select {
             width: 100%;
-            padding: 7px 10px;
-            background: var(--input-bg);
+            padding: 10px 12px;
+            background: transparent;
             border: 1px solid var(--card-border);
-            border-radius: 8px;
+            border-radius: var(--md-shape-xs);
             color: var(--text-primary);
             font-family: inherit;
-            font-size: 13px;
+            font-size: 14px;
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color 0.2s;
         }
 
         input:focus,
         select:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 2px var(--accent-glow);
+            border-width: 2px;
+            padding: 9px 11px;
         }
 
         input[type="number"] {
@@ -655,22 +694,22 @@
             border-color: var(--accent);
         }
 
-        /* ─── Layer Card ─── */
+        /* ─── Layer Card (M3 Outlined Card) ─── */
         .layer-card {
-            background: var(--card-bg);
+            background: var(--md-surface-container);
             border: 1px solid var(--card-border);
-            border-radius: 12px;
-            margin-bottom: 6px;
+            border-radius: var(--md-shape-md);
+            margin-bottom: 8px;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         .layer-card:hover {
-            border-color: color-mix(in srgb, var(--accent) 50%, var(--card-border));
+            box-shadow: var(--md-elevation-1);
         }
 
         .layer-card.expanded {
             border-color: var(--accent);
-            box-shadow: 0 0 0 1px var(--accent-glow), 0 4px 16px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--md-elevation-2);
         }
 
         .layer-card.selected-pulse {
@@ -679,29 +718,27 @@
 
         @keyframes selectedPulse {
             0% { box-shadow: 0 0 0 0px var(--accent); }
-            30% { box-shadow: 0 0 0 6px var(--accent-glow); }
+            30% { box-shadow: 0 0 0 4px var(--accent-glow); }
             100% { box-shadow: 0 0 0 0px transparent; }
         }
 
         .layer-card.hidden {
-            opacity: 0.6;
-            background: rgba(0, 0, 0, 0.05);
+            opacity: 0.5;
         }
 
         .layer-header {
             display: flex;
             align-items: center;
-            padding: 8px 10px;
-            gap: 7px;
+            padding: 10px 12px;
+            gap: 8px;
             cursor: pointer;
             user-select: none;
             transition: background 0.15s;
-            border-top-left-radius: 11px;
-            border-top-right-radius: 11px;
+            border-radius: var(--md-shape-md) var(--md-shape-md) 0 0;
         }
 
         .layer-header:hover {
-            background: var(--hover-bg);
+            background: var(--md-state-hover);
         }
 
         .layer-drag {
@@ -718,15 +755,19 @@
         }
 
         .layer-icon {
-            width: 26px;
-            height: 26px;
-            border-radius: 7px;
-            background: var(--panel-bg);
+            width: 32px;
+            height: 32px;
+            border-radius: var(--md-shape-sm);
+            background: var(--md-surface-container-highest);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
             flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .layer-icon .material-symbols-rounded {
+            font-size: 18px;
         }
 
         .layer-info {
@@ -755,25 +796,25 @@
 
         /* .layer-body styling is now handled via inline styles for maximum stability */
 
-        /* ─── Effect Tag ─── */
+        /* ─── Effect Tag (M3 Assist Chip) ─── */
         .effect-tag {
             display: inline-flex;
             align-items: center;
-            gap: 3px;
-            padding: 2px 7px;
-            border-radius: 6px;
-            background: var(--panel-bg);
-            border: 1px solid var(--card-border);
-            font-size: 10px;
-            font-weight: 600;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: var(--md-shape-sm);
+            background: var(--md-surface-container-highest);
+            border: none;
+            font-size: 11px;
+            font-weight: 500;
             color: var(--text-secondary);
             margin: 2px;
             cursor: pointer;
-            transition: all 0.15s;
+            transition: background 0.15s;
         }
 
         .effect-tag:hover {
-            border-color: var(--accent);
+            background: color-mix(in srgb, var(--md-surface-container-highest) 90%, var(--text-primary) 10%);
             color: var(--text-primary);
         }
 
@@ -797,12 +838,11 @@
             padding: 6px 0;
         }
 
-        /* ─── Modals ─── */
+        /* ─── Modals (M3 Dialog) ─── */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 200;
             display: none;
             align-items: center;
@@ -814,16 +854,16 @@
         }
 
         .modal {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 18px;
+            background: var(--md-surface-container-high);
+            border: none;
+            border-radius: var(--md-shape-xl);
             width: 90%;
             max-width: 480px;
             max-height: 80vh;
             overflow-y: auto;
-            padding: 20px;
-            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
-            animation: modalIn 0.25s ease-out;
+            padding: 24px;
+            box-shadow: var(--md-elevation-3);
+            animation: modalIn 0.3s cubic-bezier(0.2, 0, 0, 1);
         }
 
         @keyframes modalIn {
@@ -839,24 +879,23 @@
         }
 
         .modal h2 {
-            font-size: 16px;
-            margin-bottom: 14px;
-            font-weight: 700;
+            font-size: 24px;
+            font-weight: 400;
+            margin-bottom: 16px;
         }
 
         .modal-item {
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid var(--card-border);
-            margin-bottom: 6px;
+            padding: 12px 16px;
+            border-radius: var(--md-shape-md);
+            border: none;
+            background: var(--md-surface-container-highest);
+            margin-bottom: 8px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background 0.2s;
         }
 
         .modal-item:hover {
-            border-color: var(--accent);
-            background: var(--hover-bg);
-            transform: translateX(2px);
+            background: color-mix(in srgb, var(--md-surface-container-highest) 90%, var(--text-primary) 10%);
         }
 
         .modal-item-name {
@@ -874,9 +913,9 @@
             width: 100%;
             min-height: 260px;
             padding: 12px;
-            background: var(--input-bg);
+            background: transparent;
             border: 1px solid var(--card-border);
-            border-radius: 10px;
+            border-radius: var(--md-shape-xs);
             color: var(--text-primary);
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
@@ -889,19 +928,20 @@
             border-color: var(--accent);
         }
 
-        /* ─── Toast ─── */
+        /* ─── Toast (M3 Snackbar) ─── */
         #toast {
             position: fixed;
-            bottom: 20px;
+            bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
-            background: var(--accent);
-            color: #000;
-            padding: 9px 22px;
-            border-radius: 30px;
-            font-weight: 700;
-            font-size: 12px;
-            box-shadow: 0 8px 24px var(--accent-glow);
+            background: var(--md-surface-container-highest);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: var(--md-shape-xs);
+            font-weight: 500;
+            font-size: 14px;
+            letter-spacing: 0.25px;
+            box-shadow: var(--md-elevation-3);
             display: none;
             z-index: 300;
             animation: toastIn 0.3s ease-out;
@@ -970,9 +1010,9 @@
             </select>
         </div>
         <div class="header-actions">
-            <button class="btn" onclick="openXmlModal('import')" title="Import XML">📥 Import</button>
-            <button class="btn" onclick="openXmlModal('export')" title="Export XML">📤 Export</button>
-            <button class="btn btn-accent" onclick="saveTemplate()" title="Save template">💾 Save</button>
+            <button class="btn" onclick="openXmlModal('import')" title="Import XML"><span class="material-symbols-rounded">upload</span> Import</button>
+            <button class="btn" onclick="openXmlModal('export')" title="Export XML"><span class="material-symbols-rounded">download</span> Export</button>
+            <button class="btn btn-accent" onclick="saveTemplate()" title="Save template"><span class="material-symbols-rounded">save</span> Save</button>
         </div>
     </header>
 
@@ -986,7 +1026,7 @@
             <div class="preview-status" id="previewStatus"><span class="dot"></span>Idle</div>
             <div class="preview-container" id="previewContainer">
                 <div class="preview-placeholder" id="previewPlaceholder">
-                    <span class="icon">🎨</span>
+                    <span class="icon material-symbols-rounded" style="font-size: 48px;">palette</span>
                     <span>Add layers and start building<br>your artwork template</span>
                     <span style="font-size:10px;opacity:0.6">Click "Generate Preview" to render</span>
                 </div>
@@ -1006,8 +1046,8 @@
 
             <div class="section" style="padding:16px;">
                 <button class="btn btn-accent"
-                    style="width:100%; justify-content:center; font-size:16px; padding:12px; border-radius:8px"
-                    onclick="requestPreview()">▶ Generate Preview</button>
+                    style="width:100%; justify-content:center; font-size:15px; padding:12px; border-radius:12px"
+                    onclick="requestPreview()"><span class="material-symbols-rounded">play_arrow</span> Generate Preview</button>
                 <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:10px">
                     <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
                         <input type="checkbox" id="autoPreviewToggle" style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
@@ -1031,8 +1071,8 @@
             <!-- Output Settings -->
             <div class="section" id="outputSection">
                 <div class="section-header" onclick="toggleSection(this)">
-                    <span class="section-title">📤 Output Settings</span>
-                    <span class="section-toggle">▼</span>
+                    <span class="section-title"><span class="material-symbols-rounded" style="font-size: 16px;">tune</span> Output Settings</span>
+                    <span class="section-toggle"><span class="material-symbols-rounded">expand_more</span></span>
                 </div>
                 <div class="section-body">
                     <div class="field" style="margin-bottom:12px">
@@ -1078,18 +1118,18 @@
                 <!-- Preview Settings (Visual only) -->
                 <div class="section" id="previewSettingsSection">
                     <div class="section-header" onclick="toggleSection(this)">
-                        <span class="section-title">🖼️ Preview Background</span>
-                        <span class="section-toggle">▼</span>
+                        <span class="section-title"><span class="material-symbols-rounded" style="font-size: 16px;">image</span> Preview Background</span>
+                        <span class="section-toggle"><span class="material-symbols-rounded">expand_more</span></span>
                     </div>
                     <div class="section-body">
                         <div class="field">
                             <label class="field-label">Background Style</label>
                             <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px">
-                                <button class="btn btn-sm" onclick="setPreviewBg('checker')">🏁 Checker</button>
-                                <button class="btn btn-sm" onclick="setPreviewBg('dark')">⬛ Dark</button>
-                                <button class="btn btn-sm" onclick="setPreviewBg('light')">⬜ Light</button>
-                                <button class="btn btn-sm" onclick="setPreviewBg('accent')">✨ Accent</button>
-                                <button class="btn btn-sm" onclick="document.getElementById('previewBgInput').click()">🖼️ Image</button>
+                                <button class="btn btn-sm" onclick="setPreviewBg('checker')"><span class="material-symbols-rounded">grid_on</span> Checker</button>
+                                <button class="btn btn-sm" onclick="setPreviewBg('dark')"><span class="material-symbols-rounded">dark_mode</span> Dark</button>
+                                <button class="btn btn-sm" onclick="setPreviewBg('light')"><span class="material-symbols-rounded">light_mode</span> Light</button>
+                                <button class="btn btn-sm" onclick="setPreviewBg('accent')"><span class="material-symbols-rounded">stars</span> Accent</button>
+                                <button class="btn btn-sm" onclick="document.getElementById('previewBgInput').click()"><span class="material-symbols-rounded">add_photo_alternate</span> Image</button>
                             </div>
                             <label class="field-label">Custom Color</label>
                             <div style="display:flex; align-items:center; gap:10px;">
@@ -1105,17 +1145,13 @@
                 <!-- Layers -->
                 <div class="section" id="layersSection">
                     <div class="section-header">
-                        <span class="section-title">🗂️ Layers</span>
+                        <span class="section-title"><span class="material-symbols-rounded" style="font-size: 16px;">layers</span> Layers</span>
                         <div class="section-header-actions">
-                            <button class="btn btn-sm" onclick="addMaskBetween()" title="Add global mask layer">🎭
-                                Global Mask</button>
-                            <button class="btn btn-sm" onclick="addFrameBetween()" title="Add global frame layer">🖼️
-                                Global Frame</button>
-                            <button class="btn btn-sm" onclick="triggerUpload('mask')" title="Upload mask file">📤
-                                Upload Mask</button>
-                            <button class="btn btn-sm" onclick="triggerUpload('frames')" title="Upload frame file">🖼️
-                                Upload Frame</button>
-                            <button class="btn btn-sm btn-accent" onclick="addLayer()">+ Layer</button>
+                            <button class="btn btn-sm" onclick="addMaskBetween()" title="Add global mask layer"><span class="material-symbols-rounded">theater_comedy</span> Global Mask</button>
+                            <button class="btn btn-sm" onclick="addFrameBetween()" title="Add global frame layer"><span class="material-symbols-rounded">crop_free</span> Global Frame</button>
+                            <button class="btn btn-sm" onclick="triggerUpload('mask')" title="Upload mask file"><span class="material-symbols-rounded">upload</span> Upload Mask</button>
+                            <button class="btn btn-sm" onclick="triggerUpload('frames')" title="Upload frame file"><span class="material-symbols-rounded">upload</span> Upload Frame</button>
+                            <button class="btn btn-sm btn-accent" onclick="addLayer()"><span class="material-symbols-rounded">add</span> Layer</button>
                         </div>
                     </div>
                     <div id="layerStack"></div>
@@ -1124,8 +1160,8 @@
                 <!-- Quick Reference -->
                 <div class="section">
                     <div class="section-header" onclick="toggleSection(this)">
-                        <span class="section-title">📖 Quick Reference</span>
-                        <span class="section-toggle">►</span>
+                        <span class="section-title"><span class="material-symbols-rounded" style="font-size: 16px;">menu_book</span> Quick Reference</span>
+                        <span class="section-toggle"><span class="material-symbols-rounded">chevron_right</span></span>
                     </div>
                     <div class="section-body" style="display:none">
                         <div style="font-size:12px;color:var(--text-secondary);line-height:1.8">
@@ -1150,8 +1186,8 @@
         <div class="modal-overlay" id="loadModal">
             <div class="modal">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-                    <h2>📂 Load Template</h2>
-                    <button class="btn btn-sm" onclick="closeModals()">✕</button>
+                    <h2><span class="material-symbols-rounded" style="vertical-align: text-bottom;">folder_open</span> Load Template</h2>
+                    <button class="btn btn-sm btn-icon" style="background:transparent; border:none;" onclick="closeModals()"><span class="material-symbols-rounded">close</span></button>
                 </div>
                 <input type="text" id="loadSearch" placeholder="Search templates..." oninput="filterTemplates()"
                     style="margin-bottom:10px">
@@ -1164,12 +1200,12 @@
             <div class="modal">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                     <h2 id="xmlModalTitle">XML</h2>
-                    <button class="btn btn-sm" onclick="closeModals()">✕</button>
+                    <button class="btn btn-sm btn-icon" style="background:transparent; border:none;" onclick="closeModals()"><span class="material-symbols-rounded">close</span></button>
                 </div>
                 <textarea class="xml-textarea" id="xmlTextarea" spellcheck="false"></textarea>
                 <div style="display:flex;gap:8px;margin-top:12px">
                     <button class="btn btn-accent" id="xmlActionBtn" onclick="xmlAction()">Apply</button>
-                    <button class="btn" onclick="copyXml()">📋 Copy</button>
+                    <button class="btn" onclick="copyXml()"><span class="material-symbols-rounded">content_copy</span> Copy</button>
                 </div>
             </div>
         </div>
@@ -1195,7 +1231,7 @@
         <!-- Restart Required Modal -->
         <div class="modal-overlay" id="restartModal">
             <div class="modal" style="text-align:center; padding:30px;">
-                <div style="font-size:40px; margin-bottom:15px;">🔄</div>
+                <div style="font-size:40px; margin-bottom:15px;"><span class="material-symbols-rounded" style="font-size: 48px; color: var(--accent);">restart_alt</span></div>
                 <h2 style="margin-bottom:10px;">Restart Required</h2>
                 <p style="color:var(--text-secondary); font-size:14px; line-height:1.5;">
                     If you want to reflect your changes right now then restart Scrappy,<br>
@@ -1254,67 +1290,67 @@
 
             const EFFECTS_LIST = [
                 {
-                    key: 'shadow', label: '💫 Shadow', fields: [
+                    key: 'shadow', label: 'Shadow', fields: [
                         { n: 'distance', t: 'number', d: 5, min: -50, max: 50 }, { n: 'softness', t: 'number', d: 5, min: 0, max: 100 }, { n: 'opacity', t: 'number', d: 70, min: 0, max: 100 }
                     ]
                 },
                 {
-                    key: 'stroke', label: '✏️ Stroke', fields: [
+                    key: 'stroke', label: 'Stroke', fields: [
                         { n: 'width', t: 'number', d: 2, min: 0, max: 20 }, { n: 'color', t: 'color', d: '#000000' }
                     ]
                 },
                 {
-                    key: 'rounded', label: '⬜ Rounded', fields: [
+                    key: 'rounded', label: 'Rounded', fields: [
                         { n: 'radius', t: 'number', d: 7, min: 0, max: 500 }
                     ]
                 },
                 {
-                    key: 'blur', label: '🌫️ Blur', fields: [
+                    key: 'blur', label: 'Blur', fields: [
                         { n: 'softness', t: 'number', d: 5, min: 0, max: 100 }
                     ]
                 },
                 {
-                    key: 'mask', label: '🎭 Layer Mask', fields: [
+                    key: 'mask', label: 'Layer Mask', fields: [
                         { n: 'file', t: 'mask-select', d: '' }, { n: 'width', t: 'number', d: '' }, { n: 'height', t: 'number', d: '' },
                         { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' },
                         { n: 'aspect', t: 'select', d: '', options: ['', 'ignore', 'keep', 'keepexpand'] }
                     ]
                 },
                 {
-                    key: 'frame', label: '🖼️ Frame', fields: [
+                    key: 'frame', label: 'Frame', fields: [
                         { n: 'file', t: 'frame-select', d: '' }, { n: 'width', t: 'number', d: '' }, { n: 'height', t: 'number', d: '' },
                         { n: 'x', t: 'number', d: '' }, { n: 'y', t: 'number', d: '' },
                         { n: 'aspect', t: 'select', d: '', options: ['', 'ignore', 'keep', 'keepexpand'] }
                     ]
                 },
                 {
-                    key: 'gamebox', label: '📦 Gamebox', fields: [
+                    key: 'gamebox', label: 'Gamebox', fields: [
                         { n: 'side', t: 'side-select', d: '' }, { n: 'rotate', t: 'number', d: 90, min: -360, max: 360 },
                         { n: 'sidescaling', t: 'select', d: '', options: ['', 'width', 'height', 'both'] }
                     ]
                 },
                 {
-                    key: 'balance', label: '🎨 Balance', fields: [
+                    key: 'balance', label: 'Balance', fields: [
                         { n: 'red', t: 'number', d: 0, min: -255, max: 255 }, { n: 'green', t: 'number', d: 0, min: -255, max: 255 }, { n: 'blue', t: 'number', d: 0, min: -255, max: 255 }
                     ]
                 },
-                { key: 'brightness', label: '☀️ Brightness', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
-                { key: 'contrast', label: '◐ Contrast', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
-                { key: 'saturation', label: '🌈 Saturation', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
-                { key: 'hue', label: '🔄 Hue', fields: [{ n: 'value', t: 'number', d: 0, min: 0, max: 359 }] },
-                { key: 'opacity', label: '👁 Opacity', fields: [{ n: 'value', t: 'number', d: 100, min: 0, max: 100 }] },
+                { key: 'brightness', label: 'Brightness', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
+                { key: 'contrast', label: 'Contrast', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
+                { key: 'saturation', label: 'Saturation', fields: [{ n: 'value', t: 'number', d: 0, min: -255, max: 255 }] },
+                { key: 'hue', label: 'Hue', fields: [{ n: 'value', t: 'number', d: 0, min: 0, max: 359 }] },
+                { key: 'opacity', label: 'Opacity', fields: [{ n: 'value', t: 'number', d: 100, min: 0, max: 100 }] },
                 {
-                    key: 'rotate', label: '🔃 Rotate', fields: [
+                    key: 'rotate', label: 'Rotate', fields: [
                         { n: 'degrees', t: 'number', d: 0, min: -360, max: 360 }, { n: 'axis', t: 'select', d: 'z', options: ['x', 'y', 'z'] }
                     ]
                 },
                 {
-                    key: 'colorize', label: '🎨 Colorize', fields: [
+                    key: 'colorize', label: 'Colorize', fields: [
                         { n: 'hue', t: 'number', d: 0, min: 0, max: 360 }, { n: 'saturation', t: 'number', d: 0, min: -127, max: 127 }
                     ]
                 },
                 {
-                    key: 'scanlines', label: '📺 Scanlines', fields: [
+                    key: 'scanlines', label: 'Scanlines', fields: [
                         { n: 'file', t: 'text', d: 'scanlines1.png' }, { n: 'scale', t: 'number', d: 1, min: 0.1, max: 10 },
                         { n: 'opacity', t: 'number', d: 50, min: 0, max: 100 }, { n: 'mode', t: 'text', d: 'overlay' }
                     ]
@@ -1693,16 +1729,16 @@
                     if (layer.type === 'mask-between') {
                         card.innerHTML = `
                 <div class="layer-header" onclick="toggleLayer(${layer.id})">
-                    <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '👁️' : '👁️‍🗨️'}</button>
-                    <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}">🎭</div>
+                    <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '<span class="material-symbols-rounded" style="font-size:16px">visibility</span>' : '<span class="material-symbols-rounded" style="font-size:16px">visibility_off</span>'}</button>
+                    <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}"><span class="material-symbols-rounded">theater_comedy</span></div>
                     <div class="layer-info" style="opacity:${layer.visible ? 1 : 0.4}">
                         <div class="layer-name">${idx + 1}. Global Mask</div>
                         <div class="layer-meta">${layer.file || 'No file set'}</div>
                     </div>
                     <div class="layer-actions">
-                        <button class="btn btn-sm" title="Move Up (XML Down)" onclick="event.stopPropagation();moveLayerById(${layer.id},1)" ${idx === list.length - 1 ? 'disabled' : ''}>▲</button>
-                        <button class="btn btn-sm" title="Move Down (XML Up)" onclick="event.stopPropagation();moveLayerById(${layer.id},-1)" ${idx === 0 ? 'disabled' : ''}>▼</button>
-                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeLayerById(${layer.id})">✕</button>
+                        <button class="btn btn-icon btn-sm" title="Move Up (XML Down)" onclick="event.stopPropagation();moveLayerById(${layer.id},1)" ${idx === list.length - 1 ? 'disabled' : ''}><span class="material-symbols-rounded" style="font-size:16px">arrow_upward</span></button>
+                        <button class="btn btn-icon btn-sm" title="Move Down (XML Up)" onclick="event.stopPropagation();moveLayerById(${layer.id},-1)" ${idx === 0 ? 'disabled' : ''}><span class="material-symbols-rounded" style="font-size:16px">arrow_downward</span></button>
+                        <button class="btn btn-icon btn-sm btn-danger" onclick="event.stopPropagation();removeLayerById(${layer.id})"><span class="material-symbols-rounded" style="font-size:16px">close</span></button>
                     </div>
                 </div>
                 <div class="layer-body" style="display: ${layer.expanded ? 'block' : 'none'}; border-top: 1px solid var(--card-border); padding: 18px 12px 14px;">
@@ -1712,7 +1748,7 @@
                                 <option value="">Select mask...</option>
                                 ${resourcesList.masks.map(m => `<option value="mask/${m.name}" ${layer.file === `mask/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
                             </select>
-                            <button class="btn btn-icon" onclick="triggerUpload('mask', {layerId:${layer.id}, fieldName:'file'})" title="Upload mask">📤</button>
+                            <button class="btn btn-icon" onclick="triggerUpload('mask', {layerId:${layer.id}, fieldName:'file'})" title="Upload mask"><span class="material-symbols-rounded">upload</span></button>
                         </div>
                     </div>
                     <div class="field-row">
@@ -1729,16 +1765,16 @@
                     } else if (layer.type === 'frame-between') {
                         card.innerHTML = `
                 <div class="layer-header" onclick="toggleLayer(${layer.id})">
-                    <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '👁️' : '👁️‍🗨️'}</button>
-                    <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}">🖼️</div>
+                    <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '<span class="material-symbols-rounded" style="font-size:16px">visibility</span>' : '<span class="material-symbols-rounded" style="font-size:16px">visibility_off</span>'}</button>
+                    <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}"><span class="material-symbols-rounded">crop_free</span></div>
                     <div class="layer-info" style="opacity:${layer.visible ? 1 : 0.4}">
                         <div class="layer-name">${idx + 1}. Global Frame</div>
                         <div class="layer-meta">${layer.file || 'No file set'}</div>
                     </div>
                     <div class="layer-actions">
-                        <button class="btn btn-sm" title="Move Up (XML Down)" onclick="event.stopPropagation();moveLayerById(${layer.id},1)" ${idx === list.length - 1 ? 'disabled' : ''}>▲</button>
-                        <button class="btn btn-sm" title="Move Down (XML Up)" onclick="event.stopPropagation();moveLayerById(${layer.id},-1)" ${idx === 0 ? 'disabled' : ''}>▼</button>
-                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeLayerById(${layer.id})">✕</button>
+                        <button class="btn btn-icon btn-sm" title="Move Up (XML Down)" onclick="event.stopPropagation();moveLayerById(${layer.id},1)" ${idx === list.length - 1 ? 'disabled' : ''}><span class="material-symbols-rounded" style="font-size:16px">arrow_upward</span></button>
+                        <button class="btn btn-icon btn-sm" title="Move Down (XML Up)" onclick="event.stopPropagation();moveLayerById(${layer.id},-1)" ${idx === 0 ? 'disabled' : ''}><span class="material-symbols-rounded" style="font-size:16px">arrow_downward</span></button>
+                        <button class="btn btn-icon btn-sm btn-danger" onclick="event.stopPropagation();removeLayerById(${layer.id})"><span class="material-symbols-rounded" style="font-size:16px">close</span></button>
                     </div>
                 </div>
                 <div class="layer-body" style="display: ${layer.expanded ? 'block' : 'none'}; border-top: 1px solid var(--card-border); padding: 18px 12px 14px;">
@@ -1748,7 +1784,7 @@
                                 <option value="">Select frame...</option>
                                 ${resourcesList.frames.map(m => `<option value="frames/${m.name}" ${layer.file === `frames/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
                             </select>
-                            <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layer.id}, fieldName:'file'})" title="Upload frame">📤</button>
+                            <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layer.id}, fieldName:'file'})" title="Upload frame"><span class="material-symbols-rounded">upload</span></button>
                         </div>
                     </div>
                     <div class="field-row">
@@ -1773,14 +1809,14 @@
                     </div>
                 </div>`;
                     } else {
-                        const resIcon = { 'screenshot': '📸', 'cover': '📦', 'wheel': '🎰', 'marquee': '🏷️', 'texture': '🧱', '': '📄' }[layer.resource] || '📄';
+                        const resIcon = { 'screenshot': '<span class="material-symbols-rounded">screenshot_monitor</span>', 'cover': '<span class="material-symbols-rounded">view_in_ar</span>', 'wheel': '<span class="material-symbols-rounded">album</span>', 'marquee': '<span class="material-symbols-rounded">label</span>', 'texture': '<span class="material-symbols-rounded">texture</span>', '': '<span class="material-symbols-rounded">description</span>' }[layer.resource] || '<span class="material-symbols-rounded">description</span>';
                         const effectTags = (layer.effects || []).map((e, ei) =>
-                            `<span class="effect-tag">${EFFECTS_LIST.find(d => d.key === e.type)?.label || e.type}<span class="remove" onclick="event.stopPropagation();removeEffectById(${layer.id},${ei})">×</span></span>`
+                            `<span class="effect-tag">${EFFECTS_LIST.find(d => d.key === e.type)?.label || e.type}<span class="remove" onclick="event.stopPropagation();removeEffectById(${layer.id},${ei})"><span class="material-symbols-rounded" style="font-size:12px">close</span></span></span>`
                         ).join('');
 
                         card.innerHTML = `
                 <div class="layer-header" onclick="toggleLayer(${layer.id})">
-                    <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '👁️' : '👁️‍🗨️'}</button>
+                    <button class="btn btn-icon btn-sm" style="border:none; background:none; opacity:${layer.visible ? 1 : 0.4}" title="Toggle Visibility" onclick="event.stopPropagation();toggleVisibility(${layer.id})">${layer.visible ? '<span class="material-symbols-rounded" style="font-size:16px">visibility</span>' : '<span class="material-symbols-rounded" style="font-size:16px">visibility_off</span>'}</button>
                     <div class="layer-icon" style="opacity:${layer.visible ? 1 : 0.4}">${resIcon}</div>
                     <div class="layer-info" style="opacity:${layer.visible ? 1 : 0.4}">
                         <div class="layer-name">${idx + 1}. ${layer.name || layer.resource || 'Empty Layer'}</div>
@@ -1794,9 +1830,9 @@
                         </div>
                     </div>
                     <div class="layer-actions">
-                        <button class="btn btn-sm" title="Move Up (XML Down)" onclick="event.stopPropagation();moveLayerById(${layer.id},1)" ${idx === list.length - 1 ? 'disabled' : ''}>▲</button>
-                        <button class="btn btn-sm" title="Move Down (XML Up)" onclick="event.stopPropagation();moveLayerById(${layer.id},-1)" ${idx === 0 ? 'disabled' : ''}>▼</button>
-                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeLayerById(${layer.id})">✕</button>
+                        <button class="btn btn-icon btn-sm" title="Move Up (XML Down)" onclick="event.stopPropagation();moveLayerById(${layer.id},1)" ${idx === list.length - 1 ? 'disabled' : ''}><span class="material-symbols-rounded" style="font-size:16px">arrow_upward</span></button>
+                        <button class="btn btn-icon btn-sm" title="Move Down (XML Up)" onclick="event.stopPropagation();moveLayerById(${layer.id},-1)" ${idx === 0 ? 'disabled' : ''}><span class="material-symbols-rounded" style="font-size:16px">arrow_downward</span></button>
+                        <button class="btn btn-icon btn-sm btn-danger" onclick="event.stopPropagation();removeLayerById(${layer.id})"><span class="material-symbols-rounded" style="font-size:16px">close</span></button>
                     </div>
                 </div>
                 <div class="layer-body" style="display: ${layer.expanded ? 'block' : 'none'}; border-top: 1px solid var(--card-border); padding: 18px 12px 14px;">
@@ -1943,7 +1979,7 @@
                                         <option value="">Select...</option>
                                         ${resourcesList.masks.map(m => `<option value="mask/${m.name}" ${eff.values[f.n] === `mask/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
                                     </select>
-                                    <button class="btn btn-icon" onclick="triggerUpload('mask', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload mask">📤</button>
+                                    <button class="btn btn-icon" onclick="triggerUpload('mask', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload mask"><span class="material-symbols-rounded">upload</span></button>
                                 </div></div>`;
                         }
                         if (f.t === 'frame-select') {
@@ -1954,7 +1990,7 @@
                                         ${resourcesList.frames.map(m => `<option value="frames/${m.name}" ${eff.values[f.n] === `frames/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
                                         ${resourcesList.other.map(m => `<option value="${m.name}" ${eff.values[f.name] === m.name ? 'selected' : ''}>${m.name}</option>`).join('')}
                                     </select>
-                                    <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload frame">📤</button>
+                                    <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload frame"><span class="material-symbols-rounded">upload</span></button>
                                 </div></div>`;
                         }
                         if (f.t === 'color') {
@@ -2524,10 +2560,10 @@
                 const toggle = header.querySelector('.section-toggle');
                 if (body.style.display === 'none') {
                     body.style.display = 'block';
-                    toggle.textContent = '▼';
+                    toggle.innerHTML = '<span class="material-symbols-rounded">expand_more</span>';
                 } else {
                     body.style.display = 'none';
-                    toggle.textContent = '►';
+                    toggle.innerHTML = '<span class="material-symbols-rounded">chevron_right</span>';
                 }
             }
 
