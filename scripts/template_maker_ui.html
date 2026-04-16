@@ -8,8 +8,12 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
     <style>
         :root {
             --bg: %%BG%%;
@@ -37,9 +41,9 @@
             --md-state-pressed: color-mix(in srgb, var(--text-primary) 12%, transparent);
             --md-state-focus: color-mix(in srgb, var(--text-primary) 12%, transparent);
             /* M3 Elevation shadows */
-            --md-elevation-1: 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15);
-            --md-elevation-2: 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 2px 6px 2px rgba(0,0,0,0.15);
-            --md-elevation-3: 0px 1px 3px 0px rgba(0,0,0,0.3), 0px 4px 8px 3px rgba(0,0,0,0.15);
+            --md-elevation-1: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+            --md-elevation-2: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+            --md-elevation-3: 0px 1px 3px 0px rgba(0, 0, 0, 0.3), 0px 4px 8px 3px rgba(0, 0, 0, 0.15);
             /* M3 Shape scale */
             --md-shape-xs: 4px;
             --md-shape-sm: 8px;
@@ -110,15 +114,36 @@
         }
 
         @keyframes logoReveal {
-            0% { opacity: 0; transform: scale(0); }
-            40% { opacity: 1; transform: scale(1.15); }
-            70% { transform: scale(0.95); }
-            100% { opacity: 1; transform: scale(1); }
+            0% {
+                opacity: 0;
+                transform: scale(0);
+            }
+
+            40% {
+                opacity: 1;
+                transform: scale(1.15);
+            }
+
+            70% {
+                transform: scale(0.95);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
         }
 
         .header-center {
@@ -717,9 +742,17 @@
         }
 
         @keyframes selectedPulse {
-            0% { box-shadow: 0 0 0 0px var(--accent); }
-            30% { box-shadow: 0 0 0 4px var(--accent-glow); }
-            100% { box-shadow: 0 0 0 0px transparent; }
+            0% {
+                box-shadow: 0 0 0 0px var(--accent);
+            }
+
+            30% {
+                box-shadow: 0 0 0 4px var(--accent-glow);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0px transparent;
+            }
         }
 
         .layer-card.hidden {
@@ -1010,15 +1043,19 @@
             </select>
         </div>
         <div class="header-actions">
-            <button class="btn" onclick="openXmlModal('import')" title="Import XML"><span class="material-symbols-rounded">upload</span> Import</button>
-            <button class="btn" onclick="openXmlModal('export')" title="Export XML"><span class="material-symbols-rounded">download</span> Export</button>
-            <button class="btn btn-accent" onclick="saveTemplate()" title="Save template"><span class="material-symbols-rounded">save</span> Save</button>
+            <button class="btn" onclick="openXmlModal('import')" title="Import XML"><span
+                    class="material-symbols-rounded">upload</span> Import</button>
+            <button class="btn" onclick="openXmlModal('export')" title="Export XML"><span
+                    class="material-symbols-rounded">download</span> Export</button>
+            <button class="btn btn-accent" onclick="saveTemplate()" title="Save template"><span
+                    class="material-symbols-rounded">save</span> Save</button>
         </div>
     </header>
 
     <input type="file" id="uploadMaskInput" class="upload-input" accept=".png,.jpg,.jpeg">
     <input type="file" id="uploadFrameInput" class="upload-input" accept=".png,.jpg,.jpeg">
-    <input type="file" id="previewBgInput" class="upload-input" accept=".png,.jpg,.jpeg" onchange="handlePreviewBgUpload(event)">
+    <input type="file" id="previewBgInput" class="upload-input" accept=".png,.jpg,.jpeg"
+        onchange="handlePreviewBgUpload(event)">
 
     <div class="editor">
         <!-- Preview Panel -->
@@ -1047,14 +1084,19 @@
             <div class="section" style="padding:16px;">
                 <button class="btn btn-accent"
                     style="width:100%; justify-content:center; font-size:15px; padding:12px; border-radius:12px"
-                    onclick="requestPreview()"><span class="material-symbols-rounded">play_arrow</span> Generate Preview</button>
+                    onclick="requestPreview()"><span class="material-symbols-rounded">play_arrow</span> Generate
+                    Preview</button>
                 <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:10px">
-                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
-                        <input type="checkbox" id="autoPreviewToggle" style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
+                    <label
+                        style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
+                        <input type="checkbox" id="autoPreviewToggle"
+                            style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
                         Auto Preview
                     </label>
-                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
-                        <input type="checkbox" id="layoutModeToggle" onchange="toggleLayoutMode(this.checked)" style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
+                    <label
+                        style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
+                        <input type="checkbox" id="layoutModeToggle" onchange="toggleLayoutMode(this.checked)"
+                            style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
                         Layout Mode
                     </label>
                 </div>
@@ -1071,7 +1113,8 @@
             <!-- Output Settings -->
             <div class="section" id="outputSection">
                 <div class="section-header" onclick="toggleSection(this)">
-                    <span class="section-title"><span class="material-symbols-rounded" style="font-size: 16px;">tune</span> Output Settings</span>
+                    <span class="section-title"><span class="material-symbols-rounded"
+                            style="font-size: 16px;">tune</span> Output Settings</span>
                     <span class="section-toggle"><span class="material-symbols-rounded">expand_more</span></span>
                 </div>
                 <div class="section-body">
@@ -1090,7 +1133,8 @@
                         </div>
                     </div>
                     <div class="field" style="margin-bottom:12px">
-                        <label class="field-label" style="color:var(--accent); font-weight:700">Active Drafting Output</label>
+                        <label class="field-label" style="color:var(--accent); font-weight:700">Active Drafting
+                            Output</label>
                         <select id="activeOutputSelect" onchange="switchActiveOutput(this.value)">
                             <option value="cover">Box Art (cover)</option>
                             <option value="screenshot">Preview (screenshot)</option>
@@ -1118,18 +1162,25 @@
                 <!-- Preview Settings (Visual only) -->
                 <div class="section" id="previewSettingsSection">
                     <div class="section-header" onclick="toggleSection(this)">
-                        <span class="section-title"><span class="material-symbols-rounded" style="font-size: 16px;">image</span> Preview Background</span>
+                        <span class="section-title"><span class="material-symbols-rounded"
+                                style="font-size: 16px;">image</span> Preview Background</span>
                         <span class="section-toggle"><span class="material-symbols-rounded">expand_more</span></span>
                     </div>
                     <div class="section-body">
                         <div class="field">
                             <label class="field-label">Background Style</label>
                             <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px">
-                                <button class="btn btn-sm" onclick="setPreviewBg('checker')"><span class="material-symbols-rounded">grid_on</span> Checker</button>
-                                <button class="btn btn-sm" onclick="setPreviewBg('dark')"><span class="material-symbols-rounded">dark_mode</span> Dark</button>
-                                <button class="btn btn-sm" onclick="setPreviewBg('light')"><span class="material-symbols-rounded">light_mode</span> Light</button>
-                                <button class="btn btn-sm" onclick="setPreviewBg('accent')"><span class="material-symbols-rounded">stars</span> Accent</button>
-                                <button class="btn btn-sm" onclick="document.getElementById('previewBgInput').click()"><span class="material-symbols-rounded">add_photo_alternate</span> Image</button>
+                                <button class="btn btn-sm" onclick="setPreviewBg('checker')"><span
+                                        class="material-symbols-rounded">grid_on</span> Checker</button>
+                                <button class="btn btn-sm" onclick="setPreviewBg('dark')"><span
+                                        class="material-symbols-rounded">dark_mode</span> Dark</button>
+                                <button class="btn btn-sm" onclick="setPreviewBg('light')"><span
+                                        class="material-symbols-rounded">light_mode</span> Light</button>
+                                <button class="btn btn-sm" onclick="setPreviewBg('accent')"><span
+                                        class="material-symbols-rounded">stars</span> Accent</button>
+                                <button class="btn btn-sm"
+                                    onclick="document.getElementById('previewBgInput').click()"><span
+                                        class="material-symbols-rounded">add_photo_alternate</span> Image</button>
                             </div>
                             <label class="field-label">Custom Color</label>
                             <div style="display:flex; align-items:center; gap:10px;">
@@ -1145,13 +1196,19 @@
                 <!-- Layers -->
                 <div class="section" id="layersSection">
                     <div class="section-header">
-                        <span class="section-title"><span class="material-symbols-rounded" style="font-size: 16px;">layers</span> Layers</span>
+                        <span class="section-title"><span class="material-symbols-rounded"
+                                style="font-size: 16px;">layers</span> Layers</span>
                         <div class="section-header-actions">
-                            <button class="btn btn-sm" onclick="addMaskBetween()" title="Add global mask layer"><span class="material-symbols-rounded">theater_comedy</span> Global Mask</button>
-                            <button class="btn btn-sm" onclick="addFrameBetween()" title="Add global frame layer"><span class="material-symbols-rounded">crop_free</span> Global Frame</button>
-                            <button class="btn btn-sm" onclick="triggerUpload('mask')" title="Upload mask file"><span class="material-symbols-rounded">upload</span> Upload Mask</button>
-                            <button class="btn btn-sm" onclick="triggerUpload('frames')" title="Upload frame file"><span class="material-symbols-rounded">upload</span> Upload Frame</button>
-                            <button class="btn btn-sm btn-accent" onclick="addLayer()"><span class="material-symbols-rounded">add</span> Layer</button>
+                            <button class="btn btn-sm" onclick="addMaskBetween()" title="Add global mask layer"><span
+                                    class="material-symbols-rounded">theater_comedy</span> Global Mask</button>
+                            <button class="btn btn-sm" onclick="addFrameBetween()" title="Add global frame layer"><span
+                                    class="material-symbols-rounded">crop_free</span> Global Frame</button>
+                            <button class="btn btn-sm" onclick="triggerUpload('mask')" title="Upload mask file"><span
+                                    class="material-symbols-rounded">upload</span> Upload Mask</button>
+                            <button class="btn btn-sm" onclick="triggerUpload('frames')" title="Upload frame file"><span
+                                    class="material-symbols-rounded">upload</span> Upload Frame</button>
+                            <button class="btn btn-sm btn-accent" onclick="addLayer()"><span
+                                    class="material-symbols-rounded">add</span> Layer</button>
                         </div>
                     </div>
                     <div id="layerStack"></div>
@@ -1160,7 +1217,8 @@
                 <!-- Quick Reference -->
                 <div class="section">
                     <div class="section-header" onclick="toggleSection(this)">
-                        <span class="section-title"><span class="material-symbols-rounded" style="font-size: 16px;">menu_book</span> Quick Reference</span>
+                        <span class="section-title"><span class="material-symbols-rounded"
+                                style="font-size: 16px;">menu_book</span> Quick Reference</span>
                         <span class="section-toggle"><span class="material-symbols-rounded">chevron_right</span></span>
                     </div>
                     <div class="section-body" style="display:none">
@@ -1171,7 +1229,7 @@
                             fill)<br>
                             <b>Transform:</b> Smooth (bilinear filtering), Fast (sharp pixel scaling)<br>
                             <b>Gamebox Side:</b> To use a custom side image, place the file in your
-                            <code>~/.skyscraper/resources</code> folder and type its filename (e.g.
+                            <code>application/scrappy/templates/resources</code> folder and type its filename (e.g.
                             <code>spine.png</code>).<br>
                             <b>Mask tip:</b> Transparency (Alpha) of the mask image determines what is shown.<br>
                             <b>Effects:</b> balance, blur, brightness, colorize, contrast, frame, gamebox, hue, mask,
@@ -1186,8 +1244,10 @@
         <div class="modal-overlay" id="loadModal">
             <div class="modal">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-                    <h2><span class="material-symbols-rounded" style="vertical-align: text-bottom;">folder_open</span> Load Template</h2>
-                    <button class="btn btn-sm btn-icon" style="background:transparent; border:none;" onclick="closeModals()"><span class="material-symbols-rounded">close</span></button>
+                    <h2><span class="material-symbols-rounded" style="vertical-align: text-bottom;">folder_open</span>
+                        Load Template</h2>
+                    <button class="btn btn-sm btn-icon" style="background:transparent; border:none;"
+                        onclick="closeModals()"><span class="material-symbols-rounded">close</span></button>
                 </div>
                 <input type="text" id="loadSearch" placeholder="Search templates..." oninput="filterTemplates()"
                     style="margin-bottom:10px">
@@ -1200,12 +1260,14 @@
             <div class="modal">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                     <h2 id="xmlModalTitle">XML</h2>
-                    <button class="btn btn-sm btn-icon" style="background:transparent; border:none;" onclick="closeModals()"><span class="material-symbols-rounded">close</span></button>
+                    <button class="btn btn-sm btn-icon" style="background:transparent; border:none;"
+                        onclick="closeModals()"><span class="material-symbols-rounded">close</span></button>
                 </div>
                 <textarea class="xml-textarea" id="xmlTextarea" spellcheck="false"></textarea>
                 <div style="display:flex;gap:8px;margin-top:12px">
                     <button class="btn btn-accent" id="xmlActionBtn" onclick="xmlAction()">Apply</button>
-                    <button class="btn" onclick="copyXml()"><span class="material-symbols-rounded">content_copy</span> Copy</button>
+                    <button class="btn" onclick="copyXml()"><span class="material-symbols-rounded">content_copy</span>
+                        Copy</button>
                 </div>
             </div>
         </div>
@@ -1231,7 +1293,8 @@
         <!-- Restart Required Modal -->
         <div class="modal-overlay" id="restartModal">
             <div class="modal" style="text-align:center; padding:30px;">
-                <div style="font-size:40px; margin-bottom:15px;"><span class="material-symbols-rounded" style="font-size: 48px; color: var(--accent);">restart_alt</span></div>
+                <div style="font-size:40px; margin-bottom:15px;"><span class="material-symbols-rounded"
+                        style="font-size: 48px; color: var(--accent);">restart_alt</span></div>
                 <h2 style="margin-bottom:10px;">Restart Required</h2>
                 <p style="color:var(--text-secondary); font-size:14px; line-height:1.5;">
                     If you want to reflect your changes right now then restart Scrappy,<br>
@@ -1482,12 +1545,12 @@
                 let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<artwork>\n';
 
                 for (const type of enabledTypes) {
-                    const data = allOutputsLayers[type] || { 
-                        layers: [], 
-                        width: document.getElementById('outputWidth').value, 
-                        height: document.getElementById('outputHeight').value 
+                    const data = allOutputsLayers[type] || {
+                        layers: [],
+                        width: document.getElementById('outputWidth').value,
+                        height: document.getElementById('outputHeight').value
                     };
-                    
+
                     xml += `  <output type="${type}" width="${data.width}" height="${data.height}">\n`;
 
                     if (data.layers.length === 0) {
@@ -1525,7 +1588,7 @@
                 // Load new
                 primaryOutputType = newType;
                 const data = allOutputsLayers[newType] || { layers: [], width: 640, height: 480 };
-                
+
                 layers = JSON.parse(JSON.stringify(data.layers));
                 document.getElementById('outputWidth').value = data.width;
                 document.getElementById('outputHeight').value = data.height;
@@ -2599,7 +2662,7 @@
                     container.style.backgroundImage = 'none';
                     label.textContent = colorInput.value;
                 }
-                
+
                 // Refresh overlays in case container size changed
                 if (typeof updateOverlays === 'function') updateOverlays();
             }
@@ -2607,22 +2670,22 @@
             function handlePreviewBgUpload(event) {
                 const file = event.target.files[0];
                 if (!file) return;
-                
+
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     const container = document.querySelector('.preview-container');
                     container.style.backgroundColor = 'transparent';
                     container.style.backgroundImage = `url(${e.target.result})`;
                     container.style.backgroundSize = 'contain';
                     container.style.backgroundPosition = 'center';
                     container.style.backgroundRepeat = 'no-repeat';
-                    
+
                     document.getElementById('previewBgLabel').textContent = 'Custom Image';
-                    
+
                     if (typeof updateOverlays === 'function') updateOverlays();
                 };
                 reader.readAsDataURL(file);
-                
+
                 // Reset the input so the same file can be selected again if needed
                 event.target.value = '';
             }
@@ -2683,10 +2746,10 @@
                                 'texture': { w: 512, h: 512 }
                             };
                             const native = nativeSizes[layer.resource] || { w: outW, h: outH };
-                            
+
                             let w = parseInt(layer.width);
                             let h = parseInt(layer.height);
-                            
+
                             if (isNaN(w) && isNaN(h)) {
                                 w = native.w;
                                 h = native.h;
@@ -2733,7 +2796,7 @@
                             handle.appendChild(resizer);
 
                             overlay.appendChild(handle);
-                            
+
                             // Recurse for nested layers
                             if (layer.layers && layer.layers.length > 0) {
                                 addLayerOverlays(layer.layers, absX, absY);
@@ -2770,7 +2833,7 @@
                         card.classList.remove('selected-pulse');
                         void card.offsetWidth; // trigger reflow
                         card.classList.add('selected-pulse');
-                        
+
                         if (scroll) {
                             card.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
@@ -2802,10 +2865,10 @@
                     'texture': { w: 512, h: 512 }
                 };
                 const native = nativeSizes[layer.resource] || { w: outW, h: outH };
-                
+
                 let w = parseInt(layer.width);
                 let h = parseInt(layer.height);
-                
+
                 if (isNaN(w) && isNaN(h)) {
                     w = native.w; h = native.h;
                 } else if (isNaN(w)) {
@@ -2847,7 +2910,7 @@
 
                 resizingLayerId = layerId;
                 dragStartPos = { x: e.clientX, y: e.clientY };
-                
+
                 // Get current dimensions using the same precise native fallbacks
                 const nativeSizes = {
                     'cover': { w: 220, h: 310 },
@@ -2857,10 +2920,10 @@
                     'texture': { w: 512, h: 512 }
                 };
                 const native = nativeSizes[layer.resource] || { w: outW, h: outH };
-                
+
                 let w = parseInt(layer.width);
                 let h = parseInt(layer.height);
-                
+
                 if (isNaN(w) && isNaN(h)) {
                     w = native.w; h = native.h;
                 } else if (isNaN(w)) {
@@ -2868,7 +2931,7 @@
                 } else if (isNaN(h)) {
                     h = Math.round(w * (native.h / native.w));
                 }
-                
+
                 // Track ratio to resize proportionally
                 resizeStartDims = { w, h, ratio: w / h };
 
@@ -2911,7 +2974,7 @@
                         const newW = resizeStartDims.w + dx;
                         const newH = resizeStartDims.h + dy;
                         const ratio = resizeStartDims.ratio;
-                        
+
                         let finalW, finalH;
                         if (Math.abs(dx) > Math.abs(dy)) {
                             finalW = Math.max(10, Math.round(newW));
