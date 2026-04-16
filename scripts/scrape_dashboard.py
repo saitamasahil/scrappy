@@ -110,17 +110,30 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
     <title>Scrappy &mdash; Live Scraping Dashboard</title>
     <link rel="icon" type="image/png" href="data:image/png;base64,{logo_b64}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Roboto', system-ui, sans-serif;
             background: var(--bg);
             color: var(--text-primary);
             min-height: 100vh;
             padding: 1rem;
             transition: background 0.4s ease, color 0.4s ease;
+            font-size: 14px;
+            line-height: 20px;
+            letter-spacing: 0.25px;
+        }
+
+        .material-symbols-rounded {
+            font-size: 20px;
+            line-height: 1;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
         }
 
         .page {
@@ -174,14 +187,14 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         }
 
         .header h1 {
-            font-size: 1.2rem;
-            font-weight: 600;
+            font-size: 22px;
+            font-weight: 400;
             letter-spacing: -0.01em;
             margin-bottom: 0.25rem;
         }
 
         .header .subtitle {
-            font-size: 0.8rem;
+            font-size: 14px;
             color: var(--text-secondary);
         }
 
@@ -202,7 +215,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             gap: 1.25rem;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 1.25rem 1.5rem;
             margin-bottom: 0.75rem;
             transition: background 0.4s ease, border-color 0.4s ease;
@@ -257,13 +270,13 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         }
 
         .progress-info h2 {
-            font-size: 1rem;
+            font-size: 14px;
             font-weight: 600;
             margin-bottom: 0.5rem;
         }
 
         .progress-detail {
-            font-size: 0.8rem;
+            font-size: 14px;
             color: var(--text-secondary);
             margin-bottom: 0.25rem;
         }
@@ -321,15 +334,15 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         .current-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 14px;
+            border-radius: 12px;
             padding: 1rem 1.25rem;
             margin-bottom: 0.75rem;
             transition: background 0.4s ease, border-color 0.4s ease;
         }
 
         .current-card .card-title {
-            font-size: 0.7rem;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 500;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.06em;
@@ -391,7 +404,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             align-items: center;
             gap: 6px;
             padding: 4px 12px;
-            border-radius: 20px;
+            border-radius: 8px;
             font-size: 0.75rem;
             font-weight: 600;
         }
@@ -427,7 +440,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         .log-section {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 14px;
+            border-radius: 12px;
             padding: 1rem;
             margin-bottom: 0.75rem;
             transition: background 0.4s ease, border-color 0.4s ease;
@@ -441,8 +454,8 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         }
 
         .log-header .card-title {
-            font-size: 0.7rem;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 500;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.06em;
@@ -456,7 +469,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         .log-box {
             background: var(--log-bg);
             border: 1px solid var(--log-border);
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 0.75rem;
             max-height: 220px;
             overflow-y: auto;
@@ -502,7 +515,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         .failed-section {
             background: var(--failed-bg);
             border: 1px solid var(--failed-border);
-            border-radius: 14px;
+            border-radius: 12px;
             padding: 1rem;
             margin-bottom: 0.75rem;
             display: none;
@@ -542,7 +555,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         .idle-overlay {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 3rem 2rem;
             text-align: center;
             display: none;
@@ -559,20 +572,20 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         }
 
         .idle-overlay h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 22px;
+            font-weight: 400;
             margin-bottom: 0.4rem;
         }
 
         .idle-overlay p {
-            font-size: 0.85rem;
+            font-size: 14px;
             color: var(--text-secondary);
         }
 
         .footer {
             text-align: center;
             margin-top: 1rem;
-            font-size: 0.7rem;
+            font-size: 12px;
             color: var(--text-secondary);
             opacity: 0.5;
         }
@@ -604,7 +617,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 
         <!-- Idle / Finished overlay -->
         <div class="idle-overlay" id="idleOverlay">
-            <div class="idle-icon" id="idleIcon">&#9203;</div>
+            <div class="idle-icon" id="idleIcon"><span class="material-symbols-rounded" style="font-size:2.5rem">hourglass_empty</span></div>
             <h2 id="idleTitle">Waiting for scraping...</h2>
             <p id="idleText">Start a scrape in Scrappy and this dashboard will update automatically.</p>
             <div class="failed-section" id="idleFailedSection" style="margin-top: 1.25rem; text-align: left;">
@@ -662,21 +675,21 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             <div class="current-card">
                 <div class="card-title">Currently Processing</div>
                 <div class="current-item">
-                    <div class="current-icon">&#127918;</div>
+                    <div class="current-icon"><span class="material-symbols-rounded" style="font-size:16px">sports_esports</span></div>
                     <div class="current-text">
                         <div class="label">Platform</div>
                         <div class="value" id="curPlatform">N/A</div>
                     </div>
                 </div>
                 <div class="current-item">
-                    <div class="current-icon">&#128191;</div>
+                    <div class="current-icon"><span class="material-symbols-rounded" style="font-size:16px">sd_card</span></div>
                     <div class="current-text">
                         <div class="label">Game</div>
                         <div class="value game-value" id="curGame">N/A</div>
                     </div>
                 </div>
                 <div class="current-item">
-                    <div class="current-icon">&#127760;</div>
+                    <div class="current-icon"><span class="material-symbols-rounded" style="font-size:16px">language</span></div>
                     <div class="current-text">
                         <div class="label">Source</div>
                         <div class="value" id="curSource">N/A</div>
@@ -817,7 +830,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
                 active.style.display = 'none';
                 idle.classList.add('visible');
                 if (d.finished) {
-                    document.getElementById('idleIcon').innerHTML = '&#10003;';
+                    document.getElementById('idleIcon').innerHTML = '<span class="material-symbols-rounded" style="font-size:2.5rem">check_circle</span>';
                     document.getElementById('idleTitle').textContent = 'Scraping Complete!';
                     const total = d.gen_total || 0;
                     const failed = d.failed || [];
@@ -839,7 +852,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
                         idleFailedSection.classList.remove('visible');
                     }
                 } else {
-                    document.getElementById('idleIcon').innerHTML = '&#9203;';
+                    document.getElementById('idleIcon').innerHTML = '<span class="material-symbols-rounded" style="font-size:2.5rem">hourglass_empty</span>';
                     document.getElementById('idleTitle').textContent = 'Waiting for scraping...';
                     document.getElementById('idleText').textContent = 'Start a scrape in Scrappy and this dashboard will update automatically.';
                     // Hide failed section when idle

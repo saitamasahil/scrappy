@@ -547,7 +547,8 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <style>
         :root {{
             --bg: {bg};
@@ -570,12 +571,23 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         body {{
             background: var(--bg);
             color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Roboto', system-ui, sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            font-size: 14px;
+            line-height: 20px;
+            letter-spacing: 0.25px;
+        }}
+
+        .material-symbols-rounded {{
+            font-size: 20px;
+            line-height: 1;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
         }}
 
         header {{
@@ -599,7 +611,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 
         .logo {{ height: 40px; filter: var(--logo-filter); }}
         .title-group {{ text-align: center; }}
-        h1 {{ margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }}
+        h1 {{ margin: 0; font-size: 22px; font-weight: 400; }}
         .status-dot {{
             display: inline-block;
             width: 8px;
@@ -620,16 +632,16 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-secondary);
             margin-top: 5px;
-            font-weight: 500;
+            font-weight: 400;
         }}
 
         #platform-tabs {{
             display: flex;
-            gap: 10px;
-            padding: 15px;
+            gap: 8px;
+            padding: 12px 15px;
             overflow-x: auto;
             background: var(--tab-bar-bg);
             scrollbar-width: none;
@@ -640,7 +652,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             padding: 8px 16px;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 20px;
+            border-radius: 8px;
             color: var(--text-secondary);
             white-space: nowrap;
             cursor: pointer;
@@ -668,30 +680,30 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         }}
         #search-input {{
             width: 100%;
-            background: var(--input-bg);
+            background: transparent;
             border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 12px 15px;
+            border-radius: 28px;
+            padding: 12px 20px;
             color: var(--text-primary);
             font-family: inherit;
-            font-size: 16px;
+            font-size: 14px;
             outline: none;
             transition: border-color 0.2s;
         }}
-        #search-input:focus {{ border-color: var(--accent); }}
+        #search-input:focus {{ border-color: var(--accent); border-width: 2px; padding: 11px 19px; }}
 
         #game-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 20px;
+            gap: 16px;
         }}
 
         .game-card {{
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
-            transition: transform 0.2s, border-color 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
             cursor: pointer;
             display: flex;
             flex-direction: column;
@@ -699,7 +711,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         }}
         .game-card:hover {{
             transform: translateY(-4px);
-            border-color: var(--accent);
+            box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 2px 6px 2px rgba(0,0,0,0.15);
         }}
 
         .thumb-wrapper {{
@@ -738,20 +750,21 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             gap: 4px;
         }}
         .badge {{
-            font-size: 9px;
+            font-size: 10px;
             text-transform: uppercase;
-            padding: 2px 5px;
+            padding: 2px 8px;
             border-radius: 4px;
             background: var(--badge-bg);
             color: var(--text-secondary);
-            font-weight: 700;
+            font-weight: 500;
+            letter-spacing: 0.5px;
         }}
 
         /* Modal Styles */
         #modal-overlay {{
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.5);
             backdrop-filter: blur(8px);
             z-index: 1000;
             display: none;
@@ -761,17 +774,18 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         }}
         #modal {{
             background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 24px;
+            border: none;
+            border-radius: 28px;
             width: 100%;
             max-width: 600px;
             max-height: 90vh;
             overflow-y: auto;
             position: relative;
             padding-bottom: 80px;
+            box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.3), 0px 4px 8px 3px rgba(0,0,0,0.15);
         }}
         .modal-header {{
-            padding: 20px;
+            padding: 24px 24px 16px;
             border-bottom: 1px solid var(--card-border);
             position: sticky;
             top: 0;
@@ -779,37 +793,48 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            border-radius: 28px 28px 0 0;
         }}
-        .modal-header h2 {{ margin: 0; font-size: 18px; }}
+        .modal-header h2 {{ margin: 0; font-size: 22px; font-weight: 400; }}
         .close-btn {{
             background: none;
             border: none;
             color: var(--text-secondary);
-            font-size: 24px;
             cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }}
+        .close-btn:hover {{
+            background: rgba(255,255,255,0.08);
         }}
 
-        .media-list {{ padding: 20px; display: flex; flex-direction: column; gap: 20px; }}
+        .media-list {{ padding: 16px 24px; display: flex; flex-direction: column; gap: 16px; }}
         .media-item {{
             background: var(--modal-item-bg);
-            border-radius: 16px;
-            padding: 15px;
-            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            border: none;
         }}
         .media-label {{
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 500;
             text-transform: uppercase;
             color: var(--accent);
             margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
+            letter-spacing: 0.5px;
         }}
         .media-preview-container {{
             width: 100%;
             aspect-ratio: 16/9;
             background: var(--thumb-bg);
-            border-radius: 8px;
+            border-radius: 12px;
             margin-bottom: 15px;
             display: flex;
             align-items: center;
@@ -827,20 +852,22 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         }}
         .btn {{
             flex: 1;
-            padding: 10px;
-            border-radius: 10px;
+            height: 40px;
+            padding: 0 16px;
+            border-radius: 9999px;
             border: none;
             font-family: inherit;
-            font-weight: 600;
+            font-weight: 500;
             font-size: 14px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: opacity 0.2s;
+            transition: box-shadow 0.2s;
         }}
-        .btn:active {{ opacity: 0.7; }}
+        .btn:hover {{ box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15); }}
+        .btn:active {{ box-shadow: none; }}
         .btn-upload {{ background: var(--accent); color: white; }}
         .btn-regen {{ background: #27ae60; color: white; }}
         
@@ -849,18 +876,18 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 15px 20px;
+            padding: 16px 24px;
             background: var(--card-bg);
             border-top: 1px solid var(--card-border);
             display: none; /* We're moving them into the list */
         }}
 
         .template-selector {{
-            padding: 20px;
+            padding: 16px;
             background: var(--tpl-select-bg);
-            border-radius: 16px;
-            margin: 20px;
-            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            margin: 16px 24px;
+            border: none;
         }}
         .template-list {{
             display: flex;
@@ -871,7 +898,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         }}
         .template-chip {{
             padding: 8px 15px;
-            border-radius: 20px;
+            border-radius: 8px;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             color: var(--text-secondary);
@@ -898,12 +925,13 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            background: var(--accent);
-            color: white;
+            background: var(--card-bg);
+            color: var(--text-primary);
             padding: 12px 24px;
-            border-radius: 30px;
-            font-weight: 600;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.3), 0px 4px 8px 3px rgba(0,0,0,0.15);
             display: none;
             z-index: 2000;
         }}
@@ -931,6 +959,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             color: var(--text-secondary);
             border-top: 1px solid var(--card-border);
             margin-top: 40px;
+            opacity: 0.6;
         }}
 
         /* Responsive adjustments */
@@ -971,7 +1000,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
                     <h2 id="modal-game-title">Game Title</h2>
                     <span id="modal-game-rom" style="font-size: 11px; color: var(--text-secondary); font-family: 'JetBrains Mono'">filename.zip</span>
                 </div>
-                <button class="close-btn">&times;</button>
+                <button class="close-btn"><span class="material-symbols-rounded">close</span></button>
             </div>
             <div class="media-list" id="modal-media-list"></div>
             <div id="modal-actions">

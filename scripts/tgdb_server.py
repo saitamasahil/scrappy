@@ -68,12 +68,14 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
     <title>Scrappy &mdash; TheGamesDB API Key</title>
     <link rel="icon" type="image/png" href="data:image/png;base64,{logo_b64}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
 
         body {{
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Roboto', system-ui, sans-serif;
             background: {bg};
             color: {text_primary};
             min-height: 100vh;
@@ -81,6 +83,17 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             align-items: center;
             justify-content: center;
             padding: 1rem;
+            font-size: 14px;
+            line-height: 20px;
+            letter-spacing: 0.25px;
+        }}
+
+        .material-symbols-rounded {{
+            font-size: 20px;
+            line-height: 1;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
         }}
 
         .page {{
@@ -124,7 +137,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         .card {{
             background: {card_bg};
             border: 1px solid {card_border};
-            border-radius: 16px;
+            border-radius: 28px;
             padding: 2rem;
             margin-bottom: 1rem;
         }}
@@ -135,36 +148,40 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         }}
 
         .card-header h1 {{
-            font-size: 1.35rem;
-            font-weight: 600;
+            font-size: 24px;
+            font-weight: 400;
             margin-bottom: 0.35rem;
-            letter-spacing: -0.01em;
         }}
 
         .card-header .subtitle {{
-            font-size: 0.85rem;
+            font-size: 14px;
             color: {text_secondary};
+            font-weight: 400;
         }}
 
         .divider {{
             height: 1px;
             background: {card_border};
             margin: 1.25rem 0;
+            opacity: 0.5;
         }}
 
         .instructions {{
             background: {instructions_bg};
             border: 1px solid {instructions_border};
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 1.25rem;
             margin-bottom: 1.5rem;
         }}
 
         .instructions h3 {{
-            font-size: 0.9rem;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 500;
             margin-bottom: 0.75rem;
             color: {text_primary};
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }}
 
         .instructions ol {{
@@ -173,10 +190,10 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         }}
 
         .instructions li {{
-            font-size: 0.85rem;
+            font-size: 14px;
             color: {text_secondary};
             margin-bottom: 0.5rem;
-            line-height: 1.5;
+            line-height: 1.6;
         }}
 
         .instructions li:last-child {{
@@ -199,30 +216,30 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 
         .form-label {{
             display: block;
-            font-size: 0.8rem;
+            font-size: 12px;
             font-weight: 500;
             color: {text_secondary};
-            margin-bottom: 0.4rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.5px;
         }}
 
         input[type="text"] {{
             width: 100%;
-            padding: 12px 14px;
-            background: {input_bg};
-            border: 1.5px solid {input_border};
-            border-radius: 10px;
+            padding: 14px 16px;
+            background: transparent;
+            border: 1px solid {input_border};
+            border-radius: 4px;
             color: {text_primary};
-            font-size: 0.95rem;
-            font-family: 'Inter', monospace;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            font-size: 14px;
+            font-family: 'Roboto', sans-serif;
+            transition: border-color 0.2s;
             outline: none;
         }}
 
         input[type="text"]:focus {{
             border-color: {input_focus_border};
-            box-shadow: 0 0 0 3px {input_focus_border}22;
+            border-width: 2px;
+            padding: 13px 15px;
         }}
 
         input[type="text"]::placeholder {{
@@ -232,36 +249,49 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 
         .btn {{
             width: 100%;
-            padding: 12px 20px;
+            height: 48px;
+            padding: 0 24px;
             background: #{accent};
             color: {"#000" if is_dark else "#fff"};
             border: none;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
+            border-radius: 9999px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'Roboto', sans-serif;
             cursor: pointer;
-            transition: transform 0.15s ease, opacity 0.2s ease;
-            letter-spacing: 0.01em;
+            transition: background 0.2s, box-shadow 0.2s;
+            letter-spacing: 0.1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }}
 
         .btn:hover {{
-            opacity: 0.9;
-            transform: translateY(-1px);
+            box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15);
         }}
 
         .btn:active {{
-            transform: translateY(0px);
+            box-shadow: none;
         }}
 
         .note {{
             background: {note_bg};
             border: 1px solid {note_border};
-            border-radius: 8px;
-            padding: 0.85rem 1rem;
-            font-size: 0.8rem;
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            font-size: 14px;
             color: {note_text};
-            line-height: 1.5;
+            line-height: 1.6;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }}
+
+        .note .material-symbols-rounded {{
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 1px;
         }}
 
         .success-overlay {{
@@ -270,13 +300,11 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.5);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 100;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
         }}
 
         .success-overlay.visible {{
@@ -285,13 +313,14 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 
         .success-card {{
             background: {card_bg};
-            border: 1px solid {success_border};
-            border-radius: 16px;
+            border: none;
+            border-radius: 28px;
             padding: 2.5rem 3rem;
             text-align: center;
             animation: popIn 0.4s ease-out;
             max-width: 380px;
             width: 90%;
+            box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.3), 0px 4px 8px 3px rgba(0,0,0,0.15);
         }}
 
         .success-card .check {{
@@ -302,31 +331,35 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.8rem;
             color: {card_bg};
             margin: 0 auto 1rem;
             animation: logoReveal 0.5s ease-out;
         }}
 
+        .success-card .check .material-symbols-rounded {{
+            font-size: 32px;
+            font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+        }}
+
         .success-card h2 {{
-            font-size: 1.2rem;
-            font-weight: 600;
+            font-size: 24px;
+            font-weight: 400;
             color: {success_text};
             margin-bottom: 0.5rem;
         }}
 
         .success-card p {{
-            font-size: 0.9rem;
+            font-size: 14px;
             color: {text_secondary};
-            line-height: 1.5;
+            line-height: 1.6;
         }}
 
         .footer {{
             text-align: center;
             margin-top: 1rem;
-            font-size: 0.75rem;
+            font-size: 12px;
             color: {text_secondary};
-            opacity: 0.6;
+            opacity: 0.5;
         }}
 
         .accent-dot {{
@@ -351,7 +384,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             </div>
 
             <div class="instructions">
-                <h3>How to get your API key</h3>
+                <h3><span class="material-symbols-rounded">info</span> How to get your API key</h3>
                 <ol>
                     <li>Go to <a href="https://thegamesdb.net/" target="_blank">thegamesdb.net</a> and log in or create an account.</li>
                     <li>Visit <a href="https://api.thegamesdb.net/key.php" target="_blank">api.thegamesdb.net/key.php</a></li>
@@ -365,19 +398,20 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
                     <label class="form-label" for="apikey">API Key</label>
                     <input type="text" name="apikey" id="apikey" placeholder="Paste your 64-character key here" required minlength="64" maxlength="64" autocomplete="off" spellcheck="false">
                 </div>
-                <button type="submit" class="btn">Submit Key</button>
+                <button type="submit" class="btn"><span class="material-symbols-rounded">save</span> Submit Key</button>
             </form>
 
             <div class="divider"></div>
 
             <div class="note">
-                Without an API key, TheGamesDB limits you to a very small number of requests. With a key, you get 1,000 requests per month per IP. For even higher limits, register for a private key through TheGamesDB.
+                <span class="material-symbols-rounded">lightbulb</span>
+                <span>Without an API key, TheGamesDB limits you to a very small number of requests. With a key, you get 1,000 requests per month per IP. For even higher limits, register for a private key through TheGamesDB.</span>
             </div>
         </div>
 
         <div class="success-overlay" id="successOverlay">
             <div class="success-card">
-                <div class="check">&#10003;</div>
+                <div class="check"><span class="material-symbols-rounded">check</span></div>
                 <h2>Key Saved Successfully</h2>
                 <p>You can close this page now.<br>Scrappy will pick up the key automatically.</p>
             </div>
