@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+  <output type="cover" width="1280" height="720">
+    <layer resource="screenshot" width="610" height="403" x="648" y="100" valign="middle">
+      <rounded radius="10"/>
+      <stroke width="5" red="0" green="0" blue="0"/>
+    </layer>
+    <layer resource="wheel" width="404" x="325" y="110" align="center">
+      <shadow distance="5" softness="5" opacity="70"/>
+    </layer>
+  </output>
+</artwork>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+  <output type="cover" width="1280" height="720">
+    <layer resource="cover" width="550" x="-30" y="-50" align="right" valign="bottom">
+      <shadow distance="5" softness="5" opacity="70"/>
+      <stroke width="10" red="0" green="0" blue="0"/>
+    </layer>
+  </output>
+</artwork>

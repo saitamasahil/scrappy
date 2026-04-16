@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+  <output type="cover" width="1280" height="720">
+    <layer resource="screenshot" width="619" height="412" x="648" y="100" valign="middle">
+      <rounded radius="10"/>
+      <stroke width="5" red="0" green="0" blue="0"/>
+    </layer>
+    <layer resource="cover" height="240" x="50" y="-40" align="center" valign="bottom">
+      <gamebox side="wheel" rotate="90"/>
+      <shadow distance="5" softness="5" opacity="70"/>
+    </layer>
+    <layer resource="wheel" width="404" x="325" y="100" align="center">
+      <shadow distance="5" softness="5" opacity="70"/>
+    </layer>
+  </output>
+</artwork>
