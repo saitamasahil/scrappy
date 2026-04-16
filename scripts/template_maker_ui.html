@@ -2323,7 +2323,18 @@
             }
 
             async function requestPreview(fromQueue = false) {
-                if (layers.length === 0) return;
+                const visibleCount = layers.filter(l => l.visible).length;
+                if (layers.length === 0 || visibleCount === 0) {
+                    generating = false;
+                    previewQueued = false;
+                    previewRequestTime = Date.now(); // Invalidate pending polls
+                    document.getElementById('previewLoading').style.display = 'none';
+                    document.getElementById('previewImg').style.display = 'none';
+                    document.getElementById('previewImg').src = '';
+                    document.getElementById('previewPlaceholder').style.display = 'flex';
+                    setPreviewStatus('idle');
+                    return;
+                }
 
                 // If we're already generating, queue this request to run next
                 if (generating && !fromQueue) {
