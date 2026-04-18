@@ -287,6 +287,129 @@ function artwork.copy_artwork_type(platform, game, media_path, copy_path, output
     end
 end
 
+function artwork.copy_grid_from_cache(platform, game, copy_path)
+    local cache_folder = skyscraper_config:read("main", "cacheFolder")
+    if not cache_folder or cache_folder == "\"\"" then return end
+    cache_folder = utils.strip_quotes(cache_folder)
+
+    local pea_key = normalize_platform(platform)
+    local covers_cache_dir = string.format("%s/%s/covers", cache_folder, pea_key)
+    if not nativefs.getInfo(covers_cache_dir) then return end
+
+    -- Parse quickid.xml to map game title to cache ID
+    local quickid_path = string.format("%s/%s/quickid.xml", cache_folder, pea_key)
+    local quickid = nativefs.read(quickid_path)
+    if not quickid then return end
+
+    local cache_id = nil
+    for _, line in ipairs(utils.split(quickid, "\n")) do
+        if line:find("<quickid%s") then
+            local filepath = line:match('filepath="([^"]+)"')
+            if filepath then
+                local filename = filepath:match("([^/]+)$")
+                local id = line:match('id="([^"]+)"')
+                if filename and id then
+                    local decoded_name = xml_decode(filename)
+                    local base_name = decoded_name:match("^(.+)%.[^.]+$") or decoded_name
+                    -- Match against the requested game (ignoring case)
+                    if base_name:lower() == game:lower() then
+                        cache_id = id
+                        break
+                    end
+                end
+            end
+        end
+    end
+
+    if not cache_id then return end
+
+    -- Search source directores for this cache ID
+    local source_dirs = nativefs.getDirectoryItems(covers_cache_dir)
+    if not source_dirs then return end
+
+    local found_path = nil
+    for _, source_dir in ipairs(source_dirs) do
+        local source_path = string.format("%s/%s", covers_cache_dir, source_dir)
+        local source_info = nativefs.getInfo(source_path)
+        if source_info and source_info.type == "directory" then
+            local test_path_no_ext = string.format("%s/%s", source_path, cache_id)
+            if nativefs.getInfo(test_path_no_ext) then
+                found_path = test_path_no_ext
+            else
+                -- Try common extensions as fallback
+                local exts = {"png", "jpg", "jpeg", "webp"}
+                for _, ext in ipairs(exts) do
+                    local test_path = string.format("%s/%s.%s", source_path, cache_id, ext)
+                    if nativefs.getInfo(test_path) then
+                        found_path = test_path
+                        break
+                    end
+                end
+            end
+            if found_path then break end
+        end
+    end
+
+    if not found_path then return end
+
+    -- Extract, dynamically scale based on device resolution, and explicitly encode PNG
+    local dest_file = string.format("%s/grid/%s.png", copy_path, game)
+    local file_data = nativefs.newFileData(found_path)
+
+    local success, result_or_err = nil, nil
+    if file_data then
+        success, result_or_err = pcall(function()
+            local raw_img_data = love.image.newImageData(file_data)
+            local w, h = raw_img_data:getWidth(), raw_img_data:getHeight()
+            
+            -- Dynamically determine max grid size according to MUOS official dimension specs
+            local screen_w = love.graphics.getWidth()
+            local screen_h = love.graphics.getHeight()
+            local max_size = 120 -- Default safe size for 640x480
+            
+            if screen_w >= 1024 then
+                max_size = 204
+            elseif screen_h >= 576 then
+                max_size = 140
+            end
+
+            if w <= max_size and h <= max_size then
+                -- Already small enough, return the raw data
+                return raw_img_data
+            end
+
+            -- Needs downscaling
+            local img = love.graphics.newImage(raw_img_data)
+            local scale = max_size / math.max(w, h)
+            local target_w = math.max(1, math.floor(w * scale))
+            local target_h = math.max(1, math.floor(h * scale))
+
+            love.graphics.push("all")
+            local canvas = love.graphics.newCanvas(target_w, target_h)
+            love.graphics.setCanvas(canvas)
+            love.graphics.clear(0, 0, 0, 0)
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.setBlendMode("alpha", "premultiplied")
+            love.graphics.draw(img, 0, 0, 0, scale, scale)
+            love.graphics.setCanvas()
+            love.graphics.pop()
+
+            local final_data = canvas:newImageData()
+            img:release()
+            return final_data
+        end)
+    end
+
+    if success and result_or_err then
+        local encoded = result_or_err:encode("png")
+        nativefs.write(dest_file, encoded:getString())
+        log.write(string.format("[Grid] Successfully scaled and exported grid cover to %s (size: %dx%d)", dest_file, result_or_err:getWidth(), result_or_err:getHeight()))
+    else
+        -- Fallback to a raw byte copy if image parsing fails
+        nativefs.write(dest_file, nativefs.read(found_path))
+    end
+end
+
 function artwork.copy_to_catalogue(platform, game)
     log.write(string.format("Copying artwork for %s: %s", platform, game))
     local _, output_path = skyscraper_config:get_paths()
@@ -320,7 +443,7 @@ function artwork.copy_to_catalogue(platform, game)
     if not nativefs.getInfo(copy_path) then
         nativefs.createDirectory(copy_path)
     end
-    local ensure_dirs = {"box", "preview", "splash", "text"}
+    local ensure_dirs = {"box", "preview", "splash", "text", "grid"}
     for _, d in ipairs(ensure_dirs) do
         local p = string.format("%s/%s", copy_path, d)
         if not nativefs.getInfo(p) then
@@ -334,6 +457,9 @@ function artwork.copy_to_catalogue(platform, game)
     artwork.copy_artwork_type(platform, game, media_path, copy_path, output_types.PREVIEW)
     -- Copy splash artwork
     artwork.copy_artwork_type(platform, game, media_path, copy_path, output_types.SPLASH)
+
+    -- Extract Grid image from Raw Cache Covers
+    artwork.copy_grid_from_cache(platform, game, copy_path)
 
     -----------------------------
     -- Read Pegasus-formatted metadata
