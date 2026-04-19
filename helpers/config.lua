@@ -133,6 +133,9 @@ function user_config:fill_defaults()
     if not self:read("main", "samplePreset") then
         self:insert("main", "samplePreset", "Streets of Rage")
     end
+    if not self:read("main", "gridSize") then
+        self:insert("main", "gridSize", "Dynamic")
+    end
     self:save()
 end
 

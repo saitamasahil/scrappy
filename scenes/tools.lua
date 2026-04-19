@@ -66,6 +66,10 @@ local preset_popup, preset_menu
 local preset_popup_visible = false
 local preset_fade = 0
 
+local grid_size_popup, grid_size_menu
+local grid_size_popup_visible = false
+local open_grid_size_settings
+
 local missing_media_popup_visible = false
 local missing_media_list = ""
 local missing_media_fade = 0
@@ -1557,6 +1561,12 @@ function tools:load()
         onClick = on_import_press,
         icon = "file_import"
     } + listitem {
+        id = "grid_size_settings",
+        text = "Manage Grid Image Size (current: " .. (user_config:read("main", "gridSize") or "Dynamic") .. ")",
+        width = item_width,
+        onClick = open_grid_size_settings,
+        icon = "grid"
+    } + listitem {
         text = "Manage Preview Presets",
         width = item_width,
         onClick = open_manage_presets_menu,
@@ -1711,6 +1721,8 @@ function tools:update(dt)
         accent_menu:update(dt)
     elseif preset_popup and preset_popup_visible and preset_menu then
         preset_menu:update(dt)
+    elseif grid_size_popup and grid_size_popup_visible and grid_size_menu then
+        grid_size_menu:update(dt)
     else
         menu:update(dt)
     end
@@ -1781,6 +1793,103 @@ function tools:update(dt)
             end
         end
     end
+end
+
+open_grid_size_settings = function()
+    local item_width = math.min(w_width - 120, 560)
+    local current_size = user_config:read("main", "gridSize") or "Dynamic"
+
+    local function apply_grid_size(size)
+        user_config:insert("main", "gridSize", tostring(size))
+        user_config:save()
+        if grid_size_popup then
+            grid_size_popup.visible = false
+            grid_size_popup_visible = false
+        end
+        local menu_item = menu ^ "grid_size_settings"
+        if menu_item then
+            menu_item.text = "Manage Grid Image Size (current: " .. tostring(size) .. ")"
+        end
+        dispatch_info("Grid Size", "Grid image size set to " .. tostring(size) .. ". Please run a scrape to apply.")
+    end
+
+    grid_size_menu = component:root{
+        column = true,
+        gap = 8,
+        width = item_width
+    }
+
+    grid_size_menu = grid_size_menu + listitem {
+        text = "Set maximum grid thumbnail boundaries.",
+        width = item_width,
+        focusable = false,
+        disabled = true,
+        icon = "info"
+    } + listitem {
+        text = "Use 'Dynamic' for hardware auto-scaling.",
+        width = item_width,
+        focusable = false,
+        disabled = true
+    }
+
+    local presets = {"Dynamic", "120", "140", "204"}
+    for _, size in ipairs(presets) do
+        grid_size_menu = grid_size_menu + listitem {
+            id = "grid_" .. size,
+            text = size .. (current_size == size and " (Current)" or ""),
+            width = item_width,
+            onClick = function()
+                apply_grid_size(size)
+            end,
+            active = (current_size == size)
+        }
+    end
+
+    grid_size_menu = grid_size_menu + listitem {
+        id = "grid_custom",
+        text = "Custom...",
+        width = item_width,
+        onClick = function()
+            if not vk then
+                vk = virtual_keyboard.create({
+                    title = "Custom Grid Size",
+                    placeholder = "e.g. 150",
+                    on_done = function(text)
+                        local num = tonumber(text)
+                        if num and num > 0 then
+                            apply_grid_size(tostring(num))
+                        else
+                            dispatch_info("Invalid Size", "Please enter a valid positive number.")
+                        end
+                    end,
+                    on_cancel = function() end
+                })
+            end
+            vk:show("", "custom_grid_size")
+        end
+    }
+
+    grid_size_menu = grid_size_menu + listitem {
+        id = "grid_close",
+        text = "Close",
+        width = item_width,
+        onClick = function()
+            grid_size_popup.visible = false
+            grid_size_popup_visible = false
+        end,
+        icon = "refresh"
+    }
+
+    grid_size_menu:updatePosition(0, 0)
+    grid_size_menu:focusFirstElement()
+
+    grid_size_popup = popup {
+        visible = true,
+        title = "Grid Image Size",
+        id = "grid_size_popup"
+    }
+    grid_size_popup.children = {grid_size_menu}
+    grid_size_popup_visible = true
 end
 
 -- Draw the confirmation popup
@@ -2115,6 +2224,9 @@ function tools:draw()
     if preset_popup and preset_popup_visible then
         preset_popup:draw()
     end
+    if grid_size_popup and grid_size_popup_visible then
+        grid_size_popup:draw()
+    end
     -- Draw confirmation popup on top of everything
     draw_confirm_popup()
     draw_clear_cache_popup()
@@ -2127,6 +2239,7 @@ function tools:draw()
                          (accent_popup and accent_popup.visible) or 
                          (manage_presets_popup and manage_presets_popup.visible) or
                          preset_popup_visible or
+                         grid_size_popup_visible or
                          confirm_popup_visible or 
                          clear_cache_popup_visible or 
                          offline_popup_visible
@@ -2274,7 +2387,23 @@ function tools:keypressed(key)
         return
     end
 
-    -- 6. Virtual Keyboard
+    -- 6. Grid size popup
+    if grid_size_popup and grid_size_popup_visible then
+        if key == "escape" or key == "b" then
+            grid_size_popup.visible = false
+            grid_size_popup_visible = false
+            return
+        end
+        if key == "left" or key == "right" then
+            return -- Block L/R navigation
+        end
+        if grid_size_menu then
+            grid_size_menu:keypressed(key)
+        end
+        return
+    end
+
+    -- 7. Virtual Keyboard
     if vk and vk.visible then
         local mapped = nil
         if key == 'up' or key == 'down' or key == 'left' or key == 'right' then

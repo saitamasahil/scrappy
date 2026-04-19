@@ -373,6 +373,15 @@ function artwork.copy_grid_from_cache(platform, game, copy_path)
                 max_size = 140
             end
 
+            -- Apply user config override if set
+            local config_grid_size = user_config:read("main", "gridSize")
+            if config_grid_size and string.lower(tostring(config_grid_size)) ~= "dynamic" then
+                local parsed_size = tonumber(config_grid_size)
+                if parsed_size and parsed_size > 0 then
+                    max_size = parsed_size
+                end
+            end
+
             if w <= max_size and h <= max_size then
                 -- Already small enough, return the raw data
                 return raw_img_data
