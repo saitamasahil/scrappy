@@ -156,7 +156,7 @@
 
         .header-center select {
             flex: 1;
-            max-width: 260px;
+            max-width: 450px;
             padding: 8px 12px;
             background: var(--md-surface-container-highest);
             border: 1px solid var(--card-border);
@@ -1033,29 +1033,33 @@
         .upload-input {
             display: none;
         }
-            /* Warning Badge for new items */
-            .new-item-badge {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-            }
-            .new-warning-icon {
-                font-size: 18px;
-                color: var(--accent);
-                cursor: pointer;
-                margin-left: 6px;
-                flex-shrink: 0;
-            }
-            .field-with-warning {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                flex: 1;
-            }
-            .field-with-warning select {
-                flex: 1;
-            }
+
+        /* Warning Badge for new items */
+        .new-item-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .new-warning-icon {
+            font-size: 18px;
+            color: var(--accent);
+            cursor: pointer;
+            margin-left: 6px;
+            flex-shrink: 0;
+        }
+
+        .field-with-warning {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .field-with-warning select {
+            flex: 1;
+        }
     </style>
 </head>
 
@@ -1815,9 +1819,9 @@
                                 <select oninput="onResourceSelect(${layer.id}, this.value)">
                                     <option value="">Select mask...</option>
                                     ${resourcesList.masks.map(m => {
-                                        const isNew = newItems.has('res:mask/' + m.name);
-                                        return `<option value="mask/${m.name}" ${layer.file === `mask/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
-                                    }).join('')}
+                            const isNew = newItems.has('res:mask/' + m.name);
+                            return `<option value="mask/${m.name}" ${layer.file === `mask/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
+                        }).join('')}
                                 </select>
                                 ${newItems.has('res:' + layer.file) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this mask in the main app">warning</span>` : ''}
                             </div>
@@ -1857,9 +1861,9 @@
                                 <select oninput="onResourceSelect(${layer.id}, this.value)">
                                     <option value="">Select frame...</option>
                                     ${resourcesList.frames.map(m => {
-                                        const isNew = newItems.has('res:frames/' + m.name);
-                                        return `<option value="frames/${m.name}" ${layer.file === `frames/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
-                                    }).join('')}
+                            const isNew = newItems.has('res:frames/' + m.name);
+                            return `<option value="frames/${m.name}" ${layer.file === `frames/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
+                        }).join('')}
                                 </select>
                                 ${newItems.has('res:' + layer.file) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this frame in the main app">warning</span>` : ''}
                             </div>
@@ -2059,9 +2063,9 @@
                                         <select oninput="onResourceSelect(${layerId}, this.value, ${ei}, '${f.n}')">
                                             <option value="">Select...</option>
                                             ${resourcesList.masks.map(m => {
-                                                const isNew = newItems.has('res:mask/' + m.name);
-                                                return `<option value="mask/${m.name}" ${val === `mask/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
-                                            }).join('')}
+                                const isNew = newItems.has('res:mask/' + m.name);
+                                return `<option value="mask/${m.name}" ${val === `mask/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
+                            }).join('')}
                                         </select>
                                         ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this mask in the main app">warning</span>` : ''}
                                     </div>
@@ -2076,13 +2080,13 @@
                                         <select oninput="onResourceSelect(${layerId}, this.value, ${ei}, '${f.n}')">
                                             <option value="">Select...</option>
                                             ${resourcesList.frames.map(m => {
-                                                const isNew = newItems.has('res:frames/' + m.name);
-                                                return `<option value="frames/${m.name}" ${val === `frames/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
-                                            }).join('')}
+                                const isNew = newItems.has('res:frames/' + m.name);
+                                return `<option value="frames/${m.name}" ${val === `frames/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
+                            }).join('')}
                                             ${resourcesList.other.map(m => {
-                                                const isNew = newItems.has('res:' + m.name);
-                                                return `<option value="${m.name}" ${val === m.name ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
-                                            }).join('')}
+                                const isNew = newItems.has('res:' + m.name);
+                                return `<option value="${m.name}" ${val === m.name ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
+                            }).join('')}
                                         </select>
                                         ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this frame in the main app">warning</span>` : ''}
                                     </div>
