@@ -1562,7 +1562,7 @@ function tools:load()
         icon = "file_import"
     } + listitem {
         id = "grid_size_settings",
-        text = "Manage Grid Image Size (current: " .. (user_config:read("main", "gridSize") or "Dynamic") .. ")",
+        text = "Manage Grid Images",
         width = item_width,
         onClick = open_grid_size_settings,
         icon = "grid"
@@ -1798,6 +1798,18 @@ end
 open_grid_size_settings = function()
     local item_width = math.min(w_width - 120, 560)
     local current_size = user_config:read("main", "gridSize") or "Dynamic"
+    local current_source = user_config:read("main", "gridSource") or "cover"
+
+    local function apply_grid_source(source)
+        user_config:insert("main", "gridSource", source)
+        user_config:save()
+        if grid_size_popup then
+            grid_size_popup.visible = false
+            grid_size_popup_visible = false
+        end
+        open_grid_size_settings()
+        dispatch_info("Grid Source", "Grid source set to " .. source .. ". Please run a scrape to apply.")
+    end
 
     local function apply_grid_size(size)
         user_config:insert("main", "gridSize", tostring(size))
@@ -1806,11 +1818,7 @@ open_grid_size_settings = function()
             grid_size_popup.visible = false
             grid_size_popup_visible = false
         end
-        local menu_item = menu ^ "grid_size_settings"
-        if menu_item then
-            menu_item.text = "Manage Grid Image Size (current: " .. tostring(size) .. ")"
-        end
-        dispatch_info("Grid Size", "Grid image size set to " .. tostring(size) .. ". Please run a scrape to apply.")
+        dispatch_info("Grid Size", "Grid max size set to " .. tostring(size) .. ". Please run a scrape to apply.")
     end
 
     grid_size_menu = component:root{
@@ -1819,7 +1827,25 @@ open_grid_size_settings = function()
         width = item_width
     }
 
-    grid_size_menu = grid_size_menu + listitem {
+    local list_height = math.min(w_height - 220, 380)
+
+    local grid_list = component {
+        column = true,
+        gap = 8,
+        width = item_width,
+        height = 0
+    }
+
+    grid_list = grid_list + listitem {
+        id = "grid_src_toggle",
+        text = "Source: " .. (current_source == "wheel" and "Wheel" or "Cover"),
+        width = item_width,
+        onClick = function()
+            local new_source = (current_source == "cover") and "wheel" or "cover"
+            apply_grid_source(new_source)
+        end,
+        icon = "image"
+    } + listitem {
         text = "Set maximum grid thumbnail boundaries.",
         width = item_width,
         focusable = false,
@@ -1834,7 +1860,7 @@ open_grid_size_settings = function()
 
     local presets = {"Dynamic", "120", "140", "204"}
     for _, size in ipairs(presets) do
-        grid_size_menu = grid_size_menu + listitem {
+        grid_list = grid_list + listitem {
             id = "grid_" .. size,
             text = size .. (current_size == size and " (Current)" or ""),
             width = item_width,
@@ -1845,7 +1871,7 @@ open_grid_size_settings = function()
         }
     end
 
-    grid_size_menu = grid_size_menu + listitem {
+    grid_list = grid_list + listitem {
         id = "grid_custom",
         text = "Custom...",
         width = item_width,
@@ -1869,6 +1895,12 @@ open_grid_size_settings = function()
         end
     }
 
+    grid_size_menu = grid_size_menu + (scroll_container {
+        width = item_width,
+        height = list_height,
+        scroll_speed = 30
+    } + grid_list)
+
     grid_size_menu = grid_size_menu + listitem {
         id = "grid_close",
         text = "Close",
@@ -1885,7 +1917,7 @@ open_grid_size_settings = function()
 
     grid_size_popup = popup {
         visible = true,
-        title = "Grid Image Size",
+        title = "Grid Image Settings",
         id = "grid_size_popup"
     }
     grid_size_popup.children = {grid_size_menu}

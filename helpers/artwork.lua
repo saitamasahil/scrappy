@@ -293,7 +293,9 @@ function artwork.copy_grid_from_cache(platform, game, copy_path)
     cache_folder = utils.strip_quotes(cache_folder)
 
     local pea_key = normalize_platform(platform)
-    local covers_cache_dir = string.format("%s/%s/covers", cache_folder, pea_key)
+    local grid_source = user_config:read("main", "gridSource") or "cover"
+    local source_type = (grid_source == "wheel") and "wheels" or "covers"
+    local covers_cache_dir = string.format("%s/%s/%s", cache_folder, pea_key, source_type)
     if not nativefs.getInfo(covers_cache_dir) then return end
 
     -- Parse quickid.xml to map game title to cache ID
