@@ -1033,6 +1033,29 @@
         .upload-input {
             display: none;
         }
+            /* Warning Badge for new items */
+            .new-item-badge {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            }
+            .new-warning-icon {
+                font-size: 18px;
+                color: var(--accent);
+                cursor: pointer;
+                margin-left: 6px;
+                flex-shrink: 0;
+            }
+            .field-with-warning {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex: 1;
+            }
+            .field-with-warning select {
+                flex: 1;
+            }
     </style>
 </head>
 
@@ -1296,19 +1319,7 @@
             </div>
         </div>
 
-        <!-- Restart Required Modal -->
-        <div class="modal-overlay" id="restartModal">
-            <div class="modal" style="text-align:center; padding:30px;">
-                <div style="font-size:40px; margin-bottom:15px;"><span class="material-symbols-rounded"
-                        style="font-size: 48px; color: var(--accent);">restart_alt</span></div>
-                <h2 style="margin-bottom:10px;">Restart Required</h2>
-                <p style="color:var(--text-secondary); font-size:14px; line-height:1.5;">
-                    If you want to reflect your changes right now then restart Scrappy,<br>
-                    otherwise you can continue using the web server.
-                </p>
-                <div style="margin-top:20px; font-size:12px; opacity:0.6;" id="restartTimer">Closing in 10s...</div>
-            </div>
-        </div>
+
 
         <div id="toast"></div>
 
@@ -1325,7 +1336,12 @@
             let uploadPendingTarget = null; // {layerIdx, effectIdx, fieldName} or 'standalone'
             let allOutputsLayers = {}; // Store layers for each output type: { cover: {layers:[], width:640, height:480}, ... }
             let primaryOutputType = 'cover'; // Track the output being edited
-            let restartPopupTimer = null;
+            const newItems = new Set(); // Track items added this session (need Scrappy restart)
+
+            function showRestartWarning() {
+                showToast('Restart Scrappy to use newly added items in the main app.');
+            }
+
 
             // Drag-and-drop state
             let draggingLayerId = null;
@@ -1337,25 +1353,7 @@
             let resizeStartDims = { w: 0, h: 0 };
             let previewScale = 1;
 
-            function showRestartPopup() {
-                const modal = document.getElementById('restartModal');
-                const timerText = document.getElementById('restartTimer');
-                modal.classList.add('visible');
 
-                let seconds = 10;
-                timerText.textContent = `Closing in ${seconds}s...`;
-
-                if (restartPopupTimer) clearInterval(restartPopupTimer);
-
-                restartPopupTimer = setInterval(() => {
-                    seconds--;
-                    timerText.textContent = `Closing in ${seconds}s...`;
-                    if (seconds <= 0) {
-                        clearInterval(restartPopupTimer);
-                        modal.classList.remove('visible');
-                    }
-                }, 1000);
-            }
 
             const EFFECTS_LIST = [
                 {
@@ -1813,10 +1811,16 @@
                 <div class="layer-body" style="display: ${layer.expanded ? 'block' : 'none'}; border-top: 1px solid var(--card-border); padding: 18px 12px 14px;">
                     <div class="field">
                         <div class="field-with-btn">
-                            <select oninput="onResourceSelect(${layer.id}, this.value)">
-                                <option value="">Select mask...</option>
-                                ${resourcesList.masks.map(m => `<option value="mask/${m.name}" ${layer.file === `mask/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
-                            </select>
+                            <div class="field-with-warning">
+                                <select oninput="onResourceSelect(${layer.id}, this.value)">
+                                    <option value="">Select mask...</option>
+                                    ${resourcesList.masks.map(m => {
+                                        const isNew = newItems.has('res:mask/' + m.name);
+                                        return `<option value="mask/${m.name}" ${layer.file === `mask/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
+                                    }).join('')}
+                                </select>
+                                ${newItems.has('res:' + layer.file) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this mask in the main app">warning</span>` : ''}
+                            </div>
                             <button class="btn btn-icon" onclick="triggerUpload('mask', {layerId:${layer.id}, fieldName:'file'})" title="Upload mask"><span class="material-symbols-rounded">upload</span></button>
                         </div>
                     </div>
@@ -1849,10 +1853,16 @@
                 <div class="layer-body" style="display: ${layer.expanded ? 'block' : 'none'}; border-top: 1px solid var(--card-border); padding: 18px 12px 14px;">
                     <div class="field">
                         <div class="field-with-btn">
-                            <select oninput="onResourceSelect(${layer.id}, this.value)">
-                                <option value="">Select frame...</option>
-                                ${resourcesList.frames.map(m => `<option value="frames/${m.name}" ${layer.file === `frames/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
-                            </select>
+                            <div class="field-with-warning">
+                                <select oninput="onResourceSelect(${layer.id}, this.value)">
+                                    <option value="">Select frame...</option>
+                                    ${resourcesList.frames.map(m => {
+                                        const isNew = newItems.has('res:frames/' + m.name);
+                                        return `<option value="frames/${m.name}" ${layer.file === `frames/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
+                                    }).join('')}
+                                </select>
+                                ${newItems.has('res:' + layer.file) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this frame in the main app">warning</span>` : ''}
+                            </div>
                             <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layer.id}, fieldName:'file'})" title="Upload frame"><span class="material-symbols-rounded">upload</span></button>
                         </div>
                     </div>
@@ -2042,23 +2052,40 @@
                 <div class="field-row" style="margin-bottom: 8px">
                     ${chunk.map(f => {
                         if (f.t === 'mask-select') {
+                            const val = eff.values[f.n];
                             return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
                                 <div class="field-with-btn">
-                                    <select oninput="onResourceSelect(${layerId}, this.value, ${ei})">
-                                        <option value="">Select...</option>
-                                        ${resourcesList.masks.map(m => `<option value="mask/${m.name}" ${eff.values[f.n] === `mask/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
-                                    </select>
+                                    <div class="field-with-warning">
+                                        <select oninput="onResourceSelect(${layerId}, this.value, ${ei}, '${f.n}')">
+                                            <option value="">Select...</option>
+                                            ${resourcesList.masks.map(m => {
+                                                const isNew = newItems.has('res:mask/' + m.name);
+                                                return `<option value="mask/${m.name}" ${val === `mask/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
+                                            }).join('')}
+                                        </select>
+                                        ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this mask in the main app">warning</span>` : ''}
+                                    </div>
                                     <button class="btn btn-icon" onclick="triggerUpload('mask', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload mask"><span class="material-symbols-rounded">upload</span></button>
                                 </div></div>`;
                         }
                         if (f.t === 'frame-select') {
+                            const val = eff.values[f.n];
                             return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
                                 <div class="field-with-btn">
-                                    <select oninput="onResourceSelect(${layerId}, this.value, ${ei})">
-                                        <option value="">Select...</option>
-                                        ${resourcesList.frames.map(m => `<option value="frames/${m.name}" ${eff.values[f.n] === `frames/${m.name}` ? 'selected' : ''}>${m.name}</option>`).join('')}
-                                        ${resourcesList.other.map(m => `<option value="${m.name}" ${eff.values[f.name] === m.name ? 'selected' : ''}>${m.name}</option>`).join('')}
-                                    </select>
+                                    <div class="field-with-warning">
+                                        <select oninput="onResourceSelect(${layerId}, this.value, ${ei}, '${f.n}')">
+                                            <option value="">Select...</option>
+                                            ${resourcesList.frames.map(m => {
+                                                const isNew = newItems.has('res:frames/' + m.name);
+                                                return `<option value="frames/${m.name}" ${val === `frames/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
+                                            }).join('')}
+                                            ${resourcesList.other.map(m => {
+                                                const isNew = newItems.has('res:' + m.name);
+                                                return `<option value="${m.name}" ${val === m.name ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
+                                            }).join('')}
+                                        </select>
+                                        ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this frame in the main app">warning</span>` : ''}
+                                    </div>
                                     <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload frame"><span class="material-symbols-rounded">upload</span></button>
                                 </div></div>`;
                         }
@@ -2102,13 +2129,13 @@
             }
 
             // ─── Layer Actions ──────────────────────────────────────────
-            async function onResourceSelect(layerId, value, effectIdx = null) {
+            async function onResourceSelect(layerId, value, effectIdx = null, fieldName = 'file') {
                 const layer = findLayer(layerId);
                 if (!layer) return;
 
                 if (effectIdx !== null) {
                     const eff = layer.effects[effectIdx];
-                    eff.values['file'] = value;
+                    eff.values[fieldName] = value;
                     if (value) {
                         const img = new Image();
                         img.onload = () => {
@@ -2122,6 +2149,7 @@
                         };
                         img.src = `/api/resource/${encodeURIComponent(value)}`; // Path already contains prefix
                     } else {
+                        renderLayers();
                         schedulePreview();
                     }
                 } else {
@@ -2136,6 +2164,7 @@
                         };
                         img.src = `/api/resource/${encodeURIComponent(value)}`;
                     } else {
+                        renderLayers();
                         schedulePreview();
                     }
                 }
@@ -2184,52 +2213,7 @@
                 }
             }
 
-            function handleUpload(event, category) {
-                const file = event.target.files[0];
-                if (!file) return;
 
-                const fd = new FormData();
-                fd.append('file', file);
-                fd.append('category', category);
-
-                async function doUpload() {
-                    try {
-                        showToast(`Uploading ${file.name}...`);
-                        const res = await fetch('/api/upload-resource', {
-                            method: 'POST',
-                            body: fd
-                        });
-                        const data = await res.json();
-                        if (data.status === 'ok') {
-                            showToast('Upload complete');
-                            // Refresh resources
-                            const rRes = await fetch('/api/resources');
-                            resourcesList = await rRes.json();
-
-                            // Update the UI target
-                            if (uploadPendingTarget !== 'standalone') {
-                                const t = uploadPendingTarget;
-                                const layer = findLayer(t.layerId);
-                                if (layer) {
-                                    if (t.effectIdx !== undefined) {
-                                        layer.effects[t.effectIdx].values[t.fieldName] = data.path;
-                                    } else {
-                                        layer[t.fieldName] = data.path;
-                                    }
-                                }
-                            }
-                            renderLayers();
-                            schedulePreview();
-                            showRestartPopup();
-                        } else {
-                            showToast(data.message || 'Upload failed');
-                        }
-                    } catch (e) {
-                        showToast('Upload error');
-                    }
-                }
-                doUpload();
-            }
 
             function findLayerInfo(id, list = layers) {
                 if (!list) return null;
@@ -2498,6 +2482,7 @@
                     const data = await res.json();
                     if (data.status === 'ok') {
                         showToast('Upload complete');
+                        newItems.add('res:' + data.path);
                         // Refresh resources
                         const rRes = await fetch('/api/resources');
                         resourcesList = await rRes.json();
@@ -2517,7 +2502,6 @@
                         }
                         renderLayers();
                         schedulePreview();
-                        showRestartPopup();
                     } else {
                         showToast(data.message || 'Upload failed');
                     }
@@ -2562,7 +2546,7 @@
                         // Refresh templates list
                         const tRes = await fetch('/api/templates');
                         templatesList = await tRes.json();
-                        showRestartPopup();
+                        populateQuickTemplateSelect();
                     } else {
                         showToast(data.message || 'Save failed');
                     }
