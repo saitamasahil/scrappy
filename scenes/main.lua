@@ -1870,6 +1870,17 @@ function main:update(dt)
         dashboard_write_timer = dashboard_write_timer + dt
         if dashboard_write_timer >= 0.5 then
             dashboard_write_timer = 0
+            if state.phase_start_time then
+                local elapsed_secs = love.timer.getTime() - state.phase_start_time
+                dashboard_elapsed = format_time(elapsed_secs)
+                if scraping_window then
+                    local ui_eta_label = scraping_window ^ "eta_label"
+                    if ui_eta_label then
+                        local phase_name = state.fetch_phase and "Fetching" or "Generating"
+                        ui_eta_label.text = string.format("Phase: %s  |  Elapsed: %s  |  ETA: %s", phase_name, dashboard_elapsed, dashboard_eta)
+                    end
+                end
+            end
             write_dashboard_state()
         end
     end
