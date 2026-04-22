@@ -874,6 +874,8 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             if (isFetch) {
                 phaseTitle.textContent = 'Fetching Metadata';
                 phaseDetail.textContent = d.fetch_progress ? ('Progress: ' + d.fetch_progress) : 'Downloading game data...';
+                if (d.elapsed) phaseDetail.textContent += ' | Elapsed: ' + d.elapsed;
+                if (d.eta) phaseDetail.textContent += ' | ETA: ' + d.eta;
                 phaseSubDetail.textContent = d.pending_platforms ? (d.pending_platforms + ' platform(s) remaining') : '';
                 statPhase.textContent = 'Fetch';
                 statPhase.title = 'Fetching';
@@ -882,6 +884,8 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
                 const done = d.gen_done || 0;
                 const total = d.gen_total || 0;
                 phaseDetail.textContent = 'Progress: ' + done + ' / ' + total;
+                if (d.elapsed) phaseDetail.textContent += ' | Elapsed: ' + d.elapsed;
+                if (d.eta) phaseDetail.textContent += ' | ETA: ' + d.eta;
                 phaseSubDetail.textContent = '';
                 statPhase.textContent = 'Gen';
                 statPhase.title = 'Generating';

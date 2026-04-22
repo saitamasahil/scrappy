@@ -69,6 +69,8 @@ local dashboard_server_ip = nil
 local dashboard_write_timer = 0
 local dashboard_state_file = "/tmp/scrappy_dashboard.json"
 local dashboard_fetch_progress = "0/0"
+local dashboard_eta = "Calculating..."
+local dashboard_elapsed = "00:00"
 local dashboard_log_lines = {}
 local dashboard_cached_ip = nil -- Cached before scraping starts (avoids blocking network probe)
 
@@ -689,6 +691,8 @@ local function write_dashboard_state(extra)
     if data.failed == nil then data.failed = state.failed_tasks or {} end
     if data.logs == nil then data.logs = dashboard_log_lines end
     if data.fetch_progress == nil then data.fetch_progress = dashboard_fetch_progress end
+    if data.eta == nil then data.eta = dashboard_eta end
+    if data.elapsed == nil then data.elapsed = dashboard_elapsed end
     if data.pending_platforms == nil then data.pending_platforms = state.pending_platforms or 0 end
 
     -- Current game/platform from scraping window UI
@@ -714,6 +718,8 @@ local function write_dashboard_state(extra)
     parts[#parts + 1] = string.format('"game":"%s"', escape_json_str(data.game or "N/A"))
     parts[#parts + 1] = string.format('"source":"%s"', escape_json_str(data.source or "N/A"))
     parts[#parts + 1] = string.format('"fetch_progress":"%s"', escape_json_str(data.fetch_progress))
+    parts[#parts + 1] = string.format('"eta":"%s"', escape_json_str(data.eta))
+    parts[#parts + 1] = string.format('"elapsed":"%s"', escape_json_str(data.elapsed))
     parts[#parts + 1] = string.format('"gen_done":%d', data.gen_done)
     parts[#parts + 1] = string.format('"gen_total":%d', data.gen_total)
     parts[#parts + 1] = string.format('"pending_platforms":%d', data.pending_platforms)
@@ -779,6 +785,8 @@ local function toggle_dashboard_server()
         os.remove(dashboard_state_file)
         dashboard_log_lines = {}
         dashboard_fetch_progress = "0/0"
+        dashboard_eta = "Calculating..."
+        dashboard_elapsed = "00:00"
         log.write("Dashboard server stopped")
         return
     end
@@ -913,6 +921,8 @@ local function update_state(t)
                         eta = (total_num - current_num) / speed
                     end
                     ui_eta_label.text = string.format("Phase: Fetching  |  Elapsed: %s  |  ETA: %s", format_time(elapsed), format_time(eta))
+                    dashboard_eta = format_time(eta)
+                    dashboard_elapsed = format_time(elapsed)
                 end
 
                 dashboard_fetch_progress = current .. "/" .. total
@@ -1129,6 +1139,8 @@ local function update_state(t)
                     eta = state.tasks / speed
                 end
                 ui_eta_label.text = string.format("Phase: Generating  |  Elapsed: %s  |  ETA: %s", format_time(elapsed), format_time(eta))
+                dashboard_eta = format_time(eta)
+                dashboard_elapsed = format_time(elapsed)
             end
 
             -- Check if finished
