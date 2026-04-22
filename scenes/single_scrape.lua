@@ -431,9 +431,9 @@ local function on_rom_press(rom)
         return
     end
 
-    -- Check WiFi connection before scraping
+    -- Check network connection before scraping
     if not wifi.is_connected() then
-        dispatch_info("No WiFi Connection", "Please connect to WiFi and try again.")
+        dispatch_info("No Network Connection", "Please connect to a network and try again.")
         toggle_info()
         return
     end
@@ -528,9 +528,9 @@ local function on_manual_scrape(rom)
         return
     end
 
-    -- Check WiFi
+    -- Check Network
     if not wifi.is_connected() then
-        dispatch_info("No WiFi Connection", "Please connect to WiFi and try again.")
+        dispatch_info("No Network Connection", "Please connect to a network and try again.")
         toggle_info()
         return
     end

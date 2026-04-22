@@ -43,7 +43,7 @@ local cover_preview
 local wifi_icon
 local offline_icon
 local wifi_connected = true
-local offline_mode = false -- Offline mode setting (disables WiFi checks)
+local offline_mode = false -- Offline mode setting (disables network checks)
 local wifi_check_timer = 0
 
 local main = {}
@@ -420,10 +420,10 @@ end
 local function scrape_platforms()
     log.write("Scraping artwork")
 
-    -- Check WiFi connection before starting (skip in offline mode)
+    -- Check network connection before starting (skip in offline mode)
     if not offline_mode and not wifi.is_connected() then
-        log.write("WiFi not connected, aborting scrape")
-        show_info_window("No WiFi Connection", "Please connect to WiFi and try again.")
+        log.write("Network not connected, aborting scrape")
+        show_info_window("No Network Connection", "Please connect to a network and try again.")
         return
     end
 
@@ -821,9 +821,9 @@ local function toggle_dashboard_server()
 
         dashboard_server_running = true
         dashboard_server_ip = ip
-        log.write(string.format('Go to http://%s:8081 on phone/PC (same WiFi)', ip))
+        log.write(string.format('Go to http://%s:8081 on phone/PC (same network)', ip))
     else
-        log.write("No IP found! Connect to WiFi.")
+        log.write("No IP found! Check network connection.")
     end
 end
 
@@ -1577,11 +1577,10 @@ function main:load()
             -- Draw text
             local txt
             if dashboard_server_running and dashboard_server_ip then
-                txt = "Dashboard: http://" .. dashboard_server_ip .. ":8081 (Same WiFi)"
+                txt = "Dashboard: http://" .. dashboard_server_ip .. ":8081 (Same network)"
             else
-                local ip = dashboard_cached_ip or utils.get_ip_address()
-                if not ip then
-                    txt = "Launch Live Dashboard (No WiFi Connection!)"
+                if not wifi_connected then
+                    txt = "Launch Live Dashboard (No Network Connection!)"
                 else
                     txt = "Launch Live Dashboard"
                 end
@@ -1929,7 +1928,7 @@ function main:draw()
         local x_pos = cw - (t_width or 0) - margin
         local y_pos = margin
 
-        -- Shift left if status icon (offline or no-WiFi) is visible
+        -- Shift left if status icon (offline or no-network) is visible
         if (offline_mode and offline_icon) or (not wifi_connected and wifi_icon) then
             x_pos = x_pos - 24 - 10 -- icon_width (24) + padding (10)
         end

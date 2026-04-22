@@ -243,10 +243,9 @@ local function on_enter_igdb_creds_web()
     
     igdb_server_running = true
     igdb_server_ip = ip
-    dispatch_info("IGDB Web Server", 'Go to http://' .. ip .. ':8084 on phone/PC (same WiFi)\n\nWaiting for you to enter credentials...')
-    igdb_check_timer = 0
+    dispatch_info("IGDB Web Server", 'Go to http://' .. ip .. ':8084 on phone/PC (same network)\n\nWaiting for you to enter credentials...')
   else
-    dispatch_info("IGDB Web Server", "No IP found! Connect to WiFi.")
+    dispatch_info("IGDB Web Server", "No IP found! Check network connection.")
   end
 end
 
@@ -282,10 +281,9 @@ local function on_enter_tgdb_key_web()
     
     tgdb_server_running = true
     tgdb_server_ip = ip
-    dispatch_info("TheGamesDB Web Server", 'Go to http://' .. ip .. ':8080 on phone/PC (same WiFi)\n\nWaiting for you to enter the API key...')
-    tgdb_check_timer = 0
+    dispatch_info("TheGamesDB Web Server", 'Go to http://' .. ip .. ':8080 on phone/PC (same network)\n\nWaiting for you to enter the API key...')
   else
-    dispatch_info("TheGamesDB Web Server", "No IP found! Connect to WiFi.")
+    dispatch_info("TheGamesDB Web Server", "No IP found! Check network connection.")
   end
 end
 

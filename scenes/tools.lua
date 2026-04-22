@@ -1348,10 +1348,9 @@ local function on_toggle_artwork_manager()
 
         artwork_manager_running = true
         artwork_manager_ip = ip
-        artwork_manager_status = 'Go to http://' .. ip .. ':8082 on phone/PC (same WiFi)'
-        regen_check_timer = 0
+        artwork_manager_status = 'Go to http://' .. ip .. ':8082 on phone/PC (same network)'
     else
-        artwork_manager_status = "No IP found! Connect to WiFi."
+        artwork_manager_status = "No IP found! Check network connection."
     end
 end
 
@@ -1384,10 +1383,9 @@ local function on_toggle_template_maker()
 
         template_maker_running = true
         template_maker_ip = ip
-        template_maker_status = 'Go to http://' .. ip .. ':8083 on phone/PC (same WiFi)'
-        tpl_regen_check_timer = 0
+        template_maker_status = 'Go to http://' .. ip .. ':8083 on phone/PC (same network)'
     else
-        template_maker_status = "No IP found! Connect to WiFi."
+        template_maker_status = "No IP found! Check network connection."
     end
 end
 
@@ -1596,8 +1594,8 @@ function tools:load()
         text = function()
             if artwork_manager_running then
                 return "Stop Artwork Manager (http://" .. (artwork_manager_ip or "") .. ":8082)"
-            elseif artwork_manager_status == "No IP found! Connect to WiFi." then
-                return "Artwork Manager (No WiFi Connection!)"
+            elseif artwork_manager_status == "No IP found! Check network connection." then
+                return "Artwork Manager (No Network Connection!)"
             else
                 return "Start Artwork Manager (Web)"
             end
@@ -1610,8 +1608,8 @@ function tools:load()
         text = function()
             if template_maker_running then
                 return "Stop Template Maker (http://" .. (template_maker_ip or "") .. ":8083)"
-            elseif template_maker_status == "No IP found! Connect to WiFi." then
-                return "Template Maker (No WiFi Connection!)"
+            elseif template_maker_status == "No IP found! Check network connection." then
+                return "Template Maker (No Network Connection!)"
             else
                 return "Start Template Maker (Web)"
             end
@@ -2130,7 +2128,7 @@ local function draw_offline_popup()
     local msg = "Offline Mode allows scraping using cached data without internet.\n\n" ..
                     "• Works only with 'Scrape All' (uses cached data)\n" ..
                     "• 'Scrape only missing artwork' requires internet\n" ..
-                    "• Single ROM scraping requires internet\n" .. "• WiFi warnings will be suppressed"
+                    "• Single ROM scraping requires internet\n" .. "• Network warnings will be suppressed"
     love.graphics.printf(msg, box_x + 15, box_y + 45, box_w - 30, "left")
 
     -- Button icons and labels

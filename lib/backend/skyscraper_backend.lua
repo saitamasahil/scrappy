@@ -65,12 +65,12 @@ while true do
 
     log.write("Starting Skyscraper, please wait...")
 
-    -- Check WiFi before starting command (skip in offline mode)
+    -- Check network before starting command (skip in offline mode)
     if not is_offline_mode() and not wifi.is_connected() then
-        log.write("WiFi disconnected, aborting scrape")
+        log.write("Network disconnected, aborting scrape")
         channels.SKYSCRAPER_OUTPUT:push({
-            log = "[fetch] WiFi disconnected. Please connect to WiFi and try again.",
-            error = "WiFi not connected",
+            log = "[fetch] Network disconnected. Please connect to a network and try again.",
+            error = "Network not connected",
             loading = false
         })
         goto continue
@@ -144,13 +144,13 @@ while true do
                 break
             end
 
-            -- WiFi check during scraping (skip in offline mode)
+            -- Network check during scraping (skip in offline mode)
             if not is_offline_mode() and not wifi.is_connected() then
                 aborted = true
-                log.write("WiFi disconnected during scraping")
+                log.write("Network disconnected during scraping")
                 channels.SKYSCRAPER_OUTPUT:push({
-                    log = "[fetch] WiFi disconnected. Stopping scrape.",
-                    error = "WiFi disconnected",
+                    log = "[fetch] Network disconnected. Stopping scrape.",
+                    error = "Network disconnected",
                     loading = false
                 })
                 if output then
