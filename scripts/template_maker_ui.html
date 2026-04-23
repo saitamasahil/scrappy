@@ -1134,6 +1134,12 @@
                             style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
                         Auto Preview
                     </label>
+                    <select id="autoPreviewDelay" class="input" style="font-size:11px; padding:2px 4px; height:22px; width:auto; border-radius:4px" onchange="if(document.getElementById('autoPreviewToggle').checked) schedulePreview()">
+                        <option value="0">Immediate</option>
+                        <option value="600" selected>0.6s Delay</option>
+                        <option value="1500">1.5s Delay</option>
+                        <option value="3000">3s Delay</option>
+                    </select>
                     <label
                         style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
                         <input type="checkbox" id="layoutModeToggle" onchange="toggleLayoutMode(this.checked)"
@@ -2315,8 +2321,12 @@
                 const toggle = document.getElementById('autoPreviewToggle');
                 if (!toggle || !toggle.checked) return;
                 clearTimeout(previewTimer);
-                previewTimer = setTimeout(() => requestPreview(), 600);
+                const delaySelect = document.getElementById('autoPreviewDelay');
+                const delayMs = delaySelect ? parseInt(delaySelect.value, 10) : 600;
+                previewTimer = setTimeout(() => requestPreview(), delayMs);
             }
+
+            let previewAbortController = null;
 
             async function requestPreview(fromQueue = false) {
                 const visibleCount = layers.filter(l => l.visible).length;
@@ -2324,6 +2334,10 @@
                     generating = false;
                     previewQueued = false;
                     previewRequestTime = Date.now(); // Invalidate pending polls
+                    if (previewAbortController) {
+                        previewAbortController.abort();
+                        previewAbortController = null;
+                    }
                     document.getElementById('previewLoading').style.display = 'none';
                     document.getElementById('previewImg').style.display = 'none';
                     document.getElementById('previewImg').src = '';
@@ -2332,16 +2346,19 @@
                     return;
                 }
 
-                // If we're already generating, queue this request to run next
-                if (generating && !fromQueue) {
-                    previewQueued = true;
-                    return;
+                // If generating, abort the current one and start fresh
+                if (generating) {
+                    if (previewAbortController) {
+                        previewAbortController.abort();
+                        previewAbortController = null;
+                    }
                 }
 
                 previewQueued = false;
                 const xml = generateXml();
                 generating = true;
                 previewRequestTime = Date.now();
+                previewAbortController = new AbortController();
 
                 document.getElementById('previewLoading').style.display = 'flex';
                 document.getElementById('previewPlaceholder').style.display = 'none';
@@ -2352,17 +2369,17 @@
                     await fetch('/api/preview', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ xml })
+                        body: JSON.stringify({ xml }),
+                        signal: previewAbortController.signal
                     });
                     // Start polling for result, passing the time we requested it
                     pollPreview(previewRequestTime);
                 } catch (e) {
+                    if (e.name === 'AbortError') return; // Cancelled intentionally
                     generating = false;
                     document.getElementById('previewLoading').style.display = 'none';
                     setPreviewStatus('idle');
                     showToast('Preview generation failed');
-                    // Check queue
-                    if (previewQueued) setTimeout(() => requestPreview(true), 100);
                 }
             }
 
