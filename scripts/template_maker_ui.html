@@ -1068,6 +1068,123 @@
         .field-with-warning select {
             flex: 1;
         }
+
+        /* ─── Preview Options ─── */
+        .preview-options-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 4px 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .preview-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-primary);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .preview-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent);
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .preview-delay-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: var(--md-surface-container-highest);
+            border: 1px solid var(--card-border);
+            border-radius: var(--md-shape-xs);
+            transition: border-color 0.2s;
+        }
+
+        .preview-delay-group:hover {
+            border-color: var(--accent);
+        }
+
+        .preview-delay-group .material-symbols-rounded {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .preview-delay-group select {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 12px;
+            outline: none;
+            cursor: pointer;
+            padding-right: 4px;
+        }
+
+        /* ─── Segmented Control ─── */
+        .delay-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            transition: opacity 0.2s;
+        }
+
+        .delay-segmented-container {
+            padding: 0 8px;
+            margin-top: 12px;
+            transition: opacity 0.2s;
+        }
+
+        .delay-segmented-container.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(0.8);
+        }
+
+        .segmented-control {
+            display: flex;
+            background: var(--md-surface-container-highest);
+            border-radius: var(--md-shape-xs);
+            padding: 2px;
+            border: 1px solid var(--card-border);
+            gap: 2px;
+        }
+
+        .segmented-control button {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 6px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+            white-space: nowrap;
+        }
+
+        .segmented-control button:hover:not(.active) {
+            background: var(--hoover-bg);
+            color: var(--text-primary);
+        }
+
+        .segmented-control button.active {
+            background: var(--accent);
+            color: #000;
+            box-shadow: var(--md-elevation-1);
+        }
     </style>
 </head>
 
@@ -1131,27 +1248,26 @@
                     style="width:100%; justify-content:center; font-size:15px; padding:12px; border-radius:12px"
                     onclick="requestPreview()"><span class="material-symbols-rounded">play_arrow</span> Generate
                     Preview</button>
-                <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:10px">
-                    <label
-                        style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
-                        <input type="checkbox" id="autoPreviewToggle"
-                            style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
-                        Auto Preview
+
+                <div class="preview-options-row">
+                    <label class="preview-option">
+                        <input type="checkbox" id="autoPreviewToggle" onchange="toggleAutoPreview(this.checked)">
+                        <span>Auto Preview</span>
                     </label>
-                    <select id="autoPreviewDelay" class="input"
-                        style="font-size:11px; padding:2px 4px; height:22px; width:auto; border-radius:4px"
-                        onchange="if(document.getElementById('autoPreviewToggle').checked) schedulePreview()">
-                        <option value="0">Immediate</option>
-                        <option value="600" selected>0.6s Delay</option>
-                        <option value="1500">1.5s Delay</option>
-                        <option value="3000">3s Delay</option>
-                    </select>
-                    <label
-                        style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:var(--text-secondary); user-select:none">
-                        <input type="checkbox" id="layoutModeToggle" onchange="toggleLayoutMode(this.checked)"
-                            style="width:15px; height:15px; cursor:pointer">
-                        Layout Mode
+                    <label class="preview-option">
+                        <input type="checkbox" id="layoutModeToggle" onchange="toggleLayoutMode(this.checked)">
+                        <span>Layout Mode</span>
                     </label>
+                </div>
+
+                <div class="delay-segmented-container disabled">
+                    <span class="delay-label">Preview Delay</span>
+                    <div class="segmented-control" id="delaySegmented">
+                        <button onclick="setDelay(0, this)" data-val="0">Immediate</button>
+                        <button onclick="setDelay(600, this)" data-val="600" class="active">0.6s</button>
+                        <button onclick="setDelay(1500, this)" data-val="1500">1.5s</button>
+                        <button onclick="setDelay(3000, this)" data-val="3000">3s</button>
+                    </div>
                 </div>
             </div>
 
@@ -1374,6 +1490,8 @@
             let xmlModalMode = 'export';
             let previewRequestTime = 0;
             let uploadPendingTarget = null; // {layerIdx, effectIdx, fieldName} or 'standalone'
+            let autoPreviewEnabled = false;
+            let autoPreviewDelay = 600;
             let allOutputsLayers = {}; // Store layers for each output type: { cover: {layers:[], width:640, height:480, mpixels:''}, ... }
             let primaryOutputType = 'cover'; // Track the output being edited
             const newItems = new Set(); // Track items added this session (need Scrappy restart)
@@ -2463,13 +2581,30 @@
                 el.innerHTML = `<span class="dot"></span>${text}`;
             }
 
+            function toggleAutoPreview(enabled) {
+                autoPreviewEnabled = enabled;
+                const container = document.querySelector('.delay-segmented-container');
+                if (container) {
+                    if (enabled) container.classList.remove('disabled');
+                    else container.classList.add('disabled');
+                }
+                if (enabled) schedulePreview();
+            }
+
+            function setDelay(ms, btn) {
+                autoPreviewDelay = ms;
+                const container = document.getElementById('delaySegmented');
+                if (container) {
+                    container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                }
+                if (autoPreviewEnabled) schedulePreview();
+            }
+
             function schedulePreview() {
-                const toggle = document.getElementById('autoPreviewToggle');
-                if (!toggle || !toggle.checked) return;
+                if (!autoPreviewEnabled) return;
                 clearTimeout(previewTimer);
-                const delaySelect = document.getElementById('autoPreviewDelay');
-                const delayMs = delaySelect ? parseInt(delaySelect.value, 10) : 600;
-                previewTimer = setTimeout(() => requestPreview(), delayMs);
+                previewTimer = setTimeout(() => requestPreview(), autoPreviewDelay);
             }
 
             let previewAbortController = null;
@@ -2972,6 +3107,7 @@
                             handle.style.height = (h * previewScale) + 'px';
                             handle.style.left = (absX * previewScale) + 'px';
                             handle.style.top = (absY * previewScale) + 'px';
+
 
                             // Click to select
                             handle.onpointerdown = (e) => {
