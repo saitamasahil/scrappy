@@ -1145,7 +1145,7 @@ local function open_capture_name_input(platform, hash, title)
             local ok = skyscraper.create_preset(platform, hash, safe_name)
             if ok then
                 if manage_presets_popup then manage_presets_popup.visible = false end
-                dispatch_info("Success", "Captured preset: " .. safe_name .. "\n(You can now select it in Change Preview Artwork)")
+                dispatch_info("Success", "Captured preset: " .. safe_name .. "\n(You can now select it in Change Preview Game Artwork)")
             else
                 dispatch_info("Error", "Could not create preset: " .. safe_name .. "\n(Folder creation failed)")
             end
@@ -1570,7 +1570,7 @@ function tools:load()
         onClick = open_manage_presets_menu,
         icon = "manage"
     } + listitem {
-        text = "Change Preview Artwork",
+        text = "Change Preview Game Artwork",
         width = item_width,
         onClick = open_preset_selector,
         icon = "preview"

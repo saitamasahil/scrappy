@@ -1083,7 +1083,7 @@
                 <option value="">— Select template —</option>
             </select>
             <button class="btn btn-icon" onclick="createNewTemplate()" title="Create New Template"
-                style="color: var(--accent); border: 1px solid var(--border-color);"><span
+                style="color: var(--accent); border: 1px solid var(--card-border);"><span
                     class="material-symbols-rounded">add</span></button>
         </div>
         <div class="header-actions">
@@ -1160,6 +1160,20 @@
                 <div class="field">
                     <label class="field-label">Template Name</label>
                     <input type="text" id="templateName" placeholder="my-awesome-template" value="New Template">
+                </div>
+            </div>
+
+            <!-- Preview Preset -->
+            <div class="section" id="presetSection">
+                <div class="field">
+                    <label class="field-label" style="display:flex; align-items:center; gap:6px;">
+                        <span class="material-symbols-rounded"
+                            style="font-size: 18px; color: var(--accent);">sports_esports</span>
+                        Preview Game
+                    </label>
+                    <select id="previewPresetSelect" onchange="onPresetChange(this.value)" style="width: 100%;">
+                        <option value="">Loading presets...</option>
+                    </select>
                 </div>
             </div>
 
@@ -1459,8 +1473,48 @@
                     templatesList = await tRes.json();
                     resourcesList = await rRes.json();
                     populateQuickTemplateSelect();
+                    fetchPresets();
                 } catch (e) {
                     console.error('Init error:', e);
+                }
+            }
+
+            async function fetchPresets() {
+                try {
+                    const res = await fetch('/api/presets');
+                    const data = await res.json();
+                    const sel = document.getElementById('previewPresetSelect');
+                    sel.innerHTML = '';
+                    data.presets.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p;
+                        opt.textContent = p;
+                        if (p === data.current) opt.selected = true;
+                        sel.appendChild(opt);
+                    });
+                } catch (e) {
+                    console.error('Failed to fetch presets:', e);
+                }
+            }
+
+            async function onPresetChange(name) {
+                if (!name) return;
+                try {
+                    showToast(`Applying ${name} preset...`);
+                    const res = await fetch('/api/set-preset', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: name })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'ok') {
+                        showToast('Preset applied');
+                        requestPreview();
+                    } else {
+                        showToast('Failed to apply preset');
+                    }
+                } catch (e) {
+                    showToast('Error applying preset');
                 }
             }
 

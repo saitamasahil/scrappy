@@ -11,6 +11,7 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from datetime import datetime
+import shutil
 
 PORT = 8083
 REGEN_FILE = "/tmp/scrappy_tpl_regen.json"
@@ -56,6 +57,8 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
                 self.api_get_sample_media(media_type)
             elif path == "/api/preview":
                 self.api_get_preview(qs)
+            elif path == "/api/presets":
+                self.api_list_presets()
             elif path.startswith("/api/preview-image/"):
                 folder = urllib.parse.unquote(path[19:])
                 self.api_get_preview_image(folder)
@@ -73,6 +76,8 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
                 self.api_save_template()
             elif self.path == "/api/upload-resource":
                 self.api_upload_resource()
+            elif self.path == "/api/set-preset":
+                self.api_set_preset()
             else:
                 self.send_error(404)
         except Exception as e:
@@ -177,6 +182,64 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
                     "size": os.path.getsize(full)
                 })
         self.send_json(resources)
+
+    def api_list_presets(self):
+        presets_dir = os.path.join(args.sample_dir, "presets")
+        if not os.path.isdir(presets_dir):
+            self.send_json([])
+            return
+        presets = [d for d in sorted(os.listdir(presets_dir)) if os.path.isdir(os.path.join(presets_dir, d))]
+        
+        # Also try to get current preset from db.xml
+        current = "Streets of Rage"
+        db_path = os.path.join(args.sample_dir, "db.xml")
+        if os.path.exists(db_path):
+            try:
+                with open(db_path, "r") as f:
+                    content = f.read()
+                    match = re.search(r'<resource [^>]*type="title"[^>]*>(.*?)</resource>', content)
+                    if match:
+                        current = match.group(1)
+            except:
+                pass
+                
+        self.send_json({"presets": presets, "current": current})
+
+    def api_set_preset(self):
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length)
+        data = json.loads(post_data.decode("utf-8"))
+        preset_name = data.get("name")
+        
+        if not preset_name:
+            self.send_error(400, "Missing preset name")
+            return
+            
+        preset_dir = os.path.join(args.sample_dir, "presets", preset_name)
+        if not os.path.isdir(preset_dir):
+            self.send_error(404, "Preset not found")
+            return
+            
+        types = ["cover", "marquee", "screenshot", "texture", "wheel"]
+        for t in types:
+            src = os.path.join(preset_dir, f"{t}.png")
+            if os.path.exists(src):
+                dest_dir = os.path.join(args.sample_dir, f"{t}s", "screenscraper")
+                os.makedirs(dest_dir, exist_ok=True)
+                dest = os.path.join(dest_dir, "fake-rom")
+                shutil.copy2(src, dest)
+                
+        # Update db.xml
+        db_path = os.path.join(args.sample_dir, "db.xml")
+        if os.path.exists(db_path):
+            with open(db_path, "r") as f:
+                content = f.read()
+            pattern = r'(<resource [^>]*type="title"[^>]*>)(.*?)(</resource>)'
+            new_content = re.sub(pattern, rf'\1{preset_name}\3', content)
+            with open(db_path, "w") as f:
+                f.write(new_content)
+                
+        self.send_json({"status": "ok"})
 
     def api_get_resource(self, rel_path):
         file_path = os.path.join(args.resources_dir, rel_path)
