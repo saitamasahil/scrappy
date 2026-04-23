@@ -1082,7 +1082,9 @@
             <select id="quickTemplateSelect" onchange="quickLoadTemplate(this.value)">
                 <option value="">— Select template —</option>
             </select>
-            <button class="btn btn-icon" onclick="createNewTemplate()" title="Create New Template" style="color: var(--accent); border: 1px solid var(--border-color);"><span class="material-symbols-rounded">add</span></button>
+            <button class="btn btn-icon" onclick="createNewTemplate()" title="Create New Template"
+                style="color: var(--accent); border: 1px solid var(--border-color);"><span
+                    class="material-symbols-rounded">add</span></button>
         </div>
         <div class="header-actions">
             <button class="btn" onclick="openXmlModal('import')" title="Import XML"><span
@@ -1136,7 +1138,9 @@
                             style="accent-color:var(--accent); width:15px; height:15px; cursor:pointer">
                         Auto Preview
                     </label>
-                    <select id="autoPreviewDelay" class="input" style="font-size:11px; padding:2px 4px; height:22px; width:auto; border-radius:4px" onchange="if(document.getElementById('autoPreviewToggle').checked) schedulePreview()">
+                    <select id="autoPreviewDelay" class="input"
+                        style="font-size:11px; padding:2px 4px; height:22px; width:auto; border-radius:4px"
+                        onchange="if(document.getElementById('autoPreviewToggle').checked) schedulePreview()">
                         <option value="0">Immediate</option>
                         <option value="600" selected>0.6s Delay</option>
                         <option value="1500">1.5s Delay</option>
@@ -1361,7 +1365,7 @@
             const newItems = new Set(); // Track items added this session (need Scrappy restart)
 
             function showRestartWarning() {
-                showToast('Restart Scrappy to use newly added items in the main app.');
+                showToast('Restart Scrappy to use newly added items in the template maker.');
             }
 
 
@@ -1858,7 +1862,7 @@
                             return `<option value="mask/${m.name}" ${layer.file === `mask/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
                         }).join('')}
                                 </select>
-                                ${newItems.has('res:' + layer.file) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this mask in the main app">warning</span>` : ''}
+                                ${newItems.has('res:' + layer.file) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this mask in the template maker">warning</span>` : ''}
                             </div>
                             <button class="btn btn-icon" onclick="triggerUpload('mask', {layerId:${layer.id}, fieldName:'file'})" title="Upload mask"><span class="material-symbols-rounded">upload</span></button>
                         </div>
@@ -1909,7 +1913,7 @@
                             return `<option value="frames/${m.name}" ${layer.file === `frames/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
                         }).join('')}
                                 </select>
-                                ${newItems.has('res:' + layer.file) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this frame in the main app">warning</span>` : ''}
+                                ${newItems.has('res:' + layer.file) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this frame in the template maker">warning</span>` : ''}
                             </div>
                             <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layer.id}, fieldName:'file'})" title="Upload frame"><span class="material-symbols-rounded">upload</span></button>
                         </div>
@@ -2125,7 +2129,7 @@
                                 return `<option value="mask/${m.name}" ${val === `mask/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
                             }).join('')}
                                         </select>
-                                        ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this mask in the main app">warning</span>` : ''}
+                                        ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this mask in the template maker">warning</span>` : ''}
                                     </div>
                                     <button class="btn btn-icon" onclick="triggerUpload('mask', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload mask"><span class="material-symbols-rounded">upload</span></button>
                                 </div></div>`;
@@ -2146,7 +2150,7 @@
                                 return `<option value="${m.name}" ${val === m.name ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
                             }).join('')}
                                         </select>
-                                        ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this frame in the main app">warning</span>` : ''}
+                                        ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this frame in the template maker">warning</span>` : ''}
                                     </div>
                                     <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload frame"><span class="material-symbols-rounded">upload</span></button>
                                 </div></div>`;
@@ -2175,12 +2179,12 @@
                                         </optgroup>
                                         <optgroup label="Custom Sides">
                                             ${resourcesList.other.filter(r => r.path.startsWith('sides/')).map(r => {
-                                                const isNew = newItems.has('res:' + r.path);
-                                                return `<option value="${r.path}" ${val === r.path ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + r.name}</option>`;
-                                            }).join('')}
+                                const isNew = newItems.has('res:' + r.path);
+                                return `<option value="${r.path}" ${val === r.path ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + r.name}</option>`;
+                            }).join('')}
                                         </optgroup>
                                     </select>
-                                    ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this side image in the main app">warning</span>` : ''}
+                                    ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this side image in the template maker">warning</span>` : ''}
                                     <button class="btn btn-icon" onclick="triggerUpload('sides', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload side image"><span class="material-symbols-rounded">upload</span></button>
                                 </div></div>`;
                         }
@@ -2195,12 +2199,12 @@
                                         </optgroup>
                                         <optgroup label="Custom Scanlines">
                                             ${resourcesList.other.filter(r => r.path.startsWith('scanlines/')).map(r => {
-                                                const isNew = newItems.has('res:' + r.path);
-                                                return `<option value="${r.path}" ${val === r.path ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + r.name}</option>`;
-                                            }).join('')}
+                                const isNew = newItems.has('res:' + r.path);
+                                return `<option value="${r.path}" ${val === r.path ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + r.name}</option>`;
+                            }).join('')}
                                         </optgroup>
                                     </select>
-                                    ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this scanline in the main app">warning</span>` : ''}
+                                    ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this scanline in the template maker">warning</span>` : ''}
                                     <button class="btn btn-icon" onclick="triggerUpload('scanlines', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload scanline image"><span class="material-symbols-rounded">upload</span></button>
                                 </div></div>`;
                         }
@@ -2592,7 +2596,7 @@
                 let inputId = 'uploadResourceInput';
                 if (category === 'mask') inputId = 'uploadMaskInput';
                 if (category === 'frames') inputId = 'uploadFrameInput';
-                
+
                 const input = document.getElementById(inputId);
                 input.dataset.category = category;
                 input.value = ''; // reset so same file can be selected again
