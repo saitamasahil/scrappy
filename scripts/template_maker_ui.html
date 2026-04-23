@@ -1078,10 +1078,11 @@
             <img src="data:image/png;base64,%%LOGO_B64%%" class="logo" onerror="this.style.display='none'">
             <div class="header-title"><span class="header-dot"></span>Template Maker</div>
         </div>
-        <div class="header-center">
+        <div class="header-center" style="display: flex; gap: 8px;">
             <select id="quickTemplateSelect" onchange="quickLoadTemplate(this.value)">
                 <option value="">— Select template —</option>
             </select>
+            <button class="btn btn-icon" onclick="createNewTemplate()" title="Create New Template" style="color: var(--accent); border: 1px solid var(--border-color);"><span class="material-symbols-rounded">add</span></button>
         </div>
         <div class="header-actions">
             <button class="btn" onclick="openXmlModal('import')" title="Import XML"><span
@@ -1153,7 +1154,7 @@
             <div class="section">
                 <div class="field">
                     <label class="field-label">Template Name</label>
-                    <input type="text" id="templateName" placeholder="my-awesome-template" value="new-template">
+                    <input type="text" id="templateName" placeholder="my-awesome-template" value="New Template">
                 </div>
             </div>
 
@@ -1501,6 +1502,11 @@
                             xml += `/>\n`;
                             continue;
                         }
+                        const hasResource = !!layer.resource;
+                        const hasEffects = layer.effects && layer.effects.length > 0;
+                        const hasChildren = layer.layers && layer.layers.length > 0;
+                        if (!hasResource && !hasEffects && !hasChildren) continue;
+
                         if (layer.name) xml += `${indent}<!-- ${layer.name} -->\n`;
                         xml += `${indent}<layer`;
                         if (layer.resource) xml += ` resource="${layer.resource}"`;
@@ -2501,6 +2507,15 @@
                 } catch (e) {
                     showToast('Failed to load template');
                 }
+            }
+
+            function createNewTemplate() {
+                const blankXml = `<?xml version="1.0" encoding="UTF-8"?>\n<artwork>\n  <output type="cover" width="640" height="480">\n    <layer resource="screenshot" width="400" align="center" valign="middle"/>\n  </output>\n</artwork>`;
+                document.getElementById('templateName').value = 'New Template';
+                document.getElementById('quickTemplateSelect').value = '';
+                parseXml(blankXml);
+                requestPreview();
+                showToast('Started new template');
             }
 
             // ─── Resources Upload ───────────────────────────────────────
