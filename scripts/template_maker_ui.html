@@ -2145,10 +2145,6 @@
                                 const isNew = newItems.has('res:frames/' + m.name);
                                 return `<option value="frames/${m.name}" ${val === `frames/${m.name}` ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
                             }).join('')}
-                                            ${resourcesList.other.map(m => {
-                                const isNew = newItems.has('res:' + m.name);
-                                return `<option value="${m.name}" ${val === m.name ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + m.name}</option>`;
-                            }).join('')}
                                         </select>
                                         ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this frame in the template maker">warning</span>` : ''}
                                     </div>
