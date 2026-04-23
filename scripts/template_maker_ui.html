@@ -1096,6 +1096,7 @@
 
     <input type="file" id="uploadMaskInput" class="upload-input" accept=".png,.jpg,.jpeg">
     <input type="file" id="uploadFrameInput" class="upload-input" accept=".png,.jpg,.jpeg">
+    <input type="file" id="uploadResourceInput" class="upload-input" accept=".png,.jpg,.jpeg">
     <input type="file" id="previewBgInput" class="upload-input" accept=".png,.jpg,.jpeg"
         onchange="handlePreviewBgUpload(event)">
 
@@ -1204,6 +1205,11 @@
                             <input type="number" id="outputHeight" value="480" min="1" max="4096"
                                 oninput="onOutputChange()">
                         </div>
+                        <div class="field">
+                            <label class="field-label" title="Megapixels limit">Mpixels</label>
+                            <input type="number" id="outputMpixels" value="" min="0.001" step="0.01" placeholder="auto"
+                                oninput="onOutputChange()">
+                        </div>
                     </div>
                 </div>
 
@@ -1276,9 +1282,6 @@
                             <b>Aspect:</b> ignore (stretch to fill), keep (maintain ratio), keepexpand (crop to
                             fill)<br>
                             <b>Transform:</b> Smooth (bilinear filtering), Fast (sharp pixel scaling)<br>
-                            <b>Gamebox Side:</b> To use a custom side image, place the file in your
-                            <code>application/scrappy/templates/resources</code> folder and type its filename (e.g.
-                            <code>spine.png</code>).<br>
                             <b>Mask tip:</b> Transparency (Alpha) of the mask image determines what is shown.<br>
                             <b>Effects:</b> balance, blur, brightness, colorize, contrast, frame, gamebox, hue, mask,
                             opacity, rotate, rounded, saturation, scanlines, shadow, stroke.
@@ -1353,7 +1356,7 @@
             let xmlModalMode = 'export';
             let previewRequestTime = 0;
             let uploadPendingTarget = null; // {layerIdx, effectIdx, fieldName} or 'standalone'
-            let allOutputsLayers = {}; // Store layers for each output type: { cover: {layers:[], width:640, height:480}, ... }
+            let allOutputsLayers = {}; // Store layers for each output type: { cover: {layers:[], width:640, height:480, mpixels:''}, ... }
             let primaryOutputType = 'cover'; // Track the output being edited
             const newItems = new Set(); // Track items added this session (need Scrappy restart)
 
@@ -1437,8 +1440,8 @@
                 },
                 {
                     key: 'scanlines', label: 'Scanlines', fields: [
-                        { n: 'file', t: 'text', d: 'scanlines1.png' }, { n: 'scale', t: 'number', d: 1, min: 0.1, max: 10 },
-                        { n: 'opacity', t: 'number', d: 50, min: 0, max: 100 }, { n: 'mode', t: 'text', d: 'overlay' }
+                        { n: 'file', t: 'scanlines-select', d: 'scanlines1.png' }, { n: 'scale', t: 'number', d: 1, min: 0.1, max: 10 },
+                        { n: 'opacity', t: 'number', d: 50, min: 0, max: 100 }, { n: 'mode', t: 'select', d: 'overlay', options: ['overlay', 'multiply', 'screen', 'add', 'sub', 'normal'] }
                     ]
                 }
             ];
@@ -1489,6 +1492,7 @@
                             xml += `${indent}<mask file="${layer.file}"`;
                             if (layer.width) xml += ` width="${layer.width}"`;
                             if (layer.height) xml += ` height="${layer.height}"`;
+                            if (layer.aspect) xml += ` aspect="${layer.aspect}"`;
                             xml += `/>\n`;
                             continue;
                         }
@@ -1499,6 +1503,7 @@
                             if (layer.height) xml += ` height="${layer.height}"`;
                             if (layer.x) xml += ` x="${layer.x}"`;
                             if (layer.y) xml += ` y="${layer.y}"`;
+                            if (layer.aspect) xml += ` aspect="${layer.aspect}"`;
                             xml += `/>\n`;
                             continue;
                         }
@@ -1559,7 +1564,8 @@
                 allOutputsLayers[primaryOutputType] = {
                     layers: JSON.parse(JSON.stringify(layers)),
                     width: document.getElementById('outputWidth').value,
-                    height: document.getElementById('outputHeight').value
+                    height: document.getElementById('outputHeight').value,
+                    mpixels: document.getElementById('outputMpixels').value
                 };
 
                 const enabledTypes = [];
@@ -1576,10 +1582,13 @@
                     const data = allOutputsLayers[type] || {
                         layers: [],
                         width: document.getElementById('outputWidth').value,
-                        height: document.getElementById('outputHeight').value
+                        height: document.getElementById('outputHeight').value,
+                        mpixels: document.getElementById('outputMpixels').value
                     };
 
-                    xml += `  <output type="${type}" width="${data.width}" height="${data.height}">\n`;
+                    xml += `  <output type="${type}" width="${data.width}" height="${data.height}"`;
+                    if (data.mpixels) xml += ` mpixels="${data.mpixels}"`;
+                    xml += `>\n`;
 
                     if (data.layers.length === 0) {
                         // Automated Pattern: Fallback for empty outputs
@@ -1610,16 +1619,18 @@
                 allOutputsLayers[primaryOutputType] = {
                     layers: JSON.parse(JSON.stringify(layers)),
                     width: document.getElementById('outputWidth').value,
-                    height: document.getElementById('outputHeight').value
+                    height: document.getElementById('outputHeight').value,
+                    mpixels: document.getElementById('outputMpixels').value
                 };
 
                 // Load new
                 primaryOutputType = newType;
-                const data = allOutputsLayers[newType] || { layers: [], width: 640, height: 480 };
+                const data = allOutputsLayers[newType] || { layers: [], width: 640, height: 480, mpixels: '' };
 
                 layers = JSON.parse(JSON.stringify(data.layers));
                 document.getElementById('outputWidth').value = data.width;
                 document.getElementById('outputHeight').value = data.height;
+                document.getElementById('outputMpixels').value = data.mpixels || '';
 
                 // Sync checkbox if it wasn't already
                 if (newType === 'cover') document.getElementById('outBox').checked = true;
@@ -1676,6 +1687,7 @@
                 primaryOutputType = firstOutput.getAttribute('type') || 'cover';
                 document.getElementById('outputWidth').value = firstOutput.getAttribute('width') || 640;
                 document.getElementById('outputHeight').value = firstOutput.getAttribute('height') || 480;
+                document.getElementById('outputMpixels').value = firstOutput.getAttribute('mpixels') || '';
 
                 // Synchronize checkboxes and dropdown
                 const types = allOutputs.map(o => o.getAttribute('type'));
@@ -1711,7 +1723,8 @@
                     allOutputsLayers[type] = {
                         layers: nodeLayers,
                         width: outNode.getAttribute('width') || 640,
-                        height: outNode.getAttribute('height') || 480
+                        height: outNode.getAttribute('height') || 480,
+                        mpixels: outNode.getAttribute('mpixels') || ''
                     };
                 });
 
@@ -1775,6 +1788,7 @@
                                 file: child.getAttribute('file') || '',
                                 width: child.getAttribute('width') || '',
                                 height: child.getAttribute('height') || '',
+                                aspect: child.getAttribute('aspect') || '',
                                 visible: true
                             });
                         } else if (child.tagName === 'frame') {
@@ -1786,6 +1800,7 @@
                                 height: child.getAttribute('height') || '',
                                 x: child.getAttribute('x') || '',
                                 y: child.getAttribute('y') || '',
+                                aspect: child.getAttribute('aspect') || '',
                                 visible: true
                             });
                         }
@@ -1857,6 +1872,15 @@
                             <label class="field-label">Height</label>
                             <input type="number" value="${layer.height}" oninput="findLayer(${layer.id}).height=this.value;schedulePreview()">
                         </div>
+                        <div class="field" style="min-width:70px; flex:1">
+                            <label class="field-label">Aspect</label>
+                            <select oninput="findLayer(${layer.id}).aspect=this.value;schedulePreview()">
+                                <option value="" ${!layer.aspect ? 'selected' : ''}>Auto</option>
+                                <option value="ignore" ${layer.aspect === 'ignore' ? 'selected' : ''}>Stretch (ignore)</option>
+                                <option value="keep" ${layer.aspect === 'keep' ? 'selected' : ''}>Keep</option>
+                                <option value="keepexpand" ${layer.aspect === 'keepexpand' ? 'selected' : ''}>Crop (keepexpand)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>`;
                     } else if (layer.type === 'frame-between') {
@@ -1898,6 +1922,15 @@
                         <div class="field" style="min-width:70px; flex:1">
                             <label class="field-label">Height</label>
                             <input type="number" value="${layer.height}" oninput="findLayer(${layer.id}).height=this.value;schedulePreview()">
+                        </div>
+                        <div class="field" style="min-width:70px; flex:1">
+                            <label class="field-label">Aspect</label>
+                            <select oninput="findLayer(${layer.id}).aspect=this.value;schedulePreview()">
+                                <option value="" ${!layer.aspect ? 'selected' : ''}>Auto</option>
+                                <option value="ignore" ${layer.aspect === 'ignore' ? 'selected' : ''}>Stretch (ignore)</option>
+                                <option value="keep" ${layer.aspect === 'keep' ? 'selected' : ''}>Keep</option>
+                                <option value="keepexpand" ${layer.aspect === 'keepexpand' ? 'selected' : ''}>Crop (keepexpand)</option>
+                            </select>
                         </div>
                     </div>
                     <div class="field-row">
@@ -2033,6 +2066,10 @@
                                 <option value="fast" ${layer.transform === 'fast' ? 'selected' : ''}>Fast</option>
                             </select>
                         </div>
+                        <div class="field" style="min-width:70px; flex:1">
+                            <label class="field-label" title="Megapixels limit">Mpixels</label>
+                            <input type="number" value="${layer.mpixels || ''}" min="0.001" step="0.01" placeholder="auto" oninput="findLayer(${layer.id}).mpixels=this.value;schedulePreview()">
+                        </div>
                     </div>
 
                     <!-- Effects -->
@@ -2125,16 +2162,47 @@
                                 </select></div>`;
                         }
                         if (f.t === 'side-select') {
+                            const val = eff.values[f.n] || '';
                             return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
-                                <select oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()">
-                                    <optgroup label="Resources">
-                                        <option value="screenshot" ${eff.values[f.n] === 'screenshot' ? 'selected' : ''}>Screenshot</option>
-                                        <option value="cover" ${eff.values[f.n] === 'cover' ? 'selected' : ''}>Cover</option>
-                                        <option value="wheel" ${eff.values[f.n] === 'wheel' ? 'selected' : ''}>Wheel</option>
-                                        <option value="marquee" ${eff.values[f.n] === 'marquee' ? 'selected' : ''}>Marquee</option>
-                                        <option value="texture" ${eff.values[f.n] === 'texture' ? 'selected' : ''}>Texture</option>
-                                    </optgroup>
-                                </select></div>`;
+                                <div style="display:flex; gap:8px; align-items: center;">
+                                    <select style="flex:1" oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview();renderLayers()">
+                                        <optgroup label="Resources">
+                                            <option value="screenshot" ${val === 'screenshot' ? 'selected' : ''}>Screenshot</option>
+                                            <option value="cover" ${val === 'cover' ? 'selected' : ''}>Cover</option>
+                                            <option value="wheel" ${val === 'wheel' ? 'selected' : ''}>Wheel</option>
+                                            <option value="marquee" ${val === 'marquee' ? 'selected' : ''}>Marquee</option>
+                                            <option value="texture" ${val === 'texture' ? 'selected' : ''}>Texture</option>
+                                        </optgroup>
+                                        <optgroup label="Custom Sides">
+                                            ${resourcesList.other.filter(r => r.path.startsWith('sides/')).map(r => {
+                                                const isNew = newItems.has('res:' + r.path);
+                                                return `<option value="${r.path}" ${val === r.path ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + r.name}</option>`;
+                                            }).join('')}
+                                        </optgroup>
+                                    </select>
+                                    ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this side image in the main app">warning</span>` : ''}
+                                    <button class="btn btn-icon" onclick="triggerUpload('sides', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload side image"><span class="material-symbols-rounded">upload</span></button>
+                                </div></div>`;
+                        }
+                        if (f.t === 'scanlines-select') {
+                            const val = eff.values[f.n] || '';
+                            return `<div class="field" style="min-width:140px;flex:2"><label class="field-label">${f.n}</label>
+                                <div style="display:flex; gap:8px; align-items: center;">
+                                    <select style="flex:1" oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview();renderLayers()">
+                                        <optgroup label="Built-in">
+                                            <option value="scanlines1.png" ${val === 'scanlines1.png' ? 'selected' : ''}>scanlines1</option>
+                                            <option value="scanlines2.png" ${val === 'scanlines2.png' ? 'selected' : ''}>scanlines2</option>
+                                        </optgroup>
+                                        <optgroup label="Custom Scanlines">
+                                            ${resourcesList.other.filter(r => r.path.startsWith('scanlines/')).map(r => {
+                                                const isNew = newItems.has('res:' + r.path);
+                                                return `<option value="${r.path}" ${val === r.path ? 'selected' : ''}>${(isNew ? '⚠ ' : '') + r.name}</option>`;
+                                            }).join('')}
+                                        </optgroup>
+                                    </select>
+                                    ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this scanline in the main app">warning</span>` : ''}
+                                    <button class="btn btn-icon" onclick="triggerUpload('scanlines', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload scanline image"><span class="material-symbols-rounded">upload</span></button>
+                                </div></div>`;
                         }
                         if (f.t === 'text') {
                             return `<div class="field" style="min-width:70px; flex:1"><label class="field-label">${f.n}</label>
@@ -2521,8 +2589,12 @@
             // ─── Resources Upload ───────────────────────────────────────
             function triggerUpload(category, target = 'standalone') {
                 uploadPendingTarget = target;
-                const inputId = category === 'mask' ? 'uploadMaskInput' : 'uploadFrameInput';
+                let inputId = 'uploadResourceInput';
+                if (category === 'mask') inputId = 'uploadMaskInput';
+                if (category === 'frames') inputId = 'uploadFrameInput';
+                
                 const input = document.getElementById(inputId);
+                input.dataset.category = category;
                 input.value = ''; // reset so same file can be selected again
                 input.click();
             }
@@ -2552,13 +2624,16 @@
                         // Update the UI target
                         if (uploadPendingTarget !== 'standalone') {
                             const t = uploadPendingTarget;
-                            if (t.layerIdx !== undefined) {
-                                if (t.effectIdx !== undefined) {
-                                    // It's an effect
-                                    layers[t.layerIdx].effects[t.effectIdx].values[t.fieldName] = data.path;
-                                } else {
-                                    // It's a mask-between layer
-                                    layers[t.layerIdx][t.fieldName] = data.path;
+                            if (t.layerId !== undefined) {
+                                const layer = findLayer(t.layerId);
+                                if (layer) {
+                                    if (t.effectIdx !== undefined) {
+                                        // It's an effect field
+                                        layer.effects[t.effectIdx].values[t.fieldName] = data.path;
+                                    } else {
+                                        // It's a direct layer field (like mask-between file)
+                                        layer[t.fieldName] = data.path;
+                                    }
                                 }
                             }
                         }
@@ -2573,6 +2648,7 @@
             }
 
             // Attach upload listeners
+            document.getElementById('uploadResourceInput').addEventListener('change', e => handleUpload(e, e.target.dataset.category || 'other'));
             document.getElementById('uploadMaskInput').addEventListener('change', e => handleUpload(e, 'mask'));
             document.getElementById('uploadFrameInput').addEventListener('change', e => handleUpload(e, 'frames'));
 
