@@ -1516,12 +1516,12 @@
             const EFFECTS_LIST = [
                 {
                     key: 'shadow', label: 'Shadow', fields: [
-                        { n: 'distance', t: 'number', d: 5, min: -50, max: 50 }, { n: 'softness', t: 'number', d: 5, min: 0, max: 100 }, { n: 'opacity', t: 'number', d: 70, min: 0, max: 100 }
+                        { n: 'distance', t: 'number', d: 5, min: 0 }, { n: 'softness', t: 'number', d: 5, min: 0 }, { n: 'opacity', t: 'number', d: 70, min: 0, max: 100 }
                     ]
                 },
                 {
                     key: 'stroke', label: 'Stroke', fields: [
-                        { n: 'width', t: 'number', d: 2, min: 0, max: 20 }, { n: 'color', t: 'color', d: '#000000' }
+                        { n: 'width', t: 'number', d: 2, min: 0 }, { n: 'color', t: 'color', d: '#000000' }
                     ]
                 },
                 {
@@ -1576,7 +1576,7 @@
                 },
                 {
                     key: 'scanlines', label: 'Scanlines', fields: [
-                        { n: 'file', t: 'scanlines-select', d: 'scanlines1.png' }, { n: 'scale', t: 'number', d: 1, min: 0.1, max: 10 },
+                        { n: 'file', t: 'scanlines-select', d: 'scanlines1.png' }, { n: 'scale', t: 'number', d: 1, min: 0.1, max: 2, step: 0.1 },
                         { n: 'opacity', t: 'number', d: 50, min: 0, max: 100 }, { n: 'mode', t: 'select', d: 'overlay', options: ['overlay', 'multiply', 'screen', 'add', 'sub', 'normal'] }
                     ]
                 }
@@ -2385,6 +2385,8 @@
                             <input type="number" value="${eff.values[f.n] || f.d}" 
                                 ${f.min !== undefined ? `min="${f.min}"` : ''} 
                                 ${f.max !== undefined ? `max="${f.max}"` : ''}
+                                ${f.step !== undefined ? `step="${f.step}"` : ''}
+                                onblur="clampEffectInput(this, ${f.min !== undefined ? f.min : 'null'}, ${f.max !== undefined ? f.max : 'null'}, ${layerId}, ${ei}, '${f.n}')"
                                 oninput="findLayer(${layerId}).effects[${ei}].values['${f.n}']=this.value;schedulePreview()"></div>`;
                     }).join('')}
                 </div>
@@ -2492,6 +2494,25 @@
                     if (nameEl) {
                         nameEl.textContent = val || layer.resource || (layer.type === 'mask-between' ? 'Global Mask' : 'Empty Layer');
                     }
+                }
+            }
+
+            function clampEffectInput(input, min, max, layerId, effectIdx, fieldName) {
+                if (input.value === "") return;
+                let val = parseFloat(input.value);
+                if (isNaN(val)) return;
+
+                if (min !== null && val < min) val = min;
+                if (max !== null && val > max) val = max;
+
+                // Update input visually (removes leading zeros and enforces bounds)
+                input.value = val;
+
+                // Update underlying data and trigger preview
+                const layer = findLayer(layerId);
+                if (layer && layer.effects[effectIdx] && layer.effects[effectIdx].values) {
+                    layer.effects[effectIdx].values[fieldName] = val;
+                    schedulePreview();
                 }
             }
 
