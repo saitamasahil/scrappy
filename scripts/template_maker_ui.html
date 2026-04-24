@@ -380,14 +380,17 @@
             background-image: repeating-conic-gradient(rgba(128, 128, 128, 0.06) 0% 25%, transparent 0% 50%);
             background-size: 16px 16px;
             border-radius: var(--md-shape-lg);
-            overflow: hidden;
             border: 1px solid color-mix(in srgb, var(--card-border) 50%, transparent);
             display: flex;
             align-items: center;
             justify-content: center;
             min-width: 200px;
             min-height: 200px;
-            transition: box-shadow 0.3s, background-color 0.3s;
+            transition: box-shadow 0.3s, background-color 0.3s, border-radius 0.2s;
+        }
+
+        .preview-container.sharp-corners {
+            border-radius: 0;
         }
 
         .preview-container:hover {
@@ -1258,6 +1261,10 @@
                         <input type="checkbox" id="layoutModeToggle" onchange="toggleLayoutMode(this.checked)">
                         <span>Layout Mode</span>
                     </label>
+                    <label class="preview-option" title="Disable rounded corners for precise visual alignment">
+                        <input type="checkbox" id="sharpCornersToggle" onchange="toggleSharpCorners(this.checked)">
+                        <span>Sharp Corners</span>
+                    </label>
                 </div>
 
                 <div class="delay-segmented-container disabled">
@@ -1416,6 +1423,7 @@
                             <b>Aspect:</b> ignore (stretch to fill), keep (maintain ratio), keepexpand (crop to
                             fill)<br>
                             <b>Transform:</b> Smooth (bilinear filtering), Fast (sharp pixel scaling)<br>
+                            <b>Layout Mode:</b> Hold Shift while dragging resize handles to lock aspect ratio.<br>
                             <b>Mask tip:</b> Transparency (Alpha) of the mask image determines what is shown.<br>
                             <b>Effects:</b> balance, blur, brightness, colorize, contrast, frame, gamebox, hue, mask,
                             opacity, rotate, rounded, saturation, scanlines, shadow, stroke.
@@ -3164,6 +3172,14 @@
                 updateOverlays();
             }
 
+            function toggleSharpCorners(enabled) {
+                const container = document.querySelector('.preview-container');
+                if (container) {
+                    if (enabled) container.classList.add('sharp-corners');
+                    else container.classList.remove('sharp-corners');
+                }
+            }
+
             function selectLayerById(id, scroll = true) {
                 const layer = findLayer(id);
                 if (!layer) return;
@@ -3320,23 +3336,30 @@
 
                     const layer = findLayer(resizingLayerId);
                     if (layer) {
-                        // Proportionally resize based on drag vector
-                        const newW = resizeStartDims.w + dx;
-                        const newH = resizeStartDims.h + dy;
-                        const ratio = resizeStartDims.ratio;
+                        // Calculate freeform width and height
+                        let finalW = Math.max(10, Math.round(resizeStartDims.w + dx));
+                        let finalH = Math.max(10, Math.round(resizeStartDims.h + dy));
 
-                        let finalW, finalH;
-                        if (Math.abs(dx) > Math.abs(dy)) {
-                            finalW = Math.max(10, Math.round(newW));
-                            finalH = Math.round(finalW / ratio);
+                        // Lock aspect ratio if Shift key is held
+                        if (e.shiftKey) {
+                            // Calculate a smooth scale multiplier based on how far the mouse moved
+                            const scaleX = finalW / resizeStartDims.w;
+                            const scaleY = finalH / resizeStartDims.h;
+                            const scale = Math.max(scaleX, scaleY);
+
+                            // Lock the driving axis based on the image's natural shape to prevent jitter
+                            if (resizeStartDims.w > resizeStartDims.h) {
+                                layer.width = Math.max(10, Math.round(resizeStartDims.w * scale));
+                                layer.height = '';
+                            } else {
+                                layer.width = '';
+                                layer.height = Math.max(10, Math.round(resizeStartDims.h * scale));
+                            }
                         } else {
-                            finalH = Math.max(10, Math.round(newH));
-                            finalW = Math.round(finalH * ratio);
+                            // Freeform resizing
+                            layer.width = finalW;
+                            layer.height = finalH;
                         }
-
-                        // Save only Width and leave Height explicit to avoid constraint battles inside Skyscraper engine
-                        layer.width = finalW;
-                        layer.height = ''; // Auto
 
                         // Update sidebar values in real-time
                         const card = document.querySelector(`.layer-card[data-id="${resizingLayerId}"]`);
@@ -3347,7 +3370,7 @@
                                 const input = field.querySelector('input[type="number"]');
                                 if (label && input) {
                                     if (label.textContent === 'Width') input.value = layer.width;
-                                    if (label.textContent === 'Height') input.value = '';
+                                    if (label.textContent === 'Height') input.value = layer.height;
                                 }
                             });
                         }
