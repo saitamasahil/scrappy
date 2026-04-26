@@ -248,19 +248,6 @@ function skyscraper.init(config_path, binary)
         end
     end
 
-    -- Apply workaround for Skyscraper fxscanlines bug and setup custom resource symlinks
-    local home_dir = os.getenv("HOME")
-    if home_dir then
-        local sky_res_dir = home_dir .. "/.skyscraper/resources"
-        os.execute("mkdir -p '" .. sky_res_dir .. "'")
-        os.execute("touch '" .. sky_res_dir .. "/resource'")
-        local templates_res_dir = WORK_DIR .. "/templates/resources"
-        os.execute("mkdir -p '" .. templates_res_dir .. "/scanlines' '" .. templates_res_dir .. "/sides' '" .. templates_res_dir .. "/mask' '" .. templates_res_dir .. "/frames'")
-        os.execute("ln -sf '" .. templates_res_dir .. "/scanlines' '" .. sky_res_dir .. "/scanlines'")
-        os.execute("ln -sf '" .. templates_res_dir .. "/sides' '" .. sky_res_dir .. "/sides'")
-        os.execute("ln -sf '" .. templates_res_dir .. "/mask' '" .. sky_res_dir .. "/mask'")
-        os.execute("ln -sf '" .. templates_res_dir .. "/frames' '" .. sky_res_dir .. "/frames'")
-    end
 end
 
 -- Shutdown function to clean up backend processes on app exit
