@@ -201,6 +201,7 @@
             transition: background 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             white-space: nowrap;
             position: relative;
@@ -1404,7 +1405,7 @@
                     <div class="section-header">
                         <span class="section-title"><span class="material-symbols-rounded"
                                 style="font-size: 16px;">layers</span> Layers</span>
-                        <div class="section-header-actions">
+                        <div class="section-header-actions" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
                             <button class="btn btn-sm" onclick="addMaskBetween()" title="Add global mask layer"><span
                                     class="material-symbols-rounded">theater_comedy</span> Global Mask</button>
                             <button class="btn btn-sm" onclick="addFrameBetween()" title="Add global frame layer"><span
@@ -1413,7 +1414,7 @@
                                     class="material-symbols-rounded">upload</span> Upload Mask</button>
                             <button class="btn btn-sm" onclick="triggerUpload('frames')" title="Upload frame file"><span
                                     class="material-symbols-rounded">upload</span> Upload Frame</button>
-                            <button class="btn btn-sm btn-accent" onclick="addLayer()"><span
+                            <button class="btn btn-sm btn-accent" onclick="addLayer()" style="grid-column: span 2;"><span
                                     class="material-symbols-rounded">add</span> Layer</button>
                         </div>
                     </div>
