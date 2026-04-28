@@ -3027,6 +3027,8 @@
                 if (xmlModalMode === 'export') { closeModals(); return; }
                 try {
                     parseXml(document.getElementById('xmlTextarea').value);
+                    document.getElementById('quickTemplateSelect').value = '';
+                    document.getElementById('templateName').value = 'Imported Template';
                     closeModals();
                     showToast('XML imported successfully');
                     // Always generate preview after import
