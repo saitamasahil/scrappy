@@ -2747,6 +2747,29 @@
                 canvas.height = img.naturalHeight || img.height || parseInt(document.getElementById('outputHeight').value);
                 const ctx = canvas.getContext('2d');
                 
+                // Apply rounded corners clip if 'Sharp Corners' is not enabled
+                const radiusRaw = window.getComputedStyle(container).borderRadius;
+                let radius = parseInt(radiusRaw) || 0;
+                if (radius > 0 && !container.classList.contains('sharp-corners')) {
+                    const rect = container.getBoundingClientRect();
+                    if (rect.width > 0) {
+                        const scale = canvas.width / rect.width;
+                        radius = radius * scale; // Scale radius from UI to exported resolution
+                    }
+                    ctx.beginPath();
+                    ctx.moveTo(radius, 0);
+                    ctx.lineTo(canvas.width - radius, 0);
+                    ctx.quadraticCurveTo(canvas.width, 0, canvas.width, radius);
+                    ctx.lineTo(canvas.width, canvas.height - radius);
+                    ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - radius, canvas.height);
+                    ctx.lineTo(radius, canvas.height);
+                    ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - radius);
+                    ctx.lineTo(0, radius);
+                    ctx.quadraticCurveTo(0, 0, radius, 0);
+                    ctx.closePath();
+                    ctx.clip();
+                }
+                
                 // Read background styles from container
                 const bgColor = window.getComputedStyle(container).backgroundColor;
                 const bgImage = window.getComputedStyle(container).backgroundImage;
