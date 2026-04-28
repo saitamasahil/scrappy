@@ -1202,6 +1202,9 @@
             <select id="quickTemplateSelect" onchange="quickLoadTemplate(this.value)">
                 <option value="">— Select template —</option>
             </select>
+            <button class="btn btn-icon" onclick="reloadCurrentTemplate()" title="Reload Current Template"
+                style="color: var(--text-secondary); border: 1px solid var(--card-border);"><span
+                    class="material-symbols-rounded">refresh</span></button>
             <button class="btn btn-icon" onclick="createNewTemplate()" title="Create New Template"
                 style="color: var(--accent); border: 1px solid var(--card-border);"><span
                     class="material-symbols-rounded">add</span></button>
@@ -1658,6 +1661,17 @@
             async function quickLoadTemplate(name) {
                 if (!name) return;
                 await loadTemplate(name);
+            }
+
+            function reloadCurrentTemplate() {
+                const name = document.getElementById('templateName').value;
+                if (name && name !== 'New Template') {
+                    if (confirm(`Reload "${name}"? Any unsaved changes will be lost.`)) {
+                        loadTemplate(name);
+                    }
+                } else {
+                    showToast('No saved template to reload');
+                }
             }
 
             init();
@@ -2860,6 +2874,7 @@
                     const res = await fetch(`/api/template/${encodeURIComponent(name)}`);
                     const data = await res.json();
                     document.getElementById('templateName').value = name;
+                    document.getElementById('quickTemplateSelect').value = name;
                     parseXml(data.xml);
                     closeModals();
                     showToast(`Loaded "${name}"`);
