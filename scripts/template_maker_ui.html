@@ -1250,10 +1250,15 @@
         <div class="props-panel" id="propsPanel">
 
             <div class="section" style="padding:16px;">
-                <button class="btn btn-accent"
-                    style="width:100%; justify-content:center; font-size:15px; padding:12px; border-radius:12px"
-                    onclick="requestPreview()"><span class="material-symbols-rounded">play_arrow</span> Generate
-                    Preview</button>
+                <div style="display:flex; gap: 8px;">
+                    <button class="btn btn-accent"
+                        style="flex: 1; justify-content:center; font-size:15px; padding:12px; border-radius:12px"
+                        onclick="requestPreview()"><span class="material-symbols-rounded">play_arrow</span> Generate
+                        Preview</button>
+                    <button class="btn"
+                        style="justify-content:center; padding:12px; border-radius:12px"
+                        onclick="savePreviewPng()" title="Save Preview as PNG"><span class="material-symbols-rounded">download</span></button>
+                </div>
 
                 <div class="preview-options-row">
                     <label class="preview-option">
@@ -1367,13 +1372,15 @@
                     <div class="section-body">
                         <div class="field">
                             <label class="field-label">Background Style</label>
-                            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px">
+                            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:8px">
                                 <button class="btn btn-sm" onclick="setPreviewBg('checker')"><span
                                         class="material-symbols-rounded">grid_on</span> Checker</button>
                                 <button class="btn btn-sm" onclick="setPreviewBg('dark')"><span
                                         class="material-symbols-rounded">dark_mode</span> Dark</button>
                                 <button class="btn btn-sm" onclick="setPreviewBg('light')"><span
                                         class="material-symbols-rounded">light_mode</span> Light</button>
+                                <button class="btn btn-sm" onclick="setPreviewBg('blank')"><span
+                                        class="material-symbols-rounded">check_box_outline_blank</span> Blank</button>
                                 <button class="btn btn-sm" onclick="setPreviewBg('accent')"><span
                                         class="material-symbols-rounded">stars</span> Accent</button>
                                 <button class="btn btn-sm"
@@ -2727,6 +2734,77 @@
 
             let previewAbortController = null;
 
+            function savePreviewPng() {
+                const img = document.getElementById('previewImg');
+                const container = document.querySelector('.preview-container');
+                if (!img.src || img.src === '' || img.style.display === 'none') {
+                    showToast('No preview available to save');
+                    return;
+                }
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth || img.width || parseInt(document.getElementById('outputWidth').value);
+                canvas.height = img.naturalHeight || img.height || parseInt(document.getElementById('outputHeight').value);
+                const ctx = canvas.getContext('2d');
+                
+                // Read background styles from container
+                const bgColor = window.getComputedStyle(container).backgroundColor;
+                const bgImage = window.getComputedStyle(container).backgroundImage;
+                
+                // Draw background color
+                if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+                    ctx.fillStyle = bgColor;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+                
+                // Draw background pattern/image
+                if (bgImage && bgImage !== 'none') {
+                    if (bgImage.includes('repeating-conic-gradient')) {
+                        // Draw checkerboard pattern manually on canvas
+                        const s = 10;
+                        ctx.fillStyle = 'rgba(128, 128, 128, 0.06)';
+                        for(let y = 0; y < canvas.height; y += s) {
+                            for(let x = 0; x < canvas.width; x += s) {
+                                if((Math.floor(x/s) + Math.floor(y/s)) % 2 === 0) {
+                                    ctx.fillRect(x, y, s, s);
+                                }
+                            }
+                        }
+                    } else if (bgImage.startsWith('url(')) {
+                        const url = bgImage.slice(4, -1).replace(/["']/g, "");
+                        const bgImgObj = new Image();
+                        bgImgObj.crossOrigin = "Anonymous";
+                        bgImgObj.onload = () => {
+                            // Cover strategy: scale the background to cover the canvas
+                            const scale = Math.max(canvas.width / bgImgObj.width, canvas.height / bgImgObj.height);
+                            const w = bgImgObj.width * scale;
+                            const h = bgImgObj.height * scale;
+                            const x = (canvas.width - w) / 2;
+                            const y = (canvas.height - h) / 2;
+                            ctx.drawImage(bgImgObj, x, y, w, h);
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            downloadCanvas(canvas);
+                        };
+                        bgImgObj.src = url;
+                        return; // async download
+                    }
+                }
+                
+                // Draw foreground image
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                downloadCanvas(canvas);
+                
+                function downloadCanvas(c) {
+                    const a = document.createElement('a');
+                    a.href = c.toDataURL('image/png');
+                    a.download = `scrappy-preview-${primaryOutputType}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    showToast('Preview saved!');
+                }
+            }
+
             async function requestPreview(fromQueue = false) {
                 const visibleCount = layers.filter(l => l.visible).length;
                 if (layers.length === 0 || visibleCount === 0) {
@@ -3097,6 +3175,9 @@
                 if (theme === 'checker') {
                     container.style.backgroundColor = 'transparent';
                     container.style.backgroundImage = 'repeating-conic-gradient(rgba(128, 128, 128, 0.06) 0% 25%, transparent 0% 50%)';
+                } else if (theme === 'blank') {
+                    container.style.backgroundColor = 'transparent';
+                    container.style.backgroundImage = 'none';
                 } else if (theme === 'dark') {
                     container.style.backgroundColor = '#111';
                     container.style.backgroundImage = 'none';
