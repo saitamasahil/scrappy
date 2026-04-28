@@ -1255,9 +1255,9 @@
                         style="flex: 1; justify-content:center; font-size:15px; padding:12px; border-radius:12px"
                         onclick="requestPreview()"><span class="material-symbols-rounded">play_arrow</span> Generate
                         Preview</button>
-                    <button class="btn"
-                        style="justify-content:center; padding:12px; border-radius:12px"
-                        onclick="savePreviewPng()" title="Save Preview as PNG"><span class="material-symbols-rounded">download</span></button>
+                    <button class="btn" style="justify-content:center; padding:12px; border-radius:12px"
+                        onclick="savePreviewPng()" title="Save Preview as PNG"><span
+                            class="material-symbols-rounded">download</span></button>
                 </div>
 
                 <div class="preview-options-row">
@@ -1269,9 +1269,9 @@
                         <input type="checkbox" id="layoutModeToggle" onchange="toggleLayoutMode(this.checked)">
                         <span>Layout Mode</span>
                     </label>
-                    <label class="preview-option" title="Disable rounded corners for precise visual alignment">
+                    <label class="preview-option" title="Square off the UI preview frame">
                         <input type="checkbox" id="sharpCornersToggle" onchange="toggleSharpCorners(this.checked)">
-                        <span>Sharp Corners</span>
+                        <span>Square Preview Frame</span>
                     </label>
                 </div>
 
@@ -1372,7 +1372,8 @@
                     <div class="section-body">
                         <div class="field">
                             <label class="field-label">Background Style</label>
-                            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:8px">
+                            <div
+                                style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:8px">
                                 <button class="btn btn-sm" onclick="setPreviewBg('checker')"><span
                                         class="material-symbols-rounded">grid_on</span> Checker</button>
                                 <button class="btn btn-sm" onclick="setPreviewBg('dark')"><span
@@ -1913,8 +1914,8 @@
                 }
 
                 if (document.getElementById('outBox').checked && (!allOutputsLayers['cover'] || allOutputsLayers['cover'].layers.length === 0)) {
-                     allOutputsLayers['cover'] = allOutputsLayers['cover'] || { width: w, height: h };
-                     allOutputsLayers['cover'].layers = [{
+                    allOutputsLayers['cover'] = allOutputsLayers['cover'] || { width: w, height: h };
+                    allOutputsLayers['cover'].layers = [{
                         id: layerIdCounter++,
                         type: 'layer',
                         resource: 'screenshot',
@@ -1925,11 +1926,11 @@
                         opacity: 100,
                         visible: true,
                         expanded: true
-                     }];
-                     if (primaryOutputType === 'cover') {
-                         layers = JSON.parse(JSON.stringify(allOutputsLayers['cover'].layers));
-                         renderLayers();
-                     }
+                    }];
+                    if (primaryOutputType === 'cover') {
+                        layers = JSON.parse(JSON.stringify(allOutputsLayers['cover'].layers));
+                        renderLayers();
+                    }
                 }
 
                 schedulePreview();
@@ -2741,12 +2742,12 @@
                     showToast('No preview available to save');
                     return;
                 }
-                
+
                 const canvas = document.createElement('canvas');
                 canvas.width = img.naturalWidth || img.width || parseInt(document.getElementById('outputWidth').value);
                 canvas.height = img.naturalHeight || img.height || parseInt(document.getElementById('outputHeight').value);
                 const ctx = canvas.getContext('2d');
-                
+
                 // Apply rounded corners clip if 'Sharp Corners' is not enabled
                 const radiusRaw = window.getComputedStyle(container).borderRadius;
                 let radius = parseInt(radiusRaw) || 0;
@@ -2769,26 +2770,26 @@
                     ctx.closePath();
                     ctx.clip();
                 }
-                
+
                 // Read background styles from container
                 const bgColor = window.getComputedStyle(container).backgroundColor;
                 const bgImage = window.getComputedStyle(container).backgroundImage;
-                
+
                 // Draw background color
                 if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
                     ctx.fillStyle = bgColor;
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                 }
-                
+
                 // Draw background pattern/image
                 if (bgImage && bgImage !== 'none') {
                     if (bgImage.includes('repeating-conic-gradient')) {
                         // Draw checkerboard pattern manually on canvas
                         const s = 10;
                         ctx.fillStyle = 'rgba(128, 128, 128, 0.06)';
-                        for(let y = 0; y < canvas.height; y += s) {
-                            for(let x = 0; x < canvas.width; x += s) {
-                                if((Math.floor(x/s) + Math.floor(y/s)) % 2 === 0) {
+                        for (let y = 0; y < canvas.height; y += s) {
+                            for (let x = 0; x < canvas.width; x += s) {
+                                if ((Math.floor(x / s) + Math.floor(y / s)) % 2 === 0) {
                                     ctx.fillRect(x, y, s, s);
                                 }
                             }
@@ -2812,11 +2813,11 @@
                         return; // async download
                     }
                 }
-                
+
                 // Draw foreground image
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 downloadCanvas(canvas);
-                
+
                 function downloadCanvas(c) {
                     const a = document.createElement('a');
                     a.href = c.toDataURL('image/png');
