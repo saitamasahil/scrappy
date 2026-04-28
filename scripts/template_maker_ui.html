@@ -1777,7 +1777,7 @@
                     if (data.layers.length === 0) {
                         // Automated Pattern: Fallback for empty outputs
                         if (type === 'screenshot') {
-                            xml += `    <layer resource="screenshot" height="${data.height}" valign="center"></layer>\n`;
+                            xml += `    <layer resource="screenshot" height="${data.height}" align="center" valign="middle"></layer>\n`;
                         } else if (type === 'wheel') {
                             xml += `    <layer resource="screenshot" width="${data.width}" height="${data.height}">\n`;
                             xml += `      <balance red="-255" green="-255" blue="-255"/>\n`;
@@ -1786,7 +1786,7 @@
                             xml += `      <stroke width="1" color="#ffffff"/>\n`;
                             xml += `    </layer>\n`;
                         } else {
-                            xml += `    <layer resource="screenshot" width="${data.width}" height="${data.height}" opacity="1"></layer>\n`;
+                            xml += `    <layer resource="screenshot" width="${data.width}" height="${data.height}" align="center" valign="middle"></layer>\n`;
                         }
                     } else {
                         let content = getLayersXml(data.layers);
@@ -1822,21 +1822,96 @@
                 if (newType === 'wheel') document.getElementById('outSplash').checked = true;
 
                 renderLayers();
-                schedulePreview();
+                onOutputChange();
             }
 
             function onOutputChange() {
                 // Ensure at least one output is checked
-                const anyChecked = document.getElementById('outBox').checked ||
-                    document.getElementById('outPreview').checked ||
-                    document.getElementById('outSplash').checked;
+                const boxChecked = document.getElementById('outBox').checked;
+                const previewChecked = document.getElementById('outPreview').checked;
+                const splashChecked = document.getElementById('outSplash').checked;
 
-                if (!anyChecked) {
+                if (!boxChecked && !previewChecked && !splashChecked) {
                     // Fallback to primary being edited
                     if (primaryOutputType === 'cover') document.getElementById('outBox').checked = true;
                     else if (primaryOutputType === 'screenshot') document.getElementById('outPreview').checked = true;
                     else if (primaryOutputType === 'wheel') document.getElementById('outSplash').checked = true;
                 }
+
+                // Auto-add base layers when an output is newly ticked and has no layers setup
+                const w = document.getElementById('outputWidth').value || 640;
+                const h = document.getElementById('outputHeight').value || 480;
+
+                if (previewChecked && (!allOutputsLayers['screenshot'] || allOutputsLayers['screenshot'].layers.length === 0)) {
+                    allOutputsLayers['screenshot'] = allOutputsLayers['screenshot'] || { width: w, height: h };
+                    allOutputsLayers['screenshot'].layers = [{
+                        id: layerIdCounter++,
+                        type: 'layer',
+                        resource: 'screenshot',
+                        height: h,
+                        align: 'center',
+                        valign: 'middle',
+                        visible: true,
+                        expanded: true
+                    }];
+                    if (primaryOutputType === 'screenshot') {
+                        layers = JSON.parse(JSON.stringify(allOutputsLayers['screenshot'].layers));
+                        renderLayers();
+                    }
+                }
+
+                if (splashChecked && (!allOutputsLayers['wheel'] || allOutputsLayers['wheel'].layers.length === 0)) {
+                    allOutputsLayers['wheel'] = allOutputsLayers['wheel'] || { width: w, height: h };
+                    allOutputsLayers['wheel'].layers = [
+                        {
+                            id: layerIdCounter++,
+                            type: 'layer',
+                            resource: 'screenshot',
+                            width: w,
+                            height: h,
+                            visible: true,
+                            expanded: false,
+                            effects: [{ type: 'balance', values: { red: -255, green: -255, blue: -255 } }]
+                        },
+                        {
+                            id: layerIdCounter++,
+                            type: 'layer',
+                            resource: 'wheel',
+                            width: Math.round(w * 0.47),
+                            valign: 'middle',
+                            align: 'center',
+                            visible: true,
+                            expanded: true,
+                            effects: [{ type: 'stroke', values: { width: 1, color: '#ffffff' } }]
+                        }
+                    ];
+                    if (primaryOutputType === 'wheel') {
+                        layers = JSON.parse(JSON.stringify(allOutputsLayers['wheel'].layers));
+                        renderLayers();
+                    }
+                }
+
+                if (document.getElementById('outBox').checked && (!allOutputsLayers['cover'] || allOutputsLayers['cover'].layers.length === 0)) {
+                     allOutputsLayers['cover'] = allOutputsLayers['cover'] || { width: w, height: h };
+                     allOutputsLayers['cover'].layers = [{
+                        id: layerIdCounter++,
+                        type: 'layer',
+                        resource: 'screenshot',
+                        width: w,
+                        height: h,
+                        align: 'center',
+                        valign: 'middle',
+                        opacity: 100,
+                        visible: true,
+                        expanded: true
+                     }];
+                     if (primaryOutputType === 'cover') {
+                         layers = JSON.parse(JSON.stringify(allOutputsLayers['cover'].layers));
+                         renderLayers();
+                     }
+                }
+
+                schedulePreview();
             }
 
             // ─── XML Parsing ────────────────────────────────────────────
@@ -2752,7 +2827,7 @@
                     });
             }
 
-            function onOutputChange() { schedulePreview(); }
+
 
             // ─── Template Load ──────────────────────────────────────────
             function openLoadModal() {
