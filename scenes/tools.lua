@@ -342,7 +342,7 @@ local function open_accent_settings()
 
     accent_menu = component:root{
         column = true,
-        gap = 8,
+        gap = 8 * _G.scale,
         width = item_width
     }
 
@@ -350,11 +350,11 @@ local function open_accent_settings()
     local swatch_component = component {
         id = "color_swatch",
         width = item_width,
-        height = 40,
+        height = 40 * _G.scale,
         draw = function(self)
             local active_hex = get_active_accent_hex()
             local swatch_size = 28
-            local padding = 10
+            local padding = 10 * _G.scale
 
             -- Draw background
             love.graphics.setColor(theme:read_color("button", "BUTTON_BACKGROUND", "#2d3436"))
@@ -408,7 +408,7 @@ local function open_accent_settings()
     local scroll_height = math.min(w_height - 280, 240)
     local preset_list = component {
         column = true,
-        gap = 8,
+        gap = 8 * _G.scale,
         width = item_width,
         height = 0
     }
@@ -904,7 +904,7 @@ local function open_region_editor()
 
     region_menu = component:root{
         column = true,
-        gap = 10
+        gap = 10 * _G.scale
     }
     local item_width = math.min(w_width - 120, 560)
     local list_height = math.min(w_height - 220, 360)
@@ -922,7 +922,7 @@ local function open_region_editor()
         row = true,
         gap = 6
     } + (component {
-        width = 22, height = 32,
+        width = 22 * _G.scale, height = 32 * _G.scale,
         onUpdate = function(self, dt)
             self.icon_scale = self.icon_scale or 1
             local pressed = icon_input.isEventDown("up") or icon_input.isEventDown("down")
@@ -949,7 +949,7 @@ local function open_region_editor()
         text = "Navigate •",
         y = (32 - love.graphics.getFont():getHeight()) / 2
     } + (component {
-        width = 22, height = 32,
+        width = 22 * _G.scale, height = 32 * _G.scale,
         onUpdate = function(self, dt)
             self.icon_scale = self.icon_scale or 1
             local pressed = icon_input.isEventDown("left") or icon_input.isEventDown("right")
@@ -976,7 +976,7 @@ local function open_region_editor()
         text = "Reorder •",
         y = (32 - love.graphics.getFont():getHeight()) / 2
     } + (component {
-        width = 22, height = 32,
+        width = 22 * _G.scale, height = 32 * _G.scale,
         onUpdate = function(self, dt)
             self.icon_scale = self.icon_scale or 1
             local pressed = icon_input.isEventDown("return")
@@ -1068,13 +1068,13 @@ local function open_preset_selector()
 
     preset_menu = component:root{
         column = true,
-        gap = 8,
+        gap = 8 * _G.scale,
         width = item_width
     }
 
     local preset_list = component {
         column = true,
-        gap = 8,
+        gap = 8 * _G.scale,
         width = item_width,
         height = 0
     }
@@ -1166,8 +1166,8 @@ local function open_capture_rom_selector(platform)
     local item_width = math.min(w_width - 120, 560)
     local list_height = math.min(w_height - 220, 380)
     
-    local selector_menu = component:root{ column = true, gap = 8, width = item_width }
-    local rom_list = component { column = true, gap = 8, width = item_width, height = 0 }
+    local selector_menu = component:root{ column = true, gap = 8 * _G.scale, width = item_width }
+    local rom_list = component { column = true, gap = 8 * _G.scale, width = item_width, height = 0 }
     
     for _, r in ipairs(roms) do
         rom_list = rom_list + listitem {
@@ -1199,8 +1199,8 @@ local function open_capture_platform_selector()
     local item_width = math.min(w_width - 120, 560)
     local list_height = math.min(w_height - 220, 380)
     
-    local selector_menu = component:root{ column = true, gap = 8, width = item_width }
-    local platform_list = component { column = true, gap = 8, width = item_width, height = 0 }
+    local selector_menu = component:root{ column = true, gap = 8 * _G.scale, width = item_width }
+    local platform_list = component { column = true, gap = 8 * _G.scale, width = item_width, height = 0 }
     
     for _, p in ipairs(platforms) do
         platform_list = platform_list + listitem {
@@ -1238,8 +1238,8 @@ local function open_delete_preset_selector(is_refresh)
     local item_width = math.min(w_width - 120, 560)
     local list_height = math.min(w_height - 220, 380)
     
-    local selector_menu = component:root{ column = true, gap = 8, width = item_width }
-    local p_list = component { column = true, gap = 8, width = item_width, height = 0 }
+    local selector_menu = component:root{ column = true, gap = 8 * _G.scale, width = item_width }
+    local p_list = component { column = true, gap = 8 * _G.scale, width = item_width, height = 0 }
     
     for _, p in ipairs(custom_presets) do
         p_list = p_list + listitem {
@@ -1267,7 +1267,7 @@ local function open_manage_presets_menu()
     local item_width = math.min(w_width - 120, 560)
     local menu_root = component:root{
         column = true,
-        gap = 8,
+        gap = 8 * _G.scale,
         width = item_width
     }
     
@@ -1451,7 +1451,7 @@ function tools:load()
 
     menu = component:root{
         column = true,
-        gap = 10
+        gap = 10 * _G.scale
     }
     info_window = popup {
         visible = false
@@ -1464,7 +1464,7 @@ function tools:load()
         scroll_speed = 30
     } + (component {
         column = true,
-        gap = 10
+        gap = 10 * _G.scale
     } -- TODO: Implement auto update
     + listitem {
         text = "Update Scrappy",
@@ -1627,7 +1627,7 @@ function tools:load()
 
     info_window = info_window + (component {
         column = true,
-        gap = 15
+        gap = 15 * _G.scale
     } + output_log {
         visible = false,
         id = "scraping_log",
@@ -1638,11 +1638,11 @@ function tools:load()
     menu:updatePosition(10, 10)
     menu:focusFirstElement()
     -- Create help footer
-    footer = component { row = true, gap = 40 }
+    footer = component { row = true, gap = 40 * _G.scale }
         + label { id = "footer_a", text = "Select", icon = "button_a" }
         + label { id = "footer_b", text = "Back", icon = "button_b" }
         + label { id = "footer_dpad", text = "Navigate", icon = "dpad" }
-    footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - 20, w_height - footer.height - 10)
+    footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - (20 * _G.scale), w_height - footer.height - (10 * _G.scale))
 end
 
 function tools:update(dt)
@@ -1818,7 +1818,7 @@ open_grid_size_settings = function()
 
     grid_size_menu = component:root{
         column = true,
-        gap = 8,
+        gap = 8 * _G.scale,
         width = item_width
     }
 
@@ -1826,7 +1826,7 @@ open_grid_size_settings = function()
 
     local grid_list = component {
         column = true,
-        gap = 8,
+        gap = 8 * _G.scale,
         width = item_width,
         height = 0
     }
@@ -1946,51 +1946,59 @@ local function draw_confirm_popup()
     love.graphics.translate(-sw / 2, -sh / 2)
 
     -- Popup box dimensions
-    local box_w = math.min(sw - 40, 340)
-    local box_h = 140
+    local box_w = math.min(sw - (40 * _G.scale), 340 * _G.scale)
+    
+    -- Warning message
+    local msg = "Changing region priorities will delete cached artwork."
+    local _, lines = font:getWrap(msg, box_w - (30 * _G.scale))
+    local text_h = #lines * font_h
+    
+    local title_h = font_h + (30 * _G.scale)
+    local button_h = (38 * _G.scale)
+    local box_h = text_h + title_h + button_h + (20 * _G.scale)
+
     local box_x = (sw - box_w) / 2
     local box_y = (sh - box_h) / 2
 
     -- Draw box background
     love.graphics.setColor(0.18, 0.18, 0.18, 1)
-    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8, 8)
+    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
 
     -- Draw border
     love.graphics.setColor(0.4, 0.4, 0.4, 1)
-    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8, 8)
+    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
 
     love.graphics.setColor(1, 1, 1, 1)
 
     -- Title
-    love.graphics.printf("Clear Cache?", box_x, box_y + 12, box_w, "center")
+    love.graphics.printf("Clear Cache?", box_x, box_y + (12 * _G.scale), box_w, "center")
 
-    -- Warning message
-    local msg = "Changing region priorities will delete cached artwork."
-    love.graphics.printf(msg, box_x + 15, box_y + 35, box_w - 30, "center")
+    -- Draw message
+    love.graphics.printf(msg, box_x + (15 * _G.scale), box_y + title_h, box_w - (30 * _G.scale), "center")
 
     -- Button icons and labels
-    local icon_size = 24
-    local btn_y = box_y + box_h - 38
+    local icon_size = 24 * _G.scale
+    local btn_y = box_y + box_h - (38 * _G.scale)
     local left_center = box_x + box_w * 0.25
     local right_center = box_x + box_w * 0.75
 
-    local proceed_total_w = icon_size + 6 + font:getWidth("Proceed")
+    local proceed_total_w = icon_size + (6 * _G.scale) + font:getWidth("Proceed")
     local proceed_x = left_center - proceed_total_w / 2
     if button_a_icon then
         local iw, ih = button_a_icon:getDimensions()
         local sx, sy = icon_size / iw, icon_size / ih
         love.graphics.draw(button_a_icon, proceed_x, btn_y, 0, sx, sy)
     end
-    love.graphics.print("Proceed", proceed_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+    love.graphics.print("Proceed", proceed_x + icon_size + (6 * _G.scale), btn_y + (icon_size - font_h) / 2)
 
-    local cancel_total_w = icon_size + 6 + font:getWidth("Cancel")
+    local cancel_total_w = icon_size + (6 * _G.scale) + font:getWidth("Cancel")
     local cancel_x = right_center - cancel_total_w / 2
     if button_b_icon then
         local iw, ih = button_b_icon:getDimensions()
         local sx, sy = icon_size / iw, icon_size / ih
         love.graphics.draw(button_b_icon, cancel_x, btn_y, 0, sx, sy)
     end
-    love.graphics.print("Cancel", cancel_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+    love.graphics.print("Cancel", cancel_x + icon_size + (6 * _G.scale), btn_y + (icon_size - font_h) / 2)
 
     love.graphics.pop()
 end
@@ -2021,32 +2029,40 @@ local function draw_clear_cache_popup()
     love.graphics.scale(popup_scale, popup_scale)
     love.graphics.translate(-sw / 2, -sh / 2)
 
-    -- Popup box dimensions - taller for more content
-    local box_w = math.min(sw - 40, 380)
-    local box_h = 180
+    -- Popup box dimensions
+    local box_w = math.min(sw - (40 * _G.scale), 380 * _G.scale)
+    
+    -- Warning message
+    local msg = "This clears the cache. Re-scrape ROMs to rebuild.\nExisting artwork will not be deleted."
+    local _, lines = font:getWrap(msg, box_w - (30 * _G.scale))
+    local text_h = #lines * font_h
+    
+    local title_h = font_h + (30 * _G.scale)
+    local button_h = (45 * _G.scale)
+    local box_h = text_h + title_h + button_h + (20 * _G.scale)
+    
     local box_x = (sw - box_w) / 2
     local box_y = (sh - box_h) / 2
 
     -- Draw box background
     love.graphics.setColor(0.18, 0.18, 0.18, 1)
-    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8, 8)
+    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
 
     -- Draw border
     love.graphics.setColor(0.4, 0.4, 0.4, 1)
-    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8, 8)
+    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
 
     love.graphics.setColor(1, 1, 1, 1)
 
     -- Title
-    love.graphics.printf("Clear Cache?", box_x, box_y + 15, box_w, "center")
+    love.graphics.printf("Clear Cache?", box_x, box_y + (15 * _G.scale), box_w, "center")
 
-    -- Warning message
-    local msg = "This clears the cache. Re-scrape ROMs to rebuild.\nExisting artwork will not be deleted."
-    love.graphics.printf(msg, box_x + 15, box_y + 45, box_w - 30, "center")
+    -- Draw message
+    love.graphics.printf(msg, box_x + (15 * _G.scale), box_y + title_h, box_w - (30 * _G.scale), "center")
 
     -- Button icons and labels - positioned below text
-    local icon_size = 24
-    local btn_y = box_y + box_h - 45
+    local icon_size = 24 * _G.scale
+    local btn_y = box_y + box_h - (45 * _G.scale)
 
     -- Calculate button positions
     local left_center = box_x + box_w * 0.25
@@ -2103,58 +2119,66 @@ local function draw_offline_popup()
     love.graphics.translate(-sw / 2, -sh / 2)
 
     -- Popup box dimensions - taller for more content
-    local box_w = math.min(sw - 40, 420)
-    local box_h = 330
-    local box_x = (sw - box_w) / 2
-    local box_y = (sh - box_h) / 2
-
-    -- Draw box background
-    love.graphics.setColor(0.18, 0.18, 0.18, 1)
-    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8, 8)
-
-    -- Draw border
-    love.graphics.setColor(0.4, 0.4, 0.4, 1)
-    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8, 8)
-
-    love.graphics.setColor(1, 1, 1, 1)
-
-    -- Title
-    love.graphics.printf("Enable Offline Mode?", box_x, box_y + 15, box_w, "center")
-
+    local box_w = math.min(sw - (40 * _G.scale), 420 * _G.scale)
+    
     -- Explanation message
     local msg = "Offline Mode allows scraping using cached data without internet.\n\n" ..
                     "• Works only with 'Scrape All' (uses cached data)\n" ..
                     "• 'Scrape only missing artwork' requires internet\n" ..
                     "• Single ROM scraping requires internet\n" .. "• Network warnings will be suppressed"
-    love.graphics.printf(msg, box_x + 15, box_y + 45, box_w - 30, "left")
+    local _, lines = font:getWrap(msg, box_w - (30 * _G.scale))
+    local text_h = #lines * font_h
+    
+    local title_h = font_h + (30 * _G.scale)
+    local button_h = (45 * _G.scale)
+    local box_h = text_h + title_h + button_h + (30 * _G.scale)
+    
+    local box_x = (sw - box_w) / 2
+    local box_y = (sh - box_h) / 2
+
+    -- Draw box background
+    love.graphics.setColor(0.18, 0.18, 0.18, 1)
+    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
+
+    -- Draw border
+    love.graphics.setColor(0.4, 0.4, 0.4, 1)
+    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
+
+    love.graphics.setColor(1, 1, 1, 1)
+
+    -- Title
+    love.graphics.printf("Enable Offline Mode?", box_x, box_y + (15 * _G.scale), box_w, "center")
+
+    -- Draw explanation message
+    love.graphics.printf(msg, box_x + (15 * _G.scale), box_y + title_h, box_w - (30 * _G.scale), "left")
 
     -- Button icons and labels
-    local icon_size = 24
-    local btn_y = box_y + box_h - 45
+    local icon_size = 24 * _G.scale
+    local btn_y = box_y + box_h - (45 * _G.scale)
 
     -- Calculate button positions
     local left_center = box_x + box_w * 0.25
     local right_center = box_x + box_w * 0.75
 
     -- Enable button (A)
-    local proceed_total_w = icon_size + 6 + font:getWidth("Enable")
+    local proceed_total_w = icon_size + (6 * _G.scale) + font:getWidth("Enable")
     local proceed_x = left_center - proceed_total_w / 2
     if button_a_icon then
         local iw, ih = button_a_icon:getDimensions()
         local sx, sy = icon_size / iw, icon_size / ih
         love.graphics.draw(button_a_icon, proceed_x, btn_y, 0, sx, sy)
     end
-    love.graphics.print("Enable", proceed_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+    love.graphics.print("Enable", proceed_x + icon_size + (6 * _G.scale), btn_y + (icon_size - font_h) / 2)
 
     -- Cancel button (B)
-    local cancel_total_w = icon_size + 6 + font:getWidth("Cancel")
+    local cancel_total_w = icon_size + (6 * _G.scale) + font:getWidth("Cancel")
     local cancel_x = right_center - cancel_total_w / 2
     if button_b_icon then
         local iw, ih = button_b_icon:getDimensions()
         local sx, sy = icon_size / iw, icon_size / ih
         love.graphics.draw(button_b_icon, cancel_x, btn_y, 0, sx, sy)
     end
-    love.graphics.print("Cancel", cancel_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+    love.graphics.print("Cancel", cancel_x + icon_size + (6 * _G.scale), btn_y + (icon_size - font_h) / 2)
 
     love.graphics.pop()
 end
@@ -2180,38 +2204,48 @@ local function draw_missing_media_popup()
     love.graphics.translate(-sw / 2, -sh / 2)
 
     -- Popup box dimensions
-    local box_w = math.min(sw - 40, 380)
-    local box_h = 220
+    local box_w = math.min(sw - (40 * _G.scale), 380 * _G.scale)
+    
+    -- Message
+    local msg = "The following files were not found in cache:"
+    local list_text = missing_media_list or ""
+    local _, msg_lines = font:getWrap(msg, box_w - (30 * _G.scale))
+    local _, list_lines = font:getWrap(list_text, box_w - (40 * _G.scale))
+    
+    local text_h = (#msg_lines + #list_lines + 2) * font_h
+    local title_h = font_h + (30 * _G.scale)
+    local button_h = (45 * _G.scale)
+    local box_h = text_h + title_h + button_h + (60 * _G.scale)
+    
     local box_x = (sw - box_w) / 2
     local box_y = (sh - box_h) / 2
 
     -- Draw box background
     love.graphics.setColor(0.18, 0.18, 0.18, 1)
-    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8, 8)
+    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
 
     -- Draw border
     love.graphics.setColor(0.4, 0.4, 0.4, 1)
-    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8, 8)
+    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
 
     love.graphics.setColor(1, 1, 1, 1)
 
     -- Title
-    love.graphics.printf("Missing Artwork", box_x, box_y + 15, box_w, "center")
+    love.graphics.printf("Missing Artwork", box_x, box_y + (15 * _G.scale), box_w, "center")
 
     -- Warning message
     love.graphics.setColor(0.9, 0.9, 0.9, 1)
-    local main_msg = "The following files were not found in cache:"
-    love.graphics.printf(main_msg, box_x + 20, box_y + 45, box_w - 40, "center")
+    love.graphics.printf(msg, box_x + (15 * _G.scale), box_y + title_h, box_w - (30 * _G.scale), "center")
     
     love.graphics.setColor(0.9, 0.4, 0.4, 1)
-    love.graphics.printf(missing_media_list or "", box_x + 20, box_y + 90, box_w - 40, "center")
+    love.graphics.printf(list_text, box_x + (20 * _G.scale), box_y + title_h + (#msg_lines * font_h) + (10 * _G.scale), box_w - (40 * _G.scale), "center")
     
     love.graphics.setColor(0.9, 0.9, 0.9, 1)
-    love.graphics.printf("Import this preset anyway?", box_x + 20, box_y + 125, box_w - 40, "center")
+    love.graphics.printf("Import this preset anyway?", box_x, box_y + box_h - (90 * _G.scale), box_w, "center")
 
     -- Buttons
-    local icon_size = 24
-    local btn_y = box_y + box_h - 45
+    local icon_size = 24 * _G.scale
+    local btn_y = box_y + box_h - (45 * _G.scale)
     local left_center = box_x + box_w * 0.25
     local right_center = box_x + box_w * 0.75
 

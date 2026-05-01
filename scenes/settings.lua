@@ -24,7 +24,7 @@ local vk_password_font = love.graphics.newFont(_G.MAIN_FONT_PATH or 18, 18)
 
 local settings          = {}
 
-local menu, content, scroller, checkboxes
+local menu, footer, scroller, checkboxes
 local info_window
 
 local all_check         = true
@@ -304,8 +304,8 @@ function settings:load()
   igdb_key_exists = (igdb_creds ~= nil and igdb_creds ~= "" and igdb_creds ~= '""')
 
   -- Root container holds just the scroller; content lives inside scroller
-  menu = component:root { column = true, gap = 10 }
-  content = component { column = true, gap = 10 }
+  menu = component:root { column = true, gap = 10 * _G.scale }
+  content = component { column = true, gap = 10 * _G.scale }
   checkboxes = component { column = true, gap = 0 }
 
   -- Build the non-platform sections into content
@@ -318,9 +318,9 @@ function settings:load()
                 return 'Password: ' .. pw
               end, width = w_width - 20, onClick = on_edit_password }
         )
-      + (component { row = true, gap = 10 }
-          + button { text = 'Save', width = 160, onClick = on_save_ss }
-          + button { text = function() return ss_show_password and 'Hide Password' or 'Show Password' end, width = 180, onClick = on_toggle_show_password }
+      + (component { row = true, gap = 10 * _G.scale }
+          + button { text = 'Save', width = 160 * _G.scale, onClick = on_save_ss }
+          + button { text = function() return ss_show_password and 'Hide Password' or 'Show Password' end, width = 180 * _G.scale, onClick = on_toggle_show_password }
         )
 
       + label { text = 'TheGamesDB Account', icon = "user" }
@@ -372,9 +372,9 @@ function settings:load()
         onChange = on_concurrent_change
       }
       + label { text = 'Platforms', icon = "folder" }
-      + (component { row = true, gap = 10 }
-        + button { id = 'rescan_btn', text = 'Rescan folders', width = 200, onClick = on_refresh_press }
-        + button { text = 'Un/check all', width = 200, onClick = on_check_all_press })
+      + (component { row = true, gap = 10 * _G.scale }
+        + button { id = 'rescan_btn', text = 'Rescan folders', width = 200 * _G.scale, onClick = on_refresh_press }
+        + button { text = 'Un/check all', width = 200 * _G.scale, onClick = on_check_all_press })
 
   -- Populate platforms list
   update_checkboxes()
@@ -410,12 +410,18 @@ function settings:load()
   }
   info_window = info_window + (component {
     column = true,
-    gap = 15
+    gap = 15 * _G.scale
   } + output_log {
     id = "scraping_log",
     width = info_window.width - 20,
     height = info_window.height * 0.8
   })
+
+  -- Create local footer
+  footer = require("lib.gui.footer")()
+  local select_label = footer.children[4]
+  if select_label then select_label.text = "Home" end
+  footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - (20 * _G.scale), w_height - footer.height - (10 * _G.scale))
 end
 
 function settings:update(dt)
@@ -429,6 +435,8 @@ function settings:update(dt)
   else
     menu:update(dt)
   end
+  
+  if footer then footer:update(dt) end
   
   if tgdb_server_running then
     tgdb_check_timer = tgdb_check_timer + dt
@@ -483,6 +491,10 @@ function settings:draw()
   end
   if vk and vk.visible then
     vk:draw()
+  end
+
+  if footer and not (vk and vk.visible) then
+    footer:draw()
   end
 end
 

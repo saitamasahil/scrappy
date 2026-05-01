@@ -22,7 +22,7 @@ local function popup(props)
     y = props.y or 0,
     width = props.width or screenWidth,
     height = props.height or screenHeight,
-    padding = props.padding or 10,
+    padding = props.padding or (10 * (_G.scale or 1)),
     _font = props.font or love.graphics.getFont(),
     draw = function(self)
       if not self.visible then 
@@ -43,9 +43,9 @@ local function popup(props)
         content_width = math.min(self.children[1].width + self.padding * 2, screenWidth)
         content_height = math.min(self.children[1].height + self.padding * 2, screenHeight)
       else
-        content_width = math.min(self.width, screenWidth - 40)
-        _, wrappedText = self._font:getWrap(self.content, content_width - 20)
-        content_height = self._font:getHeight() * #wrappedText + 20
+        content_width = math.min(self.width, screenWidth - (40 * (_G.scale or 1)))
+        _, wrappedText = self._font:getWrap(self.content, content_width - (20 * (_G.scale or 1)))
+        content_height = self._font:getHeight() * #wrappedText + (20 * (_G.scale or 1))
       end
 
       local center_width = (screenWidth - content_width) / 2
@@ -70,7 +70,7 @@ local function popup(props)
         icon = props.icon or "info",
         font = self._font,
         x = center_width,
-        y = center_height - 30,
+        y = center_height - (30 * (_G.scale or 1)),
       }
       overlayLabel:draw()
 
@@ -97,7 +97,7 @@ local function popup(props)
         love.graphics.rectangle("fill", 0, 0, content_width, content_height)
         local textColor = configs.theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
         love.graphics.setColor(textColor)
-        love.graphics.printf(wrappedtext, 10, 5, content_width - 20, "left")
+        love.graphics.printf(wrappedtext, 10 * (_G.scale or 1), 5 * (_G.scale or 1), content_width - (20 * (_G.scale or 1)), "left")
         love.graphics.pop()
       end
 

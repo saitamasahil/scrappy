@@ -33,7 +33,7 @@ local theme = configs.theme
 local loader = loading.new("highlight", 1)
 
 local w_width, w_height = love.window.getMode()
-local padding = 10
+local padding = 10 * _G.scale
 local canvas = love.graphics.newCanvas(w_width, w_height)
 local sample_media_root = "sample/media"
 local default_cover_path = sample_media_root .. "/covers/fake-rom.png"
@@ -116,38 +116,47 @@ local function draw_core_reminder_popup()
     love.graphics.translate(-sw / 2, -sh / 2)
 
     -- Popup box
-    local box_w = math.min(sw - 40, 420)
-    local box_h = 200
+    -- Popup box
+    local box_w = math.min(sw - (40 * _G.scale), 420 * _G.scale)
+    
+    -- Message
+    local msg = "Make sure you have assigned cores\nto your ROM folders/subfolders\nin muOS before scraping."
+    local _, lines = font:getWrap(msg, box_w - (30 * _G.scale))
+    local text_h = #lines * font_h
+    
+    local title_h = font_h + (30 * _G.scale)
+    local button_h = (45 * _G.scale)
+    local box_h = text_h + title_h + button_h + (30 * _G.scale)
+    
     local box_x = (sw - box_w) / 2
     local box_y = (sh - box_h) / 2
 
     -- Background
     love.graphics.setColor(0.18, 0.18, 0.18, 1)
-    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8, 8)
+    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
 
     -- Border
     love.graphics.setColor(0.4, 0.4, 0.4, 1)
-    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8, 8)
+    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
 
     love.graphics.setColor(1, 1, 1, 1)
 
     -- Title
-    love.graphics.printf("Reminder", box_x, box_y + 15, box_w, "center")
+    love.graphics.printf("Reminder", box_x, box_y + (15 * _G.scale), box_w, "center")
 
-    -- Message
-    local msg = "Make sure you have assigned cores\nto your ROM folders/subfolders\nin muOS before scraping."
-    love.graphics.printf(msg, box_x + 15, box_y + 45, box_w - 30, "center")
+    -- Draw message
+    love.graphics.printf(msg, box_x + (15 * _G.scale), box_y + title_h, box_w - (30 * _G.scale), "center")
 
     -- Button icons
-    local icon_size = 24
-    local btn_y = box_y + box_h - 45
+    local icon_size = 24 * _G.scale
+    local btn_y = box_y + box_h - (45 * _G.scale)
 
     -- Calculate total width of both button groups with gap between them
-    local gap = 30
+    local gap = 30 * _G.scale
     local ok_text = "OK"
     local hide_text = "Don't show again"
-    local ok_w = icon_size + 6 + font:getWidth(ok_text)
-    local hide_w = icon_size + 6 + font:getWidth(hide_text)
+    local ok_w = icon_size + (6 * _G.scale) + font:getWidth(ok_text)
+    local hide_w = icon_size + (6 * _G.scale) + font:getWidth(hide_text)
     local total_w = ok_w + gap + hide_w
     local start_x = box_x + (box_w - total_w) / 2
 
@@ -157,7 +166,7 @@ local function draw_core_reminder_popup()
         local sx, sy = icon_size / iw, icon_size / ih
         love.graphics.draw(button_a_icon, start_x, btn_y, 0, sx, sy)
     end
-    love.graphics.print(ok_text, start_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+    love.graphics.print(ok_text, start_x + icon_size + (6 * _G.scale), btn_y + (icon_size - font_h) / 2)
 
     -- B = Don't show again
     local hide_x = start_x + ok_w + gap
@@ -896,6 +905,7 @@ local function update_state(t)
         -- Detailed signal for preview generation
         if t.log:match("%[gen%] Finished \"fake%-rom\"") then
             state.reload_preview = true
+            state.loading = false
         end
 
         -- Parse fetch progress from Skyscraper output (e.g., "#26/761 (T2) Pass 1")
@@ -1277,9 +1287,11 @@ local function render_to_canvas()
     cover_preview = img
     canvas:renderTo(function()
         love.graphics.clear(0, 0, 0, 0)
+        love.graphics.setColor(1, 1, 1, 1)
         if cover_preview then
             local cover_w, cover_h = cover_preview:getDimensions()
             local canvas_w, canvas_h = canvas:getDimensions()
+            -- Original positioning: push to right, center vertically
             love.graphics.draw(cover_preview, canvas_w - cover_w, canvas_h * 0.5 - cover_h * 0.5, 0)
         end
     end)
@@ -1332,7 +1344,7 @@ function main:load()
 
     menu = component:root{
         column = true,
-        gap = 10
+        gap = 10 * _G.scale
     }
     info_window = popup {
         visible = false
@@ -1365,9 +1377,9 @@ function main:load()
             -- Artwork (canvas)
             love.graphics.draw(canvas, 0, 0);
             if state.loading then
-                love.graphics.setColor(0, 0, 0, 0.5);
+                love.graphics.setColor(0, 0, 0, 0.4);
                 love.graphics.rectangle("fill", 0, 0, cw, ch)
-                loader:draw(cw * scale, ch * scale, 1)
+                loader:draw(cw / 2, ch / 2, (0.5 * _G.scale) / scale)
                 love.graphics.setColor(1, 1, 1);
             end
             love.graphics.setColor(theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f"))
@@ -1395,9 +1407,12 @@ function main:load()
             love.graphics.setColor(1, 1, 1);
             -- Artwork (canvas)
             love.graphics.draw(canvas, 0, 0);
-            love.graphics.setColor(0, 0, 0, 0.5);
-            love.graphics.rectangle("fill", 0, 0, cw, ch)
-            loader:draw(cw * scale, ch * scale, 1)
+            if state.loading then
+                love.graphics.setColor(0, 0, 0, 0.4);
+                love.graphics.rectangle("fill", 0, 0, cw, ch)
+                loader:draw(cw / 2, ch / 2, (0.5 * _G.scale) / scale)
+                love.graphics.setColor(1, 1, 1);
+            end
             love.graphics.setColor(theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f"))
             love.graphics.setLineWidth(2)
             love.graphics.rectangle("line", 0, 0, cw, ch)
@@ -1408,7 +1423,7 @@ function main:load()
 
     local selectionComponent = component {
         column = true,
-        gap = 10
+        gap = 10 * _G.scale
     } + select {
         width = w_width * 0.5 - 30,
         options = templates,
@@ -1453,11 +1468,11 @@ function main:load()
 
     local popup_max_width = love.graphics.getWidth() * 0.85
     local canvas_width = w_width * 0.5 - 20
-    local info_width = popup_max_width - canvas_width - 10 -- account for 10px row gap
+    local info_width = popup_max_width - canvas_width - (10 * _G.scale) -- account for 10px row gap
 
     local infoComponent = component {
         column = true,
-        gap = 10,
+        gap = 10 * _G.scale,
         width = info_width
     } + label {
         id = "platform",
@@ -1496,16 +1511,16 @@ function main:load()
 
     local top_layout = component {
         row = true,
-        gap = 10
+        gap = 10 * _G.scale
     } + (component {
         column = true,
-        gap = 10
+        gap = 10 * _G.scale
     } + label {
         text = "Preview",
         icon = "image"
     } + canvasComponent) + (component {
         column = true,
-        gap = 10
+        gap = 10 * _G.scale
     } + label {
         text = "Artwork",
         icon = "canvas"
@@ -1514,7 +1529,7 @@ function main:load()
 
     menu = menu + top_layout + (component {
         row = true,
-        gap = 10
+        gap = 10 * _G.scale
     } + button {
         text = "Scrape Single ROM",
         width = w_width * 0.5,
@@ -1525,7 +1540,7 @@ function main:load()
         onFocus = function() on_output_focus("box") end
     } + button {
         text = "Advanced Tools",
-        width = w_width * 0.5 - 30,
+        width = w_width * 0.5 - (30 * _G.scale),
         icon = "wrench",
         onClick = function()
             scenes:push("tools")
@@ -1536,16 +1551,16 @@ function main:load()
     scraping_window = scraping_window + ( -- Column
     component {
         column = true,
-        gap = 15,
+        gap = 15 * _G.scale,
         width = w_width * 0.85
     } + ( -- Row: Preview + Info
     component {
         row = true,
-        gap = 10
+        gap = 10 * _G.scale
     } + canvasComponent2 + infoComponent) + output_log {
         id = "scraping_log",
         width = w_width * 0.85,
-        height = 100
+        height = 100 * _G.scale
     } + component {
         id = "dashboard_hint",
         width = w_width * 0.85,
@@ -1574,8 +1589,8 @@ function main:load()
         draw = function(self)
             if not self.visible then return end
             love.graphics.push()
-            local icon_size = 22
-            local gap = 6
+            local icon_size = 22 * _G.scale
+            local gap = 6 * _G.scale
             -- Draw X button icon
             if button_x_icon then
                 love.graphics.push()
@@ -1637,7 +1652,7 @@ function main:load()
             select = "Settings"
         }
     })
-    footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - 20, w_height - footer.height - 10)
+    footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - (20 * _G.scale), w_height - footer.height - (10 * _G.scale))
     footer:update(0)
 
     initial_preview_triggered = false
@@ -1919,9 +1934,9 @@ function main:draw()
     if status_icon then
         local icon_color = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
         love.graphics.setColor(icon_color)
-        local icon_width = 24
-        local icon_height = 24
-        local margin = 10
+        local icon_width = 24 * _G.scale
+        local icon_height = 24 * _G.scale
+        local margin = 10 * _G.scale
         love.graphics.draw(status_icon, w_width - icon_width - margin, margin, 0, icon_width / status_icon:getWidth(),
             icon_height / status_icon:getHeight())
     end
@@ -1935,8 +1950,8 @@ function main:draw()
         local font = love.graphics.getFont()
         local parts = utils.split(time_str, ":")
 
-        local margin = 10
-        local colon_pad = 2 -- Extra padding around colon
+        local margin = 10 * _G.scale
+        local colon_pad = 2 * _G.scale -- Extra padding around colon
         local t_width = 0
 
         if #parts == 2 then
@@ -1953,7 +1968,7 @@ function main:draw()
 
         -- Shift left if status icon (offline or no-network) is visible
         if (offline_mode and offline_icon) or (not wifi_connected and wifi_icon) then
-            x_pos = x_pos - 24 - 10 -- icon_width (24) + padding (10)
+            x_pos = x_pos - (24 * _G.scale) - (10 * _G.scale) -- icon_width (24) + padding (10)
         end
 
         -- Draw text in Accent Color
@@ -1973,16 +1988,18 @@ function main:draw()
 end
 
 function main:keypressed(key)
-    if key == "escape" then
+    if key == "escape" or key == "return" then
         if showing_core_reminder then
             showing_core_reminder = false
-        elseif info_window.visible then
-            info_window.visible = false
-            if dashboard_server_running then toggle_dashboard_server() end
-        elseif state.scraping then
-            halt_scraping()
-        else
-            love.event.quit()
+        elseif key == "escape" then
+            if info_window.visible then
+                info_window.visible = false
+                if dashboard_server_running then toggle_dashboard_server() end
+            elseif state.scraping then
+                halt_scraping()
+            else
+                love.event.quit()
+            end
         end
     end
     if key == "x" and state.scraping then

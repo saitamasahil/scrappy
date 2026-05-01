@@ -13,7 +13,7 @@ return function(props)
   local t = love.graphics.newText(font, text)
   local labelWidth, labelHeight = t:getWidth(), t:getHeight()
 
-  local checkboxSize = props.checkboxSize or 22 -- Size of the checkbox square
+  local checkboxSize = (props.checkboxSize or 22) * (_G.scale or 1) -- Size of the checkbox square
   local width = math.max(props.width or 0, checkboxSize + padding.horizontal + labelWidth)
   local height = math.max(props.height or 0, checkboxSize + padding.vertical)
 
@@ -176,7 +176,7 @@ return function(props)
       love.graphics.setColor(textColor)
       local currentX = self.x + checkboxSize + padding.horizontal
       if self.icon then
-          local iconSize = self.iconSize or 22
+          local iconSize = (self.iconSize or 22) * (_G.scale or 1)
           local itemIcon = icon {
               name = self.icon,
               x = currentX,

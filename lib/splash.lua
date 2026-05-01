@@ -34,13 +34,13 @@ local anim = {
     pop_scale = 0,         -- Phase 1: Logo pops in
     slide_y = 0,           -- Phase 2: Logo slides up
     title_alpha = 0,       -- Phase 2: Title fades/slides
-    title_y_offset = 20,
+    title_y_offset = 20 * _G.scale,
     version_alpha = 0,     -- Phase 3: Cascade
-    version_y_offset = 20,
+    version_y_offset = 20 * _G.scale,
     maintainer_alpha = 0,
-    maintainer_y_offset = 20,
+    maintainer_y_offset = 20 * _G.scale,
     author_alpha = 0,
-    author_y_offset = 20,
+    author_y_offset = 20 * _G.scale,
     fade_out = 1,          -- Final sequence to exit
     wave_1_x = 0,
     wave_2_x = 0,
@@ -178,8 +178,8 @@ function splash.draw()
         refresh_texts()
     end
     
-    local half_logo_height = logo:getHeight() * 0.5
-    local half_logo_width = logo:getWidth() * 0.5
+    local half_logo_height = (logo:getHeight() * 0.5) * _G.scale
+    local half_logo_width = (logo:getWidth() * 0.5) * _G.scale
 
     -- Global Fade out control
     local r, g, b = colors.main[1], colors.main[2], colors.main[3]
@@ -315,8 +315,8 @@ function splash.draw()
         -- Draw Logo (Scale handled by pop_scale, Y sliding handled by slide_y + Buoyancy)
         local buoyancy = math.sin(love.timer.getTime() * 2) * 4
         love.graphics.setColor(r, g, b, anim.fade_out)
-        love.graphics.draw(logo, 0, -anim.slide_y * half_logo_height + buoyancy, 0, anim.pop_scale, anim.pop_scale, half_logo_width,
-            half_logo_height)
+        love.graphics.draw(logo, 0, -anim.slide_y * half_logo_height + buoyancy, 0, anim.pop_scale * _G.scale, anim.pop_scale * _G.scale, logo:getWidth() * 0.5,
+            logo:getHeight() * 0.5)
 
         -- Draw App Name (Title)
         love.graphics.setColor(r, g, b, anim.title_alpha * anim.fade_out)

@@ -15,8 +15,8 @@ local icon_to_event = {
 local function label(props)
   local _font = props.font or love.graphics.getFont()
   local color = props.color
-  local iconSize = 22
-  local padding = props.iconPadding or 4
+  local iconSize = 22 * (_G.scale or 1)
+  local padding = (props.iconPadding or 4) * (_G.scale or 1)
   -- Support dynamic labels: if props.text is a function, call it on draw; otherwise use self.text
   local get_text = (type(props.text) == "function") and props.text or nil
   local initial_text = (get_text and get_text()) or (props.text or "")

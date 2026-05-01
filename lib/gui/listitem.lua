@@ -6,13 +6,13 @@ return function(props)
   local theme = configs.theme
   local font = props.font or love.graphics.getFont()
   local padding = {
-    horizontal = (props.leftPadding or 4) + (props.rightPadding or 4),
-    vertical = (props.topPadding or 8) + (props.bottomPadding or 8)
+    horizontal = ((props.leftPadding or 4) + (props.rightPadding or 4)) * (_G.scale or 1),
+    vertical = ((props.topPadding or 8) + (props.bottomPadding or 8)) * (_G.scale or 1)
   }
-  local iconSize = props.icon and 22 or 0
+  local iconSize = props.icon and (22 * (_G.scale or 1)) or 0
   local text = props.text or ""
 
-  local itemHeight = theme:read_number("listitem", "ITEM_HEIGHT", 16)
+  local itemHeight = (theme:read_number("listitem", "ITEM_HEIGHT", 16)) * (_G.scale or 1)
   local height = math.max(props.height or 0, itemHeight + padding.vertical)
 
   -- Scroll-related variables
@@ -148,7 +148,7 @@ return function(props)
 
       local labelHeight = font:getHeight(displayText)
       local topPadding = self.height * 0.5 - labelHeight * 0.5
-      local leftPadding = (props.leftPadding or 4)
+      local leftPadding = (props.leftPadding or 4) * (_G.scale or 1)
 
       -- Resolve colors dynamically (fixes caching issue)
       local backgroundColor = self.backgroundColor or theme:read_color("listitem", "ITEM_BACKGROUND", "#000000")
@@ -186,9 +186,9 @@ return function(props)
     -- Draw indicator pill (e.g., green for found, red for missing)
       if props.indicator and props.indicator > 1 then
         love.graphics.setColor(indicatorColor)
-        local pillWidth = 4
+        local pillWidth = 4 * (_G.scale or 1)
         local pillHeight = self.height * 0.6
-        love.graphics.rectangle("fill", self.x + 2, self.y + (self.height - pillHeight) * 0.5, pillWidth, pillHeight, 2, 2)
+        love.graphics.rectangle("fill", self.x + (2 * (_G.scale or 1)), self.y + (self.height - pillHeight) * 0.5, pillWidth, pillHeight, 2 * (_G.scale or 1), 2 * (_G.scale or 1))
       end
       if self.icon then
         local leftIcon = icon {

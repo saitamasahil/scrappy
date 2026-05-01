@@ -274,54 +274,62 @@ local function draw_refine_confirm_popup()
     love.graphics.translate(-sw / 2, -sh / 2)
 
     -- Popup box dimensions
-    local box_w = math.min(sw - 40, 340)
-    local box_h = 130
+    local box_w = math.min(sw - (40 * _G.scale), 340 * _G.scale)
+    
+    -- Message
+    local msg = "Would you like to refine your search?"
+    local _, lines = font:getWrap(msg, box_w - (30 * _G.scale))
+    local text_h = #lines * font_h
+    
+    local title_h = font_h + (30 * _G.scale)
+    local button_h = (38 * _G.scale)
+    local box_h = text_h + title_h + button_h + (20 * _G.scale)
+    
     local box_x = (sw - box_w) / 2
     local box_y = (sh - box_h) / 2
 
     -- Draw box background
     love.graphics.setColor(0.18, 0.18, 0.18, 1)
-    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8, 8)
+    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
 
     -- Draw border
     love.graphics.setColor(0.4, 0.4, 0.4, 1)
-    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8, 8)
+    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
 
     love.graphics.setColor(1, 1, 1, 1)
 
     -- Title
-    love.graphics.printf("Game Not Found", box_x, box_y + 12, box_w, "center")
+    love.graphics.printf("Game Not Found", box_x, box_y + (12 * _G.scale), box_w, "center")
 
-    -- Message
-    local msg = "Would you like to refine your search?"
-    love.graphics.printf(msg, box_x + 15, box_y + 40, box_w - 30, "center")
+    -- Draw message
+    love.graphics.printf(msg, box_x + (15 * _G.scale), box_y + title_h, box_w - (30 * _G.scale), "center")
 
     -- Button icons and labels
-    local icon_size = 24
-    local btn_y = box_y + box_h - 38
+    local icon_size = 24 * _G.scale
+    local btn_y = box_y + box_h - (38 * _G.scale)
 
     local left_center = box_x + box_w * 0.25
     local right_center = box_x + box_w * 0.75
 
     -- Yes button (A)
-    local yes_total_w = icon_size + 6 + font:getWidth("Yes")
+    local yes_total_w = icon_size + (6 * _G.scale) + font:getWidth("Yes")
     local yes_x = left_center - yes_total_w / 2
     if button_a_icon then
         local iw, ih = button_a_icon:getDimensions()
         local sx, sy = icon_size / iw, icon_size / ih
         love.graphics.draw(button_a_icon, yes_x, btn_y, 0, sx, sy)
     end
-    love.graphics.print("Yes", yes_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+    love.graphics.print("Yes", yes_x + icon_size + (6 * _G.scale), btn_y + (icon_size - font_h) / 2)
 
     -- No button (B)
-    local no_total_w = icon_size + 6 + font:getWidth("No")
+    local no_total_w = icon_size + (6 * _G.scale) + font:getWidth("No")
     local no_x = right_center - no_total_w / 2
     if button_b_icon then
         local iw, ih = button_b_icon:getDimensions()
         local sx, sy = icon_size / iw, icon_size / ih
         love.graphics.draw(button_b_icon, no_x, btn_y, 0, sx, sy)
     end
-    love.graphics.print("No", no_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
+    love.graphics.print("No", no_x + icon_size + (6 * _G.scale), btn_y + (icon_size - font_h) / 2)
 
     love.graphics.pop()
 end
@@ -670,12 +678,14 @@ local function toggle_missing_filter(checked)
     print(string.format("[DEBUG] [%.2f] toggle_missing_filter: %s", now, tostring(show_missing_only)))
     
     if missing_filter_item then
-        -- Sync the internal state only if it doesn't match
-        if missing_filter_item.checked ~= show_missing_only then
-            missing_filter_item.checked = show_missing_only
-        end
+        -- Sync the internal state to trigger the water-fill animation
+        missing_filter_item.checked = show_missing_only
+        -- Trigger the ripple animation manually
+        missing_filter_item.ripple_r = 0
+        missing_filter_item.ripple_a = 0.25
+        
         local statusText = show_missing_only and "ON" or "OFF"
-        missing_filter_item.text = string.format("Show only missing artwork: %s", statusText)
+        missing_filter_item.text = string.format("Show Only Missing Artwork: %s", statusText)
     end
 
     -- Persist to config
@@ -975,7 +985,7 @@ function single_scrape:load()
 
     local left_column = component {
         column = true,
-        gap = 10
+        gap = 10 * _G.scale
     } + label {
         text = 'Platforms',
         icon = "folder"
@@ -994,7 +1004,7 @@ function single_scrape:load()
 
     local right_column = component {
         column = true,
-        gap = 10
+        gap = 10 * _G.scale
     } + label {
         id = "roms_label",
         text = 'ROMs',
@@ -1013,25 +1023,25 @@ function single_scrape:load()
 
     menu = menu + (component {
         row = true,
-        gap = 10
+        gap = 10 * _G.scale
     } + left_column + right_column)
 
     menu:updatePosition(10, 10)
     menu:focusFirstElement()
 
     -- Create footer with button hints
-    footer = component { row = true, gap = 40 }
+    footer = component { row = true, gap = 40 * _G.scale }
         + label { id = "footer_a", text = "Select", icon = "button_a" }
         + label { id = "footer_b", text = "Back", icon = "button_b" }
         + label { id = "footer_x", text = "Get Manual", icon = "button_x" }
         + label { id = "footer_dpad", text = "Navigate", icon = "dpad" }
         + label { id = "footer_select", text = "Settings", icon = "select" }
-    footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - 20, w_height - footer.height - 10)
+    footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - (20 * _G.scale), w_height - footer.height - (10 * _G.scale))
 
     -- Setup scraping window
     local infoComponent = component {
         column = true,
-        gap = 10,
+        gap = 10 * _G.scale,
         width = love.graphics.getWidth() * 0.85
     } + label {
         id = "platform",
@@ -1057,12 +1067,12 @@ function single_scrape:load()
 
     scraping_window = scraping_window + (component {
         column = true,
-        gap = 15,
+        gap = 15 * _G.scale,
         width = love.graphics.getWidth() * 0.85
     } + infoComponent + output_log {
         id = "scraping_log",
         width = love.graphics.getWidth() * 0.85,
-        height = 100
+        height = 100 * _G.scale
     })
 end
 

@@ -16,11 +16,12 @@ local user_config, skyscraper_config = configs.user_config, configs.skyscraper_c
 local theme = configs.theme
 
 _G.MAIN_FONT_PATH = theme:read("main", "FONT") or "assets/Inter-Medium.ttf"
-local font = love.graphics.newFont(_G.MAIN_FONT_PATH, theme:read_number("main", "FONT_SIZE") or 20)
-love.graphics.setFont(font)
+local base_font_size = theme:read_number("main", "FONT_SIZE") or 20
+local font = nil
 
-local footer = require("lib.gui.footer")()
+-- Global footer removed to avoid overlap; scenes now manage their own footers
 local w_width, w_height = love.window.getMode()
+update_ui_scale()
 
 function love.load(args)
     math.randomseed(os.time())
@@ -33,8 +34,12 @@ function love.load(args)
             res = utils.split(res, "x")
             love.window.setMode(tonumber(res[1]) or 640, tonumber(res[2]) or 480)
             w_width, w_height = love.window.getMode()
+            update_ui_scale()
         end
     end
+
+    font = love.graphics.newFont(_G.MAIN_FONT_PATH, math.floor(base_font_size * _G.scale))
+    love.graphics.setFont(font)
 
     -- Debug mode
     local debug = user_config:read("main", "debug")
@@ -52,14 +57,14 @@ function love.load(args)
     skyscraper.init(skyscraper_config.path, user_config:read("overrides", "binary") or "bin/Skyscraper.aarch64")
     input.load()
 
-    footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - 20, w_height - footer.height - 10)
+    -- footer:updatePosition(...) removed
 end
 
 function love.update(dt)
     timer.update(dt)
     input.update(dt)
     scenes:update(dt)
-    footer:update(dt)
+    -- footer:update(dt) removed
     input.onEvent(function(key)
         scenes:keypressed(key)
     end)
@@ -71,15 +76,11 @@ function love.draw()
     if splash.finished or splash.is_revealing then
         scenes:draw()
         -- Draw footer on main scene; also on settings when no overlay (VK) is active
-        local focus = scenes:currentFocus()
-        if focus == "main" or (focus == "settings" and not (_G.ui_overlay_active or false)) then
-            -- Update Select button label based on current scene
-            local select_label = footer.children[4]
-            if select_label then
-                select_label.text = (focus == "settings") and "Home" or "Settings"
-            end
-            footer:draw()
-        end
+        -- Footers are now drawn by individual scenes to avoid overlap
+        -- local focus = scenes:currentFocus()
+        -- if focus == "main" or (focus == "settings" and not (_G.ui_overlay_active or false)) then
+        --     footer:draw()
+        -- end
     end
 
     if not splash.finished then

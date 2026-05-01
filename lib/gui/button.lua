@@ -5,14 +5,14 @@ local theme     = require("helpers.config").theme
 return function(props)
   local font = props.font or love.graphics.getFont()
   local padding = {
-    horizontal = (props.leftPadding or 4) + (props.rightPadding or 4),
-    vertical = (props.topPadding or 4) + (props.bottomPadding or 4)
+    horizontal = ((props.leftPadding or 4) + (props.rightPadding or 4)) * (_G.scale or 1),
+    vertical = ((props.topPadding or 4) + (props.bottomPadding or 4)) * (_G.scale or 1)
   }
   -- local width = math.max(props.width or 0, font:getWidth(props.text) + padding.horizontal)
   local width = props.width or 0
+  local iconSize = (props.iconSize or 22) * (_G.scale or 1)
+  local iconPadding = props.icon and (iconSize + (8 * (_G.scale or 1))) or 0
   local height = math.max(props.height or 0, font:getHeight() + padding.vertical)
-
-  local iconSize = props.iconSize or 22
 
   -- Scroll-related variables
   local scrollOffset = 0
@@ -40,10 +40,10 @@ return function(props)
     backgroundColor = props.backgroundColor,
     focusColor = props.focusColor,
     textColor = props.textColor,
-    leftPadding = props.leftPadding or 8,
-    rightPadding = props.rightPadding or 4,
-    topPadding = props.topPadding or 4,
-    bottomPadding = props.bottomPadding or 4,
+    leftPadding = (props.leftPadding or 8) * (_G.scale or 1),
+    rightPadding = (props.rightPadding or 4) * (_G.scale or 1),
+    topPadding = (props.topPadding or 4) * (_G.scale or 1),
+    bottomPadding = (props.bottomPadding or 4) * (_G.scale or 1),
     -- logic
     onClick = function(self)
       if self.disabled then return end
@@ -92,8 +92,9 @@ return function(props)
       -- Update scroll offset if text is wider than the button
       local currentText = (self.get_text and self.get_text()) or self.text or ""
       local textWidth = font:getWidth(currentText)
+      local contentWidth = self.width - padding.horizontal - iconPadding
       -- Only scroll if the button is focused and the text is longer than the button width
-      if self.focused and textWidth > self.width - padding.horizontal then
+      if self.focused and textWidth > contentWidth then
         scrollOffset = scrollOffset + scrollSpeed * dt
         -- Wrap the scroll offset when it exceeds the text width
         if scrollOffset > textWidth + spacerWidth then
@@ -164,17 +165,18 @@ return function(props)
 
       local currentText = (self.get_text and self.get_text()) or self.text or ""
       local textWidth = font:getWidth(currentText)
+      local contentWidth = self.width - padding.horizontal - iconPadding
 
-      if textWidth <= self.width - padding.horizontal then
-        -- Center the text if it fits within the button
-        love.graphics.printf(currentText, self.x, self.y + self.topPadding, self.width, 'center')
+      if textWidth <= contentWidth then
+        -- Center the text if it fits within the button (account for icon)
+        love.graphics.printf(currentText, self.x + iconPadding, self.y + self.topPadding, self.width - iconPadding, 'center')
       else
         -- Scroll the text if it's longer than the button width
-        local textX = self.x + self.leftPadding - scrollOffset
+        local textX = self.x + self.leftPadding + iconPadding - scrollOffset
         love.graphics.print(currentText, textX, self.y + self.topPadding)
 
         -- Draw the wrapped text with a spacer to the right of the first text
-        if scrollOffset > textWidth - (self.width - padding.horizontal) then
+        if scrollOffset > textWidth - contentWidth then
           love.graphics.print(spacer .. currentText, textX + textWidth, self.y + self.topPadding)
         end
       end

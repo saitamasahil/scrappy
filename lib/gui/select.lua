@@ -5,8 +5,8 @@ local theme     = require("helpers.config").theme
 return function(props)
   local font = props.font or love.graphics.getFont()
   local padding = {
-    horizontal = (props.leftPadding or 4) + (props.rightPadding or 4),
-    vertical = (props.topPadding or 4) + (props.bottomPadding or 4)
+    horizontal = ((props.leftPadding or 4) + (props.rightPadding or 4)) * (_G.scale or 1),
+    vertical = ((props.topPadding or 4) + (props.bottomPadding or 4)) * (_G.scale or 1)
   }
   local options = props.options or {}
   local currentIndex = props.startIndex or 1
@@ -17,7 +17,7 @@ return function(props)
     maxTextWidth = math.max(maxTextWidth, font:getWidth(option))
   end
 
-  local iconSize = 22 -- Define the size of the icons
+  local iconSize = 22 * (_G.scale or 1) -- Define the size of the icons
   local width = props.width or 0
   local height = math.max(props.height or 0, font:getHeight() + padding.vertical)
 
@@ -42,10 +42,10 @@ return function(props)
     backgroundColor = props.backgroundColor,
     focusColor = props.focusColor,
     textColor = props.textColor,
-    leftPadding = props.leftPadding or 4,
-    rightPadding = props.rightPadding or 4,
-    topPadding = props.topPadding or 4,
-    bottomPadding = props.bottomPadding or 4,
+    leftPadding = (props.leftPadding or 4) * (_G.scale or 1),
+    rightPadding = (props.rightPadding or 4) * (_G.scale or 1),
+    topPadding = (props.topPadding or 4) * (_G.scale or 1),
+    bottomPadding = (props.bottomPadding or 4) * (_G.scale or 1),
     -- logic
     onKeyPress = function(self, key)
       if key == "left" then

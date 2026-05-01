@@ -96,7 +96,7 @@ return function(props)
   local img = icons[name] or icons["warn"]
   local meta = icon_metadata[name] or icon_metadata["warn"]
 
-  local boxSize = props.size or 24
+  local boxSize = props.size or (24 * (_G.scale or 1))
   
   -- Normalization Scaling: 
   -- We scale based on the ACTUAL content bounds to ensure consistent visual weight

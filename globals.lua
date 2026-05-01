@@ -18,6 +18,30 @@ _G.version = (function()
 end)()
 
 _G.resolution = "640x480"
+_G.design_w = 640
+_G.design_h = 480
+_G.sx = 1
+_G.sy = 1
+_G.scale = 1
+
+function _G.update_ui_scale()
+    local w, h = love.graphics.getDimensions()
+    _G.sx = w / _G.design_w
+    _G.sy = h / _G.design_h
+    _G.scale = math.min(_G.sx, _G.sy)
+    
+    -- Snap to 1.0 if very close (prevents tiny rounding errors on 640x480)
+    if math.abs(_G.scale - 1) < 0.01 then
+        _G.scale = 1
+        _G.sx = 1
+        _G.sy = 1
+    end
+end
+
+-- Global scaling helper
+function _G.g(val)
+    return val * _G.scale
+end
 
 _G.device_resolutions = {"640x480", "720x480", "720x720", "1024x600", "1024x768", "1280x720"}
 

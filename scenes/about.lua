@@ -20,9 +20,9 @@ local qr_image = love.graphics.newImage("assets/kofi_qr.png")
 local function section_card(header, lines, opts)
   opts = opts or {}
   local font = love.graphics.getFont()
-  local line_h = font:getHeight() + 4
-  local header_h = font:getHeight() + 8
-  local total_h = header_h + (#lines * line_h) + 12
+  local line_h = font:getHeight() + (4 * _G.scale)
+  local header_h = font:getHeight() + (8 * _G.scale)
+  local total_h = header_h + (#lines * line_h) + (12 * _G.scale)
 
   return component {
     id = opts.id,
@@ -56,7 +56,7 @@ function about:load()
   menu = component:root { column = true, gap = 0 }
 
   local item_width = w_width - 20
-  local qr_size = math.min(w_height * 0.35, 180)
+  local qr_size = math.min(w_height * 0.35, 180 * _G.scale)
 
   local content = component { column = true, gap = 6 }
 
@@ -130,7 +130,7 @@ function about:load()
   -- Wrap in scroll container
   scroller = scroll_container {
     width = w_width,
-    height = w_height - 60,
+    height = w_height - (60 * _G.scale),
     scroll_speed = 30,
   } + content
 
@@ -139,10 +139,10 @@ function about:load()
   menu:focusFirstElement()
 
   -- Footer
-  footer = component { row = true, gap = 40 }
+  footer = component { row = true, gap = 40 * _G.scale }
     + label { id = "footer_b", text = "Back", icon = "button_b" }
     + label { id = "footer_dpad", text = "Scroll", icon = "dpad" }
-  footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - 20, w_height - footer.height - 10)
+  footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - (20 * _G.scale), w_height - footer.height - (10 * _G.scale))
 end
 
 function about:update(dt)
