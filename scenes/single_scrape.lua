@@ -138,8 +138,7 @@ local function on_refine_search_done(query, target)
         return
     end
 
-    local rom_path, _ = user_config:get_paths()
-    rom_path = string.format("%s/%s", rom_path, last_selected_platform)
+    local rom_path = user_config:get_platform_path(last_selected_platform)
 
     log.write(string.format("[single_scrape] Retrying scrape with query: %s", query))
 
@@ -417,10 +416,8 @@ end
 
 local function on_rom_press(rom)
     last_selected_rom = rom
-    local rom_path, _ = user_config:get_paths()
+    local rom_path = user_config:get_platform_path(last_selected_platform)
     local platforms = user_config:get().platforms
-
-    rom_path = string.format("%s/%s", rom_path, last_selected_platform)
 
     -- Check if offline mode is enabled - single scrape always fetches new data
     local offline_mode = (user_config:read("main", "offlineMode") == "1")
@@ -514,10 +511,8 @@ end
 
 local function on_manual_scrape(rom)
     last_selected_rom = rom
-    local rom_path, _ = user_config:get_paths()
+    local rom_path = user_config:get_platform_path(last_selected_platform)
     local platforms = user_config:get().platforms
-
-    rom_path = string.format("%s/%s", rom_path, last_selected_platform)
 
     -- Check if offline mode is enabled
     local offline_mode = (user_config:read("main", "offlineMode") == "1")
@@ -624,8 +619,7 @@ local function load_rom_buttons(src_platform, dest_platform)
         label_item.text = string.format("%s (%s)", src_platform, dest_platform)
     end
 
-    local rom_path, _ = user_config:get_paths()
-    local platform_path = string.format("%s/%s", rom_path, src_platform)
+    local platform_path = user_config:get_platform_path(src_platform)
     local roms = nativefs.getDirectoryItems(platform_path)
 
     for _, rom in ipairs(roms) do
@@ -831,8 +825,7 @@ local function process_fetched_game()
             ui_status.text = "Generating artwork..."
         end
 
-        local rom_path, _ = user_config:get_paths()
-        rom_path = string.format("%s/%s", rom_path, last_selected_platform)
+        local rom_path = user_config:get_platform_path(last_selected_platform)
         local artwork_name = artwork.get_artwork_name()
         skyscraper.update_artwork(rom_path, last_selected_rom, t.input_folder, t.platform, artwork_name)
     end

@@ -443,7 +443,7 @@ local function scrape_platforms()
     end
     -- Load selected platforms
     local selected_platforms = user_config:get().platformsSelected
-    local rom_path, _ = user_config:get_paths()
+    local rom_path, _ = user_config:get_paths() -- kept for reference; per-platform path resolved below
     state.total = 0
     state.tasks = 0
     state.failed_tasks = {}
@@ -467,7 +467,8 @@ local function scrape_platforms()
             goto skip
         end
 
-        local platform_path = string.format("%s/%s", rom_path, src)
+        -- Use per-platform root to support both SD cards (dual-SD muOS)
+        local platform_path = user_config:get_platform_path(src)
 
         -- Identify if this platform needs fetching
         local uncached_games = false
@@ -1742,8 +1743,7 @@ local function process_game_queue()
             print("Skipping game " .. game)
             -- continue to next item in loop
         else
-            local rom_path, _ = user_config:get_paths()
-            local platform_path = string.format("%s/%s", rom_path, input_folder)
+            local platform_path = user_config:get_platform_path(input_folder)
             if not input_folder then
                 log.write("No valid platform found")
                 -- Send finished signal to prevent blocking

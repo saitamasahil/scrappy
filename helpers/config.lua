@@ -170,9 +170,9 @@ function user_config:get_paths()
       None
     Returns:
     (user)
-      rom_path: string
+      rom_path: string  -- primary ROM path (for single-path operations like scraping)
       catalogue_path: string
-  --]]
+  ]]
     -- Check for overrides
     local rom_path_override = self:read("overrides", "romPath")
     local catalogue_path_override = self:read("overrides", "cataloguePath")
@@ -181,31 +181,101 @@ function user_config:get_paths()
     end
 
     local catalogue_path = muos.CATALOGUE
-    local rom_path
 
-    -- Try MuOS union mount first (handles USB->SD2->SD1 priority automatically)
+    -- Backward compat: Try MuOS union mount first (older muOS versions)
     local union_roms_path = muos.UNION_PATH .. "/ROMS"
     if nativefs.getInfo(union_roms_path) then
+        log.write("Using legacy union mount: " .. union_roms_path)
         return union_roms_path, catalogue_path
     end
 
-    -- Fallback to legacy SD detection for compatibility
+    -- New muOS: union mount removed. Scan both SD cards and prefer the one with ROMs.
+    local function find_roms_on(sd_path)
+        for _, item in ipairs(nativefs.getDirectoryItems(sd_path) or {}) do
+            if item:lower() == "roms" then
+                local full = string.format("%s/%s", sd_path, item)
+                local items = nativefs.getDirectoryItems(full)
+                if items and #items > 0 then
+                    return full
+                end
+            end
+        end
+        return nil
+    end
+
+    -- SD2 (sdcard) takes priority if it has ROMs
+    local sd2_roms = find_roms_on(muos.SD2_PATH)
+    if sd2_roms then
+        log.write("Primary ROM path: " .. sd2_roms)
+        return rom_path_override or sd2_roms, catalogue_path_override or catalogue_path
+    end
+
+    -- Fall back to SD1 (mmc)
+    local sd1_roms = find_roms_on(muos.SD1_PATH)
+    if sd1_roms then
+        log.write("Primary ROM path: " .. sd1_roms)
+        return rom_path_override or sd1_roms, catalogue_path_override or catalogue_path
+    end
+
+    -- Last resort: use configured sd value as before
     local sd = self:read("main", "sd")
-    rom_path = sd == "1" and muos.SD1_PATH or muos.SD2_PATH
+    local rom_path = sd == "1" and muos.SD1_PATH or muos.SD2_PATH
     for _, item in ipairs(nativefs.getDirectoryItems(rom_path) or {}) do
         if item:lower() == "roms" then
             rom_path = string.format("%s/%s", rom_path, item)
             break
         end
     end
-
     return rom_path_override or rom_path, catalogue_path_override or catalogue_path
 end
 
-function user_config:load_platforms()
-    local rom_path, _ = self:get_paths()
+-- Returns all valid ROMS paths across both SD cards.
+-- On old muOS with union mount, returns just the union path.
+-- On new muOS, returns paths from both SD1 and SD2 if they have ROMs.
+function user_config:get_all_rom_paths()
+    local rom_path_override = self:read("overrides", "romPath")
+    if rom_path_override then
+        return { rom_path_override }
+    end
 
-    log.write(string.format("Loading platforms from %s", rom_path))
+    -- Backward compat: union mount covers both cards
+    local union_roms_path = muos.UNION_PATH .. "/ROMS"
+    if nativefs.getInfo(union_roms_path) then
+        return { union_roms_path }
+    end
+
+    -- New muOS: scan both cards independently
+    local paths = {}
+    local function try_add(sd_path)
+        for _, item in ipairs(nativefs.getDirectoryItems(sd_path) or {}) do
+            if item:lower() == "roms" then
+                local full = string.format("%s/%s", sd_path, item)
+                if nativefs.getInfo(full) then
+                    table.insert(paths, full)
+                end
+                break
+            end
+        end
+    end
+
+    try_add(muos.SD1_PATH)  -- /mnt/mmc/ROMS
+    try_add(muos.SD2_PATH)  -- /mnt/sdcard/ROMS
+
+    if #paths == 0 then
+        -- Absolute fallback
+        local primary, _ = self:get_paths()
+        return { primary }
+    end
+    return paths
+end
+
+function user_config:load_platforms()
+    -- Gather all ROM root paths (both SD cards on new muOS, union on old muOS)
+    local all_rom_paths = self:get_all_rom_paths()
+    local rom_path = all_rom_paths[1] -- primary path (for core.cfg resolution)
+
+    log.write(string.format("Loading platforms from %d ROM root(s): %s",
+        #all_rom_paths, table.concat(all_rom_paths, ", ")))
 
     -- Function to parse core.cfg files
     local function parse_dir(cfg_file)
@@ -252,8 +322,30 @@ function user_config:load_platforms()
         return platforms, contains_files
     end
 
-    -- Scan the main ROM path for platforms
-    local platforms = scan_directories(rom_path, nil)
+    -- Scan ALL rom roots and merge, tracking which root each platform came from
+    local platforms = {}
+    local platform_to_root = {} -- maps relative platform path -> absolute rom root
+    local seen_leaf = {}        -- dedup by leaf folder name across cards
+
+    for _, roms_root in ipairs(all_rom_paths) do
+        local found = scan_directories(roms_root, nil)
+        for _, item in ipairs(found) do
+            local leaf = tostring(item):match("[^/]+$") or tostring(item)
+            if not seen_leaf[leaf] then
+                seen_leaf[leaf] = true
+                table.insert(platforms, item)
+                platform_to_root[item] = roms_root
+            else
+                log.write(string.format("Skipping duplicate platform '%s' from %s (already found on another card)", leaf, roms_root))
+            end
+        end
+    end
+
+    -- Update rom_path to point to the correct root per platform in the loop below
+    local function get_rom_path_for(item)
+        return platform_to_root[item] or rom_path
+    end
+
     if not platforms or next(platforms) == nil then
         log.write("No platforms found")
         return
@@ -308,7 +400,7 @@ function user_config:load_platforms()
                                 result = "msx"
                             else
                                 -- Folder name didn't help, check file extensions
-                                local platform_path = string.format("%s/%s", rom_path, item)
+                                local platform_path = string.format("%s/%s", get_rom_path_for(item), item)
                                 local files = nativefs.getDirectoryItems(platform_path) or {}
                                 local has_sms, has_sg, has_col, has_gg = false, false, false, false
                                 for _, f in ipairs(files) do
@@ -502,7 +594,7 @@ function user_config:load_platforms()
         if assignment then
             -- Heuristic override: if core assignment is GB but folder contains GBC roms, treat as GBC
             if assignment == "gb" then
-                local platform_path = string.format("%s/%s", rom_path, item)
+                local platform_path = string.format("%s/%s", get_rom_path_for(item), item)
                 local files = nativefs.getDirectoryItems(platform_path) or {}
                 for _, f in ipairs(files) do
                     if f:lower():match("%.gbc$") then
@@ -513,7 +605,7 @@ function user_config:load_platforms()
             end
             -- Heuristic override: Wonderswan vs Wonderswan Color
             if assignment == "wonderswancolor" then
-                local platform_path = string.format("%s/%s", rom_path, item)
+                local platform_path = string.format("%s/%s", get_rom_path_for(item), item)
                 local files = nativefs.getDirectoryItems(platform_path) or {}
                 local has_ws, has_wsc = false, false
                 for _, f in ipairs(files) do
@@ -534,7 +626,7 @@ function user_config:load_platforms()
             end
             -- Heuristic override: Neo Geo Pocket vs Neo Geo Pocket Color
             if assignment == "ngpc" then
-                local platform_path = string.format("%s/%s", rom_path, item)
+                local platform_path = string.format("%s/%s", get_rom_path_for(item), item)
                 local files = nativefs.getDirectoryItems(platform_path) or {}
                 local has_ngp, has_ngpc_like = false, false
                 for _, f in ipairs(files) do
@@ -555,7 +647,7 @@ function user_config:load_platforms()
             end
             -- Heuristic override: SG-1000 vs Master System
             if assignment == "mastersystem" then
-                local platform_path = string.format("%s/%s", rom_path, item)
+                local platform_path = string.format("%s/%s", get_rom_path_for(item), item)
                 local files = nativefs.getDirectoryItems(platform_path) or {}
                 for _, f in ipairs(files) do
                     if f:lower():match("%.sg$") then
@@ -566,7 +658,7 @@ function user_config:load_platforms()
             end
             -- Heuristic override: Umbrella 'coleco' (MSX-SVI-ColecoVision-SG1000) -> specialize based on files/folder
             if assignment == "coleco" then
-                local platform_path = string.format("%s/%s", rom_path, item)
+                local platform_path = string.format("%s/%s", get_rom_path_for(item), item)
                 local files = nativefs.getDirectoryItems(platform_path) or {}
                 local has_msx_like, has_sg = false, false
                 for _, f in ipairs(files) do
@@ -598,6 +690,8 @@ function user_config:load_platforms()
                 self:insert("platforms", key, "unmapped")
                 self:insert("platformsSelected", key, 0)
             end
+            -- Store which ROM root this platform lives on (enables dual-SD support)
+            self:insert("platformRoots", key, get_rom_path_for(item))
             inserted[key] = true
         end
     end
@@ -606,6 +700,18 @@ function user_config:load_platforms()
     self:fill_selected_platforms()
 end
 
+-- Returns the absolute path to a specific platform's ROM folder.
+-- Uses the stored root from [platformRoots] if available (dual-SD support),
+-- falling back to the primary get_paths() result for backward compatibility.
+function user_config:get_platform_path(platform_relative)
+    local stored_root = self:read("platformRoots", platform_relative)
+    if stored_root then
+        return string.format("%s/%s", stored_root, platform_relative)
+    end
+    -- Fallback: old single-SD behaviour
+    local rom_path, _ = self:get_paths()
+    return string.format("%s/%s", rom_path, platform_relative)
+end
 function user_config:fill_selected_platforms()
     for platform in utils.orderedPairs(self:get().platforms or {}) do
         if not self:read("platformsSelected", platform) then

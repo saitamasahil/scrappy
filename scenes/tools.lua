@@ -558,13 +558,12 @@ end
 local function on_update_press()
     log.write("Updating cache")
     local platforms = user_config:get().platforms
-    local rom_path, _ = user_config:get_paths()
 
     dispatch_info("Updating cache", "Updating cache, please wait...")
 
     for src, dest in utils.orderedPairs(platforms or {}) do
         if dest ~= "unmapped" then
-            local platform_path = string.format("%s/%s", rom_path, src)
+            local platform_path = user_config:get_platform_path(src)
             skyscraper.fetch_artwork(platform_path, src, dest)
         end
     end
@@ -590,7 +589,6 @@ local function on_import_press()
     end
 
     local platforms = user_config:get().platforms
-    local rom_path, _ = user_config:get_paths()
 
     local any_match = false
 
@@ -598,7 +596,7 @@ local function on_import_press()
         for src, dest in utils.orderedPairs(platforms or {}) do
             if folder == dest then
                 any_match = true
-                local platform_path = string.format("%s/%s", rom_path, src)
+                local platform_path = user_config:get_platform_path(src)
                 skyscraper.custom_import(platform_path, dest)
             end
         end
@@ -1749,9 +1747,8 @@ function tools:update(dt)
                     os.remove(REGEN_FILE)
                     local ok, data = pcall(json.decode, content)
                     if ok and data and data.platform and data.rom then
-                        local rom_path, _ = user_config:get_paths()
                         local platforms = user_config:get().platforms
-                        
+
                         -- Find the actual source folder for this platform mapping
                         local input_folder = data.platform
                         for src, dest in pairs(platforms or {}) do
@@ -1760,8 +1757,8 @@ function tools:update(dt)
                                 break
                             end
                         end
-                        
-                        local platform_path = rom_path .. "/" .. input_folder
+
+                        local platform_path = user_config:get_platform_path(input_folder)
                         local xml = data.xml or "box2d"
                         -- Trigger regeneration with refresh and specified template
                         skyscraper.update_artwork(platform_path, data.rom, input_folder, data.platform, xml) 
