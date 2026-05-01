@@ -32,9 +32,11 @@ if command -v SETUP_APP >/dev/null 2>&1; then
     SCREEN_HEIGHT="$(GET_VAR device mux/height)"
     SCREEN_RESOLUTION="${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
 
+    command -v CAFFEINE >/dev/null 2>&1 && CAFFEINE on
     $GPTOKEYB "love" &
     ./bin/love . "${SCREEN_RESOLUTION}"
     kill -9 "$(pidof gptokeyb2.armhf)" 2>/dev/null || true
+    command -v CAFFEINE >/dev/null 2>&1 && CAFFEINE off
 
 else
     # --- Legacy Logic (Loose Goose / Older) ---
@@ -84,7 +86,9 @@ else
     cd "$LOVEDIR" || exit
     SET_VAR "system" "foreground_process" "love"
 
+    command -v CAFFEINE >/dev/null 2>&1 && CAFFEINE on
     $GPTOKEYB "love" &
     ./bin/love . "${SCREEN_RESOLUTION}"
     kill -9 "$(pidof gptokeyb2.armhf)" 2>/dev/null || true
+    command -v CAFFEINE >/dev/null 2>&1 && CAFFEINE off
 fi
