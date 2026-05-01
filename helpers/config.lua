@@ -258,8 +258,9 @@ function user_config:get_all_rom_paths()
         end
     end
 
-    try_add(muos.SD1_PATH)  -- /mnt/mmc/ROMS
+    -- Priority: SD2 (external) then SD1 (internal)
     try_add(muos.SD2_PATH)  -- /mnt/sdcard/ROMS
+    try_add(muos.SD1_PATH)  -- /mnt/mmc/ROMS
 
     if #paths == 0 then
         -- Absolute fallback
