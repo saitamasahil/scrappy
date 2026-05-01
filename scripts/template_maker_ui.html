@@ -1018,6 +1018,50 @@
             }
         }
 
+        .layer-card.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .layer-card.dragging {
+            opacity: 0.4;
+            transform: scale(0.98);
+        }
+
+        .layer-card.drag-above {
+            border-top: 3px solid var(--accent) !important;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+
+        .layer-card.drag-below {
+            border-bottom: 3px solid var(--accent) !important;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .layer-card.drag-inside {
+            background-color: color-mix(in srgb, var(--accent) 15%, var(--md-surface-container-high)) !important;
+            border-color: var(--accent) !important;
+        }
+
+        .root-drop-zone {
+            padding: 16px;
+            text-align: center;
+            border: 2px dashed var(--card-border);
+            border-radius: var(--md-shape-md);
+            margin-top: 12px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .root-drop-zone.drag-over {
+            border-color: var(--accent);
+            background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+            color: var(--accent);
+        }
+
         .fade-in {
             animation: fadeInUp 0.25s ease-out;
         }
@@ -2092,6 +2136,139 @@
                 renderLayers();
             }
 
+            // ─── Drag & Drop Logic ──────────────────────────────────────
+            let draggedLayerId = null;
+
+            function handleDragStart(e, id) {
+                draggedLayerId = id;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', id);
+                setTimeout(() => e.target.classList.add('dragging'), 0);
+            }
+
+            function handleDragEnd(e, card) {
+                card.classList.remove('dragging');
+                draggedLayerId = null;
+                document.querySelectorAll('.layer-card').forEach(c => {
+                    c.classList.remove('drag-above', 'drag-below', 'drag-inside');
+                });
+            }
+
+            function handleDragLeave(e, card) {
+                card.classList.remove('drag-above', 'drag-below', 'drag-inside');
+            }
+
+            function handleDragOver(e, targetId, card) {
+                e.preventDefault();
+                if (draggedLayerId === targetId) return;
+                
+                if (isDescendant(targetId, draggedLayerId)) {
+                    e.dataTransfer.dropEffect = 'none';
+                    return;
+                }
+                
+                e.dataTransfer.dropEffect = 'move';
+                card.classList.remove('drag-above', 'drag-below', 'drag-inside');
+                
+                const rect = card.getBoundingClientRect();
+                const y = e.clientY - rect.top;
+                
+                if (y < rect.height * 0.25) {
+                    card.classList.add('drag-above');
+                } else if (y > rect.height * 0.75) {
+                    card.classList.add('drag-below');
+                } else {
+                    card.classList.add('drag-inside');
+                }
+            }
+
+            function handleDrop(e, targetId, card) {
+                e.preventDefault();
+                card.classList.remove('drag-above', 'drag-below', 'drag-inside');
+                if (draggedLayerId === null || draggedLayerId === targetId) return;
+                if (isDescendant(targetId, draggedLayerId)) return;
+
+                const rect = card.getBoundingClientRect();
+                const y = e.clientY - rect.top;
+                
+                let position;
+                if (y < rect.height * 0.25) {
+                    position = 'after'; // UI reversed, above in UI = after in list array
+                } else if (y > rect.height * 0.75) {
+                    position = 'before'; // below in UI = before in list array
+                } else {
+                    position = 'inside';
+                }
+                
+                moveLayerInTree(draggedLayerId, targetId, position);
+            }
+
+            function isDescendant(targetId, searchId) {
+                const searchLayer = findLayer(searchId);
+                if (!searchLayer) return false;
+                
+                let found = false;
+                function check(list) {
+                    for(const l of list) {
+                        if (l.id === targetId) found = true;
+                        if (l.layers) check(l.layers);
+                    }
+                }
+                check([searchLayer]);
+                return found;
+            }
+
+            function removeLayerFromTree(id, list) {
+                for (let i = 0; i < list.length; i++) {
+                    if (list[i].id === id) {
+                        return list.splice(i, 1)[0];
+                    }
+                    if (list[i].layers) {
+                        const res = removeLayerFromTree(id, list[i].layers);
+                        if (res) return res;
+                    }
+                }
+                return null;
+            }
+
+            function moveLayerInTree(draggedId, targetId, position) {
+                const layerObj = removeLayerFromTree(draggedId, layers);
+                if (!layerObj) return;
+
+                function insertInto(list) {
+                    for (let i = 0; i < list.length; i++) {
+                        if (list[i].id === targetId) {
+                            if (position === 'inside') {
+                                list[i].layers = list[i].layers || [];
+                                list[i].layers.push(layerObj);
+                                list[i].expanded = true;
+                            } else if (position === 'before') {
+                                list.splice(i, 0, layerObj);
+                            } else if (position === 'after') {
+                                list.splice(i + 1, 0, layerObj);
+                            }
+                            return true;
+                        }
+                        if (list[i].layers && insertInto(list[i].layers)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                
+                insertInto(layers);
+                renderLayers();
+                schedulePreview();
+            }
+
+            function moveLayerToRoot(draggedId) {
+                const layerObj = removeLayerFromTree(draggedId, layers);
+                if (!layerObj) return;
+                layers.unshift(layerObj);
+                renderLayers();
+                schedulePreview();
+            }
+
             // ─── Layer Rendering ────────────────────────────────────────
             function renderLayers() {
                 const stack = document.getElementById('layerStack');
@@ -2100,6 +2277,20 @@
 
                 if (layers.length === 0) {
                     stack.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px">No layers yet. Click "+ Add Layer" to start.</div>';
+                } else {
+                    const rootZone = document.createElement('div');
+                    rootZone.className = 'root-drop-zone';
+                    rootZone.innerHTML = 'Drag & Drop here to un-nest a layer out to the Root level';
+                    rootZone.ondragover = (e) => { e.preventDefault(); rootZone.classList.add('drag-over'); };
+                    rootZone.ondragleave = () => rootZone.classList.remove('drag-over');
+                    rootZone.ondrop = (e) => {
+                        e.preventDefault();
+                        rootZone.classList.remove('drag-over');
+                        if (draggedLayerId !== null) {
+                            moveLayerToRoot(draggedLayerId);
+                        }
+                    };
+                    stack.appendChild(rootZone);
                 }
             }
 
@@ -2113,6 +2304,14 @@
                     card.className = `layer-card fade-in${layer.expanded ? ' expanded' : ''}${!layer.visible ? ' hidden' : ''}`;
                     card.setAttribute('data-id', layer.id);
                     card.style.marginLeft = (depth * 20) + 'px';
+                    
+                    // Attach drag & drop events
+                    card.setAttribute('draggable', 'true');
+                    card.ondragstart = (e) => handleDragStart(e, layer.id);
+                    card.ondragover = (e) => handleDragOver(e, layer.id, card);
+                    card.ondragleave = (e) => handleDragLeave(e, card);
+                    card.ondrop = (e) => handleDrop(e, layer.id, card);
+                    card.ondragend = (e) => handleDragEnd(e, card);
 
                     if (layer.type === 'mask-between') {
                         card.innerHTML = `
