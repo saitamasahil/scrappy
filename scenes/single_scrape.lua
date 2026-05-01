@@ -52,6 +52,8 @@ local state = {
     refine_fade = 0
 }
 
+local pending_rom_load = nil
+
 -- Virtual keyboard for refine search
 local vk = nil
 
@@ -116,6 +118,7 @@ local function halt_scraping()
     if vk then
         vk.visible = false
     end
+    pending_rom_load = nil
 end
 
 -- Handle refine search submission from virtual keyboard
@@ -734,7 +737,15 @@ local function load_platform_buttons()
             text = src,
             width = ((w_width - 30) / 3),
             onFocus = function()
-                load_rom_buttons(src, dest)
+                if rom_list then
+                    rom_list.children = {}
+                    rom_list.height = 0
+                end
+                local label_item = menu ^ "roms_label"
+                if label_item then
+                    label_item.text = string.format("Loading %s...", src)
+                end
+                pending_rom_load = {src = src, dest = dest, time = love.timer.getTime() + 0.15}
             end,
             onClick = function()
                 on_select_platform(src)
@@ -933,6 +944,7 @@ function single_scrape:load()
     state.current_game = nil
     state.current_platform = nil
     state.log = {}
+    pending_rom_load = nil
 
     if utils.table_length(artwork.cached_game_ids) == 0 then
         artwork.process_cached_data()
@@ -1055,6 +1067,11 @@ function single_scrape:load()
 end
 
 function single_scrape:update(dt)
+    if pending_rom_load and love.timer.getTime() >= pending_rom_load.time then
+        load_rom_buttons(pending_rom_load.src, pending_rom_load.dest)
+        pending_rom_load = nil
+    end
+
     menu:update(dt)
     if footer then footer:update(dt) end
     update_scrape_state()
