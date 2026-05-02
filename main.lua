@@ -28,14 +28,22 @@ function love.load(args)
     splash.load()
 
     if #args > 0 then
-        local res = args[1]
-        if res then
-            _G.resolution = res
-            res = utils.split(res, "x")
-            love.window.setMode(tonumber(res[1]) or 640, tonumber(res[2]) or 480)
-            w_width, w_height = love.window.getMode()
-            update_ui_scale()
+        local w, h = 640, 480
+        if #args >= 2 then
+            -- Handle "1920 1080" format
+            w = tonumber(args[1]) or 640
+            h = tonumber(args[2]) or 480
+            _G.resolution = w .. "x" .. h
+        else
+            -- Handle "1920x1080" format
+            local res = utils.split(args[1], "x")
+            w = tonumber(res[1]) or 640
+            h = tonumber(res[2]) or 480
+            _G.resolution = args[1]
         end
+        love.window.setMode(w, h)
+        w_width, w_height = love.window.getMode()
+        update_ui_scale()
     end
 
     font = love.graphics.newFont(_G.MAIN_FONT_PATH, math.floor(base_font_size * _G.scale))
