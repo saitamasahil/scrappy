@@ -1008,7 +1008,8 @@ function single_scrape:load()
     } + label {
         id = "roms_label",
         text = 'ROMs',
-        icon = "cd"
+        icon = "cd",
+        max_width = ((w_width - 30) / 3) * 2 - (20 * _G.scale)
     } + (checkbox {
         id = "missing_filter",
         icon = "button_y",
