@@ -130,7 +130,7 @@ function about:load()
   -- Wrap in scroll container
   scroller = scroll_container {
     width = w_width,
-    height = w_height - (60 * _G.scale),
+    height = w_height - (70 * _G.scale),
     scroll_speed = 30,
   } + content
 
@@ -142,7 +142,7 @@ function about:load()
   footer = component { row = true, gap = 40 * _G.scale }
     + label { id = "footer_b", text = "Back", icon = "button_b" }
     + label { id = "footer_dpad", text = "Scroll", icon = "dpad" }
-  footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - (20 * _G.scale), w_height - footer.height - (10 * _G.scale))
+  footer:updatePosition(w_width * 0.5 - footer.width * 0.5, w_height - footer.height - (15 * _G.scale))
 end
 
 function about:update(dt)

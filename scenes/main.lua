@@ -1652,7 +1652,7 @@ function main:load()
             select = "Settings"
         }
     })
-    footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - (20 * _G.scale), w_height - footer.height - (10 * _G.scale))
+    footer:updatePosition(w_width * 0.5 - footer.width * 0.5, w_height - footer.height - (15 * _G.scale))
     footer:update(0)
 
     initial_preview_triggered = false

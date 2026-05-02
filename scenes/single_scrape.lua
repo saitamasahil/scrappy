@@ -991,14 +991,14 @@ function single_scrape:load()
         icon = "folder"
     } + (scroll_container {
         width = (w_width - 30) / 3,
-        height = w_height - 100, -- Reduced to prevent footer overlap (was -60)
+        height = w_height - (105 * _G.scale),
         scroll_speed = 30
     } + platform_list)
 
     -- Create scroll container for ROMs so we can control it (reset scroll)
     rom_scroll = scroll_container {
         width = ((w_width - 30) / 3) * 2,
-        height = w_height - 150, -- Reduced to prevent footer overlap (was -110)
+        height = w_height - (155 * _G.scale),
         scroll_speed = 30
     }
 
@@ -1036,7 +1036,7 @@ function single_scrape:load()
         + label { id = "footer_x", text = "Get Manual", icon = "button_x" }
         + label { id = "footer_dpad", text = "Navigate", icon = "dpad" }
         + label { id = "footer_select", text = "Settings", icon = "select" }
-    footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - (20 * _G.scale), w_height - footer.height - (10 * _G.scale))
+    footer:updatePosition(w_width * 0.5 - footer.width * 0.5, w_height - footer.height - (15 * _G.scale))
 
     -- Setup scraping window
     local infoComponent = component {

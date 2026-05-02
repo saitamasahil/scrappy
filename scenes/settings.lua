@@ -392,7 +392,7 @@ function settings:load()
   scroller = scroll_container {
     width = w_width - 20,
     -- Subtract footer/help area so the bar isn't covered by the scroller
-    height = w_height - 50,
+    height = w_height - (65 * _G.scale),
     scroll_speed = 30,
   } + content
 
@@ -421,7 +421,7 @@ function settings:load()
   footer = require("lib.gui.footer")()
   local select_label = footer.children[4]
   if select_label then select_label.text = "Home" end
-  footer:updatePosition(w_width * 0.5 - footer.width * 0.5 - (20 * _G.scale), w_height - footer.height - (10 * _G.scale))
+  footer:updatePosition(w_width * 0.5 - footer.width * 0.5, w_height - footer.height - (15 * _G.scale))
 end
 
 function settings:update(dt)
