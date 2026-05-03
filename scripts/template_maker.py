@@ -12,10 +12,23 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from datetime import datetime
 import shutil
+import struct
 
 PORT = 8083
 REGEN_FILE = "/tmp/scrappy_tpl_regen.json"
 PREVIEW_XML = "/tmp/scrappy_tpl_preview.xml"
+
+
+def get_png_dims(path):
+    try:
+        with open(path, "rb") as f:
+            data = f.read(24)
+            if data[:8] == b'\x89PNG\r\n\x1a\n' and data[12:16] == b'IHDR':
+                w, h = struct.unpack('>II', data[16:24])
+                return w, h
+    except:
+        pass
+    return None
 
 
 class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
@@ -62,6 +75,8 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
             elif path.startswith("/api/preview-image/"):
                 folder = urllib.parse.unquote(path[19:])
                 self.api_get_preview_image(folder)
+            elif path == "/api/media-info":
+                self.api_media_info()
             else:
                 self.send_error(404)
         except Exception as e:
@@ -240,6 +255,19 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
                 f.write(new_content)
                 
         self.send_json({"status": "ok"})
+
+    def api_media_info(self):
+        """Return dimensions of current sample media."""
+        info = {}
+        types = ["cover", "marquee", "screenshot", "texture", "wheel"]
+        for t in types:
+            # Check source sample images (not the generated preview!)
+            folder = t + "s"
+            path = os.path.join(args.sample_dir, folder, "screenscraper", "fake-rom")
+            dims = get_png_dims(path)
+            if dims:
+                info[t] = {"w": dims[0], "h": dims[1]}
+        self.send_json(info)
 
     def api_get_resource(self, rel_path):
         file_path = os.path.join(args.resources_dir, rel_path)

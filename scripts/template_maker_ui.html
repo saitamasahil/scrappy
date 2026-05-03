@@ -1549,6 +1549,13 @@
             let layerIdCounter = 0;
             let templatesList = [];
             let resourcesList = { masks: [], frames: [], other: [] };
+            let sampleMediaInfo = {
+                cover: { w: 220, h: 310 },
+                screenshot: { w: 320, h: 224 },
+                wheel: { w: 600, h: 190 },
+                marquee: { w: 600, h: 190 },
+                texture: { w: 512, h: 512 }
+            };
             let previewTimer = null;
             let generating = false;
             let xmlModalMode = 'export';
@@ -1656,8 +1663,47 @@
                     resourcesList = await rRes.json();
                     populateQuickTemplateSelect();
                     fetchPresets();
+                    fetchMediaInfo();
+                    setupDimensionListeners();
                 } catch (e) {
                     console.error('Init error:', e);
+                }
+            }
+
+            function setupDimensionListeners() {
+                const w = document.getElementById('outputWidth');
+                const h = document.getElementById('outputHeight');
+                if (w && h) {
+                    const update = () => {
+                        updatePreviewContainerAspect();
+                        if (layoutModeEnabled) updateOverlays();
+                    };
+                    w.oninput = update;
+                    h.oninput = update;
+                }
+            }
+
+            function updatePreviewContainerAspect() {
+                const w = parseInt(document.getElementById('outputWidth').value) || 640;
+                const h = parseInt(document.getElementById('outputHeight').value) || 480;
+                const img = document.getElementById('previewImg');
+                if (img) {
+                    img.style.aspectRatio = `${w} / ${h}`;
+                    img.style.width = '100%';
+                    img.style.height = 'auto';
+                }
+            }
+
+            async function fetchMediaInfo() {
+                try {
+                    const res = await fetch('/api/media-info');
+                    const data = await res.json();
+                    if (data && Object.keys(data).length > 0) {
+                        sampleMediaInfo = { ...sampleMediaInfo, ...data };
+                        if (layoutModeEnabled) updateOverlays();
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch media info:', e);
                 }
             }
 
@@ -1691,6 +1737,7 @@
                     const data = await res.json();
                     if (data.status === 'ok') {
                         showToast('Preset applied');
+                        fetchMediaInfo();
                         requestPreview();
                     } else {
                         showToast('Failed to apply preset');
@@ -2134,6 +2181,7 @@
                 }
 
                 renderLayers();
+                updatePreviewContainerAspect();
             }
 
             // ─── Drag & Drop Logic ──────────────────────────────────────
@@ -3479,6 +3527,7 @@
                 const outH = parseInt(document.getElementById('outputHeight').value) || 480;
 
                 previewScale = rect.width / outW;
+                updatePreviewContainerAspect(); // Ensure aspect matches
                 overlay.innerHTML = '';
 
                 // Add overlays for visible layers
@@ -3492,14 +3541,7 @@
                             handle.setAttribute('data-label', layer.name || layer.resource || 'layer');
 
                             // Accurately guess native dimensions for overlay bounds if 'auto'
-                            const nativeSizes = {
-                                'cover': { w: 220, h: 310 },
-                                'screenshot': { w: 320, h: 224 },
-                                'wheel': { w: 600, h: 190 },
-                                'marquee': { w: 600, h: 190 },
-                                'texture': { w: 512, h: 512 }
-                            };
-                            const native = nativeSizes[layer.resource] || { w: outW, h: outH };
+                            const native = sampleMediaInfo[layer.resource] || { w: outW, h: outH };
 
                             let w = parseInt(layer.width);
                             let h = parseInt(layer.height);
@@ -3620,14 +3662,7 @@
                 // Calculate base local coordinates before dragging
                 const outW = parseInt(document.getElementById('outputWidth').value) || 640;
                 const outH = parseInt(document.getElementById('outputHeight').value) || 480;
-                const nativeSizes = {
-                    'cover': { w: 220, h: 310 },
-                    'screenshot': { w: 320, h: 224 },
-                    'wheel': { w: 600, h: 190 },
-                    'marquee': { w: 600, h: 190 },
-                    'texture': { w: 512, h: 512 }
-                };
-                const native = nativeSizes[layer.resource] || { w: outW, h: outH };
+                const native = sampleMediaInfo[layer.resource] || { w: outW, h: outH };
 
                 let w = parseInt(layer.width);
                 let h = parseInt(layer.height);
@@ -3675,14 +3710,7 @@
                 dragStartPos = { x: e.clientX, y: e.clientY };
 
                 // Get current dimensions using the same precise native fallbacks
-                const nativeSizes = {
-                    'cover': { w: 220, h: 310 },
-                    'screenshot': { w: 320, h: 224 },
-                    'wheel': { w: 600, h: 190 },
-                    'marquee': { w: 600, h: 190 },
-                    'texture': { w: 512, h: 512 }
-                };
-                const native = nativeSizes[layer.resource] || { w: outW, h: outH };
+                const native = sampleMediaInfo[layer.resource] || { w: outW, h: outH };
 
                 let w = parseInt(layer.width);
                 let h = parseInt(layer.height);
