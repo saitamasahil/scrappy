@@ -1,14 +1,12 @@
+# Scrappy
+
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/78e48f14-45a8-427d-99ba-80f20ba018dd" alt="scrappy">
+  <img src="banner/banner1.png" alt="scrappy" width="60%">
 </p>
 
-# Scrappy
 > Maintained fork by **saitamasahil** · Original author **gabrielfvale** · Original repo: https://github.com/gabrielfvale/scrappy
 
 Scrappy is an artwork scraper for muOS, with the standout feature of incorporating a fully-fledged **Skyscraper** app under the hood. This integration enables near-complete support for artwork XML layouts, allowing Scrappy to scrape, cache assets, and generate artwork using XML mixes with ease. This fork of Scrappy is maintained to improve compatibility with muOS, add new features, provide ongoing updates, and ensure long-term support while staying true to the original vision of the project.
-
-Please read the Wiki for more info on installation and configuration!
-* [Getting started](https://github.com/saitamasahil/scrappy/wiki/Getting-Started)
 
 ## A Visual Tour
 
@@ -49,10 +47,7 @@ To install Scrappy, follow these steps:
 2. Move the downloaded file to the `/mnt/mmc/MUOS/ARCHIVE` folder.
 3. Open **Archive Manager** and select the file to install.
 4. After installation, you'll find an entry called "Scrappy" in the **Applications** section.
-
-## Caveats
-* Screenscraper credentials need to be added in settings
-* First time scraping can be slow (this is expected, but worth noting)
+5. Please read the [Wiki](https://github.com/saitamasahil/scrappy/wiki/Getting-Started) for more info on installation and configuration.
 
 ## Resources
 
@@ -66,6 +61,8 @@ To install Scrappy, follow these steps:
 
 ## Special thanks
 
+- **chronoss09** - for testing infinite test builds of scrappy [GitHub](https://github.com/chronoss09)
+- **10nes** - for testing and providing detailed feedback on the bug report
 - **Snow (snowram)** - for the initial Qt5 build work that inspired the Qt6 upgrade [Kofi](https://ko-fi.com/snowram)
 - **Portmaster and their devs** - for great documentation on porting games/software for Linux handhelds [Portmaster](https://portmaster.games/porting.html)
 - **Scrappy's original developer [Gabriel Freire](https://github.com/gabrielfvale)** - for creating Scrappy and laying the foundation for this project. Support their work at [Kofi](https://ko-fi.com/gabrielfvale)
@@ -84,30 +81,42 @@ Contributions to Scrappy are welcome! Please fork the repository, make your chan
 
 ## Build from source
 
-Scrappy includes a simple build script for packaging releases.
+Scrappy includes build scripts for packaging releases on both Linux and Windows.
 
+### Bash (Linux)
 Requirements:
 - bash
-- zip (for packaging)
+- zip
 
-Build:
 ```bash
 # Build both packages (default)
 ./build.sh
 
 # Build ONLY the full package
-./build.sh 1
-# or
 ./build.sh --full
 
 # Build ONLY the update package
-./build.sh 2
-# or
 ./build.sh --update
+```
+
+### PowerShell (Windows)
+Requirements:
+- PowerShell 5.1 or later
+
+```powershell
+# Build both packages (default)
+./build.ps1
+
+# Build ONLY the full package
+./build.ps1 --full
+
+# Build ONLY the update package
+./build.ps1 --update
 ```
 
 Troubleshooting:
 - On Linux, make the script executable: `chmod +x build.sh`
+- On Windows, you may need to allow script execution: `Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process`
 
 ## License
 
