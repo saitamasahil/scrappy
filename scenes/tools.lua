@@ -1616,6 +1616,14 @@ function tools:load()
         onClick = on_toggle_template_maker,
         icon = "canvas"
     } + listitem {
+        id = "showcase_scrappy",
+        text = "Visual Tour",
+        width = item_width,
+        onClick = function()
+            scenes:push("showcase")
+        end,
+        icon = "showcase"
+    } + listitem {
         id = "about_scrappy",
         text = "About Scrappy",
         width = item_width,

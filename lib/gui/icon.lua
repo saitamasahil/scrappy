@@ -53,6 +53,7 @@ local icon_paths = {
   capture      = "assets/icons/capture.png",
   remove       = "assets/icons/remove.png",
   grid         = "assets/icons/grid.png",
+  showcase     = "assets/icons/showcase.png",
 }
 
 local icons = {}
