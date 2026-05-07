@@ -12,12 +12,14 @@ local footer
 local current_index = 1
 local total_images = 10
 local images = {}
-local load_queue = {} -- Queue for background loading
+local load_queue = {}
+local load_timer = 0
+local initial_delay = 0.5 -- Wait 0.5s before background loading starts
 
 -- Animation state
 local anim_x = 0
 local prev_index = 1
-local transition_t = 1 -- 1 = finished, 0 = start
+local transition_t = 1
 local img_scale = 1
 local target_img_scale = 1
 
@@ -28,14 +30,20 @@ function showcase:load()
     anim_x = 0
     img_scale = 1
     target_img_scale = 1
+    load_timer = 0
     
-    -- Load ONLY the first image immediately for instant startup
+    -- 1. Load the "Hero" images immediately (Current + Neighbors)
+    -- This ensures the first swipe in either direction is ALWAYS smooth.
     self:load_image(1)
+    self:load_image(2)
+    self:load_image(total_images)
     
-    -- Queue the rest for background loading in update()
+    -- 2. Queue the rest of the images
     load_queue = {}
-    for i = 2, total_images do
-        table.insert(load_queue, i)
+    for i = 1, total_images do
+        if not images[i] then
+            table.insert(load_queue, i)
+        end
     end
     
     -- Footer
@@ -51,7 +59,6 @@ function showcase:load_image(index)
         if not love.filesystem.getInfo(path) then
             path = WORK_DIR .. "/showcase/showcase" .. index .. ".png"
         end
-        
         if love.filesystem.getInfo(path) then
             images[index] = love.graphics.newImage(path)
         end
@@ -61,10 +68,20 @@ end
 function showcase:update(dt)
     if footer then footer:update(dt) end
     
-    -- Background loading: process one image per frame to avoid lag
-    if #load_queue > 0 then
-        local idx = table.remove(load_queue, 1)
-        self:load_image(idx)
+    -- 3. Spaced Background Loading
+    -- We only load when NOT transitioning and after an initial delay
+    if transition_t >= 1 then
+        if initial_delay > 0 then
+            initial_delay = initial_delay - dt
+        elseif #load_queue > 0 then
+            load_timer = load_timer + dt
+            -- Load one image every 0.15 seconds to keep the UI responsive
+            if load_timer > 0.15 then
+                local idx = table.remove(load_queue, 1)
+                self:load_image(idx)
+                load_timer = 0
+            end
+        end
     end
     
     -- Smooth transition timer
@@ -79,7 +96,12 @@ end
 
 function showcase:draw_image(index, offset_x, alpha)
     local img = images[index]
-    if not img then return end
+    if not img then 
+        -- Show loading text if user is faster than the background loader
+        love.graphics.setColor(1, 1, 1, alpha * 0.3)
+        love.graphics.printf("Loading...", offset_x, w_height/2, w_width, "center")
+        return 
+    end
     
     local iw, ih = img:getDimensions()
     local target_w = w_width * 0.85
@@ -96,19 +118,16 @@ end
 function showcase:draw()
     love.graphics.clear(theme:read_color("main", "BACKGROUND", "#000000"))
     
-    -- Transition math: ease-out cubic
     local ease = 1 - math.pow(1 - transition_t, 3)
     local slide_offset = (1 - ease) * w_width * anim_x
     
-    -- Draw previous image sliding out
     if transition_t < 1 then
         self:draw_image(prev_index, -slide_offset, 1 - ease)
     end
     
-    -- Draw current image sliding in
     self:draw_image(current_index, (anim_x == 1 and w_width or -w_width) * (1 - ease), ease)
 
-    -- Index dots (Centered)
+    -- Index dots
     local accent = theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f")
     local dot_size = 6 * _G.scale
     local dot_gap = 14 * _G.scale
@@ -134,6 +153,10 @@ function showcase:next()
     prev_index = current_index
     current_index = current_index + 1
     if current_index > total_images then current_index = 1 end
+    
+    -- Ensure the NEXT image is loaded if we're moving fast
+    self:load_image(current_index)
+    
     anim_x = 1
     transition_t = 0
     img_scale = 0.96
@@ -144,6 +167,10 @@ function showcase:prev()
     prev_index = current_index
     current_index = current_index - 1
     if current_index < 1 then current_index = total_images end
+    
+    -- Ensure the PREV image is loaded if we're moving fast
+    self:load_image(current_index)
+    
     anim_x = -1
     transition_t = 0
     img_scale = 0.96
