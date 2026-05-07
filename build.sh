@@ -134,6 +134,7 @@ if [ "$BUILD_FULL" = true ]; then
     cp -r "$PROJECT_ROOT/data" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
     cp -r "$PROJECT_ROOT/logs" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
     cp -r "$PROJECT_ROOT/sample" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
+    cp -r "$PROJECT_ROOT/showcase" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
     cp -r "$PROJECT_ROOT/static" "$WORKDIR/Scrappy/.scrappy/"
 
     # Copy any additional glyph files from assets/glyph if they exist

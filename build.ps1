@@ -177,7 +177,6 @@ Set-UnixLineEndings -Path (Join-Path $workScrappyDir "mux_launch.sh")
 Copy-Item -LiteralPath (Join-Path $ProjectRoot "helpers") -Destination $workHiddenDir -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $ProjectRoot "lib") -Destination $workHiddenDir -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $ProjectRoot "scenes") -Destination $workHiddenDir -Recurse -Force
-if (Test-Path -LiteralPath (Join-Path $ProjectRoot "scripts")) {
     Copy-Item -LiteralPath (Join-Path $ProjectRoot "scripts") -Destination $workHiddenDir -Recurse -Force
 }
 Copy-Item -LiteralPath (Join-Path $ProjectRoot "templates") -Destination $workHiddenDir -Recurse -Force
@@ -235,7 +234,7 @@ if ($buildUpdate) {
 if ($buildFull) {
     Write-Host "Copying additional files for full package..."
     Copy-Item -LiteralPath (Join-Path $ProjectRoot "bin") -Destination $workHiddenDir -Recurse -Force
-    foreach ($optionalDir in @("data", "logs", "sample")) {
+    foreach ($optionalDir in @("data", "logs", "sample", "showcase")) {
         $source = Join-Path $ProjectRoot $optionalDir
         if (Test-Path -LiteralPath $source -PathType Container) {
             Copy-Item -LiteralPath $source -Destination $workHiddenDir -Recurse -Force
