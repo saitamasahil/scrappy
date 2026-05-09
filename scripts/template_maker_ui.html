@@ -1057,9 +1057,48 @@
         }
 
         .root-drop-zone.drag-over {
+            background-color: rgba(203, 170, 15, 0.15);
             border-color: var(--accent);
-            background-color: color-mix(in srgb, var(--accent) 10%, transparent);
             color: var(--accent);
+        }
+
+        /* Nudge Controls */
+        .nudge-controls {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(30, 30, 34, 0.9);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            z-index: 50;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            cursor: grab;
+            user-select: none;
+        }
+        .nudge-controls:active {
+            cursor: grabbing;
+        }
+        .nudge-controls .btn {
+            background: var(--bg);
+            border: 1px solid var(--card-border);
+            color: var(--text);
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nudge-controls .btn:hover {
+            background: var(--hover);
+            color: var(--accent);
+            border-color: var(--accent);
         }
 
         .fade-in {
@@ -1280,13 +1319,28 @@
                     <span>Add layers and start building<br>your artwork template</span>
                     <span style="font-size:10px;opacity:0.6">Click "Generate Preview" to render</span>
                 </div>
-                <img id="previewImg" style="display:none" alt="Preview">
+                <img id="previewImg" src="" alt="Preview" style="display:none; transform-origin: top left;">
                 <div class="preview-generating" id="previewLoading" style="display:none">
                     <div class="spinner"></div>
                     <span>Generating preview…</span>
                 </div>
                 <!-- Drag-and-drop overlay container -->
-                <div id="previewOverlay" class="preview-overlay"></div>
+                <div id="previewOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+                
+                <!-- Nudge Controls -->
+                <div id="nudgeControls" class="nudge-controls" style="display: none;" onpointerdown="startDragNudge(event)">
+                    <div style="font-size:10px; color:var(--text-secondary); margin-bottom:4px; font-weight:bold; text-transform:uppercase; display:flex; align-items:center; position:relative; width:100%; pointer-events:none;">
+                        <span class="material-symbols-rounded" style="font-size:14px; opacity:0.7;">drag_indicator</span> 
+                        <span style="position:absolute; left:50%; transform:translateX(-50%);">Nudge</span>
+                        <span class="material-symbols-rounded" style="font-size:14px; cursor:pointer; pointer-events:auto; position:absolute; right:0; opacity:0.7;" onclick="hideNudgeUI()" title="Close Nudge GUI">close</span>
+                    </div>
+                    <button class="btn btn-icon btn-sm" onclick="nudgeSelected(event, 0, -1)" title="Nudge Up (Hold Shift for 10x)"><span class="material-symbols-rounded">keyboard_arrow_up</span></button>
+                    <div style="display: flex; gap: 2px;">
+                        <button class="btn btn-icon btn-sm" onclick="nudgeSelected(event, -1, 0)" title="Nudge Left (Hold Shift for 10x)"><span class="material-symbols-rounded">keyboard_arrow_left</span></button>
+                        <button class="btn btn-icon btn-sm" onclick="nudgeSelected(event, 0, 1)" title="Nudge Down (Hold Shift for 10x)"><span class="material-symbols-rounded">keyboard_arrow_down</span></button>
+                        <button class="btn btn-icon btn-sm" onclick="nudgeSelected(event, 1, 0)" title="Nudge Right (Hold Shift for 10x)"><span class="material-symbols-rounded">keyboard_arrow_right</span></button>
+                    </div>
+                </div>
             </div>
             <div class="preview-badge" id="previewBadge" style="display:none">640×480</div>
         </div>
@@ -1401,7 +1455,8 @@
                         </div>
                         <div class="field">
                             <label class="field-label">Presets</label>
-                            <select onchange="if(this.value){let [w,h] = this.value.split('x'); document.getElementById('outputWidth').value = w; document.getElementById('outputHeight').value = h; onOutputChange(); this.value='';}">
+                            <select
+                                onchange="if(this.value){let [w,h] = this.value.split('x'); document.getElementById('outputWidth').value = w; document.getElementById('outputHeight').value = h; onOutputChange(); this.value='';}">
                                 <option value="">Custom...</option>
                                 <option value="640x480">640x480</option>
                                 <option value="720x480">720x480</option>
@@ -1461,7 +1516,8 @@
                     <div class="section-header">
                         <span class="section-title"><span class="material-symbols-rounded"
                                 style="font-size: 16px;">layers</span> Layers</span>
-                        <div class="section-header-actions" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
+                        <div class="section-header-actions"
+                            style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
                             <button class="btn btn-sm" onclick="addMaskBetween()" title="Add global mask layer"><span
                                     class="material-symbols-rounded">theater_comedy</span> Global Mask</button>
                             <button class="btn btn-sm" onclick="addFrameBetween()" title="Add global frame layer"><span
@@ -1470,8 +1526,9 @@
                                     class="material-symbols-rounded">upload</span> Upload Mask</button>
                             <button class="btn btn-sm" onclick="triggerUpload('frames')" title="Upload frame file"><span
                                     class="material-symbols-rounded">upload</span> Upload Frame</button>
-                            <button class="btn btn-sm btn-accent" onclick="addLayer()" style="grid-column: span 2;"><span
-                                    class="material-symbols-rounded">add</span> Layer</button>
+                            <button class="btn btn-sm btn-accent" onclick="addLayer()"
+                                style="grid-column: span 2;"><span class="material-symbols-rounded">add</span>
+                                Layer</button>
                         </div>
                     </div>
                     <div id="layerStack"></div>
@@ -1491,7 +1548,8 @@
                             <b>Aspect:</b> ignore (stretch to fill), keep (maintain ratio), keepexpand (crop to
                             fill)<br>
                             <b>Transform:</b> Smooth (bilinear filtering), Fast (sharp pixel scaling)<br>
-                            <b>Layout Mode:</b> Hold Shift while dragging resize handles to lock aspect ratio.<br>
+                            <b>Layout Mode:</b> Hold Shift while dragging resize handles to lock aspect ratio. Use Arrow
+                            keys to nudge selected layer (hold Shift for 10x).<br>
                             <b>Mask tip:</b> Transparency (Alpha) of the mask image determines what is shown.<br>
                             <b>Effects:</b> balance, blur, brightness, colorize, contrast, frame, gamebox, hue, mask,
                             opacity, rotate, rounded, saturation, scanlines, shadow, stroke.
@@ -2221,18 +2279,18 @@
             function handleDragOver(e, targetId, card) {
                 e.preventDefault();
                 if (draggedLayerId === targetId) return;
-                
+
                 if (isDescendant(targetId, draggedLayerId)) {
                     e.dataTransfer.dropEffect = 'none';
                     return;
                 }
-                
+
                 e.dataTransfer.dropEffect = 'move';
                 card.classList.remove('drag-above', 'drag-below', 'drag-inside');
-                
+
                 const rect = card.getBoundingClientRect();
                 const y = e.clientY - rect.top;
-                
+
                 if (y < rect.height * 0.25) {
                     card.classList.add('drag-above');
                 } else if (y > rect.height * 0.75) {
@@ -2250,7 +2308,7 @@
 
                 const rect = card.getBoundingClientRect();
                 const y = e.clientY - rect.top;
-                
+
                 let position;
                 if (y < rect.height * 0.25) {
                     position = 'after'; // UI reversed, above in UI = after in list array
@@ -2259,17 +2317,17 @@
                 } else {
                     position = 'inside';
                 }
-                
+
                 moveLayerInTree(draggedLayerId, targetId, position);
             }
 
             function isDescendant(targetId, searchId) {
                 const searchLayer = findLayer(searchId);
                 if (!searchLayer) return false;
-                
+
                 let found = false;
                 function check(list) {
-                    for(const l of list) {
+                    for (const l of list) {
                         if (l.id === targetId) found = true;
                         if (l.layers) check(l.layers);
                     }
@@ -2315,7 +2373,7 @@
                     }
                     return false;
                 }
-                
+
                 insertInto(layers);
                 renderLayers();
                 schedulePreview();
@@ -2364,7 +2422,7 @@
                     card.className = `layer-card fade-in${layer.expanded ? ' expanded' : ''}${!layer.visible ? ' hidden' : ''}`;
                     card.setAttribute('data-id', layer.id);
                     card.style.marginLeft = (depth * 20) + 'px';
-                    
+
                     // Attach drag & drop events
                     card.setAttribute('draggable', 'true');
                     card.ondragstart = (e) => handleDragStart(e, layer.id);
@@ -3540,10 +3598,17 @@
             function updateOverlays() {
                 const img = document.getElementById('previewImg');
                 const overlay = document.getElementById('previewOverlay');
+                const nudgeControls = document.getElementById('nudgeControls');
+                
                 if (!img || img.style.display === 'none' || !layoutModeEnabled) {
                     overlay.innerHTML = '';
                     overlay.style.display = 'none';
+                    if (nudgeControls) nudgeControls.style.display = 'none';
                     return;
+                }
+                
+                if (nudgeControls) {
+                    nudgeControls.style.display = (nudgeUIEnabled && selectedLayerId !== null) ? 'flex' : 'none';
                 }
 
                 overlay.style.display = 'block';
@@ -3644,6 +3709,13 @@
 
             function toggleLayoutMode(enabled) {
                 layoutModeEnabled = enabled;
+                if (enabled) nudgeUIEnabled = true; // Automatically bring it back when layout mode is enabled
+                updateOverlays();
+            }
+
+            let nudgeUIEnabled = true;
+            function hideNudgeUI() {
+                nudgeUIEnabled = false;
                 updateOverlays();
             }
 
@@ -3680,9 +3752,74 @@
                         }
                     }
                 }, 10);
+
+                if (layoutModeEnabled) updateOverlays();
+            }
+
+            function nudgeSelected(e, dx, dy) {
+                if (!layoutModeEnabled || selectedLayerId === null) return;
+                const layer = findLayer(selectedLayerId);
+                if (!layer) return;
+
+                const multiplier = e && e.shiftKey ? 10 : 1;
+                let currentX = parseInt(layer.x) || 0;
+                let currentY = parseInt(layer.y) || 0;
+                
+                layer.x = currentX + (dx * multiplier);
+                layer.y = currentY + (dy * multiplier);
+                
+                updateOverlays(); 
+                renderLayers();   
+                schedulePreview(500); 
             }
 
             let dragParentAbs = { x: 0, y: 0 };
+
+            // --- Nudge GUI Draggable Logic ---
+            let isDraggingNudge = false;
+            let nudgeDragOffset = { x: 0, y: 0 };
+
+            function startDragNudge(e) {
+                if (e.target.closest('button')) return; // Ignore if clicking a button
+                
+                const nc = document.getElementById('nudgeControls');
+                isDraggingNudge = true;
+                
+                const rect = nc.getBoundingClientRect();
+                nudgeDragOffset = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+                
+                document.addEventListener('pointermove', onDragNudge);
+                document.addEventListener('pointerup', stopDragNudge);
+            }
+
+            function onDragNudge(e) {
+                if (!isDraggingNudge) return;
+                const nc = document.getElementById('nudgeControls');
+                const container = document.getElementById('previewContainer');
+                const containerRect = container.getBoundingClientRect();
+                
+                let newLeft = e.clientX - containerRect.left - nudgeDragOffset.x;
+                let newTop = e.clientY - containerRect.top - nudgeDragOffset.y;
+                
+                // Constrain within the preview container
+                newLeft = Math.max(0, Math.min(newLeft, containerRect.width - nc.offsetWidth));
+                newTop = Math.max(0, Math.min(newTop, containerRect.height - nc.offsetHeight));
+                
+                nc.style.right = 'auto';
+                nc.style.bottom = 'auto';
+                nc.style.left = newLeft + 'px';
+                nc.style.top = newTop + 'px';
+            }
+
+            function stopDragNudge(e) {
+                isDraggingNudge = false;
+                document.removeEventListener('pointermove', onDragNudge);
+                document.removeEventListener('pointerup', stopDragNudge);
+            }
+            // ----------------------------------
 
             function onDragStart(e, layerId, parentAbsX, parentAbsY) {
                 e.preventDefault();
@@ -3847,6 +3984,38 @@
                     document.body.style.cursor = '';
                     renderLayers(); // Sync UI
                     schedulePreview(); // Update thumbnail
+                }
+            });
+
+            // Keyboard nudge feature in layout mode
+            window.addEventListener('keydown', (e) => {
+                if (layoutModeEnabled && selectedLayerId !== null) {
+                    const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+                    if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+
+                    const layer = findLayer(selectedLayerId);
+                    if (!layer) return;
+
+                    let dx = 0, dy = 0;
+                    if (e.key === 'ArrowUp') dy = -1;
+                    else if (e.key === 'ArrowDown') dy = 1;
+                    else if (e.key === 'ArrowLeft') dx = -1;
+                    else if (e.key === 'ArrowRight') dx = 1;
+
+                    if (dx !== 0 || dy !== 0) {
+                        e.preventDefault(); // Prevent page scrolling
+                        const multiplier = e.shiftKey ? 10 : 1;
+
+                        let currentX = parseInt(layer.x) || 0;
+                        let currentY = parseInt(layer.y) || 0;
+
+                        layer.x = currentX + (dx * multiplier);
+                        layer.y = currentY + (dy * multiplier);
+
+                        updateOverlays(); // Move handles instantly
+                        renderLayers();   // Sync sidebar inputs
+                        schedulePreview(500); // Debounce the heavy XML preview
+                    }
                 }
             });
 
