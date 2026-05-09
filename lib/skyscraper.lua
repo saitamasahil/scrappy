@@ -157,8 +157,12 @@ end
 local function get_default_module_for(platform)
     local pea_key = normalize_platform(platform)
 
-    -- Ports always use TheGamesDB (not available in ScreenScraper)
+    -- Ports: use IGDB if explicitly selected, otherwise fall back to TheGamesDB
+    -- (ScreenScraper lacks ports/PC game coverage)
     if pea_key == "ports" or pea_key == "PORTS" then
+        if skyscraper.module == "igdb" then
+            return "igdb"
+        end
         return "thegamesdb"
     end
 
