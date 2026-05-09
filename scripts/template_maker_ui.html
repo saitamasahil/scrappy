@@ -1400,6 +1400,18 @@
                                 oninput="onOutputChange()">
                         </div>
                         <div class="field">
+                            <label class="field-label">Presets</label>
+                            <select onchange="if(this.value){let [w,h] = this.value.split('x'); document.getElementById('outputWidth').value = w; document.getElementById('outputHeight').value = h; onOutputChange(); this.value='';}">
+                                <option value="">Custom...</option>
+                                <option value="640x480">640x480</option>
+                                <option value="720x480">720x480</option>
+                                <option value="720x720">720x720</option>
+                                <option value="1024x768">1024x768</option>
+                                <option value="1280x720">1280x720</option>
+                                <option value="1920x1080">1920x1080</option>
+                            </select>
+                        </div>
+                        <div class="field">
                             <label class="field-label" title="Megapixels limit">Mpixels</label>
                             <input type="number" id="outputMpixels" value="" min="0.001" step="0.01" placeholder="auto"
                                 oninput="onOutputChange()">
@@ -2452,6 +2464,18 @@
                             <label class="field-label">Height</label>
                             <input type="number" value="${layer.height}" oninput="findLayer(${layer.id}).height=this.value;schedulePreview()">
                         </div>
+                        <div class="field" style="min-width:90px; flex:1">
+                            <label class="field-label">Presets</label>
+                            <select onchange="if(this.value){let [w,h] = this.value.split('x'); findLayer(${layer.id}).width=w; findLayer(${layer.id}).height=h; schedulePreview(); renderLayers();}">
+                                <option value="">Custom...</option>
+                                <option value="640x480">640x480</option>
+                                <option value="720x480">720x480</option>
+                                <option value="720x720">720x720</option>
+                                <option value="1024x768">1024x768</option>
+                                <option value="1280x720">1280x720</option>
+                                <option value="1920x1080">1920x1080</option>
+                            </select>
+                        </div>
                         <div class="field" style="min-width:70px; flex:1">
                             <label class="field-label">Aspect</label>
                             <select oninput="findLayer(${layer.id}).aspect=this.value;schedulePreview()">
@@ -2524,6 +2548,18 @@
                         <div class="field" style="min-width:70px; flex:1">
                             <label class="field-label">Height</label>
                             <input type="number" value="${layer.height}" placeholder="auto" oninput="findLayer(${layer.id}).height=this.value;schedulePreview()">
+                        </div>
+                        <div class="field" style="min-width:90px; flex:1">
+                            <label class="field-label">Presets</label>
+                            <select onchange="if(this.value){let [w,h] = this.value.split('x'); findLayer(${layer.id}).width=w; findLayer(${layer.id}).height=h; schedulePreview(); renderLayers();}">
+                                <option value="">Custom...</option>
+                                <option value="640x480">640x480</option>
+                                <option value="720x480">720x480</option>
+                                <option value="720x720">720x720</option>
+                                <option value="1024x768">1024x768</option>
+                                <option value="1280x720">1280x720</option>
+                                <option value="1920x1080">1920x1080</option>
+                            </select>
                         </div>
                     </div>
                     <div class="field-row">
