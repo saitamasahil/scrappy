@@ -73,9 +73,9 @@ local function create_vk(config)
     -- Timing state
     hold_dir = nil,
     hold_time = 0,
-    repeat_delay = 0.45,
-    repeat_rate = 0.12,
-    nav_repeat_rate = 0.08, -- Faster rate for D-pad navigation
+    repeat_delay = 0.35,
+    repeat_rate = 0.10,
+    nav_repeat_rate = 0.055, -- Faster rate for D-pad navigation
     repeat_started = false,
     hold_acc = 0,
     char_font = nil,
@@ -297,49 +297,37 @@ local function create_vk(config)
     
     -- Normal keyboard navigation
     if key == 'up' then
-      if movement_locked() then return true end
       if self.row == 1 then
         -- From top row, go to text field
         self.text_field_focused = true
-        self.move_lock_until = love.timer.getTime() + 0.12
         return true
       end
       local target_row = self.row - 1
       if target_row >= 1 then
         self.col = nearest_col_by_x(self.row, self.col, target_row)
         self.row = target_row
-        self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
       else
         self.row = 1
         self.col = math.min(self.col, #layout[self.row])
-        self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
       end
     elseif key == 'down' then
-      if movement_locked() then return true end
       if self.row == #layout then
         self.row = 1
         self.col = math.min(self.col, #layout[self.row])
-        self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
         return true
       end
       local target_row = self.row + 1
       if target_row <= #layout then
         self.col = nearest_col_by_x(self.row, self.col, target_row)
         self.row = target_row
-        self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
       else
         self.row = #layout
         self.col = math.min(self.col, #layout[self.row])
-        self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
       end
     elseif key == 'left' then
-      if movement_locked() then return true end
       self.col = self.col > 1 and (self.col - 1) or #layout[self.row]
-      self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
     elseif key == 'right' then
-      if movement_locked() then return true end
       self.col = self.col < #layout[self.row] and (self.col + 1) or 1
-      self.move_lock_until = love.timer.getTime() + self.nav_repeat_rate
     elseif key == 'space' then
       if movement_locked() then return true end
       insert_at_cursor(' ')
@@ -435,7 +423,8 @@ local function create_vk(config)
         self.hold_time = 0
         self.repeat_started = false
         self.hold_acc = 0
-        self:handle_key(held)
+        -- Don't call handle_key here; the scene's keypressed already handled the first press.
+        -- This block only sets up tracking so hold-repeat works correctly.
         return
       end
       self.hold_time = self.hold_time + dt
@@ -503,7 +492,10 @@ local function create_vk(config)
         
         local is_focused = (not self.text_field_focused and self.row == r and self.col == c)
         local target_v = is_focused and 1 or 0
-        self.key_anim[r][c] = (self.key_anim[r][c] or 0) + (target_v - (self.key_anim[r][c] or 0)) * 20 * dt
+        local prev_v = self.key_anim[r][c] or 0
+        -- Snap quickly toward target, decelerate near it (spring-like)
+        local diff = target_v - prev_v
+        self.key_anim[r][c] = prev_v + diff * math.min(1, 28 * dt)
         
         -- Liquid Squish for keys
         self.key_squish[r] = self.key_squish[r] or {}
@@ -537,11 +529,11 @@ local function create_vk(config)
       self.focus_w, self.focus_h = target_w, target_h
       self.focus_initialized = true
     else
-      local speed = 15
-      self.focus_x = self.focus_x + (target_x - self.focus_x) * speed * dt
-      self.focus_y = self.focus_y + (target_y - self.focus_y) * speed * dt
-      self.focus_w = self.focus_w + (target_w - self.focus_w) * speed * dt
-      self.focus_h = self.focus_h + (target_h - self.focus_h) * speed * dt
+      local speed = 22
+      self.focus_x = self.focus_x + (target_x - self.focus_x) * math.min(1, speed * dt)
+      self.focus_y = self.focus_y + (target_y - self.focus_y) * math.min(1, speed * dt)
+      self.focus_w = self.focus_w + (target_w - self.focus_w) * math.min(1, speed * dt)
+      self.focus_h = self.focus_h + (target_h - self.focus_h) * math.min(1, speed * dt)
     end
   end
 
