@@ -62,10 +62,13 @@ To install Scrappy, follow these steps:
 ## Special thanks
 
 - **chronoss09** - for testing infinite test builds of scrappy [GitHub](https://github.com/chronoss09)
-- **10nes** - for testing and providing detailed feedback on the bug report
+- **10NES** - for testing and providing detailed feedback on the bug report
 - **Snow (snowram)** - for the initial Qt5 build work that inspired the Qt6 upgrade [Kofi](https://ko-fi.com/snowram)
 - **Portmaster and their devs** - for great documentation on porting games/software for Linux handhelds [Portmaster](https://portmaster.games/porting.html)
 - **Scrappy's original developer [Gabriel Freire](https://github.com/gabrielfvale)** - for creating Scrappy and laying the foundation for this project. Support their work at [Kofi](https://ko-fi.com/gabrielfvale)
+- **JochemKuipers** - for integrating IGDB support [GitHub](https://github.com/JochemKuipers)
+- **SethG911** - for fixing scraping hangs and adding concurrency controls [GitHub](https://github.com/SethG911)
+- **TheWalruzz** - for updating storage paths & adding Fluent theme compatible template [GitHub](https://github.com/TheWalruzz)
 - Testers and many other contributors
 
 ## Supporting the project
