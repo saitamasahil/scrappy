@@ -1564,7 +1564,7 @@ function main:load()
     } + component {
         id = "dashboard_hint",
         width = w_width * 0.85,
-        height = 20,
+        height = 22 * _G.scale,
         visible = not offline_mode,
         onUpdate = function(self, dt)
             if offline_mode then
@@ -1573,7 +1573,7 @@ function main:load()
                 return
             else
                 self.visible = true
-                self.height = 20
+                self.height = 22 * _G.scale
             end
             self.icon_scale = self.icon_scale or 1
             local pressed = icon_input.isEventDown("x")
@@ -1591,18 +1591,20 @@ function main:load()
             love.graphics.push()
             local icon_size = 22 * _G.scale
             local gap = 6 * _G.scale
-            -- Draw X button icon
+            -- Draw X button icon (scaled for high-res displays)
             if button_x_icon then
                 love.graphics.push()
-                love.graphics.translate(self.x + 11, self.y + 11)
+                local center_x = self.x + icon_size / 2
+                local center_y = self.y + icon_size / 2
+                love.graphics.translate(center_x, center_y)
                 love.graphics.scale(self.icon_scale or 1)
-                love.graphics.translate(-(self.x + 11), -(self.y + 11))
-                local btn = icon { name = "button_x", size = 22 }
+                love.graphics.translate(-center_x, -center_y)
+                local btn = icon { name = "button_x", size = icon_size }
                 btn.x, btn.y = self.x, self.y
                 btn:draw()
                 love.graphics.pop()
             end
-            -- Draw text
+            -- Draw text (clamped to available width)
             local txt
             if dashboard_server_running and dashboard_server_ip then
                 txt = "Dashboard: http://" .. dashboard_server_ip .. ":8081 (Same network)"
@@ -1613,7 +1615,18 @@ function main:load()
                     txt = "Launch Live Dashboard"
                 end
             end
-            love.graphics.print(txt, self.x + icon_size + gap, self.y + (icon_size - love.graphics.getFont():getHeight()) / 2)
+            local text_x = self.x + icon_size + gap
+            local available_w = (self.width or (w_width * 0.85)) - icon_size - gap
+            local font = love.graphics.getFont()
+            local text_y = self.y + (icon_size - font:getHeight()) / 2
+            -- Truncate text if it overflows
+            if font:getWidth(txt) > available_w then
+                while #txt > 3 and font:getWidth(txt .. "…") > available_w do
+                    txt = txt:sub(1, #txt - 1)
+                end
+                txt = txt .. "…"
+            end
+            love.graphics.print(txt, text_x, text_y)
             love.graphics.setColor(1, 1, 1)
             love.graphics.pop()
         end
