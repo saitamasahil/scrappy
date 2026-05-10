@@ -2,7 +2,7 @@
 local wifi = {}
 
 -- Network interfaces to check (standard Linux WiFi and Ethernet interfaces)
-local INTERFACES = {"wlan0", "eth0", "wlan1", "eth1"}
+local INTERFACES = {"wlan0", "eth0", "wlan1", "eth1", "wlp1s0"}
 
 -- Check if network is connected by reading operstate
 -- Returns true if connected, false otherwise
