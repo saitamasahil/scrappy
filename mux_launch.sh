@@ -43,7 +43,7 @@ if command -v SETUP_APP >/dev/null 2>&1; then
 
     command -v CAFFEINE >/dev/null 2>&1 && CAFFEINE on
     $GPTOKEYB "love" &
-    ./bin/love . "${SCREEN_RESOLUTION}"
+    ./bin/love . "${SCREEN_RESOLUTION}" > "$APP_DIR/.scrappy/scrappy.log" 2>&1
     kill -9 "$(pidof gptokeyb2.armhf)" 2>/dev/null || true
     command -v CAFFEINE >/dev/null 2>&1 && CAFFEINE off
 
@@ -106,7 +106,7 @@ else
 
     command -v CAFFEINE >/dev/null 2>&1 && CAFFEINE on
     $GPTOKEYB "love" &
-    ./bin/love . "${SCREEN_RESOLUTION}"
+    ./bin/love . "${SCREEN_RESOLUTION}" > "$LOVEDIR/scrappy.log" 2>&1
     kill -9 "$(pidof gptokeyb2.armhf)" 2>/dev/null || true
     command -v CAFFEINE >/dev/null 2>&1 && CAFFEINE off
 fi
