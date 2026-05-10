@@ -69,6 +69,7 @@ To install Scrappy, follow these steps:
 - **JochemKuipers** - for integrating IGDB support [GitHub](https://github.com/JochemKuipers)
 - **SethG911** - for fixing scraping hangs and adding concurrency controls [GitHub](https://github.com/SethG911)
 - **TheWalruzz** - for updating storage paths & adding Fluent theme compatible template [GitHub](https://github.com/TheWalruzz)
+- **antiKk** - for invaluable technical guidance, detailed logs, and testing to enable **RG Vita Pro** support [GitHub](https://github.com/antiKk)
 - Testers and many other contributors
 
 ## Supporting the project
