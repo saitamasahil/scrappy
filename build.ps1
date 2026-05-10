@@ -217,10 +217,18 @@ if (Test-Path -LiteralPath $assetGlyphSource -PathType Leaf) {
 if ($glyphSource) {
     Write-Host "Copying scrappy.png to glyph directory..."
     Copy-Item -LiteralPath $glyphSource -Destination $workGlyphDir -Force
-    foreach ($res in @("640x480", "720x480", "720x720", "1024x768", "1280x720", "1920x1080")) {
+    # Copy resolution-specific pre-sized icons for proper muOS glyph display
+    $glyphAssetDir = Join-Path $ProjectRoot "assets/glyph"
+    foreach ($res in @("640x480", "720x480", "720x576", "720x720", "1024x768", "1280x720", "1920x1080")) {
         $resDir = Join-Path $workGlyphDir $res
         New-Item -ItemType Directory -Force -Path $resDir | Out-Null
-        Copy-Item -LiteralPath $glyphSource -Destination (Join-Path $resDir "scrappy.png") -Force
+        $resSrc = Join-Path $glyphAssetDir "$res.png"
+        if (Test-Path -LiteralPath $resSrc -PathType Leaf) {
+            Copy-Item -LiteralPath $resSrc -Destination (Join-Path $resDir "scrappy.png") -Force
+        } else {
+            # Fallback to default icon if resolution-specific one not found
+            Copy-Item -LiteralPath $glyphSource -Destination (Join-Path $resDir "scrappy.png") -Force
+        }
     }
 } else {
     Write-Host "Warning: scrappy.png not found in expected locations" -ForegroundColor Yellow

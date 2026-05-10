@@ -112,10 +112,16 @@ fi
 if [ -n "$GLYPH_SRC" ]; then
     echo "Copying scrappy.png to glyph directory..."
     cp "$GLYPH_SRC" "$WORKDIR/Scrappy/glyph/"
-    # Also copy into resolution-specific glyph folders so MUX can resolve per-resolution icons
-    for res in 640x480 720x480 720x720 1024x768 1280x720 1920x1080; do
+    # Copy resolution-specific pre-sized icons for proper muOS glyph display
+    GLYPH_ASSET_DIR="$PROJECT_ROOT/assets/glyph"
+    for res in 640x480 720x480 720x576 720x720 1024x768 1280x720 1920x1080; do
         mkdir -p "$WORKDIR/Scrappy/glyph/$res"
-        cp "$GLYPH_SRC" "$WORKDIR/Scrappy/glyph/$res/scrappy.png"
+        if [ -f "$GLYPH_ASSET_DIR/$res.png" ]; then
+            cp "$GLYPH_ASSET_DIR/$res.png" "$WORKDIR/Scrappy/glyph/$res/scrappy.png"
+        else
+            # Fallback to default icon if resolution-specific one not found
+            cp "$GLYPH_SRC" "$WORKDIR/Scrappy/glyph/$res/scrappy.png"
+        fi
     done
 else
     echo "Warning: scrappy.png not found in expected locations"
