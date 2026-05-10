@@ -230,8 +230,14 @@ if ($glyphSource) {
             Copy-Item -LiteralPath $glyphSource -Destination (Join-Path $resDir "scrappy.png") -Force
         }
     }
+    }
 } else {
     Write-Host "Warning: scrappy.png not found in expected locations" -ForegroundColor Yellow
+}
+
+# Cleanup before zipping update package
+if (Test-Path -LiteralPath $workGlyphDir -PathType Container) {
+    Get-ChildItem -Path $workGlyphDir -Filter "*.png" | Where-Object { $_.Name -ne "scrappy.png" } | Remove-Item -Force
 }
 
 if ($buildUpdate) {
@@ -250,11 +256,10 @@ if ($buildFull) {
     }
     Copy-Item -LiteralPath (Join-Path $ProjectRoot "static") -Destination $workHiddenDir -Recurse -Force
 
-    # Copy any additional glyph files from assets/glyph if they exist
-    $assetsGlyphDir = Join-Path $ProjectRoot "assets/glyph"
-    if (Test-Path -LiteralPath $assetsGlyphDir -PathType Container) {
-        Write-Host "Copying additional glyph files from assets..."
-        Copy-DirectoryContents -SourceDir $assetsGlyphDir -DestinationDir $workGlyphDir
+    # Final Cleanup: Remove loose resolution-specific icons from the glyph root
+    # but keep the main scrappy.png as a fallback
+    if (Test-Path -LiteralPath $workGlyphDir -PathType Container) {
+        Get-ChildItem -Path $workGlyphDir -Filter "*.png" | Where-Object { $_.Name -ne "scrappy.png" } | Remove-Item -Force
     }
 
     Write-Host "Creating full package..."

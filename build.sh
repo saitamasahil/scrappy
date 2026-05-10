@@ -123,6 +123,10 @@ if [ -n "$GLYPH_SRC" ]; then
             cp "$GLYPH_SRC" "$WORKDIR/Scrappy/glyph/$res/scrappy.png"
         fi
     done
+    # Cleanup before zipping update package
+    if [ -d "$WORKDIR/Scrappy/glyph/" ]; then
+        find "$WORKDIR/Scrappy/glyph/" -maxdepth 1 -name "*.png" ! -name "scrappy.png" -delete
+    fi
 else
     echo "Warning: scrappy.png not found in expected locations"
 fi
@@ -143,13 +147,10 @@ if [ "$BUILD_FULL" = true ]; then
     cp -r "$PROJECT_ROOT/showcase" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
     cp -r "$PROJECT_ROOT/static" "$WORKDIR/Scrappy/.scrappy/"
 
-    # Copy any additional glyph files from assets/glyph if they exist
-    if [ -d "$PROJECT_ROOT/assets/glyph" ]; then
-        echo "Copying additional glyph files from assets..."
-        (
-            shopt -s dotglob
-            cp -r "$PROJECT_ROOT/assets/glyph/"* "$WORKDIR/Scrappy/glyph/" 2>/dev/null || true
-        )
+    # Final Cleanup: Remove loose resolution-specific icons from the glyph root
+    # but keep the main scrappy.png as a fallback
+    if [ -d "$WORKDIR/Scrappy/glyph/" ]; then
+        find "$WORKDIR/Scrappy/glyph/" -maxdepth 1 -name "*.png" ! -name "scrappy.png" -delete
     fi
 
     # Create full package
