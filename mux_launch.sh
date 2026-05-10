@@ -32,6 +32,15 @@ if command -v SETUP_APP >/dev/null 2>&1; then
     SCREEN_HEIGHT="$(GET_VAR device mux/height)"
     SCREEN_RESOLUTION="${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
 
+    # Workaround for RK3576 devices (Vita Pro etc.) where bundled desktop GL libs
+    # conflict with the device's libmali Bifrost driver
+    if grep -q "rk3576" /proc/device-tree/compatible 2>/dev/null; then
+        for _ml in /usr/lib/libmali.so /usr/lib/aarch64-linux-gnu/libmali.so; do
+            [ -e "$_ml" ] && export SDL_VIDEO_EGL_DRIVER="$_ml" && break
+        done
+        export SDL_OPENGL_ES_DRIVER=1
+    fi
+
     command -v CAFFEINE >/dev/null 2>&1 && CAFFEINE on
     $GPTOKEYB "love" &
     ./bin/love . "${SCREEN_RESOLUTION}"
@@ -85,6 +94,15 @@ else
 
     cd "$LOVEDIR" || exit
     SET_VAR "system" "foreground_process" "love"
+
+    # Workaround for RK3576 devices (Vita Pro etc.) where bundled desktop GL libs
+    # conflict with the device's libmali Bifrost driver
+    if grep -q "rk3576" /proc/device-tree/compatible 2>/dev/null; then
+        for _ml in /usr/lib/libmali.so /usr/lib/aarch64-linux-gnu/libmali.so; do
+            [ -e "$_ml" ] && export SDL_VIDEO_EGL_DRIVER="$_ml" && break
+        done
+        export SDL_OPENGL_ES_DRIVER=1
+    fi
 
     command -v CAFFEINE >/dev/null 2>&1 && CAFFEINE on
     $GPTOKEYB "love" &
