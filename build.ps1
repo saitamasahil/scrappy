@@ -217,7 +217,7 @@ if (Test-Path -LiteralPath $assetGlyphSource -PathType Leaf) {
 if ($glyphSource) {
     Write-Host "Copying scrappy.png to glyph directory..."
     Copy-Item -LiteralPath $glyphSource -Destination $workGlyphDir -Force
-    foreach ($res in @("640x480", "720x480", "720x720", "1024x768")) {
+    foreach ($res in @("640x480", "720x480", "720x720", "1024x768", "1280x720", "1920x1080")) {
         $resDir = Join-Path $workGlyphDir $res
         New-Item -ItemType Directory -Force -Path $resDir | Out-Null
         Copy-Item -LiteralPath $glyphSource -Destination (Join-Path $resDir "scrappy.png") -Force

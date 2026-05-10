@@ -113,7 +113,7 @@ if [ -n "$GLYPH_SRC" ]; then
     echo "Copying scrappy.png to glyph directory..."
     cp "$GLYPH_SRC" "$WORKDIR/Scrappy/glyph/"
     # Also copy into resolution-specific glyph folders so MUX can resolve per-resolution icons
-    for res in 640x480 720x480 720x720 1024x768; do
+    for res in 640x480 720x480 720x720 1024x768 1280x720 1920x1080; do
         mkdir -p "$WORKDIR/Scrappy/glyph/$res"
         cp "$GLYPH_SRC" "$WORKDIR/Scrappy/glyph/$res/scrappy.png"
     done
