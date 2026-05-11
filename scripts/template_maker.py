@@ -93,6 +93,12 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
                 self.api_upload_resource()
             elif self.path == "/api/set-preset":
                 self.api_set_preset()
+            elif self.path == "/api/delete":
+                self.api_delete_template()
+            elif self.path == "/api/rename":
+                self.api_rename_template()
+            elif self.path == "/api/delete-resource":
+                self.api_delete_resource()
             else:
                 self.send_error(404)
         except Exception as e:
@@ -106,6 +112,10 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", len(body))
         self.end_headers()
         self.wfile.write(body)
+
+    def get_json_body(self):
+        length = int(self.headers.get('Content-Length', 0))
+        return json.loads(self.rfile.read(length).decode('utf-8'))
 
     def serve_favicon(self):
         if args.logo and os.path.exists(args.logo):
@@ -431,10 +441,9 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
         self.send_json({"status": "ok", "name": safe_name, "file": safe_name + ".xml"})
 
     def api_upload_resource(self):
-        """Upload a custom mask/frame PNG."""
-        content_type = self.headers.get('Content-Type', '')
-        if 'boundary=' not in content_type:
-            self.send_json({"status": "error", "message": "Expected multipart"}, 400)
+        content_type = self.headers.get('Content-Type')
+        if not content_type or 'boundary=' not in content_type:
+            self.send_json({"status": "error", "message": "Invalid content type"}, 400)
             return
 
         boundary = content_type.split('boundary=')[1].encode()
@@ -461,7 +470,7 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
             except:
                 pass
 
-        category = params.get("category", "mask")  # "mask" or "frames"
+        category = params.get("category", "mask")
         if not file_data or not filename:
             self.send_json({"status": "error", "message": "No file uploaded"}, 400)
             return
@@ -475,6 +484,119 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
 
         rel_path = f"{category}/{filename}"
         self.send_json({"status": "ok", "path": rel_path, "name": filename})
+
+    def api_list_resources(self):
+        try:
+            resources = {"masks": [], "frames": [], "other": []}
+            res_dir = args.resources_dir
+            if not os.path.isdir(res_dir):
+                self.send_json(resources)
+                return
+            for item in sorted(os.listdir(res_dir)):
+                try:
+                    full = os.path.join(res_dir, item)
+                    if os.path.isdir(full):
+                        category = item
+                        key = "masks" if "mask" in category else (
+                            "frames" if "frame" in category else "other")
+                        for f in sorted(os.listdir(full)):
+                            if f.lower().endswith((".png", ".jpg", ".jpeg")):
+                                try:
+                                    resources[key].append({
+                                        "name": f, "path": f"{item}/{f}",
+                                        "size": os.path.getsize(os.path.join(full, f))
+                                    })
+                                except:
+                                    continue
+                    elif item.lower().endswith((".png", ".jpg", ".jpeg")):
+                        resources["other"].append({
+                            "name": item, "path": item,
+                            "size": os.path.getsize(full)
+                        })
+                except:
+                    continue
+            self.send_json(resources)
+        except Exception as e:
+            print(f"List resources error: {e}")
+            self.send_error(500, str(e))
+
+    def api_set_preset(self):
+        data = self.get_json_body()
+        # Just a placeholder
+        self.send_json({"status": "ok"})
+
+    def api_delete_template(self):
+        try:
+            data = self.get_json_body()
+            name = data.get("name")
+            if not name:
+                self.send_error(400, "Missing name")
+                return
+                
+            # Security: sanitize name
+            name = "".join(c for c in name if c.isalnum() or c in " ._-()")
+            path = os.path.join(args.templates_dir, name + ".xml")
+            
+            if os.path.exists(path):
+                os.remove(path)
+                self.send_json({"status": "ok"})
+            else:
+                self.send_error(404, "Template not found")
+        except Exception as e:
+            self.send_error(500, str(e))
+
+    def api_rename_template(self):
+        try:
+            data = self.get_json_body()
+            old_name = data.get("oldName")
+            new_name = data.get("newName")
+            if not old_name or not new_name:
+                self.send_error(400, "Missing names")
+                return
+
+            # Security: sanitize names
+            old_name = "".join(c for c in old_name if c.isalnum() or c in " ._-()")
+            new_name = "".join(c for c in new_name if c.isalnum() or c in " ._-()")
+            
+            old_path = os.path.join(args.templates_dir, old_name + ".xml")
+            new_path = os.path.join(args.templates_dir, new_name + ".xml")
+            
+            if not os.path.exists(old_path):
+                self.send_error(404, "Original template not found")
+                return
+                
+            if os.path.exists(new_path):
+                self.send_error(400, "Target name already exists")
+                return
+                
+            os.rename(old_path, new_path)
+            self.send_json({"status": "ok"})
+        except Exception as e:
+            self.send_error(500, str(e))
+
+    def api_delete_resource(self):
+        try:
+            data = self.get_json_body()
+            rel_path = data.get("path")
+            if not rel_path:
+                self.send_error(400, "Missing path")
+                return
+                
+            # Security: ensure path is within resources dir
+            resources_base = os.path.abspath(args.resources_dir)
+            abs_path = os.path.abspath(os.path.join(resources_base, rel_path))
+            
+            if not abs_path.startswith(resources_base):
+                self.send_error(403, "Forbidden")
+                return
+                
+            if os.path.exists(abs_path):
+                os.remove(abs_path)
+                self.send_json({"status": "ok", "message": "Resource deleted successfully"})
+            else:
+                self.send_error(404, "Resource not found")
+        except Exception as e:
+            self.send_json({"status": "error", "message": str(e)}, 500)
 
     # ── HTML UI ───────────────────────────────────────────────────
 

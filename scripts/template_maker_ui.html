@@ -304,28 +304,46 @@
 
         @media (max-width: 600px) {
             header {
-                flex-wrap: wrap;
-                gap: 8px;
+                flex-wrap: nowrap;
+                gap: 6px;
                 padding: 8px 12px;
+                justify-content: space-between;
+            }
+
+            .header-brand .header-title {
+                display: none;
             }
 
             .header-center {
-                order: 3;
-                width: 100%;
+                order: unset;
+                width: auto;
+                flex: 1;
+                margin: 0 4px;
             }
 
             .header-center select {
-                max-width: 100%;
+                max-width: 120px;
+                font-size: 13px;
+                padding: 6px 8px;
             }
 
             .header-actions {
                 gap: 4px;
             }
 
+            .header-actions .btn .btn-label {
+                display: none;
+            }
+
             .btn {
                 height: 36px;
-                padding: 0 16px;
-                font-size: 12px;
+                padding: 0 12px;
+            }
+
+            .btn-icon {
+                width: 36px;
+                height: 36px;
+                min-width: 36px;
             }
         }
 
@@ -910,11 +928,24 @@
             border-radius: var(--md-shape-xl);
             width: 90%;
             max-width: 480px;
-            max-height: 80vh;
-            overflow-y: auto;
+            max-height: 90vh;
+            overflow: hidden; /* Hide main scrollbar */
+            display: flex;
+            flex-direction: column;
             padding: 24px;
             box-shadow: var(--md-elevation-3);
             animation: modalIn 0.3s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        #templateList {
+            max-height: 400px;
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+
+        #templateList::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
         }
 
         @keyframes modalIn {
@@ -947,6 +978,48 @@
 
         .modal-item:hover {
             background: color-mix(in srgb, var(--md-surface-container-highest) 90%, var(--text-primary) 10%);
+        }
+        
+        .modal-item-content {
+            flex-grow: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .modal-item-actions {
+            display: flex;
+            gap: 4px;
+            margin-left: 8px;
+        }
+        
+        .modal-item-actions .btn-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--md-surface-container-high);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            border-radius: 8px; /* Smoother corners */
+        }
+
+        .modal-item-actions .btn-icon:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+        
+        .modal-item-actions .btn-icon.danger:hover {
+            color: var(--danger);
+            background: color-mix(in srgb, var(--danger) 10%, transparent);
+        }
+
+        @media (max-width: 600px) {
+            .modal-item-actions .btn-icon {
+                width: 40px; /* Larger hit area for touch */
+                height: 40px;
+            }
+            .modal-item {
+                padding: 10px;
+            }
         }
 
         .modal-item-name {
@@ -1282,10 +1355,13 @@
             <img src="data:image/png;base64,%%LOGO_B64%%" class="logo" onerror="this.style.display='none'">
             <div class="header-title"><span class="header-dot"></span>Template Maker</div>
         </div>
-        <div class="header-center" style="display: flex; gap: 8px;">
+        <div class="header-center">
             <select id="quickTemplateSelect" onchange="quickLoadTemplate(this.value)">
                 <option value="">— Select template —</option>
             </select>
+            <button class="btn btn-icon" onclick="openLoadModal()" title="Template Library"
+                style="color: var(--text-primary); border: 1px solid var(--card-border);"><span
+                    class="material-symbols-rounded">folder_open</span></button>
             <button class="btn btn-icon" onclick="reloadCurrentTemplate()" title="Reload Current Template"
                 style="color: var(--text-secondary); border: 1px solid var(--card-border);"><span
                     class="material-symbols-rounded">refresh</span></button>
@@ -1295,11 +1371,11 @@
         </div>
         <div class="header-actions">
             <button class="btn" onclick="openXmlModal('import')" title="Import XML"><span
-                    class="material-symbols-rounded">upload</span> Import</button>
+                    class="material-symbols-rounded">upload</span> <span class="btn-label">Import</span></button>
             <button class="btn" onclick="openXmlModal('export')" title="Export XML"><span
-                    class="material-symbols-rounded">download</span> Export</button>
+                    class="material-symbols-rounded">download</span> <span class="btn-label">Export</span></button>
             <button class="btn btn-accent" onclick="saveTemplate()" title="Save template"><span
-                    class="material-symbols-rounded">save</span> Save</button>
+                    class="material-symbols-rounded">save</span> <span class="btn-label">Save</span></button>
         </div>
     </header>
 
@@ -1563,8 +1639,9 @@
         <div class="modal-overlay" id="loadModal">
             <div class="modal">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-                    <h2><span class="material-symbols-rounded" style="vertical-align: text-bottom;">folder_open</span>
-                        Load Template</h2>
+                    <h2 style="display:flex; align-items:center; gap:12px; margin:0;">
+                        <span class="material-symbols-rounded" style="font-size: 28px;">folder_open</span>
+                        Template Library</h2>
                     <button class="btn btn-sm btn-icon" style="background:transparent; border:none;"
                         onclick="closeModals()"><span class="material-symbols-rounded">close</span></button>
                 </div>
@@ -1604,6 +1681,48 @@
                     <button class="btn btn-accent" onclick="confirmSave(false)">Save</button>
                     <button class="btn" id="overwriteBtn" style="display:none"
                         onclick="confirmSave(true)">Overwrite</button>
+                    <button class="btn" onclick="closeModals()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rename Modal -->
+        <div class="modal-overlay" id="renameModal">
+            <div class="modal">
+                <h2 style="margin-bottom:16px">Rename Template</h2>
+                <div class="field">
+                    <label class="field-label">New Name</label>
+                    <input type="text" id="renameNewName" placeholder="my-awesome-template">
+                </div>
+                <input type="hidden" id="renameOldName">
+                <div style="display:flex;gap:8px;margin-top:16px">
+                    <button class="btn btn-accent" onclick="renameTemplate()">Rename</button>
+                    <button class="btn" onclick="closeModals()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirm Modal -->
+        <div class="modal-overlay" id="deleteConfirmModal">
+            <div class="modal">
+                <h2 style="margin-bottom:16px">Delete Template?</h2>
+                <p style="margin-bottom:16px; color:var(--text-secondary)">Are you sure you want to delete <strong id="deleteTargetName" style="color:var(--text-primary)"></strong>? This cannot be undone.</p>
+                <input type="hidden" id="deleteTargetFile">
+                <div style="display:flex;gap:8px;margin-top:16px">
+                    <button class="btn btn-danger" onclick="deleteTemplate()">Delete</button>
+                    <button class="btn" onclick="closeModals()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Resource Modal -->
+        <div class="modal-overlay" id="deleteResourceModal">
+            <div class="modal">
+                <h2 style="margin-bottom:16px">Delete Resource?</h2>
+                <p style="margin-bottom:16px; color:var(--text-secondary)">Are you sure you want to delete <strong id="deleteResourceName" style="color:var(--text-primary)"></strong>? This cannot be undone.</p>
+                <input type="hidden" id="deleteResourcePath">
+                <div style="display:flex;gap:8px;margin-top:16px">
+                    <button class="btn btn-danger" onclick="confirmDeleteResourceAction()">Delete</button>
                     <button class="btn" onclick="closeModals()">Cancel</button>
                 </div>
             </div>
@@ -2460,6 +2579,7 @@
                                 ${newItems.has('res:' + layer.file) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this mask in the template maker">warning</span>` : ''}
                             </div>
                             <button class="btn btn-icon" onclick="triggerUpload('mask', {layerId:${layer.id}, fieldName:'file'})" title="Upload mask"><span class="material-symbols-rounded">upload</span></button>
+                            ${layer.file && layer.file.startsWith('mask/') ? `<button class="btn btn-icon danger" onclick="deleteResource('${layer.file}')" title="Delete selected mask"><span class="material-symbols-rounded" style="font-size:18px">delete</span></button>` : ''}
                         </div>
                     </div>
                     <div class="field-row">
@@ -2511,6 +2631,7 @@
                                 ${newItems.has('res:' + layer.file) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this frame in the template maker">warning</span>` : ''}
                             </div>
                             <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layer.id}, fieldName:'file'})" title="Upload frame"><span class="material-symbols-rounded">upload</span></button>
+                            ${layer.file && layer.file.startsWith('frames/') ? `<button class="btn btn-icon danger" onclick="deleteResource('${layer.file}')" title="Delete selected frame"><span class="material-symbols-rounded" style="font-size:18px">delete</span></button>` : ''}
                         </div>
                     </div>
                     <div class="field-row">
@@ -2751,6 +2872,7 @@
                                         ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this mask in the template maker">warning</span>` : ''}
                                     </div>
                                     <button class="btn btn-icon" onclick="triggerUpload('mask', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload mask"><span class="material-symbols-rounded">upload</span></button>
+                                    ${val && val.startsWith('mask/') ? `<button class="btn btn-icon danger" onclick="deleteResource('${val}')" title="Delete selected mask"><span class="material-symbols-rounded" style="font-size:18px">delete</span></button>` : ''}
                                 </div></div>`;
                         }
                         if (f.t === 'frame-select') {
@@ -2768,6 +2890,7 @@
                                         ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this frame in the template maker">warning</span>` : ''}
                                     </div>
                                     <button class="btn btn-icon" onclick="triggerUpload('frames', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload frame"><span class="material-symbols-rounded">upload</span></button>
+                                    ${val && val.startsWith('frames/') ? `<button class="btn btn-icon danger" onclick="deleteResource('${val}')" title="Delete selected frame"><span class="material-symbols-rounded" style="font-size:18px">delete</span></button>` : ''}
                                 </div></div>`;
                         }
                         if (f.t === 'color') {
@@ -2801,6 +2924,7 @@
                                     </select>
                                     ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this side image in the template maker">warning</span>` : ''}
                                     <button class="btn btn-icon" onclick="triggerUpload('sides', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload side image"><span class="material-symbols-rounded">upload</span></button>
+                                    ${val && val.startsWith('sides/') ? `<button class="btn btn-icon danger" onclick="deleteResource('${val}')" title="Delete selected side"><span class="material-symbols-rounded" style="font-size:18px">delete</span></button>` : ''}
                                 </div></div>`;
                         }
                         if (f.t === 'scanlines-select') {
@@ -2821,6 +2945,7 @@
                                     </select>
                                     ${newItems.has('res:' + val) ? `<span class="material-symbols-rounded new-warning-icon" onclick="showRestartWarning()" title="Restart Scrappy to use this scanline in the template maker">warning</span>` : ''}
                                     <button class="btn btn-icon" onclick="triggerUpload('scanlines', {layerId:${layerId}, effectIdx:${ei}, fieldName:'${f.n}'})" title="Upload scanline image"><span class="material-symbols-rounded">upload</span></button>
+                                    ${val && val.startsWith('scanlines/') ? `<button class="btn btn-icon danger" onclick="deleteResource('${val}')" title="Delete selected scanline"><span class="material-symbols-rounded" style="font-size:18px">delete</span></button>` : ''}
                                 </div></div>`;
                         }
                         if (f.t === 'text') {
@@ -3288,20 +3413,23 @@
 
 
             // ─── Template Load ──────────────────────────────────────────
-            function openLoadModal() {
-                document.getElementById('loadModal').classList.add('visible');
-                renderTemplateList();
-            }
-
             function renderTemplateList(filter = '') {
                 const list = document.getElementById('templateList');
                 const filtered = templatesList.filter(t =>
                     t.name.toLowerCase().includes(filter.toLowerCase())
                 );
                 list.innerHTML = filtered.map(t => `
-        <div class="modal-item" onclick="loadTemplate('${t.name}')">
-            <div class="modal-item-name">${t.name}</div>
-            <div class="modal-item-meta">${t.types.join(', ')} ${t.resolution ? '• ' + t.resolution : ''}</div>
+        <div class="modal-item" style="display:flex; align-items:center; cursor:default">
+            <div class="modal-item-content" onclick="loadTemplate('${t.name}')" style="cursor:pointer">
+                <div class="modal-item-name">${t.name}</div>
+                <div class="modal-item-meta">${t.types.join(', ')} ${t.resolution ? '• ' + t.resolution : ''}</div>
+            </div>
+            <div class="modal-item-actions">
+                <button class="btn-icon" onclick="event.stopPropagation(); downloadTemplate('${t.name}')" title="Download XML"><span class="material-symbols-rounded" style="font-size:18px">download</span></button>
+                <button class="btn-icon" onclick="event.stopPropagation(); cloneTemplate('${t.name}')" title="Duplicate Template"><span class="material-symbols-rounded" style="font-size:18px">content_copy</span></button>
+                <button class="btn-icon" onclick="event.stopPropagation(); openRenameModal('${t.name}')" title="Rename Template"><span class="material-symbols-rounded" style="font-size:18px">edit</span></button>
+                <button class="btn-icon danger" onclick="event.stopPropagation(); confirmDeleteTemplate('${t.name}')" title="Delete Template"><span class="material-symbols-rounded" style="font-size:18px">delete</span></button>
+            </div>
         </div>
     `).join('');
                 if (filtered.length === 0) {
@@ -3309,8 +3437,214 @@
                 }
             }
 
+            function openLoadModal() {
+                document.getElementById('loadModal').classList.add('visible');
+                renderTemplateList();
+            }
+
             function filterTemplates() {
-                renderTemplateList(document.getElementById('loadSearch').value);
+                const q = document.getElementById('loadSearch').value;
+                renderTemplateList(q);
+            }
+
+            async function refreshTemplatesList() {
+                try {
+                    const tRes = await fetch('/api/templates');
+                    templatesList = await tRes.json();
+                    populateQuickTemplateSelect();
+                } catch (e) {
+                    console.error('Error refreshing templates list', e);
+                }
+            }
+
+            // ─── Manage Template Actions ────────────────────────────────
+            
+            async function downloadTemplate(name) {
+                try {
+                    const res = await fetch(`/api/template/${encodeURIComponent(name)}`);
+                    const data = await res.json();
+                    const blob = new Blob([data.xml], { type: 'text/xml' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = name + '.xml';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast(`Downloaded ${name}.xml`);
+                } catch (e) {
+                    showToast('Download failed');
+                }
+            }
+
+            async function cloneTemplate(name) {
+                try {
+                    const res = await fetch(`/api/template/${encodeURIComponent(name)}`);
+                    const data = await res.json();
+                    const newName = name + ' (Copy)';
+                    const saveRes = await fetch('/api/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: newName, xml: data.xml, overwrite: false })
+                    });
+                    if (saveRes.ok) {
+                        showToast(`Duplicated as ${newName}`);
+                        await refreshTemplatesList();
+                        renderTemplateList(document.getElementById('loadSearch').value);
+                    } else {
+                        const err = await saveRes.json();
+                        showToast(err.message || 'Duplicate failed');
+                    }
+                } catch (e) {
+                    showToast('Duplicate failed');
+                }
+            }
+
+            function openRenameModal(name) {
+                document.getElementById('renameOldName').value = name;
+                document.getElementById('renameNewName').value = name;
+                document.getElementById('renameModal').classList.add('visible');
+            }
+
+            async function renameTemplate() {
+                const oldName = document.getElementById('renameOldName').value;
+                const newName = document.getElementById('renameNewName').value;
+                if (!newName || oldName === newName) {
+                    document.getElementById('renameModal').classList.remove('visible');
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/rename', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ oldName, newName })
+                    });
+                    if (res.ok) {
+                        showToast(`Renamed to ${newName}`);
+                        document.getElementById('renameModal').classList.remove('visible');
+                        
+                        // Update UI if it was the active template
+                        if (document.getElementById('templateName').value === oldName) {
+                            document.getElementById('templateName').value = newName;
+                        }
+                        
+                        await refreshTemplatesList();
+                        renderTemplateList(document.getElementById('loadSearch').value);
+                    } else {
+                        const err = await res.json();
+                        showToast(err.message || 'Rename failed');
+                    }
+                } catch (e) {
+                    showToast('Rename error');
+                }
+            }
+
+            function confirmDeleteTemplate(name) {
+                document.getElementById('deleteTargetName').textContent = name;
+                document.getElementById('deleteTargetFile').value = name;
+                document.getElementById('deleteConfirmModal').classList.add('visible');
+            }
+
+            async function deleteTemplate() {
+                const name = document.getElementById('deleteTargetFile').value;
+                try {
+                    const res = await fetch('/api/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name })
+                    });
+                    if (res.ok) {
+                        showToast(`Deleted ${name}`);
+                        document.getElementById('deleteConfirmModal').classList.remove('visible');
+                        
+                        // If it was the active template, clear it
+                        if (document.getElementById('templateName').value === name) {
+                            createNewTemplate();
+                        }
+                        
+                        await refreshTemplatesList();
+                        renderTemplateList(document.getElementById('loadSearch').value);
+                    } else {
+                        const err = await res.json();
+                        showToast(err.message || 'Delete failed');
+                    }
+                } catch (e) {
+                    showToast('Delete error');
+                }
+            }
+
+            function deleteResource(path) {
+                document.getElementById('deleteResourceName').textContent = path.split('/').pop();
+                document.getElementById('deleteResourcePath').value = path;
+                document.getElementById('deleteResourceModal').classList.add('visible');
+            }
+
+            async function confirmDeleteResourceAction() {
+                const path = document.getElementById('deleteResourcePath').value;
+                let deleteSuccess = false;
+                
+                try {
+                    const res = await fetch('/api/delete-resource', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path })
+                    });
+                    
+                    if (res.ok) {
+                        deleteSuccess = true;
+                        showToast(`Deleted resource successfully`);
+                        document.getElementById('deleteResourceModal').classList.remove('visible');
+                    } else {
+                        const err = await res.json();
+                        showToast('Server error: ' + (err.message || 'Failed to delete'));
+                        return;
+                    }
+                } catch (e) {
+                    showToast('Network error during delete: ' + e.message);
+                    return;
+                }
+
+                if (deleteSuccess) {
+                    try {
+                        // 1. Clear from local state safely
+                        function clearPath(arr) {
+                            if (!arr) return;
+                            arr.forEach(layer => {
+                                if (layer.file === path) layer.file = '';
+                                if (layer.effects) {
+                                    layer.effects.forEach(e => {
+                                        if (e.values) {
+                                            for (let key in e.values) {
+                                                if (e.values[key] === path) e.values[key] = '';
+                                            }
+                                        }
+                                    });
+                                }
+                                if (layer.layers) clearPath(layer.layers);
+                            });
+                        }
+                        clearPath(layers);
+                        
+                        // 2. Refresh resources from server (with small delay)
+                        setTimeout(async () => {
+                            try {
+                                const rRes = await fetch('/api/resources');
+                                if (rRes.ok) {
+                                    resourcesList = await rRes.json();
+                                    renderLayers();
+                                    schedulePreview();
+                                }
+                            } catch (e) {
+                                console.warn('Delayed refresh failed:', e);
+                            }
+                        }, 200);
+                    } catch (e) {
+                        console.error('Error refreshing after delete:', e);
+                        showToast('Resource deleted, but UI refresh failed. Please reload page.');
+                    }
+                }
             }
 
             async function loadTemplate(name) {
