@@ -520,10 +520,6 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
             print(f"List resources error: {e}")
             self.send_error(500, str(e))
 
-    def api_set_preset(self):
-        data = self.get_json_body()
-        # Just a placeholder
-        self.send_json({"status": "ok"})
 
     def api_delete_template(self):
         try:
