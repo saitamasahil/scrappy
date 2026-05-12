@@ -1457,7 +1457,11 @@
             <!-- Template Name -->
             <div class="section">
                 <div class="field">
-                    <label class="field-label">Template Name</label>
+                    <label class="field-label" style="display:flex; align-items:center; gap:6px;">
+                        <span class="material-symbols-rounded"
+                            style="font-size: 18px;">edit_document</span>
+                        TEMPLATE NAME
+                    </label>
                     <input type="text" id="templateName" placeholder="my-awesome-template" value="New Template">
                 </div>
             </div>
@@ -1467,8 +1471,8 @@
                 <div class="field">
                     <label class="field-label" style="display:flex; align-items:center; gap:6px;">
                         <span class="material-symbols-rounded"
-                            style="font-size: 18px; color: var(--accent);">sports_esports</span>
-                        Preview Game
+                            style="font-size: 18px;">sports_esports</span>
+                        PREVIEW GAME
                     </label>
                     <select id="previewPresetSelect" onchange="onPresetChange(this.value)" style="width: 100%;">
                         <option value="">Loading presets...</option>
