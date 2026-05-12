@@ -626,7 +626,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
     replacements = {
         "%%BG%%": "#0a0a0f" if is_dark else "#f4f4f9",
         "%%CARD_BG%%": "#16161e" if is_dark else "#ffffff",
-        "%%CARD_BORDER%%": "#2a2a35" if is_dark else "#e1e1e8",
+        "%%CARD_BORDER%%": "#2a2a35" if is_dark else "#c5c5d2",
         "%%TEXT_PRIMARY%%": "#e4e4e8" if is_dark else "#1a1a2e",
         "%%TEXT_SECONDARY%%": "#9a9aa8" if is_dark else "#5c5c6d",
         "%%ACCENT%%": f"#{accent}",
