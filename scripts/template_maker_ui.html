@@ -102,16 +102,9 @@
             font-size: 16px;
             font-weight: 500;
             letter-spacing: 0;
-        }
-
-        .header-dot {
-            display: inline-block;
-            width: 7px;
-            height: 7px;
-            background: var(--accent);
-            border-radius: 50%;
-            margin-right: 6px;
-            animation: pulse 2s ease-in-out infinite;
+            line-height: 1;
+            display: flex;
+            align-items: center;
         }
 
         @keyframes logoReveal {
@@ -1353,20 +1346,20 @@
     <header>
         <div class="header-brand">
             <img src="data:image/png;base64,%%LOGO_B64%%" class="logo" onerror="this.style.display='none'">
-            <div class="header-title"><span class="header-dot"></span>Template Maker</div>
+            <div class="header-title">Template Maker</div>
         </div>
         <div class="header-center">
             <select id="quickTemplateSelect" onchange="quickLoadTemplate(this.value)">
                 <option value="">— Select template —</option>
             </select>
             <button class="btn btn-icon" onclick="openLoadModal()" title="Template Library"
-                style="color: var(--text-primary); border: 1px solid var(--card-border);"><span
+                style="border: 1px solid var(--card-border);"><span
                     class="material-symbols-rounded">folder_open</span></button>
             <button class="btn btn-icon" onclick="reloadCurrentTemplate()" title="Reload Current Template"
-                style="color: var(--text-secondary); border: 1px solid var(--card-border);"><span
+                style="border: 1px solid var(--card-border);"><span
                     class="material-symbols-rounded">refresh</span></button>
             <button class="btn btn-icon" onclick="createNewTemplate()" title="Create New Template"
-                style="color: var(--accent); border: 1px solid var(--card-border);"><span
+                style="border: 1px solid var(--card-border);"><span
                     class="material-symbols-rounded">add</span></button>
         </div>
         <div class="header-actions">
