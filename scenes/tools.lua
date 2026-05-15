@@ -475,12 +475,20 @@ local finished_tasks = 0
 local command_output = ""
 
 dispatch_info = function(title, content)
+    local scraping_log = info_window ^ "scraping_log"
     if title then
         info_window.title = title
+        command_output = "" -- Reset command output buffer on new title
+        if scraping_log then scraping_log.text = "" end
     end
     if content then
-        local scraping_log = info_window ^ "scraping_log"
-        scraping_log.text = scraping_log.text .. "\n" .. content
+        if scraping_log then
+            if scraping_log.text == "" then
+                scraping_log.text = content
+            else
+                scraping_log.text = scraping_log.text .. "\n" .. content
+            end
+        end
     end
     info_window.visible = true
     info_window.fade = 0 -- Reset for zoom animation
@@ -537,6 +545,10 @@ local function update_task_state()
                 dispatch_info("Backed up cache",
                     "Cache has been backed up to SD1/ARCHIVE.\nYou can restore it using the muOS Archive Manager")
                 log.write("Cache backed up successfully to SD1")
+            elseif t.command == "backup_config_sd1" then
+                dispatch_info("Backed up config",
+                    "Scraper settings and API credentials (ScreenScraper, TheGamesDB, IGDB) have been backed up to SD1/ARCHIVE.\n\nYou can restore them using the muOS Archive Manager.")
+                log.write("Scraper config backed up successfully to SD1")
             elseif t.command == "migrate" then
                 dispatch_info("Migrated cache", "Cache has been migrated to SD2.")
                 skyscraper_config:insert("main", "cacheFolder", "\"/mnt/sdcard/scrappy_cache/\"")
@@ -1314,6 +1326,13 @@ local function on_backup_cache_sd1()
     thread:start("backup_sd1")
 end
 
+local function on_backup_config_sd1()
+    log.write("Backing up config to SD1/ARCHIVE folder")
+    dispatch_info("Backing up config to SD1/ARCHIVE folder", "Please wait...")
+    local thread = love.thread.newThread("lib/backend/task_backend.lua")
+    thread:start("backup_config_sd1")
+end
+
 local function on_migrate_cache()
     log.write("Migrating cache to SD2")
     dispatch_info("Migrating cache to SD2", "Please wait...")
@@ -1486,6 +1505,11 @@ function tools:load()
         width = item_width,
         onClick = on_backup_cache,
         icon = "backup"
+    } + listitem {
+        text = "Backup Scraper Config to SD1/ARCHIVE Folder",
+        width = item_width,
+        onClick = on_backup_config_sd1,
+        icon = "password"
     } + listitem {
         id = "scraper_module",
         text = "Change Skyscraper Module (current: " .. scraper_opts[scraper_index] .. ")",

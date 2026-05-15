@@ -54,6 +54,7 @@ local icon_paths = {
   remove       = "assets/icons/remove.png",
   grid         = "assets/icons/grid.png",
   showcase     = "assets/icons/showcase.png",
+  password     = "assets/icons/password.png",
 }
 
 local icons = {}
