@@ -379,6 +379,13 @@ local function generate_command(config)
     -- Use 'pegasus' frontend for simpler gamelist generation
     command = string.format('%s -f pegasus', command)
 
+    -- Performance optimization: If running multiple parallel workers, 
+    -- force each Skyscraper process to be single-threaded to avoid core contention.
+    -- (Only for generation phase; fetch can still use multiple threads for networking).
+    if not config.fetch and gen_thread_count > 1 then
+        command = string.format('%s -t 1', command)
+    end
+
     -- When using --query, Skyscraper requires the filename as a positional argument at the end
     -- Otherwise the query is ignored. See: https://gemba.github.io/skyscraper/CLIHELP/#-query-string
     if config.query and config.query ~= "" and config.input and config.rom then
