@@ -90,7 +90,7 @@ function splash.load(delay)
     anim.tidal_y = 0
     anim.particles = {}
     
-    local styles = { "wave", "bubbles", "droplet", "rain", "waterfall" }
+    local styles = { "wave", "bubbles", "droplet", "rain", "waterfall", "puddles" }
     anim.reveal_style = styles[math.random(#styles)]
     
     splash.finished = false
@@ -207,13 +207,26 @@ function splash.draw()
                 love.graphics.polygon("fill", points)
             elseif anim.reveal_style == "bubbles" then
                 -- Grow bubbles to reveal
-                local num_bubbles = 20
+                local num_bubbles = 30
+                local t = love.timer.getTime()
                 for i = 1, num_bubbles do
-                    local bx = (i / num_bubbles) * width
+                    -- Slight horizontal drift based on time
                     local seed = i * 123.45
-                    local by = height - (anim.bubble_progress * height * (1 + math.sin(seed) * 0.3))
-                    local br = 10 + math.abs(math.sin(seed * 2)) * 60
-                    love.graphics.circle("fill", bx, by, br * (anim.bubble_progress * 2))
+                    local drift_x = math.sin(t * 3 + seed) * 30
+                    local bx = ((i - 0.5) / num_bubbles) * width + drift_x
+                    
+                    local speed_mult = 1 + math.sin(seed) * 0.5
+                    local by = height - (anim.bubble_progress * height * speed_mult) + 50
+                    
+                    local base_r = 15 + math.abs(math.sin(seed * 2)) * 80
+                    local current_r = base_r * (anim.bubble_progress * 2)
+                    
+                    if current_r > 0 then
+                        -- Wobble effect: slight variance in rx and ry
+                        local wobble_x = 1 + math.sin(t * 8 + seed) * 0.1
+                        local wobble_y = 1 + math.cos(t * 8 + seed) * 0.1
+                        love.graphics.ellipse("fill", bx, by, current_r * wobble_x, current_r * wobble_y)
+                    end
                 end
                 if anim.bubble_progress > 0.8 then
                     love.graphics.rectangle("fill", 0, height * (1 - (anim.bubble_progress - 0.8) * 5), width, height)
@@ -266,14 +279,40 @@ function splash.draw()
             love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
             love.graphics.polygon("fill", points)
         elseif anim.reveal_style == "bubbles" then
-            love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], anim.bubble_progress * 2)
-            local num_bubbles = 20
+            local t = love.timer.getTime()
+            local num_bubbles = 30
             for i = 1, num_bubbles do
-                local bx = (i / num_bubbles) * width
                 local seed = i * 123.45
-                local by = height - (anim.bubble_progress * height * (1 + math.sin(seed) * 0.3))
-                local br = 10 + math.abs(math.sin(seed * 2)) * 30
-                love.graphics.circle("fill", bx, by, br * (1 - anim.bubble_progress))
+                local drift_x = math.sin(t * 3 + seed) * 30
+                local bx = ((i - 0.5) / num_bubbles) * width + drift_x
+                
+                local speed_mult = 1 + math.sin(seed) * 0.5
+                local by = height - (anim.bubble_progress * height * speed_mult) + 50
+                
+                local base_r = 15 + math.abs(math.sin(seed * 2)) * 80
+                
+                -- Accent bubbles (these pop/fade out)
+                local pop_r = base_r * (1 - anim.bubble_progress)
+                if pop_r > 0 then
+                    local wobble_x = 1 + math.sin(t * 8 + seed) * 0.1
+                    local wobble_y = 1 + math.cos(t * 8 + seed) * 0.1
+                    local rx, ry = pop_r * wobble_x, pop_r * wobble_y
+                    
+                    -- Main bubble body
+                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], anim.bubble_progress * 1.5)
+                    love.graphics.ellipse("fill", bx, by, rx, ry)
+                    
+                    -- Bubble outline for a soap-bubble feel
+                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], anim.bubble_progress * 2.5)
+                    love.graphics.setLineWidth(2)
+                    love.graphics.ellipse("line", bx, by, rx, ry)
+                    
+                    -- Specular highlight (white reflection spot)
+                    if rx > 5 then
+                        love.graphics.setColor(1, 1, 1, anim.bubble_progress * 2.0)
+                        love.graphics.ellipse("fill", bx + rx * 0.3, by - ry * 0.4, rx * 0.2, ry * 0.1)
+                    end
+                end
             end
         elseif anim.reveal_style == "droplet" then
             love.graphics.setColor(accent_color)
