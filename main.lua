@@ -69,6 +69,10 @@ function love.load(args)
 end
 
 function love.update(dt)
+    -- Cap dt to 0.05 (20fps minimum) to prevent animations from glitching/exploding
+    -- when the main thread blocks during heavy operations (like rebuilding long lists).
+    dt = math.min(dt, 0.05)
+    
     timer.update(dt)
     input.update(dt)
     scenes:update(dt)
