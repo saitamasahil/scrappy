@@ -316,27 +316,64 @@ function splash.draw()
         elseif anim.reveal_style == "waterfall" then
             local fall_y = height * anim.waterfall_progress
             if fall_y > 0 and anim.waterfall_progress < 1 then
-                local points = {0, 0, width, 0}
+                local t = love.timer.getTime()
+                
+                -- Layer 1: Faint, fast background layer
+                local p1 = {0, 0, width, 0}
                 local segments = 40
                 for i = segments, 0, -1 do
                     local x = (i / segments) * width
-                    -- The leading edge of the waterfall is wavy and chaotic
-                    local wave_offset = math.sin(x * 0.05 + love.timer.getTime() * 20) * 30
-                    table.insert(points, x)
-                    table.insert(points, fall_y + wave_offset)
+                    local wave = math.sin(x * 0.04 + t * 25) * 40
+                    table.insert(p1, x)
+                    table.insert(p1, fall_y + wave + 50)
+                end
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.3)
+                love.graphics.polygon("fill", p1)
+
+                -- Layer 2: Medium layer
+                local p2 = {0, 0, width, 0}
+                for i = segments, 0, -1 do
+                    local x = (i / segments) * width
+                    local wave = math.sin(x * 0.06 + t * 18) * 35
+                    table.insert(p2, x)
+                    table.insert(p2, fall_y + wave + 20)
+                end
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.6)
+                love.graphics.polygon("fill", p2)
+
+                -- Layer 3: Main solid layer
+                local p3 = {0, 0, width, 0}
+                for i = segments, 0, -1 do
+                    local x = (i / segments) * width
+                    local wave = math.sin(x * 0.05 + t * 20) * 30
+                    table.insert(p3, x)
+                    table.insert(p3, fall_y + wave)
                 end
                 love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
-                love.graphics.polygon("fill", points)
+                love.graphics.polygon("fill", p3)
                 
-                -- Falling droplets ahead of the waterfall
-                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.8)
-                love.graphics.setLineWidth(3)
-                for i = 1, 20 do
+                -- Dynamic Droplets (streaks)
+                for i = 1, 30 do
                     local seed = i * 13.5
                     local drop_x = (math.sin(seed) * 0.5 + 0.5) * width
-                    local drop_y = fall_y + 10 + math.fmod(seed * 100 + love.timer.getTime() * 1200, 200)
-                    if drop_y < height and drop_y > fall_y then
-                        love.graphics.line(drop_x, drop_y, drop_x, drop_y + 15)
+                    -- Different falling speeds
+                    local speed = 1000 + math.fmod(seed * 50, 800)
+                    
+                    -- Let droplets fall across the entire screen height independently
+                    local drop_y = math.fmod(seed * 100 + t * speed, height + 100) - 50
+                    
+                    -- Only draw droplets that are ahead of the waterfall (with a small overlap margin)
+                    if drop_y < height and drop_y > fall_y - 20 then
+                        -- Streaks fade out at the top
+                        local length = 15 + math.fmod(seed, 25)
+                        local thickness = 1 + math.fmod(seed, 3)
+                        love.graphics.setLineWidth(thickness)
+                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.8)
+                        love.graphics.line(drop_x, drop_y, drop_x, drop_y + length)
+                        
+                        -- Add a circular "head" to the drop
+                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
+                        love.graphics.circle("fill", drop_x, drop_y + length, thickness)
                     end
                 end
             end
