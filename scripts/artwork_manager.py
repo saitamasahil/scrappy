@@ -987,6 +987,9 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
     <div id="platform-tabs"></div>
 
     <main>
+        <div id="cache-hint" style="text-align:center; padding:6px 16px; margin-bottom:12px; font-size:11px; color:var(--text-secondary); opacity:0; transition: opacity 0.6s ease; cursor:pointer;" onclick="this.style.display='none'">
+            Only ROMs that have been scraped will appear here.
+        </div>
         <div class="search-container">
             <input type="text" id="search-input" placeholder="Search games...">
         </div>
@@ -1059,6 +1062,16 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             }});
 
             if (platforms.length > 0) switchPlatform(platforms[0]);
+
+            // Subtle hint: fade in after 1s, auto-dismiss after 8s
+            const hint = document.getElementById('cache-hint');
+            if (hint) {{
+                setTimeout(() => {{ hint.style.opacity = '0.7'; }}, 1000);
+                setTimeout(() => {{
+                    hint.style.opacity = '0';
+                    setTimeout(() => {{ hint.style.display = 'none'; }}, 600);
+                }}, 8000);
+            }}
         }}
 
         async function switchPlatform(p) {{
@@ -1196,14 +1209,15 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
                 tplContainer.appendChild(chip);
             }});
 
-            // Current Artwork Preview
+             // Current Artwork Preview
             const outputItem = document.createElement('div');
             outputItem.className = 'media-item';
             const outputUrl = `/api/output/${{encodeURIComponent(activePlatform)}}/${{encodeURIComponent(romBase)}}.png`;
             outputItem.innerHTML = `
                 <div class="media-label" style="color:#2ecc71">Current Artwork Preview</div>
                 <div class="media-preview-container">
-                    <img src="${{outputUrl}}" id="final-preview" style="max-height: 100%; max-width: 100%; object-fit: contain;" onerror="this.style.display='none'">
+                    <img src="${{outputUrl}}" id="final-preview" style="max-height: 100%; max-width: 100%; object-fit: contain;" onerror="this.style.display='none'; document.getElementById('no-artwork-msg').style.display='block'">
+                    <span id="no-artwork-msg" style="display:none; color:var(--text-secondary); font-size:12px">No artwork generated yet - click Generate Artwork below</span>
                     <div id="regen-loader" style="display:none; position:absolute; background:rgba(0,0,0,0.5); padding:10px; border-radius:10px;">Refreshing...</div>
                 </div>
                 <div style="display:flex; gap:10px; margin-top:5px;">
