@@ -90,7 +90,7 @@ function splash.load(delay)
     anim.tidal_y = 0
     anim.particles = {}
     
-    local styles = { "wave", "bubbles", "droplet", "rain", "waterfall", "puddles" }
+    local styles = { "wave", "bubbles", "droplet", "rain", "waterfall" }
     anim.reveal_style = styles[math.random(#styles)]
     
     splash.finished = false
@@ -362,16 +362,42 @@ function splash.draw()
                 end
             end
         elseif anim.reveal_style == "rain" then
+            local t = love.timer.getTime()
             for i = 1, 30 do
                 local seed = i * 555.55
                 local rx = (math.sin(seed) * 0.5 + 0.5) * width
                 local ry = (math.cos(seed * 1.2) * 0.5 + 0.5) * height
                 local r_max = 200
+                
+                -- The ripple expansion progress
                 local r_progress = math.max(0, math.min(1, (anim.rain_progress * 1.5) - (i * 0.02)))
+                
+                -- 1. Draw falling rain streak just before the ripple appears
+                if r_progress < 0.2 then
+                    -- Drop is falling (mapped to -0.1 to 0 progress)
+                    local drop_p = (r_progress + 0.1) * 5
+                    if drop_p > 0 and drop_p < 1 then
+                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], drop_p)
+                        love.graphics.setLineWidth(2)
+                        local dy = ry - (1 - drop_p) * 100
+                        love.graphics.line(rx, dy, rx, dy + 15)
+                    end
+                end
+
+                -- 2. Draw expanding double-echo ripple
                 if r_progress > 0 and r_progress < 1 then
-                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1 - r_progress)
+                    local alpha = 1 - r_progress
+                    
+                    -- Main ring
+                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha)
                     love.graphics.setLineWidth(2)
                     love.graphics.circle("line", rx, ry, r_progress * r_max)
+                    
+                    -- Inner echo ring
+                    if r_progress > 0.1 then
+                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha * 0.5)
+                        love.graphics.circle("line", rx, ry, (r_progress - 0.1) * r_max)
+                    end
                 end
             end
         elseif anim.reveal_style == "waterfall" then
