@@ -1014,10 +1014,6 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 
     <div id="toast"></div>
 
-    <footer>
-        <p>Scrappy Artwork Manager &copy; {datetime.now().year}</p>
-        <p style="opacity: 0.5;">Manage your handheld's media cache from anywhere</p>
-    </footer>
 
     <script>
         let platforms = [];
