@@ -49,6 +49,7 @@ local anim = {
     drop_y = -100,
     impact_r = 0,
     rain_progress = 0,
+    waterfall_progress = 0,
     particles = {}         -- for droplet impact
 }
 
@@ -85,10 +86,11 @@ function splash.load(delay)
     anim.vortex_rot = 0
     anim.vortex_scale = 0
     anim.rain_progress = 0
+    anim.waterfall_progress = 0
     anim.tidal_y = 0
     anim.particles = {}
     
-    local styles = { "wave", "bubbles", "droplet", "rain" }
+    local styles = { "wave", "bubbles", "droplet", "rain", "waterfall" }
     anim.reveal_style = styles[math.random(#styles)]
     
     splash.finished = false
@@ -163,6 +165,11 @@ function splash.load(delay)
                 splash.finished = true
                 splash.is_revealing = false
             end)
+        elseif anim.reveal_style == "waterfall" then
+            timer.tween(1.0, anim, { waterfall_progress = 1 }, 'in-quad', function()
+                splash.finished = true
+                splash.is_revealing = false
+            end)
         end
     end)
     
@@ -227,6 +234,9 @@ function splash.draw()
                 if anim.rain_progress > 0.8 then
                    love.graphics.rectangle("fill", 0, 0, width, height * (anim.rain_progress - 0.8) * 5)
                 end
+            elseif anim.reveal_style == "waterfall" then
+                -- The reveal mask is just the falling rectangle
+                love.graphics.rectangle("fill", 0, 0, width, height * anim.waterfall_progress)
             end
         end, "replace", 1)
 
@@ -301,6 +311,33 @@ function splash.draw()
                     love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1 - r_progress)
                     love.graphics.setLineWidth(2)
                     love.graphics.circle("line", rx, ry, r_progress * r_max)
+                end
+            end
+        elseif anim.reveal_style == "waterfall" then
+            local fall_y = height * anim.waterfall_progress
+            if fall_y > 0 and anim.waterfall_progress < 1 then
+                local points = {0, 0, width, 0}
+                local segments = 40
+                for i = segments, 0, -1 do
+                    local x = (i / segments) * width
+                    -- The leading edge of the waterfall is wavy and chaotic
+                    local wave_offset = math.sin(x * 0.05 + love.timer.getTime() * 20) * 30
+                    table.insert(points, x)
+                    table.insert(points, fall_y + wave_offset)
+                end
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
+                love.graphics.polygon("fill", points)
+                
+                -- Falling droplets ahead of the waterfall
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.8)
+                love.graphics.setLineWidth(3)
+                for i = 1, 20 do
+                    local seed = i * 13.5
+                    local drop_x = (math.sin(seed) * 0.5 + 0.5) * width
+                    local drop_y = fall_y + 10 + math.fmod(seed * 100 + love.timer.getTime() * 1200, 200)
+                    if drop_y < height and drop_y > fall_y then
+                        love.graphics.line(drop_x, drop_y, drop_x, drop_y + 15)
+                    end
                 end
             end
         end
