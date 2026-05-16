@@ -1094,11 +1094,23 @@ function theme:read_color(section, key, fallback)
     if self._material_overrides and self._material_overrides[section] and self._material_overrides[section][key] then
         return self._material_overrides[section][key]
     end
-    local color = self:read(section, key)
-    if not color then
-        return utils.hex(fallback)
+    
+    self._color_cache = self._color_cache or {}
+    local cache_key = section .. "_" .. key
+    if self._color_cache[cache_key] then
+        return self._color_cache[cache_key]
     end
-    return utils.hex_v(color)
+    
+    local color = self:read(section, key)
+    local result
+    if not color then
+        result = utils.hex(fallback)
+    else
+        result = utils.hex_v(color)
+    end
+    
+    self._color_cache[cache_key] = result
+    return result
 end
 
 function theme:read_number(section, key, fallback)

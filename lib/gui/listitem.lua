@@ -200,21 +200,35 @@ return function(props)
         leftIcon:draw()
       end
 
-      -- Stencil needed for framebuffer issues
-      love.graphics.stencil(
-        function()
-          love.graphics.rectangle("fill", self.x + padding.horizontal, self.y, self.width - padding.horizontal,
-            self.height)
-        end,
-        "replace", 1
-      )
-      love.graphics.setStencilTest("greater", 0)
+      -- Hardware-accelerated intersected scissor (replaces expensive stencil buffer operations)
+      local sx, sy, sw, sh = love.graphics.getScissor()
+      
+      local available_width = self.width - padding.horizontal
+      local tx1, ty1 = love.graphics.transformPoint(self.x + padding.horizontal, self.y)
+      local tx2, ty2 = love.graphics.transformPoint(self.x + padding.horizontal + available_width, self.y + self.height)
+      local nx, ny = math.min(tx1, tx2), math.min(ty1, ty2)
+      local nw, nh = math.abs(tx2 - tx1), math.abs(ty2 - ty1)
+      
+      if sx then
+          local ix = math.max(sx, nx)
+          local iy = math.max(sy, ny)
+          local ir = math.min(sx + sw, nx + nw)
+          local ib = math.min(sy + sh, ny + nh)
+          if ir > ix and ib > iy then
+              love.graphics.setScissor(ix, iy, ir - ix, ib - iy)
+          else
+              love.graphics.setScissor(nx, ny, 0, 0)
+          end
+      else
+          love.graphics.setScissor(nx, ny, nw, nh)
+      end
+      
       love.graphics.setColor(textColor)
 
       local textX = self.x + 2 * leftPadding + iconSize
       local textWidth = font:getWidth(displayText)
 
-      if textWidth <= self.width - padding.horizontal then
+      if textWidth <= available_width then
         -- Center the text if it fits within the button
         love.graphics.printf(displayText, textX, self.y + topPadding, self.width, 'left')
       else
@@ -223,12 +237,16 @@ return function(props)
         love.graphics.print(displayText, textX, self.y + topPadding)
 
         -- Draw the wrapped text with a spacer to the right of the first text
-        if scrollOffset > textWidth - (self.width - padding.horizontal) then
+        if scrollOffset > textWidth - available_width then
           love.graphics.print(spacer .. displayText, textX + textWidth, self.y + topPadding)
         end
       end
 
-      love.graphics.setStencilTest()
+      if sx then
+          love.graphics.setScissor(sx, sy, sw, sh)
+      else
+          love.graphics.setScissor()
+      end
       love.graphics.pop()
     end
   }
