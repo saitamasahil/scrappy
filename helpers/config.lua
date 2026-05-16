@@ -1160,6 +1160,8 @@ local exports = {
 function exports.reload_theme(theme_name, muos_accent)
     -- Update the internal instance; the proxy will see the new one
     theme_instance = theme.create(theme_name, muos_accent)
+    -- Clear the color cache on the proxy object so colors recalculate for the new theme
+    proxy_theme._color_cache = nil
     return theme_instance
 end
 
