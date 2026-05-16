@@ -144,9 +144,9 @@ function splash.load(delay)
             local h = love.graphics.getHeight()
             timer.tween(0.4, anim, { drop_y = h / 2 }, 'in-quad', function()
                 -- Spawn particles
-                for i = 1, 16 do
+                for i = 1, 40 do
                     local angle = math.random() * math.pi * 2
-                    local speed = 100 + math.random() * 200
+                    local speed = 200 + math.random() * 400
                     table.insert(anim.particles, {
                         x = w / 2,
                         y = h / 2,
@@ -315,27 +315,49 @@ function splash.draw()
                 end
             end
         elseif anim.reveal_style == "droplet" then
-            love.graphics.setColor(accent_color)
             if anim.impact_r == 0 then
-                love.graphics.circle("fill", width / 2, anim.drop_y, 12)
+                -- Draw an elongated teardrop shape
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
+                love.graphics.circle("fill", width / 2, anim.drop_y, 15)
+                
+                -- Triangle tail to make it look like a teardrop
+                love.graphics.polygon("fill", 
+                    width / 2 - 14, anim.drop_y - 2, 
+                    width / 2 + 14, anim.drop_y - 2, 
+                    width / 2, anim.drop_y - 45)
+                    
+                -- Streak trail behind it
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.5)
                 love.graphics.setLineWidth(4)
-                love.graphics.line(width / 2, anim.drop_y, width / 2, anim.drop_y - 20)
+                love.graphics.line(width / 2, anim.drop_y - 40, width / 2, anim.drop_y - 120)
             else
-                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1 - (anim.impact_r / (math.max(width, height) * 1.5)))
-                love.graphics.setLineWidth(10)
+                local alpha = 1 - (anim.impact_r / (math.max(width, height) * 1.5))
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha)
+                
+                -- Double echo ring for impact
+                love.graphics.setLineWidth(12)
                 love.graphics.circle("line", width / 2, height / 2, anim.impact_r)
+                
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha * 0.4)
+                love.graphics.setLineWidth(4)
+                love.graphics.circle("line", width / 2, height / 2, anim.impact_r * 0.8)
+                
                 local dt = love.timer.getDelta()
                 for i = #anim.particles, 1, -1 do
                     local p = anim.particles[i]
                     p.x = p.x + p.vx * dt
                     p.y = p.y + p.vy * dt
-                    p.vy = p.vy + 500 * dt -- gravity
-                    p.life = p.life - dt * 2
+                    p.vy = p.vy + 800 * dt -- gravity pulling them down faster
+                    p.life = p.life - dt * 1.5
                     if p.life <= 0 then
                         table.remove(anim.particles, i)
                     else
                         love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], p.life)
-                        love.graphics.circle("fill", p.x, p.y, 3)
+                        love.graphics.circle("fill", p.x, p.y, 4)
+                        
+                        -- Motion trails for the splash particles
+                        love.graphics.setLineWidth(2)
+                        love.graphics.line(p.x, p.y, p.x - p.vx * dt * 2, p.y - p.vy * dt * 2)
                     end
                 end
             end
