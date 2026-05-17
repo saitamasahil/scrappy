@@ -11,15 +11,24 @@ local STORAGE_ROOT = "/run/muos/storage"
 local APP_ROOT = STORAGE_ROOT .. "/application/Scrappy/.scrappy"
 local CACHE_DIR = APP_ROOT .. "/data/cache/"
 
+local function get_item_count(dir)
+    local handle = io.popen(string.format('find "%s" 2>/dev/null | wc -l', dir:gsub("/$", "")))
+    if handle then
+        local result = handle:read("*a")
+        handle:close()
+        return tonumber(result:match("%d+")) or 0
+    end
+    return 0
+end
+
 local function base_task_command(id, command)
     local stderr_to_stdout = " 2>&1"
-    -- local stdout_null = " > /dev/null 2>&1"
-    -- local read_output = "; echo $?" -- 'echo $?' returns 0 if successful
     local handle = io.popen(command .. stderr_to_stdout)
 
     if not handle then
         log.write(string.format("Failed to run %s - '%s'", id, command))
         channels.TASK_OUTPUT:push({
+            command = id,
             output = "Command failed",
             error = string.format("Failed to run %s", id)
         })
@@ -28,7 +37,44 @@ local function base_task_command(id, command)
 
     for line in handle:lines() do
         channels.TASK_OUTPUT:push({
+            command = id,
             output = line,
+            error = nil
+        })
+    end
+
+    channels.TASK_OUTPUT:push({
+        command_finished = true,
+        command = id
+    })
+    log.write(string.format("Finished command %s - '%s'", id, command))
+end
+
+local function base_task_command_with_progress(id, command, total_items)
+    local stderr_to_stdout = " 2>&1"
+    local handle = io.popen(command .. stderr_to_stdout)
+
+    if not handle then
+        log.write(string.format("Failed to run %s - '%s'", id, command))
+        channels.TASK_OUTPUT:push({
+            command = id,
+            output = "Command failed",
+            error = string.format("Failed to run %s", id)
+        })
+        return
+    end
+
+    local current = 0
+    for line in handle:lines() do
+        current = current + 1
+        local progress = nil
+        if total_items and total_items > 0 then
+            progress = math.min(current / total_items, 1)
+        end
+        channels.TASK_OUTPUT:push({
+            command = id,
+            output = line,
+            progress = progress,
             error = nil
         })
     end
@@ -53,10 +99,12 @@ local function backup_cache()
     
     -- Ensure relative path structure for MuOS Archive Manager (starts with 'application')
     local relative_cache = CACHE_DIR:gsub(STORAGE_ROOT .. "/", ""):gsub("/$", "")
+    local total_items = get_item_count(CACHE_DIR)
+    log.write(string.format("Total cache items to backup: %d", total_items))
     
-    -- cd to STORAGE_ROOT so zip captures 'application/...' structure
-    local cmd = string.format('mkdir -p /mnt/sdcard/ARCHIVE && cd "%s" && LD_LIBRARY_PATH= zip -rq "%s" "%s" && mv "%s" "%s"', STORAGE_ROOT, zip_file, relative_cache, zip_file, mux_file)
-    base_task_command("backup", cmd)
+    -- cd to STORAGE_ROOT so zip captures 'application/...' structure (run zip with -r to output files for progress bar)
+    local cmd = string.format('mkdir -p /mnt/sdcard/ARCHIVE && cd "%s" && LD_LIBRARY_PATH= zip -r "%s" "%s" && mv "%s" "%s"', STORAGE_ROOT, zip_file, relative_cache, zip_file, mux_file)
+    base_task_command_with_progress("backup", cmd, total_items)
 end
 
 local function backup_cache_sd1()
@@ -67,10 +115,12 @@ local function backup_cache_sd1()
     
     -- Ensure relative path structure for MuOS Archive Manager (starts with 'application')
     local relative_cache = CACHE_DIR:gsub(STORAGE_ROOT .. "/", ""):gsub("/$", "")
+    local total_items = get_item_count(CACHE_DIR)
+    log.write(string.format("Total cache items to backup: %d", total_items))
     
-    -- cd to STORAGE_ROOT so zip captures 'application/...' structure
-    local cmd = string.format('mkdir -p /mnt/mmc/ARCHIVE && cd "%s" && LD_LIBRARY_PATH= zip -rq "%s" "%s" && mv "%s" "%s"', STORAGE_ROOT, zip_file, relative_cache, zip_file, mux_file)
-    base_task_command("backup_sd1", cmd)
+    -- cd to STORAGE_ROOT so zip captures 'application/...' structure (run zip with -r to output files for progress bar)
+    local cmd = string.format('mkdir -p /mnt/mmc/ARCHIVE && cd "%s" && LD_LIBRARY_PATH= zip -r "%s" "%s" && mv "%s" "%s"', STORAGE_ROOT, zip_file, relative_cache, zip_file, mux_file)
+    base_task_command_with_progress("backup_sd1", cmd, total_items)
 end
 
 local function backup_config_sd1()

@@ -42,6 +42,24 @@ local vk = nil
 
 local w_width, w_height = love.window.getMode()
 
+local function make_terminal_progress(progress)
+    local width = 30
+    local filled_width = math.floor(progress * width)
+    local empty_width = width - filled_width
+    local bar = ""
+    for i = 1, filled_width do
+        if i == filled_width and filled_width < width then
+            bar = bar .. ">"
+        else
+            bar = bar .. "="
+        end
+    end
+    for i = 1, empty_width do
+        bar = bar .. "-"
+    end
+    return string.format("[%s] %d%%", bar, math.floor(progress * 100))
+end
+
 local menu, info_window, footer
 local user_config, skyscraper_config
 
@@ -533,9 +551,23 @@ local function update_task_state()
             dispatch_info("Error", t.error)
         end
         if t.output and t.output ~= "" and not string.match(t.output or "", "fake%-rom") then
-            command_output = command_output .. t.output .. "\n"
-            local scraping_log = info_window ^ "scraping_log"
-            scraping_log.text = command_output
+            if t.command ~= "backup" and t.command ~= "backup_sd1" then
+                command_output = command_output .. t.output .. "\n"
+                local scraping_log = info_window ^ "scraping_log"
+                if scraping_log then
+                    scraping_log.text = command_output
+                end
+            end
+        end
+        if t.progress then
+            if t.command == "backup" or t.command == "backup_sd1" then
+                local pb_text = make_terminal_progress(t.progress)
+                local initial_msg = "Please wait...\n\nThis process may take a considerable amount of time depending on the size of your scraped media cache."
+                local scraping_log = info_window ^ "scraping_log"
+                if scraping_log then
+                    scraping_log.text = initial_msg .. "\n\n" .. pb_text
+                end
+            end
         end
         if t.command_finished then
             if t.command == "backup" then
@@ -1324,14 +1356,16 @@ end
 
 local function on_backup_cache()
     log.write("Backing up cache to ARCHIVE folder")
-    dispatch_info("Backing up cache to SD2/ARCHIVE folder", "Please wait...\n\nThis process may take a considerable amount of time depending on the size of your scraped media cache.")
+    local pb_text = make_terminal_progress(0)
+    dispatch_info("Backing up cache to SD2/ARCHIVE folder", "Please wait...\n\nThis process may take a considerable amount of time depending on the size of your scraped media cache.\n\n" .. pb_text)
     local thread = love.thread.newThread("lib/backend/task_backend.lua")
     thread:start("backup")
 end
 
 local function on_backup_cache_sd1()
     log.write("Backing up cache to SD1/ARCHIVE folder")
-    dispatch_info("Backing up cache to SD1/ARCHIVE folder", "Please wait...\n\nThis process may take a considerable amount of time depending on the size of your scraped media cache.")
+    local pb_text = make_terminal_progress(0)
+    dispatch_info("Backing up cache to SD1/ARCHIVE folder", "Please wait...\n\nThis process may take a considerable amount of time depending on the size of your scraped media cache.\n\n" .. pb_text)
     local thread = love.thread.newThread("lib/backend/task_backend.lua")
     thread:start("backup_sd1")
 end

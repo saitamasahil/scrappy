@@ -12,26 +12,6 @@ local credits_maintainer
 local credits_font
 local last_w, last_h
 
--- SFX loading system
-local sounds = {}
-local function load_sfx(name, filename)
-    if not love.audio then return end
-    local path = "assets/sfx/" .. filename
-    if love.filesystem.getInfo(path) then
-        sounds[name] = love.audio.newSource(path, "static")
-    end
-end
-
-local function play_sfx(name)
-    if not love.audio then return end
-    if sounds[name] then
-        sounds[name]:stop()
-        sounds[name]:play()
-    end
-end
-
-load_sfx("logo", "logo_pop.wav")
-
 local function refresh_texts()
     local w, h = love.graphics.getDimensions()
     last_w, last_h = w, h
@@ -69,6 +49,7 @@ local anim = {
     drop_y = -100,
     impact_r = 0,
     rain_progress = 0,
+    waterfall_progress = 0,
     particles = {}         -- for droplet impact
 }
 
@@ -105,29 +86,27 @@ function splash.load(delay)
     anim.vortex_rot = 0
     anim.vortex_scale = 0
     anim.rain_progress = 0
+    anim.waterfall_progress = 0
     anim.tidal_y = 0
     anim.particles = {}
     
-    local styles = { "wave", "bubbles", "droplet", "rain" }
+    local styles = { "wave", "bubbles", "droplet", "rain", "waterfall" }
     anim.reveal_style = styles[math.random(#styles)]
     
     splash.finished = false
     splash.is_revealing = false
 
     -- PHASE 1: Logo Pop-In (Elastic/Bouncy)
-    timer.after(0.3, function()
-        play_sfx("logo")
-        timer.tween(0.8, anim, { pop_scale = 1.0 }, 'out-elastic')
-    end)
+    timer.tween(0.8, anim, { pop_scale = 1.0 }, 'out-elastic')
 
     -- PHASE 2: Logo Slides Up, Main Title Fades In
-    timer.after(1.0, function()
+    timer.after(0.7, function()
         timer.tween(0.6, anim, { slide_y = 1 }, 'in-out-cubic')
         timer.tween(0.6, anim, { title_alpha = 1, title_y_offset = 0 }, 'out-cubic')
     end)
     
     -- PHASE 3: The Staggered Cascade (Version -> Maintainer -> Author)
-    local cascade_start = 1.3 
+    local cascade_start = 1.0 
     
     timer.after(cascade_start, function()
         timer.tween(0.5, anim, { version_alpha = 0.5, version_y_offset = 0 }, 'out-quad')
@@ -165,9 +144,9 @@ function splash.load(delay)
             local h = love.graphics.getHeight()
             timer.tween(0.4, anim, { drop_y = h / 2 }, 'in-quad', function()
                 -- Spawn particles
-                for i = 1, 16 do
+                for i = 1, 40 do
                     local angle = math.random() * math.pi * 2
-                    local speed = 100 + math.random() * 200
+                    local speed = 200 + math.random() * 400
                     table.insert(anim.particles, {
                         x = w / 2,
                         y = h / 2,
@@ -183,6 +162,11 @@ function splash.load(delay)
             end)
         elseif anim.reveal_style == "rain" then
             timer.tween(1.2, anim, { rain_progress = 1 }, 'linear', function()
+                splash.finished = true
+                splash.is_revealing = false
+            end)
+        elseif anim.reveal_style == "waterfall" then
+            timer.tween(1.0, anim, { waterfall_progress = 1 }, 'in-quad', function()
                 splash.finished = true
                 splash.is_revealing = false
             end)
@@ -223,13 +207,26 @@ function splash.draw()
                 love.graphics.polygon("fill", points)
             elseif anim.reveal_style == "bubbles" then
                 -- Grow bubbles to reveal
-                local num_bubbles = 20
+                local num_bubbles = 30
+                local t = love.timer.getTime()
                 for i = 1, num_bubbles do
-                    local bx = (i / num_bubbles) * width
+                    -- Slight horizontal drift based on time
                     local seed = i * 123.45
-                    local by = height - (anim.bubble_progress * height * (1 + math.sin(seed) * 0.3))
-                    local br = 10 + math.abs(math.sin(seed * 2)) * 60
-                    love.graphics.circle("fill", bx, by, br * (anim.bubble_progress * 2))
+                    local drift_x = math.sin(t * 3 + seed) * 30
+                    local bx = ((i - 0.5) / num_bubbles) * width + drift_x
+                    
+                    local speed_mult = 1 + math.sin(seed) * 0.5
+                    local by = height - (anim.bubble_progress * height * speed_mult) + 50
+                    
+                    local base_r = 15 + math.abs(math.sin(seed * 2)) * 80
+                    local current_r = base_r * (anim.bubble_progress * 2)
+                    
+                    if current_r > 0 then
+                        -- Wobble effect: slight variance in rx and ry
+                        local wobble_x = 1 + math.sin(t * 8 + seed) * 0.1
+                        local wobble_y = 1 + math.cos(t * 8 + seed) * 0.1
+                        love.graphics.ellipse("fill", bx, by, current_r * wobble_x, current_r * wobble_y)
+                    end
                 end
                 if anim.bubble_progress > 0.8 then
                     love.graphics.rectangle("fill", 0, height * (1 - (anim.bubble_progress - 0.8) * 5), width, height)
@@ -250,6 +247,9 @@ function splash.draw()
                 if anim.rain_progress > 0.8 then
                    love.graphics.rectangle("fill", 0, 0, width, height * (anim.rain_progress - 0.8) * 5)
                 end
+            elseif anim.reveal_style == "waterfall" then
+                -- The reveal mask is just the falling rectangle
+                love.graphics.rectangle("fill", 0, 0, width, height * anim.waterfall_progress)
             end
         end, "replace", 1)
 
@@ -279,51 +279,189 @@ function splash.draw()
             love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
             love.graphics.polygon("fill", points)
         elseif anim.reveal_style == "bubbles" then
-            love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], anim.bubble_progress * 2)
-            local num_bubbles = 20
+            local t = love.timer.getTime()
+            local num_bubbles = 30
             for i = 1, num_bubbles do
-                local bx = (i / num_bubbles) * width
                 local seed = i * 123.45
-                local by = height - (anim.bubble_progress * height * (1 + math.sin(seed) * 0.3))
-                local br = 10 + math.abs(math.sin(seed * 2)) * 30
-                love.graphics.circle("fill", bx, by, br * (1 - anim.bubble_progress))
+                local drift_x = math.sin(t * 3 + seed) * 30
+                local bx = ((i - 0.5) / num_bubbles) * width + drift_x
+                
+                local speed_mult = 1 + math.sin(seed) * 0.5
+                local by = height - (anim.bubble_progress * height * speed_mult) + 50
+                
+                local base_r = 15 + math.abs(math.sin(seed * 2)) * 80
+                
+                -- Accent bubbles (these pop/fade out)
+                local pop_r = base_r * (1 - anim.bubble_progress)
+                if pop_r > 0 then
+                    local wobble_x = 1 + math.sin(t * 8 + seed) * 0.1
+                    local wobble_y = 1 + math.cos(t * 8 + seed) * 0.1
+                    local rx, ry = pop_r * wobble_x, pop_r * wobble_y
+                    
+                    -- Main bubble body
+                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], anim.bubble_progress * 1.5)
+                    love.graphics.ellipse("fill", bx, by, rx, ry)
+                    
+                    -- Bubble outline for a soap-bubble feel
+                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], anim.bubble_progress * 2.5)
+                    love.graphics.setLineWidth(2)
+                    love.graphics.ellipse("line", bx, by, rx, ry)
+                    
+                    -- Specular highlight (white reflection spot)
+                    if rx > 5 then
+                        love.graphics.setColor(1, 1, 1, anim.bubble_progress * 2.0)
+                        love.graphics.ellipse("fill", bx + rx * 0.3, by - ry * 0.4, rx * 0.2, ry * 0.1)
+                    end
+                end
             end
         elseif anim.reveal_style == "droplet" then
-            love.graphics.setColor(accent_color)
             if anim.impact_r == 0 then
-                love.graphics.circle("fill", width / 2, anim.drop_y, 12)
+                -- Draw an elongated teardrop shape
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
+                love.graphics.circle("fill", width / 2, anim.drop_y, 15)
+                
+                -- Triangle tail to make it look like a teardrop
+                love.graphics.polygon("fill", 
+                    width / 2 - 14, anim.drop_y - 2, 
+                    width / 2 + 14, anim.drop_y - 2, 
+                    width / 2, anim.drop_y - 45)
+                    
+                -- Streak trail behind it
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.5)
                 love.graphics.setLineWidth(4)
-                love.graphics.line(width / 2, anim.drop_y, width / 2, anim.drop_y - 20)
+                love.graphics.line(width / 2, anim.drop_y - 40, width / 2, anim.drop_y - 120)
             else
-                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1 - (anim.impact_r / (math.max(width, height) * 1.5)))
-                love.graphics.setLineWidth(10)
+                local alpha = 1 - (anim.impact_r / (math.max(width, height) * 1.5))
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha)
+                
+                -- Double echo ring for impact
+                love.graphics.setLineWidth(12)
                 love.graphics.circle("line", width / 2, height / 2, anim.impact_r)
+                
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha * 0.4)
+                love.graphics.setLineWidth(4)
+                love.graphics.circle("line", width / 2, height / 2, anim.impact_r * 0.8)
+                
                 local dt = love.timer.getDelta()
                 for i = #anim.particles, 1, -1 do
                     local p = anim.particles[i]
                     p.x = p.x + p.vx * dt
                     p.y = p.y + p.vy * dt
-                    p.vy = p.vy + 500 * dt -- gravity
-                    p.life = p.life - dt * 2
+                    p.vy = p.vy + 800 * dt -- gravity pulling them down faster
+                    p.life = p.life - dt * 1.5
                     if p.life <= 0 then
                         table.remove(anim.particles, i)
                     else
                         love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], p.life)
-                        love.graphics.circle("fill", p.x, p.y, 3)
+                        love.graphics.circle("fill", p.x, p.y, 4)
+                        
+                        -- Motion trails for the splash particles
+                        love.graphics.setLineWidth(2)
+                        love.graphics.line(p.x, p.y, p.x - p.vx * dt * 2, p.y - p.vy * dt * 2)
                     end
                 end
             end
         elseif anim.reveal_style == "rain" then
+            local t = love.timer.getTime()
             for i = 1, 30 do
                 local seed = i * 555.55
                 local rx = (math.sin(seed) * 0.5 + 0.5) * width
                 local ry = (math.cos(seed * 1.2) * 0.5 + 0.5) * height
                 local r_max = 200
+                
+                -- The ripple expansion progress
                 local r_progress = math.max(0, math.min(1, (anim.rain_progress * 1.5) - (i * 0.02)))
+                
+                -- 1. Draw falling rain streak just before the ripple appears
+                if r_progress < 0.2 then
+                    -- Drop is falling (mapped to -0.1 to 0 progress)
+                    local drop_p = (r_progress + 0.1) * 5
+                    if drop_p > 0 and drop_p < 1 then
+                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], drop_p)
+                        love.graphics.setLineWidth(2)
+                        local dy = ry - (1 - drop_p) * 100
+                        love.graphics.line(rx, dy, rx, dy + 15)
+                    end
+                end
+
+                -- 2. Draw expanding double-echo ripple
                 if r_progress > 0 and r_progress < 1 then
-                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1 - r_progress)
+                    local alpha = 1 - r_progress
+                    
+                    -- Main ring
+                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha)
                     love.graphics.setLineWidth(2)
                     love.graphics.circle("line", rx, ry, r_progress * r_max)
+                    
+                    -- Inner echo ring
+                    if r_progress > 0.1 then
+                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha * 0.5)
+                        love.graphics.circle("line", rx, ry, (r_progress - 0.1) * r_max)
+                    end
+                end
+            end
+        elseif anim.reveal_style == "waterfall" then
+            local fall_y = height * anim.waterfall_progress
+            if fall_y > 0 and anim.waterfall_progress < 1 then
+                local t = love.timer.getTime()
+                
+                -- Layer 1: Faint, fast background layer
+                local p1 = {0, 0, width, 0}
+                local segments = 40
+                for i = segments, 0, -1 do
+                    local x = (i / segments) * width
+                    local wave = math.sin(x * 0.04 + t * 25) * 40
+                    table.insert(p1, x)
+                    table.insert(p1, fall_y + wave + 50)
+                end
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.3)
+                love.graphics.polygon("fill", p1)
+
+                -- Layer 2: Medium layer
+                local p2 = {0, 0, width, 0}
+                for i = segments, 0, -1 do
+                    local x = (i / segments) * width
+                    local wave = math.sin(x * 0.06 + t * 18) * 35
+                    table.insert(p2, x)
+                    table.insert(p2, fall_y + wave + 20)
+                end
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.6)
+                love.graphics.polygon("fill", p2)
+
+                -- Layer 3: Main solid layer
+                local p3 = {0, 0, width, 0}
+                for i = segments, 0, -1 do
+                    local x = (i / segments) * width
+                    local wave = math.sin(x * 0.05 + t * 20) * 30
+                    table.insert(p3, x)
+                    table.insert(p3, fall_y + wave)
+                end
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
+                love.graphics.polygon("fill", p3)
+                
+                -- Dynamic Droplets (streaks)
+                for i = 1, 30 do
+                    local seed = i * 13.5
+                    local drop_x = (math.sin(seed) * 0.5 + 0.5) * width
+                    -- Different falling speeds
+                    local speed = 1000 + math.fmod(seed * 50, 800)
+                    
+                    -- Let droplets fall across the entire screen height independently
+                    local drop_y = math.fmod(seed * 100 + t * speed, height + 100) - 50
+                    
+                    -- Only draw droplets that are ahead of the waterfall (with a small overlap margin)
+                    if drop_y < height and drop_y > fall_y - 20 then
+                        -- Streaks fade out at the top
+                        local length = 15 + math.fmod(seed, 25)
+                        local thickness = 1 + math.fmod(seed, 3)
+                        love.graphics.setLineWidth(thickness)
+                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.8)
+                        love.graphics.line(drop_x, drop_y, drop_x, drop_y + length)
+                        
+                        -- Add a circular "head" to the drop
+                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
+                        love.graphics.circle("fill", drop_x, drop_y + length, thickness)
+                    end
                 end
             end
         end
