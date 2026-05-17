@@ -74,16 +74,17 @@ local function backup_cache_sd1()
 end
 
 local function backup_config_sd1()
-    log.write("Starting Zip to compress and move config file to SD1")
+    log.write("Starting Zip to compress and move config files to SD1")
     local ts = os.date("%Y-%m-%d-%H-%M-%S")
     local zip_file = string.format("/mnt/mmc/ARCHIVE/scrappy_config-%s.zip", ts)
     local mux_file = string.format("/mnt/mmc/ARCHIVE/scrappy_config-%s.muxzip", ts)
     
     -- Ensure relative path structure for MuOS Archive Manager (starts with 'application')
-    local relative_ini = "application/Scrappy/.scrappy/skyscraper_config.ini"
+    local relative_skyscraper_ini = "application/Scrappy/.scrappy/skyscraper_config.ini"
+    local relative_config_ini = "application/Scrappy/.scrappy/config.ini"
     
     -- cd to STORAGE_ROOT so zip captures 'application/...' structure
-    local cmd = string.format('mkdir -p /mnt/mmc/ARCHIVE && cd "%s" && LD_LIBRARY_PATH= zip -rq "%s" "%s" && mv "%s" "%s"', STORAGE_ROOT, zip_file, relative_ini, zip_file, mux_file)
+    local cmd = string.format('mkdir -p /mnt/mmc/ARCHIVE && cd "%s" && LD_LIBRARY_PATH= zip -rq "%s" "%s" "%s" && mv "%s" "%s"', STORAGE_ROOT, zip_file, relative_skyscraper_ini, relative_config_ini, zip_file, mux_file)
     base_task_command("backup_config_sd1", cmd)
 end
 
