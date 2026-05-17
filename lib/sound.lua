@@ -1,5 +1,7 @@
 local sound = {}
 
+sound.enabled = true
+
 local sounds = {}
 
 local function load_sfx(name, filename)
@@ -19,7 +21,7 @@ function sound.init()
 end
 
 function sound.play(name, pitch)
-    if not love.audio then return end
+    if not sound.enabled or not love.audio then return end
     if sounds[name] then
         -- Stop if already playing to allow rapid repetition
         sounds[name]:stop()

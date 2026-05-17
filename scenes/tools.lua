@@ -1576,6 +1576,25 @@ function tools:load()
             end
         end
     } + listitem {
+        id = "sound_toggle",
+        text = "UI Sounds: " .. (sound.enabled and "ON" or "OFF"),
+        width = item_width,
+        icon = "sound",
+        onClick = function()
+            local current = user_config:read("main", "soundEnabled")
+            local new_val = (current == "0") and "1" or "0"
+            user_config:insert("main", "soundEnabled", new_val)
+            user_config:save()
+            sound.enabled = (new_val == "1")
+            local item = menu ^ "sound_toggle"
+            if item then
+                item.text = "UI Sounds: " .. (sound.enabled and "ON" or "OFF")
+            end
+            if sound.enabled then
+                sound.play("nav_confirm")
+            end
+        end
+    } + listitem {
         text = "Edit Region Priorities",
         width = item_width,
         onClick = open_region_editor,

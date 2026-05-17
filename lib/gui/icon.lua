@@ -55,6 +55,7 @@ local icon_paths = {
   grid         = "assets/icons/grid.png",
   showcase     = "assets/icons/showcase.png",
   password     = "assets/icons/password.png",
+  sound        = "assets/icons/sound.png",
 }
 
 local icons = {}

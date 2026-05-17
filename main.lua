@@ -16,6 +16,7 @@ sound.init()
 log.start()
 
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
+sound.enabled = (user_config:read("main", "soundEnabled") ~= "0")
 local theme = configs.theme
 
 _G.MAIN_FONT_PATH = theme:read("main", "FONT") or "assets/Inter-Medium.ttf"
