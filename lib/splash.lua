@@ -387,20 +387,38 @@ function splash.draw()
             end
         elseif anim.reveal_style == "droplet" then
             if anim.impact_r == 0 then
-                -- Draw an elongated teardrop shape
-                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
-                love.graphics.circle("fill", width / 2, anim.drop_y, 15)
+                -- 1. Elastic stretching/wobbling teardrop shape based on speed
+                local t = love.timer.getTime()
+                local wobble = math.sin(t * 22) * 0.08
+                local w_scale = 1.0 - wobble
+                local h_scale = 1.0 + wobble + 0.25 -- elongated falling shape
                 
-                -- Triangle tail to make it look like a teardrop
-                love.graphics.polygon("fill", 
-                    width / 2 - 14, anim.drop_y - 2, 
-                    width / 2 + 14, anim.drop_y - 2, 
-                    width / 2, anim.drop_y - 45)
+                love.graphics.push()
+                love.graphics.translate(width / 2, anim.drop_y)
+                love.graphics.scale(w_scale, h_scale)
+                
+                -- Draw main teardrop body
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
+                love.graphics.circle("fill", 0, 0, 15)
+                love.graphics.polygon("fill", -14, -2, 14, -2, 0, -45)
+                
+                -- Draw beautiful glowing 3D specular water highlight (3D liquid look)
+                love.graphics.setColor(1, 1, 1, 0.85)
+                love.graphics.circle("fill", -5, -8, 3)
+                love.graphics.circle("fill", -3, -12, 1.5)
+                
+                love.graphics.pop()
                     
-                -- Streak trail behind it
-                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.5)
-                love.graphics.setLineWidth(4)
-                love.graphics.line(width / 2, anim.drop_y - 40, width / 2, anim.drop_y - 120)
+                -- 2. Beautiful gradient motion trail fading out behind the drop
+                for i = 1, 8 do
+                    local alpha = 0.5 * (1 - (i / 8))
+                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha)
+                    love.graphics.setLineWidth(4 - (i * 0.3))
+                    love.graphics.line(
+                        width / 2, anim.drop_y - 45 - (i - 1) * 11,
+                        width / 2, anim.drop_y - 45 - i * 11
+                    )
+                end
             else
                 local alpha = 1 - (anim.impact_r / (math.max(width, height) * 1.5))
                 love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha)
@@ -413,6 +431,7 @@ function splash.draw()
                 love.graphics.setLineWidth(4)
                 love.graphics.circle("line", width / 2, height / 2, anim.impact_r * 0.8)
                 
+                -- Update and draw splash particles with glistening white highlight cores
                 local dt = love.timer.getDelta()
                 for i = #anim.particles, 1, -1 do
                     local p = anim.particles[i]
@@ -423,10 +442,16 @@ function splash.draw()
                     if p.life <= 0 then
                         table.remove(anim.particles, i)
                     else
+                        -- Solid accent droplet color
                         love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], p.life)
                         love.graphics.circle("fill", p.x, p.y, 4)
                         
+                        -- Glistening specular white core (makes particles look like liquid droplets)
+                        love.graphics.setColor(1, 1, 1, p.life * 0.85)
+                        love.graphics.circle("fill", p.x - 1, p.y - 1, 1.5)
+                        
                         -- Motion trails for the splash particles
+                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], p.life * 0.5)
                         love.graphics.setLineWidth(2)
                         love.graphics.line(p.x, p.y, p.x - p.vx * dt * 2, p.y - p.vy * dt * 2)
                     end
