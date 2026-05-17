@@ -1,5 +1,6 @@
 local scenes    = require("lib.scenes")
 local configs   = require("helpers.config")
+local sound     = require("lib.sound")
 
 local component        = require 'lib.gui.badr'
 local label            = require 'lib.gui.label'
@@ -160,6 +161,7 @@ function showcase:next()
     anim_x = 1
     transition_t = 0
     img_scale = 0.96
+    sound.play("nav_move")
 end
 
 function showcase:prev()
@@ -174,10 +176,12 @@ function showcase:prev()
     anim_x = -1
     transition_t = 0
     img_scale = 0.96
+    sound.play("nav_move")
 end
 
 function showcase:keypressed(key)
     if key == "escape" or key == "lalt" then
+        sound.play("nav_back")
         scenes:pop()
     elseif key == "left" then
         self:prev()
@@ -188,6 +192,7 @@ end
 
 function showcase:gamepadpressed(joystick, button)
     if button == "b" then
+        sound.play("nav_back")
         scenes:pop()
         return true
     elseif button == "dpleft" then

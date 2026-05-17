@@ -1,5 +1,6 @@
 local scenes    = require("lib.scenes")
 local configs   = require("helpers.config")
+local sound     = require("lib.sound")
 
 local component        = require 'lib.gui.badr'
 local label            = require 'lib.gui.label'
@@ -178,12 +179,14 @@ end
 function about:keypressed(key)
   menu:keypressed(key)
   if key == "escape" or key == "lalt" then
+    sound.play("nav_back")
     scenes:pop()
   end
 end
 
 function about:gamepadpressed(joystick, button)
   if button == "b" then
+    sound.play("nav_back")
     scenes:pop()
     return true
   end

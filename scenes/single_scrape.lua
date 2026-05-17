@@ -1,4 +1,5 @@
 local scenes = require("lib.scenes")
+local sound = require("lib.sound")
 local skyscraper = require("lib.skyscraper")
 local pprint = require("lib.pprint")
 local log = require("lib.log")
@@ -231,12 +232,14 @@ end
 
 -- User confirmed they want to refine search
 local function on_confirm_refine()
+    sound.play("nav_confirm")
     state.refine_confirm_visible = false
     show_refine_search(state.last_failed_rom, state.last_failed_platform)
 end
 
 -- User declined refine search
 local function on_cancel_refine()
+    sound.play("nav_back")
     state.refine_confirm_visible = false
     state.last_failed_rom = nil
     state.last_failed_platform = nil
@@ -408,6 +411,9 @@ local function has_missing_media(dest_platform, rom)
 end
 
 local function toggle_info()
+    if info_window.visible then
+        sound.play("nav_back")
+    end
     info_window.visible = not info_window.visible
 end
 local function dispatch_info(title, content)
@@ -585,6 +591,7 @@ local function on_manual_scrape(rom)
     end
 
     skyscraper.fetch_single_manual(rom_path, rom, last_selected_platform, platform_dest)
+    sound.play("nav_confirm")
 end
 
 local function on_return()
@@ -602,6 +609,7 @@ local function on_return()
         local active_element = platform_list % last_selected_platform
         platform_list:setFocus(active_element)
     else
+        sound.play("nav_back")
         scenes:pop()
     end
 end
@@ -1167,6 +1175,7 @@ function single_scrape:keypressed(key)
 
     if key == "escape" then
         if state.scraping then
+            sound.play("nav_back")
             halt_scraping()
             return
         end
@@ -1184,6 +1193,7 @@ function single_scrape:keypressed(key)
 
     -- Y button for global filter toggle
     if key == "y" and not state.scraping and (active_column == 2 or last_selected_platform) then
+        sound.play("option")
         toggle_missing_filter(not show_missing_only)
     end
 
@@ -1243,6 +1253,7 @@ function single_scrape:gamepadpressed(joystick, button)
     -- Map 'b' button to abort/back action
     if button == "b" then
         if state.scraping then
+            sound.play("nav_back")
             halt_scraping()
             return true -- Handled, don't let global input also process
         end
@@ -1261,6 +1272,7 @@ function single_scrape:gamepadpressed(joystick, button)
         end
         -- Y button for global filter toggle
         if button == "y" and (active_column == 2 or last_selected_platform) then
+            sound.play("option")
             toggle_missing_filter(not show_missing_only)
             return true
         end

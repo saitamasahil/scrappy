@@ -64,6 +64,22 @@ local function emit(event, bypass)
         state.last_event = state.current_event
         state.current_event = event
         state.trigger = true
+
+        -- Play navigation sounds
+        local sound = require("lib.sound")
+        local scenes = require("lib.scenes")
+        if event == input.events.UP or event == input.events.DOWN or 
+           event == input.events.LEFT or event == input.events.RIGHT or
+           event == input.events.PREV or event == input.events.NEXT then
+            -- Mute movement sounds for the About section
+            if scenes:currentFocus() ~= "about" then
+                sound.play("nav_move")
+            end
+        elseif event == input.events.RETURN then
+            sound.play("nav_confirm")
+        elseif event == input.events.ESC then
+            sound.play("nav_back")
+        end
     end
 end
 

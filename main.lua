@@ -9,6 +9,9 @@ local splash = require("lib.splash")
 local configs = require("helpers.config")
 local input = require("helpers.input")
 local utils = require("helpers.utils")
+local sound = require("lib.sound")
+
+sound.init()
 
 log.start()
 

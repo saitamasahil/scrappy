@@ -7,6 +7,7 @@ local channels = require("lib.backend.channels")
 local configs = require("helpers.config")
 local artwork = require("helpers.artwork")
 local utils = require("helpers.utils")
+local sound = require("lib.sound")
 
 local component = require 'lib.gui.badr'
 local popup = require 'lib.gui.popup'
@@ -679,6 +680,7 @@ local function on_toggle_offline_mode()
 end
 
 local function on_confirm_offline_mode()
+    sound.play("nav_confirm")
     offline_popup_visible = false
     offline_mode = true
     local item = menu ^ "offline_toggle"
@@ -692,6 +694,7 @@ local function on_confirm_offline_mode()
 end
 
 local function on_cancel_offline_mode()
+    sound.play("nav_back")
     offline_popup_visible = false
 end
 
@@ -765,6 +768,7 @@ local function move_region(delta)
     if j < 1 or j > #region_prios then
         return
     end
+    sound.play("option")
     region_prios[i], region_prios[j] = region_prios[j], region_prios[i]
     selected_region_index = j
     rebuild_region_list(selected_region_index)
@@ -843,10 +847,12 @@ local function on_confirm_missing_media()
         end
         pending_capture_data = nil
     end
+    sound.play("nav_confirm")
     missing_media_popup_visible = false
 end
 
 local function on_cancel_missing_media()
+    sound.play("nav_back")
     pending_capture_data = nil
     missing_media_popup_visible = false
 end
@@ -865,6 +871,7 @@ local function on_confirm_cache_clear()
     end
 
     -- Close popups
+    sound.play("nav_confirm")
     confirm_popup_visible = false
     pending_region_prios = nil
     if region_popup then
@@ -875,6 +882,7 @@ end
 
 -- Called when user cancels cache deletion
 local function on_cancel_cache_clear()
+    sound.play("nav_back")
     confirm_popup_visible = false
     pending_region_prios = nil
 end
@@ -887,12 +895,14 @@ end
 
 -- Standalone clear cache functions
 local function on_confirm_clear_cache_standalone()
+    sound.play("nav_confirm")
     clear_all_caches()
     clear_cache_popup_visible = false
     dispatch_info("Cache Cleared", "Skyscraper cache has been cleared.\nYou will need to re-scrape your ROMs.")
 end
 
 local function on_cancel_clear_cache_standalone()
+    sound.play("nav_back")
     clear_cache_popup_visible = false
 end
 
@@ -1711,6 +1721,7 @@ function tools:update(dt)
                 
                 -- Perform action immediately on first press
                 if held == "up" or held == "down" then
+                    sound.play("nav_move")
                     region_menu:keypressed(held)
                 elseif held == "left" or held == "right" then
                     local focused = region_menu:getRoot().focusedElement
@@ -1719,6 +1730,7 @@ function tools:update(dt)
                     end
                 elseif held == "return" then
                     if region_menu then 
+                        sound.play("nav_confirm")
                         region_menu:keypressed("return")
                     end
                 end
@@ -1730,6 +1742,7 @@ function tools:update(dt)
                         region_repeat_acc = 0
                         -- Perform repeat action (no scale resets here to prevent vibration)
                         if held == "up" or held == "down" then
+                            sound.play("nav_move")
                             region_menu:keypressed(held)
                         elseif held == "left" or held == "right" then
                             local focused = region_menu:getRoot().focusedElement
@@ -2432,6 +2445,7 @@ function tools:keypressed(key)
     -- 3. Accent popup
     if accent_popup and accent_popup.visible then
         if key == "escape" or key == "b" then
+            sound.play("nav_back")
             close_accent_popup()
             return
         end
@@ -2452,6 +2466,7 @@ function tools:keypressed(key)
             elseif manage_presets_view == "capture_platforms" or manage_presets_view == "delete_presets" then
                 open_manage_presets_menu()
             else
+                sound.play("nav_back")
                 manage_presets_popup.visible = false
             end
             return
@@ -2468,6 +2483,7 @@ function tools:keypressed(key)
     -- 5. Preset popup
     if preset_popup and preset_popup_visible then
         if key == "escape" or key == "b" then
+            sound.play("nav_back")
             preset_popup_visible = false
             return
         end
@@ -2483,6 +2499,7 @@ function tools:keypressed(key)
     -- 6. Grid size popup
     if grid_size_popup and grid_size_popup_visible then
         if key == "escape" or key == "b" then
+            sound.play("nav_back")
             grid_size_popup.visible = false
             grid_size_popup_visible = false
             return
@@ -2524,6 +2541,7 @@ function tools:keypressed(key)
 
     if region_popup and region_popup.visible then
         if key == "escape" or key == "b" then
+            sound.play("nav_back")
             region_popup.visible = false
             return
         end
@@ -2580,6 +2598,7 @@ function tools:gamepadpressed(joystick, button)
     -- 1. Handle info popup (highest priority)
     if info_window.visible then
         if btn == "a" or btn == "b" then
+            sound.play("nav_back")
             info_window.visible = false
             command_output = ""
             local scraping_log = info_window ^ "scraping_log"
@@ -2655,6 +2674,7 @@ function tools:gamepadpressed(joystick, button)
             elseif manage_presets_view == "capture_platforms" or manage_presets_view == "delete_presets" then
                 open_manage_presets_menu()
             else
+                sound.play("nav_back")
                 manage_presets_popup.visible = false
             end
             return true
@@ -2668,6 +2688,7 @@ function tools:gamepadpressed(joystick, button)
     -- Handle accent popup
     if accent_popup and accent_popup.visible then
         if btn == "b" then
+            sound.play("nav_back")
             close_accent_popup()
             return true
         end
@@ -2683,6 +2704,7 @@ function tools:gamepadpressed(joystick, button)
     -- Handle manage presets popup
     if manage_presets_popup and manage_presets_popup.visible then
         if btn == "b" then
+            sound.play("nav_back")
             manage_presets_popup.visible = false
             return true
         end
@@ -2698,7 +2720,25 @@ function tools:gamepadpressed(joystick, button)
     -- Handle preset popup
     if preset_popup and preset_popup_visible then
         if btn == "b" then
+            sound.play("nav_back")
             preset_popup_visible = false
+            return true
+        end
+        if btn == "dpleft" or btn == "dpright" then
+            return true -- Block L/R navigation
+        end
+        if btn == "dpup" or btn == "dpdown" or btn == "a" then
+            return false -- Let input.lua emit virtual key events for keypressed
+        end
+        return true -- Block other buttons
+    end
+
+    -- Handle grid size popup
+    if grid_size_popup and grid_size_popup_visible then
+        if btn == "b" then
+            sound.play("nav_back")
+            grid_size_popup.visible = false
+            grid_size_popup_visible = false
             return true
         end
         if btn == "dpleft" or btn == "dpright" then
@@ -2713,6 +2753,7 @@ function tools:gamepadpressed(joystick, button)
     -- Handle region popup (mostly handled in tools:update)
     if region_popup and region_popup.visible then
         if btn == "b" then
+            sound.play("nav_back")
             region_popup.visible = false
             return true
         end

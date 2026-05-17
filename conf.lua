@@ -15,10 +15,10 @@ function love.conf(t)
     t.window.y = nil
 
     t.modules.thread = true
-    t.modules.audio = false
+    t.modules.audio = true
     t.modules.mouse = false
     t.modules.physics = false
-    t.modules.sound = false
+    t.modules.sound = true
     t.modules.touch = false
     t.modules.video = false
 end

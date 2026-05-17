@@ -1,6 +1,7 @@
 local scenes            = require("lib.scenes")
 local configs           = require("helpers.config")
 local utils             = require("helpers.utils")
+local sound             = require("lib.sound")
 
 local component         = require 'lib.gui.badr'
 local button            = require 'lib.gui.button'
@@ -521,6 +522,7 @@ function settings:keypressed(key)
 
   menu:keypressed(key)
   if key == "escape" or key == "lalt" then
+    sound.play("nav_back")
     scenes:pop()
   end
 end

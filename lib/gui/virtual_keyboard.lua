@@ -3,6 +3,7 @@
 
 local w_width, w_height = love.window.getMode()
 local configs = require("helpers.config")
+local sound = require("lib.sound")
 
 -- Virtual keyboard layout
 local MASK_CHAR = "*"
@@ -172,6 +173,7 @@ local function create_vk(config)
       local after = self.buffer:sub(self.cursor_pos + 1)
       self.buffer = before .. char .. after
       self.cursor_pos = self.cursor_pos + 1
+      sound.play("keypress")
       if self.mask_input then self.last_char_time = love.timer.getTime() end
     end
     
@@ -182,6 +184,7 @@ local function create_vk(config)
         local after = self.buffer:sub(self.cursor_pos + 1)
         self.buffer = before .. after
         self.cursor_pos = self.cursor_pos - 1
+        sound.play("nav_back")
         if self.mask_input then self.last_char_time = 0 end
       end
     end
@@ -243,6 +246,7 @@ local function create_vk(config)
         if movement_locked() then return true end
         if self.cursor_pos > 0 then
           self.cursor_pos = self.cursor_pos - 1
+          sound.play("nav_move")
         end
         self.move_lock_until = love.timer.getTime() + 0.12
         return true
@@ -250,6 +254,7 @@ local function create_vk(config)
         if movement_locked() then return true end
         if self.cursor_pos < #self.buffer then
           self.cursor_pos = self.cursor_pos + 1
+          sound.play("nav_move")
         end
         self.move_lock_until = love.timer.getTime() + 0.12
         return true
@@ -258,6 +263,7 @@ local function create_vk(config)
         -- Exit text field focus, go to keyboard row 1
         self.text_field_focused = false
         self.row = 1
+        sound.play("nav_move")
         self.move_lock_until = love.timer.getTime() + 0.12
         return true
       elseif key == 'up' then
@@ -267,6 +273,7 @@ local function create_vk(config)
         local layout = self:get_layout()
         self.row = #layout
         self.col = math.min(self.col, #layout[self.row])
+        sound.play("nav_move")
         self.move_lock_until = love.timer.getTime() + 0.12
         return true
       elseif key == 'confirm' then
@@ -275,6 +282,7 @@ local function create_vk(config)
         self.move_lock_until = love.timer.getTime() + 0.12
         return true
       elseif key == 'cancel' then
+        sound.play("nav_back")
         self:hide(false)
         return true
       elseif key == 'backspace' or key == 'y' then
@@ -289,6 +297,7 @@ local function create_vk(config)
         if self.mode == 'lower' then self.mode = 'upper'
         elseif self.mode == 'upper' then self.mode = 'symbol'
         else self.mode = 'lower' end
+        sound.play("option")
         self.move_lock_until = love.timer.getTime() + 0.12
         return true
       end
@@ -300,6 +309,7 @@ local function create_vk(config)
       if self.row == 1 then
         -- From top row, go to text field
         self.text_field_focused = true
+        sound.play("nav_move")
         return true
       end
       local target_row = self.row - 1
@@ -310,10 +320,12 @@ local function create_vk(config)
         self.row = 1
         self.col = math.min(self.col, #layout[self.row])
       end
+      sound.play("nav_move")
     elseif key == 'down' then
       if self.row == #layout then
         self.row = 1
         self.col = math.min(self.col, #layout[self.row])
+        sound.play("nav_move")
         return true
       end
       local target_row = self.row + 1
@@ -324,10 +336,13 @@ local function create_vk(config)
         self.row = #layout
         self.col = math.min(self.col, #layout[self.row])
       end
+      sound.play("nav_move")
     elseif key == 'left' then
       self.col = self.col > 1 and (self.col - 1) or #layout[self.row]
+      sound.play("nav_move")
     elseif key == 'right' then
       self.col = self.col < #layout[self.row] and (self.col + 1) or 1
+      sound.play("nav_move")
     elseif key == 'space' then
       if movement_locked() then return true end
       insert_at_cursor(' ')
@@ -344,6 +359,7 @@ local function create_vk(config)
       if self.mode == 'lower' then self.mode = 'upper'
       elseif self.mode == 'upper' then self.mode = 'symbol'
       else self.mode = 'lower' end
+      sound.play("option")
       self.move_lock_until = love.timer.getTime() + 0.12
       return true
     elseif key == 'ok_now' then
@@ -358,8 +374,10 @@ local function create_vk(config)
         elseif keydef.t == 'back' then 
           delete_at_cursor()
         elseif keydef.t == 'ok' then 
+          sound.play("nav_confirm")
           self:hide(true)
         elseif keydef.t == 'toggle' then
+          sound.play("option")
           if self.mode == 'lower' then self.mode = 'upper'
           elseif self.mode == 'upper' then self.mode = 'symbol'
           else self.mode = 'lower' end
@@ -376,6 +394,7 @@ local function create_vk(config)
       
       return true
     elseif key == 'cancel' then
+      sound.play("nav_back")
       self:hide(false)
       return true
     end

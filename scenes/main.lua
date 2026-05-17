@@ -3,6 +3,7 @@ local pprint = require("lib.pprint")
 local skyscraper = require("lib.skyscraper")
 local log = require("lib.log")
 local scenes = require("lib.scenes")
+local sound = require("lib.sound")
 local loading = require("lib.loading")
 local channels = require("lib.backend.channels")
 local configs = require("helpers.config")
@@ -233,6 +234,9 @@ local game_file_map = {}
 
 -- Display popup window
 local function show_info_window(title, content)
+    if info_window.visible then
+        sound.play("nav_back")
+    end
     info_window.visible = true
     info_window.fade = 0 -- Explicit reset
     info_window.title = title
@@ -429,6 +433,7 @@ end
 
 -- Main function to scrape selected platforms
 local function scrape_platforms()
+    sound.play("nav_confirm")
     log.write("Scraping artwork")
 
     -- Check network connection before starting (skip in offline mode)
@@ -839,7 +844,8 @@ local function toggle_dashboard_server()
 
         dashboard_server_running = true
         dashboard_server_ip = ip
-        log.write(string.format('Go to http://%s:8081 on phone/PC (same network)', ip))
+        sound.play("nav_confirm")
+        log.write("Dashboard server started at http://" .. ip .. ":8081")
     else
         log.write("No IP found! Check network connection.")
     end
@@ -1535,6 +1541,7 @@ function main:load()
         width = w_width * 0.5,
         icon = "mag_glass",
         onClick = function()
+            sound.play("nav_confirm")
             scenes:push("single_scrape")
         end,
         onFocus = function() on_output_focus("box") end
@@ -2003,14 +2010,19 @@ end
 function main:keypressed(key)
     if key == "escape" or key == "return" then
         if showing_core_reminder then
+            sound.play("nav_back")
             showing_core_reminder = false
         elseif key == "escape" then
             if info_window.visible then
+                sound.play("nav_back")
                 info_window.visible = false
                 if dashboard_server_running then toggle_dashboard_server() end
             elseif state.scraping then
+                sound.play("nav_back")
                 halt_scraping()
             else
+                sound.play("nav_back")
+                love.timer.sleep(0.15)
                 love.event.quit()
             end
         end
@@ -2022,6 +2034,7 @@ function main:keypressed(key)
         menu:keypressed(key)
     end
     if key == "lalt" then
+        sound.play("nav_confirm")
         scenes:push("settings")
     end
 end
@@ -2033,16 +2046,22 @@ function main:gamepadpressed(joystick, button)
             -- User pressed B on the core reminder: save "don't show again"
             user_config:insert("main", "hideCoreReminder", "1")
             user_config:save()
+            sound.play("nav_back")
             showing_core_reminder = false
         elseif info_window.visible then
+            sound.play("nav_back")
             info_window.visible = false
             if dashboard_server_running then toggle_dashboard_server() end
         elseif state.scraping then
+            sound.play("nav_back")
             halt_scraping()
         elseif scraping_window.visible then
-            -- Should be covered by state.scraping, but just in case
+            sound.play("nav_back")
             scraping_window.visible = false
+            state.scraping = false
         else
+            sound.play("nav_back")
+            love.timer.sleep(0.15)
             love.event.quit()
         end
         return true -- Handled, prevent global input from double-processing
@@ -2060,8 +2079,10 @@ function main:gamepadpressed(joystick, button)
         end
     elseif showing_core_reminder and button == "a" then
         -- A button just dismisses the popup (no "don't show again")
+        sound.play("nav_back")
         showing_core_reminder = false
     elseif info_window.visible and button == "a" then
+        sound.play("nav_back")
         info_window.visible = false
         return true
     end

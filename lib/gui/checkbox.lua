@@ -1,6 +1,7 @@
 local component = require('lib.gui.badr')
 local icon      = require('lib.gui.icon')
 local configs   = require('helpers.config')
+local sound     = require('lib.sound')
 
 return function(props)
   local theme = configs.theme
@@ -53,6 +54,7 @@ return function(props)
       self.checked = not self.checked
       self.ripple_r = 0
       self.ripple_a = 0.25
+      sound.play("option")
       if self.onToggle then self:onToggle(self.checked) end
     end,
     onUpdate = function(self, dt)
