@@ -70,7 +70,6 @@ local anim = {
     drop_y = -100,
     impact_r = 0,
     rain_progress = 0,
-    waterfall_progress = 0,
     particles = {}         -- for droplet impact
 }
 
@@ -107,11 +106,10 @@ function splash.load(delay)
     anim.vortex_rot = 0
     anim.vortex_scale = 0
     anim.rain_progress = 0
-    anim.waterfall_progress = 0
     anim.tidal_y = 0
     anim.particles = {}
     
-    local styles = { "wave", "bubbles", "droplet", "rain", "waterfall" }
+    local styles = { "wave", "bubbles", "droplet", "rain" }
     anim.reveal_style = styles[math.random(#styles)]
     
     splash.finished = false
@@ -186,11 +184,6 @@ function splash.load(delay)
             end)
         elseif anim.reveal_style == "rain" then
             timer.tween(1.2, anim, { rain_progress = 1 }, 'linear', function()
-                splash.finished = true
-                splash.is_revealing = false
-            end)
-        elseif anim.reveal_style == "waterfall" then
-            timer.tween(1.0, anim, { waterfall_progress = 1 }, 'in-quad', function()
                 splash.finished = true
                 splash.is_revealing = false
             end)
@@ -273,9 +266,6 @@ function splash.draw()
                 if anim.rain_progress > 0.8 then
                    love.graphics.rectangle("fill", 0, 0, width, height * (anim.rain_progress - 0.8) * 5)
                 end
-            elseif anim.reveal_style == "waterfall" then
-                -- The reveal mask is just the falling rectangle
-                love.graphics.rectangle("fill", 0, 0, width, height * anim.waterfall_progress)
             end
         end, "replace", 1)
 
@@ -482,70 +472,6 @@ function splash.draw()
                     if r_progress > 0.1 then
                         love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha * 0.5)
                         love.graphics.circle("line", rx, ry, (r_progress - 0.1) * r_max)
-                    end
-                end
-            end
-        elseif anim.reveal_style == "waterfall" then
-            local fall_y = height * anim.waterfall_progress
-            if fall_y > 0 and anim.waterfall_progress < 1 then
-                local t = love.timer.getTime()
-                
-                -- Layer 1: Faint, fast background layer
-                local p1 = {0, 0, width, 0}
-                local segments = 40
-                for i = segments, 0, -1 do
-                    local x = (i / segments) * width
-                    local wave = math.sin(x * 0.04 + t * 25) * 40
-                    table.insert(p1, x)
-                    table.insert(p1, fall_y + wave + 50)
-                end
-                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.3)
-                love.graphics.polygon("fill", p1)
-
-                -- Layer 2: Medium layer
-                local p2 = {0, 0, width, 0}
-                for i = segments, 0, -1 do
-                    local x = (i / segments) * width
-                    local wave = math.sin(x * 0.06 + t * 18) * 35
-                    table.insert(p2, x)
-                    table.insert(p2, fall_y + wave + 20)
-                end
-                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.6)
-                love.graphics.polygon("fill", p2)
-
-                -- Layer 3: Main solid layer
-                local p3 = {0, 0, width, 0}
-                for i = segments, 0, -1 do
-                    local x = (i / segments) * width
-                    local wave = math.sin(x * 0.05 + t * 20) * 30
-                    table.insert(p3, x)
-                    table.insert(p3, fall_y + wave)
-                end
-                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
-                love.graphics.polygon("fill", p3)
-                
-                -- Dynamic Droplets (streaks)
-                for i = 1, 30 do
-                    local seed = i * 13.5
-                    local drop_x = (math.sin(seed) * 0.5 + 0.5) * width
-                    -- Different falling speeds
-                    local speed = 1000 + math.fmod(seed * 50, 800)
-                    
-                    -- Let droplets fall across the entire screen height independently
-                    local drop_y = math.fmod(seed * 100 + t * speed, height + 100) - 50
-                    
-                    -- Only draw droplets that are ahead of the waterfall (with a small overlap margin)
-                    if drop_y < height and drop_y > fall_y - 20 then
-                        -- Streaks fade out at the top
-                        local length = 15 + math.fmod(seed, 25)
-                        local thickness = 1 + math.fmod(seed, 3)
-                        love.graphics.setLineWidth(thickness)
-                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.8)
-                        love.graphics.line(drop_x, drop_y, drop_x, drop_y + length)
-                        
-                        -- Add a circular "head" to the drop
-                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
-                        love.graphics.circle("fill", drop_x, drop_y + length, thickness)
                     end
                 end
             end
