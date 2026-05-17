@@ -396,17 +396,6 @@ function splash.draw()
                 -- The ripple expansion progress
                 local r_progress = math.max(0, math.min(1, (anim.rain_progress * 1.5) - (i * 0.02)))
                 
-                -- 1. Draw falling rain streak just before the ripple appears
-                if r_progress < 0.2 then
-                    -- Drop is falling (mapped to -0.1 to 0 progress)
-                    local drop_p = (r_progress + 0.1) * 5
-                    if drop_p > 0 and drop_p < 1 then
-                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], drop_p)
-                        love.graphics.setLineWidth(2)
-                        local dy = ry - (1 - drop_p) * 100
-                        love.graphics.line(rx, dy, rx, dy + 15)
-                    end
-                end
 
                 -- 2. Draw expanding double-echo ripple
                 if r_progress > 0 and r_progress < 1 then
