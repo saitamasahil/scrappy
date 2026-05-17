@@ -65,20 +65,26 @@ local function emit(event, bypass)
         state.current_event = event
         state.trigger = true
 
-        -- Play navigation sounds
-        local sound = require("lib.sound")
-        local scenes = require("lib.scenes")
-        if event == input.events.UP or event == input.events.DOWN or 
-           event == input.events.LEFT or event == input.events.RIGHT or
-           event == input.events.PREV or event == input.events.NEXT then
-            -- Mute movement sounds for the About section
-            if scenes:currentFocus() ~= "about" then
-                sound.play("nav_move")
+        -- Play navigation/interaction sounds if no overlay is active
+        if not _G.ui_overlay_active then
+            local sound = require("lib.sound")
+            local scenes = require("lib.scenes")
+            if event == input.events.LEFT or event == input.events.RIGHT or 
+               event == input.events.UP or event == input.events.DOWN or
+               event == input.events.PREV or event == input.events.NEXT then
+                -- Mute movement sounds for the About section
+                if scenes:currentFocus() ~= "about" then
+                    sound.play("nav_move")
+                end
+            elseif event == input.events.RETURN then
+                -- Mute confirmation sound if we are focused on a checkbox,
+                -- since the checkbox handles its own custom "option" click sound.
+                if not (_G.FOCUSED_ELEMENT and _G.FOCUSED_ELEMENT.is_checkbox) then
+                    sound.play("nav_confirm")
+                end
+            elseif event == input.events.ESC then
+                sound.play("nav_back")
             end
-        elseif event == input.events.RETURN then
-            sound.play("nav_confirm")
-        elseif event == input.events.ESC then
-            sound.play("nav_back")
         end
     end
 end

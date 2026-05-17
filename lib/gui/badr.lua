@@ -244,6 +244,7 @@ function badr:setFocus(element)
     end
     element.focused = true                -- Set the new element as focused
     root.focusedElement = element         -- Update the root's focused element
+    _G.FOCUSED_ELEMENT = element          -- Track globally for context-aware input sounds
   end
 end
 

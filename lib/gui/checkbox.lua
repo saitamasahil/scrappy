@@ -21,6 +21,7 @@ return function(props)
   return component {
     text = text,
     checked = props.checked or false,
+    is_checkbox = true,
     id = props.id,
     -- Positioning and layout properties
     x = props.x or 0,
