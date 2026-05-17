@@ -322,7 +322,7 @@ function splash.draw()
             
             -- Draw Elegant White Foaming Leading Crest (Double-pass realistic bubbling foam)
             -- 1. Draw gapless white backing line
-            love.graphics.setColor(1, 1, 1, 0.95)
+            love.graphics.setColor(0.96, 0.95, 0.91, 0.95)
             love.graphics.setLineWidth(2)
             love.graphics.line(foam_points)
 
@@ -334,7 +334,7 @@ function splash.draw()
                 local wx = (width - anim.wave_1_x) + wave_offset
                 
                 local foam_r = 1.5 + math.max(0, sine) * 6.5
-                love.graphics.setColor(1, 1, 1, 0.3)
+                love.graphics.setColor(0.96, 0.95, 0.91, 0.3)
                 love.graphics.circle("fill", wx, y, foam_r * 1.5)
             end
             
@@ -346,7 +346,7 @@ function splash.draw()
                 local wx = (width - anim.wave_1_x) + wave_offset
                 
                 local foam_r = 1.5 + math.max(0, sine) * 6.5
-                love.graphics.setColor(1, 1, 1, 0.95)
+                love.graphics.setColor(0.96, 0.95, 0.91, 0.95)
                 love.graphics.circle("fill", wx, y, foam_r)
             end
         elseif anim.reveal_style == "bubbles" then
