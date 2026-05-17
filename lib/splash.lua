@@ -12,6 +12,27 @@ local credits_maintainer
 local credits_font
 local last_w, last_h
 
+-- SFX loading system
+local sounds = {}
+local function load_sfx(name, filename)
+    if not love.audio then return end
+    local path = "assets/sfx/" .. filename
+    if love.filesystem.getInfo(path) then
+        sounds[name] = love.audio.newSource(path, "static")
+    end
+end
+
+local function play_sfx(name)
+    local sound_module = require("lib.sound")
+    if not sound_module.enabled or not love.audio then return end
+    if sounds[name] then
+        sounds[name]:stop()
+        sounds[name]:play()
+    end
+end
+
+load_sfx("logo", "logo_pop.wav")
+
 local function refresh_texts()
     local w, h = love.graphics.getDimensions()
     last_w, last_h = w, h
@@ -97,7 +118,10 @@ function splash.load(delay)
     splash.is_revealing = false
 
     -- PHASE 1: Logo Pop-In (Elastic/Bouncy)
-    timer.tween(0.8, anim, { pop_scale = 1.0 }, 'out-elastic')
+    timer.after(0.3, function()
+        play_sfx("logo")
+        timer.tween(0.8, anim, { pop_scale = 1.0 }, 'out-elastic')
+    end)
 
     -- PHASE 2: Logo Slides Up, Main Title Fades In
     timer.after(0.7, function()
