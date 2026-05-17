@@ -68,6 +68,7 @@ local anim = {
     reveal_style = "wave", -- wave | bubbles | droplet | rain
     bubble_progress = 0,
     drop_y = -100,
+    drop_trail = {},
     impact_r = 0,
     rain_progress = 0,
     raindrops = {},
@@ -104,6 +105,7 @@ function splash.load(delay)
     anim.wave_2_x = 0
     anim.bubble_progress = 0
     anim.drop_y = -100
+    anim.drop_trail = {}
     anim.impact_r = 0
     anim.vortex_rot = 0
     anim.vortex_scale = 0
@@ -194,20 +196,29 @@ function splash.load(delay)
             end)
         elseif anim.reveal_style == "droplet" then
             local h = love.graphics.getHeight()
-            timer.tween(0.4, anim, { drop_y = h / 2 }, 'in-quad', function()
-                -- Spawn particles
+            timer.tween(0.42, anim, { drop_y = h / 2 }, 'in-quad', function()
+                -- Spawn particles radially with customized speed and sizes
                 for i = 1, 40 do
-                    local angle = math.random() * math.pi * 2
-                    local speed = 200 + math.random() * 400
+                    local angle = (i / 40) * math.pi * 2 + math.random() * 0.15
+                    local speed = 320 + math.random() * 450
                     table.insert(anim.particles, {
                         x = w / 2,
                         y = h / 2,
                         vx = math.cos(angle) * speed,
                         vy = math.sin(angle) * speed,
-                        life = 1.0
+                        life = 1.0,
+                        size = 3 + math.random() * 3
                     })
                 end
-                timer.tween(0.8, anim, { impact_r = math.max(w, h) * 1.5 }, 'out-quad', function()
+                
+                -- Initialize staggered ripple echo rings
+                anim.ripples = {
+                    { radius = 0, speed = 720, max_radius = math.max(w, h) * 1.4, life = 1.0 },
+                    { radius = -75, speed = 640, max_radius = math.max(w, h) * 1.2, life = 1.0 },
+                    { radius = -150, speed = 560, max_radius = math.max(w, h) * 1.0, life = 1.0 }
+                }
+                
+                timer.tween(0.9, anim, { impact_r = math.max(w, h) * 1.5 }, 'out-quad', function()
                     splash.finished = true
                     splash.is_revealing = false
                 end)
@@ -485,77 +496,123 @@ function splash.draw()
                 end
             end
         elseif anim.reveal_style == "droplet" then
+            local dt = love.timer.getDelta()
+            
             if anim.impact_r == 0 then
-                -- 1. Elastic stretching/wobbling teardrop shape based on speed
-                local t = love.timer.getTime()
-                local wobble = math.sin(t * 22) * 0.08
-                local w_scale = 1.0 - wobble
-                local h_scale = 1.0 + wobble + 0.25 -- elongated falling shape
+                -- 1. Physics: Record drop positions for motion trail
+                table.insert(anim.drop_trail, { x = width / 2, y = anim.drop_y })
+                if #anim.drop_trail > 12 then
+                    table.remove(anim.drop_trail, 1)
+                end
                 
+                -- 2. Springs & Wobbles: Aerodynamic spring deformation
+                local t = love.timer.getTime()
+                local wobble = math.sin(t * 24) * 0.12
+                local w_scale = 1.0 - wobble
+                local h_scale = 1.0 + wobble + 0.35 -- elongated trailing shape
+                
+                -- 3. Render glassmorphic motion trail
+                for i, pos in ipairs(anim.drop_trail) do
+                    local alpha = 0.4 * (i / #anim.drop_trail)
+                    local scale_factor = 0.35 + 0.65 * (i / #anim.drop_trail)
+                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha)
+                    love.graphics.push()
+                    love.graphics.translate(pos.x, pos.y)
+                    love.graphics.scale(w_scale * scale_factor, h_scale * scale_factor)
+                    
+                    love.graphics.circle("fill", 0, 0, 15)
+                    love.graphics.polygon("fill", -14, -2, 14, -2, 0, -45)
+                    love.graphics.pop()
+                end
+                
+                -- 4. Draw primary high-fidelity teardrop body
                 love.graphics.push()
                 love.graphics.translate(width / 2, anim.drop_y)
                 love.graphics.scale(w_scale, h_scale)
                 
-                -- Draw main teardrop body
-                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
-                love.graphics.circle("fill", 0, 0, 15)
-                love.graphics.polygon("fill", -14, -2, 14, -2, 0, -45)
+                -- Layer 1: Solid primary accent body
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1.0)
+                love.graphics.circle("fill", 0, 0, 16)
+                love.graphics.polygon("fill", -15, -2, 15, -2, 0, -48)
                 
-                -- Draw beautiful glowing 3D specular water highlight (3D liquid look)
+                -- Layer 2: Luminescent inner volume layer
+                love.graphics.setColor(1, 1, 1, 0.25)
+                love.graphics.circle("fill", 0, 0, 11)
+                love.graphics.polygon("fill", -10, -2, 10, -2, 0, -32)
+                
+                -- Layer 3: Dynamic specular refracting spot highlights
                 love.graphics.setColor(1, 1, 1, 0.85)
-                love.graphics.circle("fill", -5, -8, 3)
-                love.graphics.circle("fill", -3, -12, 1.5)
+                love.graphics.circle("fill", -5, -6, 3.5)
+                love.graphics.circle("fill", -3, -11, 1.8)
                 
                 love.graphics.pop()
-                    
-                -- 2. Beautiful gradient motion trail fading out behind the drop
-                for i = 1, 8 do
-                    local alpha = 0.5 * (1 - (i / 8))
-                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha)
-                    love.graphics.setLineWidth(4 - (i * 0.3))
-                    love.graphics.line(
-                        width / 2, anim.drop_y - 45 - (i - 1) * 11,
-                        width / 2, anim.drop_y - 45 - i * 11
-                    )
-                end
             else
-                local alpha = 1 - (anim.impact_r / (math.max(width, height) * 1.5))
-                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha)
-                
-                -- Double echo ring for impact
-                love.graphics.setLineWidth(12)
-                love.graphics.circle("line", width / 2, height / 2, anim.impact_r)
-                
-                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha * 0.4)
-                love.graphics.setLineWidth(4)
-                love.graphics.circle("line", width / 2, height / 2, anim.impact_r * 0.8)
-                
-                -- Update and draw splash particles with glistening white highlight cores
-                local dt = love.timer.getDelta()
+                -- 1. PHYSICS & RENDER: Gravity-controlled splash particles
                 for i = #anim.particles, 1, -1 do
                     local p = anim.particles[i]
                     p.x = p.x + p.vx * dt
                     p.y = p.y + p.vy * dt
-                    p.vy = p.vy + 800 * dt -- gravity pulling them down faster
-                    p.life = p.life - dt * 1.5
+                    p.vy = p.vy + 750 * dt -- downward gravity pulling splash
+                    p.life = p.life - dt * 1.6 -- dissolve over ~0.6s
+                    
                     if p.life <= 0 then
                         table.remove(anim.particles, i)
                     else
-                        -- Solid accent droplet color
-                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], p.life)
-                        love.graphics.circle("fill", p.x, p.y, 4)
+                        -- Render soft water body
+                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], p.life * 0.8)
+                        love.graphics.circle("fill", p.x, p.y, p.size * p.life)
                         
-                        -- Glistening specular white core (makes particles look like liquid droplets)
-                        love.graphics.setColor(1, 1, 1, p.life * 0.85)
-                        love.graphics.circle("fill", p.x - 1, p.y - 1, 1.5)
+                        -- Glistening specular core highlight
+                        love.graphics.setColor(1, 1, 1, p.life * 0.95)
+                        love.graphics.circle("fill", p.x - p.size * 0.25 * p.life, p.y - p.size * 0.25 * p.life, p.size * 0.25 * p.life)
+                    end
+                end
+                
+                -- 2. PHYSICS & RENDER: Concentric Ripple Echo rings
+                if anim.ripples then
+                    for _, rip in ipairs(anim.ripples) do
+                        rip.radius = rip.radius + rip.speed * dt
                         
-                        -- Motion trails for the splash particles
-                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], p.life * 0.5)
-                        love.graphics.setLineWidth(2)
-                        love.graphics.line(p.x, p.y, p.x - p.vx * dt * 2, p.y - p.vy * dt * 2)
+                        if rip.radius > 0 then
+                            rip.life = 1.0 - (rip.radius / rip.max_radius)
+                            
+                            if rip.life > 0 then
+                                local t = love.timer.getTime()
+                                local num_points = 48
+                                local points = {}
+                                for k = 0, num_points do
+                                    local angle = (k / num_points) * math.pi * 2
+                                    -- Add phase-offset ripple wave friction wobble
+                                    local wobble = math.sin(angle * 8 + t * 14) * 8 * rip.life
+                                    local r = rip.radius + wobble
+                                    table.insert(points, width / 2 + r * math.cos(angle))
+                                    table.insert(points, height / 2 + r * math.sin(angle))
+                                end
+                                
+                                -- Draw outer concentric ripple wave crest
+                                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], rip.life * 0.7)
+                                love.graphics.setLineWidth(4 * rip.life)
+                                love.graphics.polygon("line", points)
+                                
+                                -- Draw secondary inner wave echo
+                                if rip.radius > 30 then
+                                    local points_echo = {}
+                                    for k = 0, num_points do
+                                        local angle = (k / num_points) * math.pi * 2
+                                        local wobble = math.sin(angle * 8 + t * 14) * 5 * rip.life
+                                        local r = rip.radius - 30 + wobble
+                                        table.insert(points_echo, width / 2 + r * math.cos(angle))
+                                        table.insert(points_echo, height / 2 + r * math.sin(angle))
+                                    end
+                                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], rip.life * 0.35)
+                                    love.graphics.setLineWidth(2 * rip.life)
+                                    love.graphics.polygon("line", points_echo)
+                                end
+                            end
+                        end
+                    end
                 end
             end
-        end
     elseif anim.reveal_style == "rain" then
             local dt = love.timer.getDelta()
             
