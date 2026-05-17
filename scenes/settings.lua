@@ -132,18 +132,38 @@ local function on_change_platform(platform)
 end
 
 local function update_checkboxes()
+  -- Keep track of existing checkboxes to preserve their animation and focus states
+  local existing = {}
+  for _, child in ipairs(checkboxes.children or {}) do
+    if child.id then
+      existing[child.id] = child
+    end
+  end
+
+  -- Clear children table so we can rebuild it with the correct platforms
   checkboxes.children = {}
+
   local platforms = user_config:get().platforms
   local selected_platforms = user_config:get().platformsSelected
   for platform in utils.orderedPairs(platforms or {}) do
-    checkboxes = checkboxes + checkbox {
-      text = platform,
-      id = platform,
-      onToggle = function() on_change_platform(platform) end,
-      checked = selected_platforms[platform] == "1",
-      width = w_width - 20,
-    }
+    local cb = existing[platform]
+    if cb then
+      -- Reuse the existing checkbox component to preserve animation and focus states
+      cb.checked = (selected_platforms[platform] == "1")
+      table.insert(checkboxes.children, cb)
+    else
+      -- Create new checkbox component if it doesn't exist
+      checkboxes = checkboxes + checkbox {
+        text = platform,
+        id = platform,
+        onToggle = function() on_change_platform(platform) end,
+        checked = selected_platforms[platform] == "1",
+        width = w_width - 20,
+      }
+    end
   end
+  -- Reposition recycled and new checkboxes
+  checkboxes:recalculateSize()
 end
 
 local function dispatch_info(title, content_text)
@@ -181,7 +201,13 @@ local on_check_all_press = function()
   end
   all_check = not all_check
   user_config:save()
-  update_checkboxes()
+  
+  -- Update existing checkboxes directly to preserve components and animate smoothly
+  for _, cb in ipairs(checkboxes.children) do
+    if cb.id and selected_platforms[cb.id] then
+      cb.checked = (selected_platforms[cb.id] == "1")
+    end
+  end
 end
 
 -- Screenscraper helpers
