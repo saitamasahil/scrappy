@@ -48,7 +48,7 @@ function showcase:load()
     end
     
     -- Footer
-    footer = component { row = true, gap = 40 * _G.scale }
+    footer = component { row = true, gap = 15 * _G.scale }
         + label { id = "footer_b", text = "Back", icon = "button_b" }
         + label { id = "footer_swipe", text = "Next/Prev", icon = "dpad_horizontal" }
     footer:updatePosition(w_width * 0.5 - footer.width * 0.5, w_height - footer.height - (15 * _G.scale))

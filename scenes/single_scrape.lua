@@ -1039,7 +1039,7 @@ function single_scrape:load()
     menu:focusFirstElement()
 
     -- Create footer with button hints
-    footer = component { row = true, gap = 40 * _G.scale }
+    footer = component { row = true, gap = 15 * _G.scale }
         + label { id = "footer_a", text = "Select", icon = "button_a" }
         + label { id = "footer_b", text = "Back", icon = "button_b" }
         + label { id = "footer_x", text = "Get Manual", icon = "button_x" }

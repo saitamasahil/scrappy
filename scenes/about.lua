@@ -140,7 +140,7 @@ function about:load()
   menu:focusFirstElement()
 
   -- Footer
-  footer = component { row = true, gap = 40 * _G.scale }
+  footer = component { row = true, gap = 15 * _G.scale }
     + label { id = "footer_b", text = "Back", icon = "button_b" }
     + label { id = "footer_dpad", text = "Scroll", icon = "dpad" }
   footer:updatePosition(w_width * 0.5 - footer.width * 0.5, w_height - footer.height - (15 * _G.scale))

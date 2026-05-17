@@ -23,7 +23,7 @@ local function label(props)
   local textWidth = _font:getWidth(initial_text)
   local textHeight = _font:getHeight()
   local totalWidth = textWidth
-  if props.iconName then
+  if props.icon then
     totalWidth = totalWidth + iconSize + padding
   end
 

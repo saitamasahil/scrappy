@@ -1699,7 +1699,7 @@ function tools:load()
     menu:updatePosition(10, 10)
     menu:focusFirstElement()
     -- Create help footer
-    footer = component { row = true, gap = 40 * _G.scale }
+    footer = component { row = true, gap = 15 * _G.scale }
         + label { id = "footer_a", text = "Select", icon = "button_a" }
         + label { id = "footer_b", text = "Back", icon = "button_b" }
         + label { id = "footer_dpad", text = "Navigate", icon = "dpad" }
