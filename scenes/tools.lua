@@ -96,6 +96,9 @@ local pending_capture_data = nil
 local manage_presets_view = "main"
 local manage_presets_platform = nil
 local manage_presets_popup, manage_presets_menu
+local platform_editor_popup, platform_editor_menu
+local platform_choice_popup, platform_choice_menu
+local supported_platforms_popup, supported_platforms_menu
 
 local pending_region_prios = nil
 local selected_region_index = 1
@@ -1354,6 +1357,231 @@ local function open_manage_presets_menu()
     manage_presets_popup.visible = true
 end
 
+local function open_platform_editor(is_refresh)
+    local item_width = math.min(w_width - 120, 560)
+    local list_height = math.min(w_height - 220, 380)
+
+    local selector_menu = component:root{ column = true, gap = 8 * _G.scale, width = item_width }
+    local p_list = component { column = true, gap = 8 * _G.scale, width = item_width, height = 0 }
+
+    -- 1. Add New Platform Mapping Button
+    p_list = p_list + listitem {
+        text = "Add New Platform Mapping",
+        width = item_width,
+        onClick = function()
+            vk = virtual_keyboard.create({
+                title = "1/2: Enter ROM Folder Name",
+                placeholder = "ex: Folder name/path from ROMS folder...",
+                on_done = function(folder_name)
+                    if folder_name == "" then return end
+                    -- Now ask for Skyscraper Platform ID
+                    vk = virtual_keyboard.create({
+                        title = "2/2: Enter Platform ID",
+                        placeholder = "Attach a supported Platform ID for '" .. folder_name .. "'...",
+                        on_done = function(platform_id)
+                            if platform_id == "" then return end
+                            
+                            -- Save to config.ini
+                            user_config:insert("platforms", folder_name, platform_id)
+                            user_config:insert("platformsSelected", folder_name, "1")
+                            
+                            -- Set root if not already present
+                            if not user_config:read("platformRoots", folder_name) then
+                                local roms_paths = user_config:get_all_rom_paths()
+                                local roms_path = roms_paths and roms_paths[1] or ""
+                                user_config:insert("platformRoots", folder_name, roms_path)
+                            end
+                            
+                            user_config:save()
+                            sound.play("nav_confirm")
+                            open_platform_editor(true)
+                        end,
+                        on_cancel = function()
+                            sound.play("nav_back")
+                            open_platform_editor(true)
+                        end
+                    })
+                    vk:show("", "")
+                end,
+                on_cancel = function()
+                    sound.play("nav_back")
+                    open_platform_editor(true)
+                end
+            })
+            vk:show("", "")
+        end
+    }
+
+    -- 1.5. View Supported Skyscraper IDs Button
+    p_list = p_list + listitem {
+        text = "View Supported Platform IDs",
+        width = item_width,
+        onClick = function()
+            local list_menu = component:root{ column = true, gap = 8 * _G.scale, width = item_width }
+            local list_p = component { column = true, gap = 6 * _G.scale, width = item_width, height = 0 }
+            
+            local supported = {
+                '3do', '3ds', 'actionmax', 'ags', 'amiga', 'amstradcpc', 'apple2', 'apple2gs',
+                'arcade', 'arcadia', 'arduboy', 'astrocade', 'atari2600', 'atari5200', 'atari7800',
+                'atari800', 'atarijaguar', 'atarijaguarcd', 'atarilynx', 'atarist', 'atomiswave',
+                'bbcmicro', 'c128', 'c64', 'cd32', 'cdi', 'cdtv', 'channelf', 'coco', 'coleco',
+                'crvision', 'daphne', 'dragon32', 'dreamcast', 'easyrpg', 'fba', 'fds', 'fm7', 'fmtowns',
+                'gameandwatch', 'gamecom', 'gamegear', 'gb', 'gba', 'gbc', 'gc', 'gmaster', 'intellivision',
+                'j2me', 'love', 'macintosh', 'mame', 'mame-advmame', 'mame-libretro', 'mame-mame4all',
+                'mastersystem', 'megadrive', 'megaduck', 'moto', 'msx', 'msx2', 'n64', 'n64dd', 'naomi',
+                'naomi2', 'nds', 'neogeo', 'neogeocd', 'nes', 'ngp', 'ngpc', 'openbor', 'oric', 'palm',
+                'pc', 'pc88', 'pc98', 'pcengine', 'pcenginecd', 'pcfx', 'pico8', 'plus4', 'pokemini',
+                'ports', 'ps2', 'ps3', 'ps4', 'ps5', 'psp', 'psvita', 'psx', 'pv1000', 'samcoupe', 'saturn',
+                'scummvm', 'scv', 'sega32x', 'segacd', 'sg-1000', 'snes', 'solarus', 'steam', 'stratagus',
+                'supervision', 'switch', 'symbian', 'ti99', 'tic80', 'trs-80', 'vectrex', 'vic20', 'videopac',
+                'vircon32', 'virtualboy', 'vsmile', 'wii', 'wiiu', 'wonderswan', 'wonderswancolor', 'x1',
+                'x68000', 'xbox', 'xbox360', 'zmachine', 'zx81', 'zxspectrum'
+            }
+            
+            for _, platform in ipairs(supported) do
+                list_p = list_p + listitem {
+                    text = platform,
+                    width = item_width,
+                    onClick = function()
+                        sound.play("nav_confirm")
+                    end
+                }
+            end
+            
+            list_menu = list_menu + (scroll_container { width = item_width, height = list_height, scroll_speed = 30 } + list_p)
+            list_menu = list_menu + listitem {
+                text = "Back",
+                width = item_width,
+                onClick = function()
+                    sound.play("nav_back")
+                    supported_platforms_popup.visible = false
+                end
+            }
+            list_menu:updatePosition(0, 0)
+            list_menu:focusFirstElement()
+            
+            supported_platforms_menu = list_menu
+            
+            if not supported_platforms_popup then
+                supported_platforms_popup = popup {
+                    visible = true,
+                    title = "Supported Platform IDs",
+                    id = "supported_platforms_popup"
+                }
+            end
+            supported_platforms_popup.children = { list_menu }
+            supported_platforms_popup.visible = true
+        end
+    }
+
+    -- 2. List currently mapped platforms from user_config
+    local platforms = user_config:get().platforms or {}
+    local keys_to_show = {}
+    for k, v in pairs(platforms) do
+        table.insert(keys_to_show, { folder = k, id = v })
+    end
+
+    -- Sort platforms alphabetically by folder name
+    table.sort(keys_to_show, function(a, b)
+        return a.folder:lower() < b.folder:lower()
+    end)
+
+    for _, item in ipairs(keys_to_show) do
+        p_list = p_list + listitem {
+            text = string.format("%s = %s", item.folder, item.id),
+            width = item_width,
+            onClick = function()
+                local choice_menu = component:root{ column = true, gap = 8 * _G.scale, width = item_width }
+                
+                choice_menu = choice_menu + listitem {
+                    text = "Edit Platform ID",
+                    width = item_width,
+                    onClick = function()
+                        platform_choice_popup.visible = false
+                        vk = virtual_keyboard.create({
+                            title = string.format("Edit mapping for %s", item.folder),
+                            placeholder = "Skyscraper Platform ID...",
+                            on_done = function(new_id)
+                                if new_id ~= "" then
+                                    user_config:insert("platforms", item.folder, new_id)
+                                    user_config:save()
+                                    sound.play("nav_confirm")
+                                end
+                                open_platform_editor(true)
+                            end,
+                            on_cancel = function()
+                                sound.play("nav_back")
+                                open_platform_editor(true)
+                            end
+                        })
+                        vk:show(tostring(item.id), item.folder)
+                    end
+                }
+                
+                choice_menu = choice_menu + listitem {
+                    text = "Delete Mapping",
+                    width = item_width,
+                    onClick = function()
+                        platform_choice_popup.visible = false
+                        user_config:get().platforms[item.folder] = nil
+                        if user_config:get().platformsSelected then
+                            user_config:get().platformsSelected[item.folder] = nil
+                        end
+                        if user_config:get().platformRoots then
+                            user_config:get().platformRoots[item.folder] = nil
+                        end
+                        user_config:save()
+                        sound.play("nav_confirm")
+                        dispatch_info("Deleted", "Removed mapping for: " .. item.folder)
+                        open_platform_editor(true)
+                    end
+                }
+                
+                choice_menu = choice_menu + listitem {
+                    text = "Cancel",
+                    width = item_width,
+                    onClick = function()
+                        platform_choice_popup.visible = false
+                        open_platform_editor(true)
+                    end
+                }
+                
+                choice_menu:updatePosition(0, 0)
+                choice_menu:focusFirstElement()
+                
+                platform_choice_menu = choice_menu
+                
+                if not platform_choice_popup then
+                    platform_choice_popup = popup {
+                        visible = true,
+                        title = string.format("Manage %s", item.folder),
+                        id = "platform_choice_popup"
+                    }
+                end
+                platform_choice_popup.children = { choice_menu }
+                platform_choice_popup.visible = true
+            end
+        }
+    end
+
+    selector_menu = selector_menu + (scroll_container { width = item_width, height = list_height, scroll_speed = 30 } + p_list)
+    selector_menu:updatePosition(0, 0)
+    selector_menu:focusFirstElement()
+
+    platform_editor_menu = selector_menu
+
+    if not platform_editor_popup then
+        platform_editor_popup = popup {
+            visible = true,
+            title = "Edit Platform Mappings",
+            id = "platform_editor_popup"
+        }
+    end
+    platform_editor_popup.title = "Edit Platform Mappings"
+    platform_editor_popup.children = {selector_menu}
+    platform_editor_popup.visible = true
+end
+
 local function on_backup_cache()
     log.write("Backing up cache to ARCHIVE folder")
     local pb_text = make_terminal_progress(0)
@@ -1665,6 +1893,11 @@ function tools:load()
         onClick = on_refresh_press,
         icon = "folder"
     } + listitem {
+        text = "Edit Platform Mappings",
+        width = item_width,
+        onClick = open_platform_editor,
+        icon = "mapping"
+    } + listitem {
         text = "Reset Configs (can't be undone!)",
         width = item_width,
         onClick = on_reset_configs,
@@ -1811,6 +2044,12 @@ function tools:update(dt)
         end
     elseif manage_presets_popup and manage_presets_popup.visible and manage_presets_menu then
         manage_presets_menu:update(dt)
+    elseif platform_choice_popup and platform_choice_popup.visible and platform_choice_menu then
+        platform_choice_menu:update(dt)
+    elseif supported_platforms_popup and supported_platforms_popup.visible and supported_platforms_menu then
+        supported_platforms_menu:update(dt)
+    elseif platform_editor_popup and platform_editor_popup.visible and platform_editor_menu then
+        platform_editor_menu:update(dt)
     elseif accent_popup and accent_popup.visible and accent_menu then
         accent_menu:update(dt)
     elseif preset_popup and preset_popup_visible and preset_menu then
@@ -2380,6 +2619,15 @@ function tools:draw()
     if manage_presets_popup and manage_presets_popup.visible then
         manage_presets_popup:draw()
     end
+    if platform_editor_popup and platform_editor_popup.visible then
+        platform_editor_popup:draw()
+    end
+    if platform_choice_popup and platform_choice_popup.visible then
+        platform_choice_popup:draw()
+    end
+    if supported_platforms_popup and supported_platforms_popup.visible then
+        supported_platforms_popup:draw()
+    end
     if preset_popup and preset_popup_visible then
         preset_popup:draw()
     end
@@ -2397,6 +2645,9 @@ function tools:draw()
     local popup_active = (region_popup and region_popup.visible) or 
                          (accent_popup and accent_popup.visible) or 
                          (manage_presets_popup and manage_presets_popup.visible) or
+                         (platform_editor_popup and platform_editor_popup.visible) or
+                         (platform_choice_popup and platform_choice_popup.visible) or
+                         (supported_platforms_popup and supported_platforms_popup.visible) or
                          preset_popup_visible or
                          grid_size_popup_visible or
                          confirm_popup_visible or 
@@ -2529,6 +2780,54 @@ function tools:keypressed(key)
         end
         if manage_presets_menu then
             manage_presets_menu:keypressed(key)
+        end
+        return
+    end
+
+    -- 4c. Platform choice popup
+    if platform_choice_popup and platform_choice_popup.visible then
+        if key == "escape" or key == "b" then
+            sound.play("nav_back")
+            platform_choice_popup.visible = false
+            return
+        end
+        if key == "left" or key == "right" then
+            return -- Block L/R navigation
+        end
+        if platform_choice_menu then
+            platform_choice_menu:keypressed(key)
+        end
+        return
+    end
+
+    -- 4d. Supported platforms popup
+    if supported_platforms_popup and supported_platforms_popup.visible then
+        if key == "escape" or key == "b" then
+            sound.play("nav_back")
+            supported_platforms_popup.visible = false
+            return
+        end
+        if key == "left" or key == "right" then
+            return -- Block L/R navigation
+        end
+        if supported_platforms_menu then
+            supported_platforms_menu:keypressed(key)
+        end
+        return
+    end
+
+    -- 4b. Platform editor popup
+    if platform_editor_popup and platform_editor_popup.visible then
+        if key == "escape" or key == "b" then
+            sound.play("nav_back")
+            platform_editor_popup.visible = false
+            return
+        end
+        if key == "left" or key == "right" then
+            return -- Block L/R navigation
+        end
+        if platform_editor_menu then
+            platform_editor_menu:keypressed(key)
         end
         return
     end
@@ -2730,6 +3029,45 @@ function tools:gamepadpressed(joystick, button)
                 sound.play("nav_back")
                 manage_presets_popup.visible = false
             end
+            return true
+        end
+        if btn == "dpup" or btn == "dpdown" or btn == "a" then
+            return false
+        end
+        return true
+    end
+
+    -- Handle platform choice popup
+    if platform_choice_popup and platform_choice_popup.visible then
+        if btn == "b" then
+            sound.play("nav_back")
+            platform_choice_popup.visible = false
+            return true
+        end
+        if btn == "dpup" or btn == "dpdown" or btn == "a" then
+            return false
+        end
+        return true
+    end
+
+    -- Handle supported platforms popup
+    if supported_platforms_popup and supported_platforms_popup.visible then
+        if btn == "b" then
+            sound.play("nav_back")
+            supported_platforms_popup.visible = false
+            return true
+        end
+        if btn == "dpup" or btn == "dpdown" or btn == "a" then
+            return false
+        end
+        return true
+    end
+
+    -- Handle platform editor popup
+    if platform_editor_popup and platform_editor_popup.visible then
+        if btn == "b" then
+            sound.play("nav_back")
+            platform_editor_popup.visible = false
             return true
         end
         if btn == "dpup" or btn == "dpdown" or btn == "a" then
