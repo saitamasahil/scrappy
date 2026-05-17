@@ -548,7 +548,7 @@ local function update_task_state()
                 log.write("Cache backed up successfully to SD1")
             elseif t.command == "backup_config_sd1" then
                 dispatch_info("Backed up config",
-                    "Scraper settings and API credentials (ScreenScraper, TheGamesDB, IGDB) have been backed up to SD1/ARCHIVE.\n\nYou can restore them using the muOS Archive Manager.")
+                    "Scraper settings and API credentials (ScreenScraper, TheGamesDB, IGDB) have been backed up to SD1/ARCHIVE.\n\nIMPORTANT: Do not share this configuration backup with anyone, as it contains your private API credentials and personal settings.\n\nYou can restore them using the muOS Archive Manager.")
                 log.write("Scraper config backed up successfully to SD1")
             elseif t.command == "migrate" then
                 dispatch_info("Migrated cache", "Cache has been migrated to SD2.")
@@ -1324,14 +1324,14 @@ end
 
 local function on_backup_cache()
     log.write("Backing up cache to ARCHIVE folder")
-    dispatch_info("Backing up cache to SD2/ARCHIVE folder", "Please wait...")
+    dispatch_info("Backing up cache to SD2/ARCHIVE folder", "Please wait...\n\nThis process may take a considerable amount of time depending on the size of your scraped media cache.")
     local thread = love.thread.newThread("lib/backend/task_backend.lua")
     thread:start("backup")
 end
 
 local function on_backup_cache_sd1()
     log.write("Backing up cache to SD1/ARCHIVE folder")
-    dispatch_info("Backing up cache to SD1/ARCHIVE folder", "Please wait...")
+    dispatch_info("Backing up cache to SD1/ARCHIVE folder", "Please wait...\n\nThis process may take a considerable amount of time depending on the size of your scraped media cache.")
     local thread = love.thread.newThread("lib/backend/task_backend.lua")
     thread:start("backup_sd1")
 end
