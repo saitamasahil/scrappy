@@ -65,11 +65,13 @@ local anim = {
     fade_out = 1,          -- Final sequence to exit
     wave_1_x = 0,
     wave_2_x = 0,
-    reveal_style = "wave", -- wave | bubbles | droplet | rain | tidal
+    reveal_style = "wave", -- wave | bubbles | droplet | rain
     bubble_progress = 0,
     drop_y = -100,
     impact_r = 0,
     rain_progress = 0,
+    raindrops = {},
+    ripples = {},
     particles = {}         -- for droplet impact
 }
 
@@ -106,11 +108,39 @@ function splash.load(delay)
     anim.vortex_rot = 0
     anim.vortex_scale = 0
     anim.rain_progress = 0
-    anim.tidal_y = 0
     anim.particles = {}
     
     local styles = { "wave", "bubbles", "droplet", "rain" }
     anim.reveal_style = styles[math.random(#styles)]
+    
+    if anim.reveal_style == "rain" then
+        anim.raindrops = {}
+        anim.ripples = {}
+        anim.rain_time = 0
+        local w, h = love.graphics.getDimensions()
+        for i = 1, 30 do
+            local seed = i * 555.55
+            local target_x = (math.sin(seed) * 0.45 + 0.5) * w
+            local target_y = (math.cos(seed * 1.3) * 0.45 + 0.5) * h
+            
+            local speed = 1600 + math.random(0, 500)
+            
+            table.insert(anim.raindrops, {
+                target_x = target_x,
+                target_y = target_y,
+                x = target_x,
+                y = -100,
+                dx = 0,
+                dy = speed,
+                length = 35 + math.random(0, 20),
+                speed = speed,
+                delay = math.random() * 0.8,
+                active = true,
+                has_impacted = false,
+                reveal_radius = 0
+            })
+        end
+    end
     
     splash.finished = false
     splash.is_revealing = false
@@ -183,7 +213,7 @@ function splash.load(delay)
                 end)
             end)
         elseif anim.reveal_style == "rain" then
-            timer.tween(1.2, anim, { rain_progress = 1 }, 'linear', function()
+            timer.tween(1.6, anim, { rain_progress = 1 }, 'linear', function()
                 splash.finished = true
                 splash.is_revealing = false
             end)
@@ -253,18 +283,15 @@ function splash.draw()
             elseif anim.reveal_style == "droplet" and anim.impact_r > 0 then
                 love.graphics.circle("fill", width / 2, height / 2, anim.impact_r)
             elseif anim.reveal_style == "rain" then
-                for i = 1, 30 do
-                    local seed = i * 555.55
-                    local rx = (math.sin(seed) * 0.5 + 0.5) * width
-                    local ry = (math.cos(seed * 1.2) * 0.5 + 0.5) * height
-                    local r_max = 250
-                    local r_progress = math.max(0, math.min(1, (anim.rain_progress * 1.5) - (i * 0.02)))
-                    if r_progress > 0 then
-                        love.graphics.circle("fill", rx, ry, r_progress * r_max)
+                -- Sweep persistent circular reveal holes for each impacted raindrop!
+                for _, drop in ipairs(anim.raindrops) do
+                    if drop.has_impacted and drop.reveal_radius > 0 then
+                        love.graphics.circle("fill", drop.target_x, drop.target_y, drop.reveal_radius)
                     end
                 end
-                if anim.rain_progress > 0.8 then
-                   love.graphics.rectangle("fill", 0, 0, width, height * (anim.rain_progress - 0.8) * 5)
+                -- Fill remaining gaps at the end of the transition
+                if anim.rain_time and anim.rain_time > 1.3 then
+                    love.graphics.rectangle("fill", 0, 0, width, height * math.min(1, (anim.rain_time - 1.3) / 0.3))
                 end
             end
         end, "replace", 1)
@@ -526,36 +553,116 @@ function splash.draw()
                         love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], p.life * 0.5)
                         love.graphics.setLineWidth(2)
                         love.graphics.line(p.x, p.y, p.x - p.vx * dt * 2, p.y - p.vy * dt * 2)
+                end
+            end
+        end
+    elseif anim.reveal_style == "rain" then
+            local dt = love.timer.getDelta()
+            
+            -- Accumulate time during reveal
+            if not anim.rain_time then
+                anim.rain_time = 0
+            end
+            anim.rain_time = anim.rain_time + dt
+
+            -- 1. PHYSICS: Update raindrops, ripples, and gravity particles
+            for _, drop in ipairs(anim.raindrops) do
+                if drop.active and anim.rain_time >= drop.delay then
+                    drop.x = drop.x + drop.dx * dt
+                    drop.y = drop.y + drop.dy * dt
+                    
+                    -- Handle screen impact
+                    if drop.y >= drop.target_y then
+                        drop.active = false
+                        drop.has_impacted = true
+                        
+                        -- Spawn Circular Ripple
+                        table.insert(anim.ripples, {
+                            x = drop.target_x,
+                            y = drop.target_y,
+                            radius = 0,
+                            max_radius = 160 + math.random(0, 80),
+                            life = 1.0,
+                            speed = 280 + math.random(0, 110)
+                        })
+                        
+                        -- Spawn Propelled Crown Splash Particles (Symmetric left/right)
+                        for k = 1, 8 do
+                            local p_angle = math.rad(math.random(-140, -40))
+                            local p_speed = 180 + math.random(0, 160)
+                            table.insert(anim.particles, {
+                                x = drop.target_x,
+                                y = drop.target_y,
+                                vx = math.cos(p_angle) * p_speed, -- symmetric vertical splash
+                                vy = math.sin(p_angle) * p_speed,
+                                life = 1.0,
+                                size = 2 + math.random() * 2
+                            })
+                        end
+                    end
+                elseif drop.has_impacted then
+                    -- Grow reveal radius persistently
+                    drop.reveal_radius = drop.reveal_radius + 320 * dt
+                end
+            end
+
+            -- Update active ripples
+            for i = #anim.ripples, 1, -1 do
+                local rip = anim.ripples[i]
+                rip.radius = rip.radius + rip.speed * dt
+                rip.life = 1.0 - (rip.radius / rip.max_radius)
+                if rip.life <= 0 then
+                    table.remove(anim.ripples, i)
+                end
+            end
+
+            -- Update splash particles under gravity
+            for i = #anim.particles, 1, -1 do
+                local p = anim.particles[i]
+                p.x = p.x + p.vx * dt
+                p.y = p.y + p.vy * dt
+                p.vy = p.vy + 750 * dt -- gravity downward acceleration
+                p.life = p.life - dt * 2.2 -- dissolve in ~0.45s
+                if p.life <= 0 then
+                    table.remove(anim.particles, i)
+                end
+            end
+
+            -- 2. DRAWING: Render falling streaks, ripples, and glistening drops
+            -- Draw raindrops (straight vertical lines)
+            love.graphics.setLineWidth(1.5)
+            for _, drop in ipairs(anim.raindrops) do
+                if drop.active and anim.rain_time >= drop.delay then
+                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.75)
+                    love.graphics.line(drop.x, drop.y, drop.x, drop.y - drop.length)
+                end
+            end
+
+            -- Draw expanding circular ripples (original style)
+            for _, rip in ipairs(anim.ripples) do
+                if rip.life > 0 then
+                    -- Main Outer Ripple Ring
+                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], rip.life * 0.75)
+                    love.graphics.setLineWidth(2)
+                    love.graphics.circle("line", rip.x, rip.y, rip.radius)
+                    
+                    -- Inner Echo Ripple Ring
+                    if rip.radius > 20 then
+                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], rip.life * 0.35)
+                        love.graphics.circle("line", rip.x, rip.y, rip.radius - 20)
                     end
                 end
             end
-        elseif anim.reveal_style == "rain" then
-            local t = love.timer.getTime()
-            for i = 1, 30 do
-                local seed = i * 555.55
-                local rx = (math.sin(seed) * 0.5 + 0.5) * width
-                local ry = (math.cos(seed * 1.2) * 0.5 + 0.5) * height
-                local r_max = 200
-                
-                -- The ripple expansion progress
-                local r_progress = math.max(0, math.min(1, (anim.rain_progress * 1.5) - (i * 0.02)))
-                
 
-                -- 2. Draw expanding double-echo ripple
-                if r_progress > 0 and r_progress < 1 then
-                    local alpha = 1 - r_progress
-                    
-                    -- Main ring
-                    love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha)
-                    love.graphics.setLineWidth(2)
-                    love.graphics.circle("line", rx, ry, r_progress * r_max)
-                    
-                    -- Inner echo ring
-                    if r_progress > 0.1 then
-                        love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], alpha * 0.5)
-                        love.graphics.circle("line", rx, ry, (r_progress - 0.1) * r_max)
-                    end
-                end
+            -- Draw glistening micro-splash droplets
+            for _, p in ipairs(anim.particles) do
+                -- Soft splash color body
+                love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], p.life * 0.8)
+                love.graphics.circle("fill", p.x, p.y, p.size * p.life)
+                
+                -- Specs of light (3D glistening highlights)
+                love.graphics.setColor(1, 1, 1, p.life * 0.95)
+                love.graphics.circle("fill", p.x - p.size * 0.25 * p.life, p.y - p.size * 0.25 * p.life, p.size * 0.25 * p.life)
             end
         end
     else
