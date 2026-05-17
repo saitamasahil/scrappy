@@ -219,7 +219,7 @@ function splash.draw()
                 for i = segments, 0, -1 do
                     local y = (i / segments) * height
                     local sine = math.sin(y * 0.02 + t * 8)
-                    local offset = (sine + 0.3 * math.sin(2 * (y * 0.02 + t * 8))) * 40
+                    local offset = (sine + 0.35 * math.sin(y * 0.05 - t * 4)) * 30
                     table.insert(points, (width - anim.wave_1_x) + offset)
                     table.insert(points, y)
                 end
@@ -278,39 +278,78 @@ function splash.draw()
         -- Draw the Accent-Colored "Water" effects over the reveal
         local accent_color = theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f")
         if anim.reveal_style == "wave" then
-            local points = {}
-            local foam_points = {}
             local segments = 60
             local t = love.timer.getTime()
-            
-            -- 1. Front Edge of the Wave
+
+            -- ==========================================
+            -- LAYER 1: Deep Back Wave (25% opacity, offset 120px to the right)
+            -- ==========================================
+            local points_back = {}
             for i = 0, segments do
                 local y = (i / segments) * height
-                local sine = math.sin(y * 0.02 + t * 8)
-                local wave_offset = (sine + 0.3 * math.sin(2 * (y * 0.02 + t * 8))) * 40
+                local wave_offset = (math.sin(y * 0.01 + t * 4) + 0.3 * math.sin(y * 0.02 - t * 2)) * 60
+                local wx = (width - anim.wave_1_x) + wave_offset + 120
+                table.insert(points_back, wx)
+                table.insert(points_back, y)
+            end
+            for i = segments, 0, -1 do
+                local y = (i / segments) * height
+                local wave_offset = (math.sin(y * 0.01 + t * 4) + 0.3 * math.sin(y * 0.02 - t * 2)) * 60
+                local wx = (width - anim.wave_1_x) + wave_offset + 420
+                table.insert(points_back, wx)
+                table.insert(points_back, y)
+            end
+            love.graphics.setColor(accent_color[1] * 0.8, accent_color[2] * 0.8, accent_color[3] * 0.8, 0.25)
+            love.graphics.polygon("fill", points_back)
+
+            -- ==========================================
+            -- LAYER 2: Middle Wave (55% opacity, offset 50px to the right)
+            -- ==========================================
+            local points_mid = {}
+            for i = 0, segments do
+                local y = (i / segments) * height
+                local wave_offset = (math.sin(y * 0.015 + t * 6) + 0.4 * math.sin(y * 0.03 + t * 3)) * 45
+                local wx = (width - anim.wave_1_x) + wave_offset + 50
+                table.insert(points_mid, wx)
+                table.insert(points_mid, y)
+            end
+            for i = segments, 0, -1 do
+                local y = (i / segments) * height
+                local wave_offset = (math.sin(y * 0.015 + t * 6) + 0.4 * math.sin(y * 0.03 + t * 3)) * 45
+                local wx = (width - anim.wave_1_x) + wave_offset + 300
+                table.insert(points_mid, wx)
+                table.insert(points_mid, y)
+            end
+            love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 0.55)
+            love.graphics.polygon("fill", points_mid)
+
+            -- ==========================================
+            -- LAYER 3: Main Front Wave (100% opacity, base sweep line)
+            -- ==========================================
+            local points_front = {}
+            local foam_points = {}
+            for i = 0, segments do
+                local y = (i / segments) * height
+                local wave_offset = (math.sin(y * 0.02 + t * 8) + 0.35 * math.sin(y * 0.05 - t * 4)) * 30
                 local wx = (width - anim.wave_1_x) + wave_offset
-                table.insert(points, wx)
-                table.insert(points, y)
-                
-                -- Collect points for the beautiful white leading foam line
+                table.insert(points_front, wx)
+                table.insert(points_front, y)
                 table.insert(foam_points, wx)
                 table.insert(foam_points, y)
             end
-            
-            -- 2. Back Edge of the Wave (300px thick solid band)
             for i = segments, 0, -1 do
                 local y = (i / segments) * height
-                local sine = math.sin(y * 0.02 + t * 8)
-                local wave_offset = (sine + 0.3 * math.sin(2 * (y * 0.02 + t * 8))) * 40
-                table.insert(points, (width - anim.wave_1_x) + 300 + wave_offset)
-                table.insert(points, y)
+                local wave_offset = (math.sin(y * 0.02 + t * 8) + 0.35 * math.sin(y * 0.05 - t * 4)) * 30
+                local wx = (width - anim.wave_1_x) + wave_offset + 180
+                table.insert(points_front, wx)
+                table.insert(points_front, y)
             end
-            
-            -- Draw Wave Body (Accent color)
-            love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], 1)
-            love.graphics.polygon("fill", points)
-            
-            -- Draw Elegant White Foaming Leading Crest (Double-pass realistic bubbling foam)
+            love.graphics.setColor(math.min(1, accent_color[1] * 1.1), math.min(1, accent_color[2] * 1.1), math.min(1, accent_color[3] * 1.1), 1.0)
+            love.graphics.polygon("fill", points_front)
+
+            -- ==========================================
+            -- LAYER 4: Dynamic Foaming leading Crest & Trails
+            -- ==========================================
             -- 1. Draw gapless white backing line
             love.graphics.setColor(0.96, 0.95, 0.91, 0.95)
             love.graphics.setLineWidth(2)
@@ -320,7 +359,7 @@ function splash.draw()
             for i = 0, segments do
                 local y = (i / segments) * height
                 local sine = math.sin(y * 0.02 + t * 8)
-                local wave_offset = (sine + 0.3 * math.sin(2 * (y * 0.02 + t * 8))) * 40
+                local wave_offset = (sine + 0.35 * math.sin(y * 0.05 - t * 4)) * 30
                 local wx = (width - anim.wave_1_x) + wave_offset
                 
                 local foam_r = 1.5 + math.max(0, sine) * 6.5
@@ -332,12 +371,55 @@ function splash.draw()
             for i = 0, segments do
                 local y = (i / segments) * height
                 local sine = math.sin(y * 0.02 + t * 8)
-                local wave_offset = (sine + 0.3 * math.sin(2 * (y * 0.02 + t * 8))) * 40
+                local wave_offset = (sine + 0.35 * math.sin(y * 0.05 - t * 4)) * 30
                 local wx = (width - anim.wave_1_x) + wave_offset
                 
                 local foam_r = 1.5 + math.max(0, sine) * 6.5
                 love.graphics.setColor(0.96, 0.95, 0.91, 0.95)
                 love.graphics.circle("fill", wx, y, foam_r)
+            end
+
+            -- 4. Draw & Update Trailing Foam Bubbles (Dynamic 3D particles)
+            local dt = love.timer.getDelta()
+            
+            -- Spawn new foam particles at random points along the wave front
+            if splash.is_revealing and math.random() < 0.6 then
+                for _ = 1, 4 do
+                    local py_ratio = math.random()
+                    local py = py_ratio * height
+                    local sine = math.sin(py * 0.02 + t * 8)
+                    local wave_offset = (sine + 0.35 * math.sin(py * 0.05 - t * 4)) * 30
+                    local px = (width - anim.wave_1_x) + wave_offset
+                    
+                    table.insert(anim.particles, {
+                        x = px,
+                        y = py,
+                        vx = math.random(-180, -60), -- Float backward relative to the right-moving wave
+                        vy = math.random(-25, 25),
+                        life = 1.0,
+                        size = math.random(3, 8)
+                    })
+                end
+            end
+            
+            -- Render and update foam particles
+            for i = #anim.particles, 1, -1 do
+                local p = anim.particles[i]
+                p.x = p.x + p.vx * dt
+                p.y = p.y + p.vy * dt
+                p.life = p.life - dt * 2.0 -- dissolve in 0.5s
+                
+                if p.life <= 0 then
+                    table.remove(anim.particles, i)
+                else
+                    -- Draw foam bubble with a soft glow
+                    love.graphics.setColor(0.96, 0.95, 0.91, p.life * 0.7)
+                    love.graphics.circle("fill", p.x, p.y, p.size * p.life)
+                    
+                    -- Draw inner highlight for 3D bubble effect
+                    love.graphics.setColor(1, 1, 1, p.life * 0.9)
+                    love.graphics.circle("fill", p.x - p.size * 0.25 * p.life, p.y - p.size * 0.25 * p.life, p.size * 0.25 * p.life)
+                end
             end
         elseif anim.reveal_style == "bubbles" then
             local t = love.timer.getTime()
