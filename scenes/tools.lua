@@ -2994,29 +2994,6 @@ function tools:gamepadpressed(joystick, button)
         return true -- Block all buttons while popup is visible
     end
 
-    -- 3. Handle virtual keyboard input first if visible
-    if vk and vk.visible then
-        local map = {
-            dpup = 'up',
-            dpdown = 'down',
-            dpleft = 'left',
-            dpright = 'right',
-            a = 'confirm',
-            b = 'cancel',
-            x = 'x',
-            y = 'y'
-        }
-        local m = map[btn] or map[button]
-        if m then
-            if m == 'up' or m == 'down' or m == 'left' or m == 'right' then
-                -- D-pad handled in update for hold repeat
-                return true
-            end
-            vk:handle_key(m)
-            return true
-        end
-        return true
-    end
 
     -- Handle manage presets popup
     if manage_presets_popup and manage_presets_popup.visible then

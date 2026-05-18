@@ -1240,10 +1240,6 @@ function single_scrape:gamepadpressed(joystick, button)
         local btn = type(button) == 'string' and button:lower() or button
         local m = map[btn] or map[button]
         if m then
-            if m == 'up' or m == 'down' or m == 'left' or m == 'right' then
-                -- D-pad handled in update for hold repeat
-                return true
-            end
             vk:handle_key(m)
             return true
         end
