@@ -149,29 +149,50 @@ return function(props)
           love.graphics.circle("line", content_cx, cy, self.ripple_r)
       end
 
-      if self.icon then
-        local leftIcon = icon {
-          name = self.icon,
-          x = self.x + self.leftPadding,
-          y = self.y + (self.height - iconSize) * 0.5,
-          size = iconSize
-        }
-        leftIcon:draw()
-      end
-
-      -- Draw button text
-      love.graphics.setColor(textColor)
-      -- Avoid setScissor here because absolute scissor conflicts with parent scroll translate.
-
       local currentText = (self.get_text and self.get_text()) or self.text or ""
       local textWidth = font:getWidth(currentText)
+      local gap = 8 * (_G.scale or 1)
+      local totalContentWidth = textWidth
+      if self.icon then
+        totalContentWidth = iconSize + gap + textWidth
+      end
+      local maxAllowedWidth = self.width - padding.horizontal
       local contentWidth = self.width - padding.horizontal - iconPadding
 
-      if textWidth <= contentWidth then
-        -- Center the text if it fits within the button (account for icon)
-        love.graphics.printf(currentText, self.x + iconPadding, self.y + self.topPadding, self.width - iconPadding, 'center')
+      if totalContentWidth <= maxAllowedWidth then
+        -- Draw icon and text perfectly centered together as a single block!
+        local startX = self.x + (self.width - totalContentWidth) / 2
+        
+        if self.icon then
+          local leftIcon = icon {
+            name = self.icon,
+            x = startX,
+            y = self.y + (self.height - iconSize) * 0.5,
+            size = iconSize
+          }
+          leftIcon:draw()
+          
+          -- Draw text right after the icon
+          love.graphics.setColor(textColor)
+          love.graphics.print(currentText, startX + iconSize + gap, self.y + self.topPadding)
+        else
+          -- No icon, just print centered text
+          love.graphics.setColor(textColor)
+          love.graphics.printf(currentText, self.x, self.y + self.topPadding, self.width, 'center')
+        end
       else
-        -- Scroll the text if it's longer than the button width
+        -- If the content is too wide, draw the icon pinned to the left and scroll the text
+        if self.icon then
+          local leftIcon = icon {
+            name = self.icon,
+            x = self.x + self.leftPadding,
+            y = self.y + (self.height - iconSize) * 0.5,
+            size = iconSize
+          }
+          leftIcon:draw()
+        end
+        
+        love.graphics.setColor(textColor)
         local textX = self.x + self.leftPadding + iconPadding - scrollOffset
         love.graphics.print(currentText, textX, self.y + self.topPadding)
 
