@@ -99,6 +99,7 @@ local function create_vk(config)
   }
   
   function vk:show(initial, target)
+    w_width, w_height = love.window.getMode()
     self.buffer = initial or ""
     self.target = target
     self.row, self.col = 1, 1
@@ -192,8 +193,8 @@ local function create_vk(config)
     -- Helper: compute nearest column in target row by comparing visual X centers
     local function nearest_col_by_x(src_row_idx, src_col_idx, dst_row_idx)
       local w, h = w_width, w_height
-      local key_w, key_h, margin = 30, 30, 4
-      if h >= 720 then key_w, key_h, margin = 38, 38, 6 end
+      local scale = _G.scale or 1
+      local key_w, key_h, margin = math.floor(30 * scale), math.floor(30 * scale), math.floor(4 * scale)
       local function row_width(row)
         local rw = 0
         for i=1,#row do
@@ -402,6 +403,7 @@ local function create_vk(config)
   end
   
   function vk:update(dt)
+    w_width, w_height = love.window.getMode()
     if not self.visible then 
       self.fade = 0
       return 
@@ -472,17 +474,17 @@ local function create_vk(config)
 
     -- Update individual key animations and focus flow
     local layout = self:get_layout()
-    local key_w, key_h, margin = 30, 30, 4
-    if w_height >= 720 then key_w, key_h, margin = 38, 38, 6 end
+    local scale = _G.scale or 1
+    local key_w, key_h, margin = math.floor(30 * scale), math.floor(30 * scale), math.floor(4 * scale)
     local kb_h = math.floor(w_height * 0.30)
-    local y0 = w_height - kb_h - 68
-    local box_h = math.max(22, math.floor(key_h * 0.95))
-    local box_y = y0 + 6
-    local area_x0 = 6
-    local prompt_w = 136
-    local panel_gap = 12
-    local area_w = math.max(100, w_width - area_x0 - prompt_w - panel_gap)
-    local keys_y0 = box_y + box_h + 10
+    local y0 = w_height - kb_h - math.floor(68 * scale)
+    local box_h = math.max(math.floor(22 * scale), math.floor(key_h * 0.95))
+    local box_y = y0 + math.floor(6 * scale)
+    local area_x0 = math.floor(6 * scale)
+    local prompt_w = math.floor(136 * scale)
+    local panel_gap = math.floor(12 * scale)
+    local area_w = math.max(math.floor(100 * scale), w_width - area_x0 - prompt_w - panel_gap)
+    local keys_y0 = box_y + box_h + math.floor(10 * scale)
 
     local target_x, target_y, target_w, target_h = 0, 0, 0, 0
 
@@ -558,9 +560,11 @@ local function create_vk(config)
 
   function vk:draw()
     if not self.visible then return end
+    w_width, w_height = love.window.getMode()
     local w, h = w_width, w_height
+    local scale = _G.scale or 1
     local kb_h = math.floor(h * 0.30)
-    local y0 = h - kb_h - 68
+    local y0 = h - kb_h - math.floor(68 * scale)
 
     local theme = configs.theme
 
@@ -580,23 +584,39 @@ local function create_vk(config)
     love.graphics.rectangle('fill', 0, 0, w, h)
 
     love.graphics.push()
-    love.graphics.translate(0, (1 - fade) * 20)
+    love.graphics.translate(0, (1 - fade) * math.floor(20 * scale))
 
     panel_bg[4] = panel_opacity * fade
     love.graphics.setColor(panel_bg)
     love.graphics.rectangle('fill', 0, y0, w, h - y0)
 
     local layout = self:get_layout()
-    local key_w, key_h, margin = 30, 30, 4
-    if h >= 720 then key_w, key_h, margin = 38, 38, 6 end
-    local prompt_w = 136
-    local panel_gap = 12
-    local area_x0 = 6
-    local area_w = math.max(100, w - area_x0 - prompt_w - panel_gap)
-    local box_h = math.max(22, math.floor(key_h * 0.95))
-    local box_y = y0 + 6
+    local key_w, key_h, margin = math.floor(30 * scale), math.floor(30 * scale), math.floor(4 * scale)
+    local prompt_w = math.floor(136 * scale)
+    local panel_gap = math.floor(12 * scale)
+    local area_x0 = math.floor(6 * scale)
+    local area_w = math.max(math.floor(100 * scale), w - area_x0 - prompt_w - panel_gap)
+    local box_h = math.max(math.floor(22 * scale), math.floor(key_h * 0.95))
+    local box_y = y0 + math.floor(6 * scale)
     local box_x = area_x0
     local box_w = area_w
+    local line_h = math.floor(key_h * 0.9)
+
+    -- Dynamic font handling for text field and prompt text to prevent scene font overflow
+    local preview_font_size = math.max(14, math.floor(box_h * 0.60))
+    if not self.preview_font or self.preview_font_size ~= preview_font_size then
+        self.preview_font = love.graphics.newFont(_G.MAIN_FONT_PATH or preview_font_size, preview_font_size)
+        self.preview_font_size = preview_font_size
+    end
+
+    local prompt_font_size = math.max(12, math.floor(line_h * 0.55))
+    if not self.prompt_font or self.prompt_font_size ~= prompt_font_size then
+        self.prompt_font = love.graphics.newFont(_G.MAIN_FONT_PATH or prompt_font_size, prompt_font_size)
+        self.prompt_font_size = prompt_font_size
+    end
+
+    local prev_font = love.graphics.getFont()
+    love.graphics.setFont(self.preview_font)
 
     -- Draw a modern, soft sliding focus highlight that glides between keys
     if self.focus_w and self.focus_w > 0 then
@@ -606,12 +626,12 @@ local function create_vk(config)
     end
     
     love.graphics.setColor(preview_bg)
-    love.graphics.rectangle('fill', box_x, box_y, box_w, box_h, 12, 12)
+    love.graphics.rectangle('fill', box_x, box_y, box_w, box_h, math.floor(12 * scale), math.floor(12 * scale))
     
     if self.text_field_focused then
       love.graphics.setLineWidth(2)
       love.graphics.setColor(key_focus)
-      love.graphics.rectangle('line', box_x - 1, box_y - 1, box_w + 2, box_h + 2, 12, 12)
+      love.graphics.rectangle('line', box_x - 1, box_y - 1, box_w + 2, box_h + 2, math.floor(12 * scale), math.floor(12 * scale))
       love.graphics.setLineWidth(1)
     end
     
@@ -645,7 +665,7 @@ local function create_vk(config)
       end
     end
 
-    love.graphics.printf(preview, box_x + 12, box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2), box_w - 24, 'left')
+    love.graphics.printf(preview, box_x + math.floor(12 * scale), box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2), box_w - math.floor(24 * scale), 'left')
 
     -- Draw blinking cursor at the correct position
     local cursor_blink = math.floor(love.timer.getTime() / 0.53) % 2 == 0
@@ -653,7 +673,7 @@ local function create_vk(config)
       -- Calculate cursor X based on cursor position, not end of text
       -- Calculate cursor X based on exactly what was printed before the cursor
       local text_before_cursor = preview:sub(1, cursor_display_pos)
-      local cursor_x = box_x + 12 + love.graphics.getFont():getWidth(text_before_cursor)
+      local cursor_x = box_x + math.floor(12 * scale) + love.graphics.getFont():getWidth(text_before_cursor)
       local cursor_y = box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2)
       local cursor_h = love.graphics.getFont():getHeight()
       love.graphics.setColor(key_text)
@@ -661,7 +681,6 @@ local function create_vk(config)
     end
 
     local ypos = box_y + box_h + 10
-    local prev_font = love.graphics.getFont()
     love.graphics.setFont(vk_font)
 
     local function draw_label(cx, cy, kw, kh, text)
@@ -714,7 +733,7 @@ local function create_vk(config)
         end
         
         love.graphics.setColor(current_bg)
-        love.graphics.rectangle('fill', rx, ry, kw, key_h, 6, 6)
+        love.graphics.rectangle('fill', rx, ry, kw, key_h, math.floor(6 * scale), math.floor(6 * scale))
         
         -- Draw key ripple
         local kr = (self.key_ripples[r] and self.key_ripples[r][c])
@@ -751,28 +770,27 @@ local function create_vk(config)
         cx = cx + kw + margin
       end
     end
-    love.graphics.setFont(prev_font)
+    love.graphics.setFont(self.prompt_font)
 
     local pw = prompt_w
-    local line_h = math.floor(key_h * 0.9)
-    local gap_h = 6
+    local gap_h = math.floor(6 * scale)
     local rows = 4  -- A, B, X, Y
-    local ph = 8 + rows * line_h + (rows - 1) * gap_h + 8
-    local right_margin = 36
+    local ph = math.floor(8 * scale) + rows * line_h + (rows - 1) * gap_h + math.floor(8 * scale)
+    local right_margin = math.floor(36 * scale)
     local px = area_x0 + area_w + panel_gap - right_margin
-    local avail_top = box_y + box_h + 6
-    local avail_bottom = h - 6
+    local avail_top = box_y + box_h + math.floor(6 * scale)
+    local avail_bottom = h - math.floor(6 * scale)
     local centered_py = math.floor((avail_top + avail_bottom - ph) / 2)
-    local py = math.max(avail_top, centered_py + 6)
+    local py = math.max(avail_top, centered_py + math.floor(6 * scale))
     if py + ph > avail_bottom then py = avail_bottom - ph end
     love.graphics.setColor(prompt_panel_bg)
-    love.graphics.rectangle('fill', px, py, pw, ph, 12, 12)
+    love.graphics.rectangle('fill', px, py, pw, ph, math.floor(12 * scale), math.floor(12 * scale))
     love.graphics.setColor(key_text)
 
     local function draw_prompt(row_i, icon_key, text)
-      local ly = py + 8 + (row_i-1) * (line_h + gap_h)
+      local ly = py + math.floor(8 * scale) + (row_i-1) * (line_h + gap_h)
       local icon = load_input_icon(icon_key)
-      local ix = px + 10
+      local ix = px + math.floor(10 * scale)
       local iy = ly
       local iw = line_h
       local ih = line_h
@@ -783,16 +801,17 @@ local function create_vk(config)
         local cx, cy = ix + iw / 2, iy + ih / 2
         love.graphics.draw(icon, cx - (w0 * sx) / 2, cy - (h0 * sy) / 2, 0, sx, sy)
       else
-        love.graphics.rectangle('line', ix, iy, iw, ih, 6, 6)
+        love.graphics.rectangle('line', ix, iy, iw, ih, math.floor(6 * scale), math.floor(6 * scale))
         love.graphics.printf(icon_key:upper(), ix, iy + ih*0.25, iw, 'center')
       end
-      love.graphics.printf(text, ix + iw + 10, iy + math.floor((ih - love.graphics.getFont():getHeight())/2), pw - (iw + 20), 'left')
+      love.graphics.printf(text, ix + iw + math.floor(10 * scale), iy + math.floor((ih - love.graphics.getFont():getHeight())/2), pw - (iw + math.floor(20 * scale)), 'left')
     end
 
     draw_prompt(1, 'a', 'Confirm')
     draw_prompt(2, 'b', 'Close')
     draw_prompt(3, 'x', 'Layout')
     draw_prompt(4, 'y', 'Delete')
+    love.graphics.setFont(prev_font)
     love.graphics.pop()
   end
   
