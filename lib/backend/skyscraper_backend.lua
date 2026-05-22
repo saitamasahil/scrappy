@@ -203,9 +203,35 @@ while true do
                 end
         end
 
-        -- Safely close output if still open
+        -- Safely close output and check exit status
+        local command_failed = false
         if output then
-            pcall(output.close, output)
+            local ok, status, exit_type, exit_code = pcall(output.close, output)
+            if ok then
+                if type(status) == "boolean" then
+                    -- Lua 5.2+ / modern Luajit with 5.2 compatibility
+                    if not status then
+                        command_failed = true
+                    end
+                elseif type(status) == "number" then
+                    -- Lua 5.1 / standard Luajit
+                    if status ~= 0 then
+                        command_failed = true
+                    end
+                end
+            else
+                command_failed = true
+            end
+        end
+
+        if command_failed and not aborted then
+            fatal_error = true
+            log.write("[fetch] Skyscraper process exited with a non-zero status code", "skyscraper")
+            channels.SKYSCRAPER_OUTPUT:push({
+                data = {},
+                error = "Skyscraper process crashed or exited with an error",
+                loading = false
+            })
         end
 
         -- Log completion details
