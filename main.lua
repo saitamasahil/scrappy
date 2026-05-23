@@ -29,7 +29,6 @@ update_ui_scale()
 
 function love.load(args)
     math.randomseed(os.time())
-    splash.load()
 
     if #args > 0 then
         local w, h = 640, 480
@@ -49,6 +48,8 @@ function love.load(args)
         w_width, w_height = love.window.getMode()
         update_ui_scale()
     end
+
+    splash.load()
 
     font = love.graphics.newFont(_G.MAIN_FONT_PATH, math.floor(base_font_size * _G.scale))
     love.graphics.setFont(font)
