@@ -596,7 +596,7 @@ end
 -- Skyscraper stores manuals in cache/<platform>/manuals/<source>/<cache_id>.pdf
 -- platform: Skyscraper platform ID (e.g., "nds")
 -- Returns: number of manuals copied, number skipped
-function artwork.extract_manuals(platform)
+function artwork.extract_manuals(platform, target_rom_name)
     local copied = 0
     local skipped = 0
 
@@ -675,23 +675,26 @@ function artwork.extract_manuals(platform)
 
         if rom_filename then
             local rom_name = utils.get_filename(rom_filename)
-            local dest_path = string.format("%s/%s.pdf", dest_folder, rom_name)
 
-            local exists = nativefs.getInfo(dest_path)
-            if exists then
-                skipped = skipped + 1
-            else
-                local content = nativefs.read(manual.path)
-                if content then
-                    local ok, err = nativefs.write(dest_path, content)
-                    if ok then
-                        copied = copied + 1
-                        log.write(string.format("Copied manual to %s", dest_path))
-                    else
-                        log.write(string.format("Failed to write manual to %s: %s", dest_path, err or "unknown"))
-                    end
+            if not target_rom_name or rom_name == target_rom_name then
+                local dest_path = string.format("%s/%s.pdf", dest_folder, rom_name)
+
+                local exists = nativefs.getInfo(dest_path)
+                if exists then
+                    skipped = skipped + 1
                 else
-                    log.write(string.format("Failed to read manual cache file: %s", manual.path))
+                    local content = nativefs.read(manual.path)
+                    if content then
+                        local ok, err = nativefs.write(dest_path, content)
+                        if ok then
+                            copied = copied + 1
+                            log.write(string.format("Copied manual to %s", dest_path))
+                        else
+                            log.write(string.format("Failed to write manual to %s: %s", dest_path, err or "unknown"))
+                        end
+                    else
+                        log.write(string.format("Failed to read manual cache file: %s", manual.path))
+                    end
                 end
             end
         end

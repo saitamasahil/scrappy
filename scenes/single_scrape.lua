@@ -825,7 +825,7 @@ local function process_fetched_game()
                 ui_status.text = "Extracting manual..."
             end
 
-            local copied, skipped = artwork.extract_manuals(t.platform)
+            local copied, skipped = artwork.extract_manuals(t.platform, state.current_game)
 
             state.scraping = false
             state.manual_mode = false
