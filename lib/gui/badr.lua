@@ -345,7 +345,12 @@ function badr:keypressed(key)
     nextElement = root.focusedElement:getNthFocusable("next", 4)
   end
 
-  if nextElement then
+  if nextElement and nextElement ~= root.focusedElement then
+    local scenes = require("lib.scenes")
+    if scenes:currentFocus() ~= "about" then
+      local sound = require("lib.sound")
+      sound.play("nav_move")
+    end
     root:setFocus(nextElement)
   end
 end
