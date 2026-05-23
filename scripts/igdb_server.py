@@ -425,11 +425,22 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
         <div class="footer">Scrappy &bull; muOS Artwork Scraper</div>
     </div>
     <script>
-        document.getElementById('credForm').onsubmit = function() {{
-            setTimeout(function() {{
-                document.getElementById('successOverlay').classList.add('visible');
-            }}, 150);
-            return true;
+        document.getElementById('credForm').onsubmit = function(e) {{
+            e.preventDefault();
+            // Instantly show the success overlay for a premium, snappy visual response
+            document.getElementById('successOverlay').classList.add('visible');
+            
+            // Post the credentials in the background
+            var params = new URLSearchParams(new FormData(this));
+            fetch('/', {{
+                method: 'POST',
+                body: params,
+                headers: {{
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }}
+            }}).catch(function(err) {{
+                console.error("Save failed:", err);
+            }});
         }};
     </script>
 </body>
