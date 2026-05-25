@@ -27,7 +27,7 @@ local function section_card(header, lines, opts)
 
   return component {
     id = opts.id,
-    width = opts.width or (w_width - 20),
+    width = opts.width or (w_width - 20 * _G.scale),
     height = opts.height or total_h,
     focusable = true,
     draw = function(self)
@@ -37,18 +37,18 @@ local function section_card(header, lines, opts)
       -- Header in accent color
       local accent = theme:read_color("button", "BUTTON_FOCUS", "#cbaa0f")
       love.graphics.setColor(accent)
-      love.graphics.print(header, self.x + 4, self.y + 4)
+      love.graphics.print(header, self.x + 4 * _G.scale, self.y + 4 * _G.scale)
 
       -- Body lines in label color
       local c = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
       love.graphics.setColor(c)
       for i, line in ipairs(lines) do
-        love.graphics.print(line, self.x + 4, self.y + header_h + (i - 1) * line_h)
+        love.graphics.print(line, self.x + 4 * _G.scale, self.y + header_h + (i - 1) * line_h)
       end
 
       -- Separator at bottom
       love.graphics.setColor(c[1], c[2], c[3], 0.15)
-      love.graphics.rectangle("fill", self.x, self.y + self.height - 2, self.width, 2)
+      love.graphics.rectangle("fill", self.x, self.y + self.height - 2 * _G.scale, self.width, 2 * _G.scale)
     end,
   }
 end
@@ -56,10 +56,10 @@ end
 function about:load()
   menu = component:root { column = true, gap = 0 }
 
-  local item_width = w_width - 20
+  local item_width = w_width - 20 * _G.scale
   local qr_size = math.min(w_height * 0.35, 180 * _G.scale)
 
-  local content = component { column = true, gap = 6 }
+  local content = component { column = true, gap = 6 * _G.scale }
 
   -- Section 1: App info
   content = content + section_card("Scrappy", {
@@ -82,9 +82,9 @@ function about:load()
 
   -- Section 4: Support with QR
   local font = love.graphics.getFont()
-  local header_h = font:getHeight() + 8
-  local caption_h = font:getHeight() + 8
-  local qr_section_h = header_h + qr_size + 12 + caption_h + 20
+  local header_h = font:getHeight() + 8 * _G.scale
+  local caption_h = font:getHeight() + 8 * _G.scale
+  local qr_section_h = header_h + qr_size + 12 * _G.scale + caption_h + 20 * _G.scale
 
   content = content + component {
     id = "section_support",
@@ -112,10 +112,10 @@ function about:load()
       local qr_y = self.y + header_h
 
       -- White background behind QR
-      local bg_pad = 6
+      local bg_pad = 6 * _G.scale
       love.graphics.setColor(1, 1, 1, 1)
       love.graphics.rectangle("fill", qr_x - bg_pad, qr_y - bg_pad,
-        scaled_w + bg_pad * 2, scaled_h + bg_pad * 2, 4, 4)
+        scaled_w + bg_pad * 2, scaled_h + bg_pad * 2, 4 * _G.scale, 4 * _G.scale)
 
       -- Draw QR image
       love.graphics.setColor(1, 1, 1, 1)
@@ -124,7 +124,7 @@ function about:load()
       -- Caption below QR
       local text_color = theme:read_color("label", "LABEL_TEXT", "#dfe6e9")
       love.graphics.setColor(text_color)
-      love.graphics.printf("Scan to support on Ko-fi", self.x, qr_y + scaled_h + 24, self.width, "center")
+      love.graphics.printf("Scan to support on Ko-fi", self.x, qr_y + scaled_h + 24 * _G.scale, self.width, "center")
     end
   }
 

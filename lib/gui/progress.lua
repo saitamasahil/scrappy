@@ -18,7 +18,7 @@ return function(props)
     backgroundColor = props.backgroundColor,
     barColor = props.barColor,
     borderColor = props.borderColor,
-    borderWidth = props.borderWidth or 2,
+    borderWidth = (props.borderWidth or 2) * (_G.scale or 1),
     -- draw function
     draw = function(self)
       if not self.visible then return end
@@ -56,8 +56,8 @@ return function(props)
       if current_p > 0 and current_p < 1 then
           local wave_x = self.x + barWidth
           local segments = 10
-          local wave_w = 4
-          love.graphics.setLineWidth(1)
+          local wave_w = 4 * (_G.scale or 1)
+          love.graphics.setLineWidth(1 * (_G.scale or 1))
           for i = 0, segments do
               local py = self.y + (i / segments) * self.height
               local offset = math.sin(py * 0.1 + love.timer.getTime() * 10) * wave_w * (1 - current_p*0.5)

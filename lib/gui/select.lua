@@ -218,11 +218,11 @@ return function(props)
         else
           -- Scroll the text if it's longer than the button width
           local textX = contentX - scrollOffset
-          love.graphics.print(currentOption, textX, self.y + self.topPadding)
+          love.graphics.print(currentOption, textX, textY)
 
           -- Draw the wrapped text with a spacer to the right of the first text
           if scrollOffset > textWidth - (contentWidth) then
-            love.graphics.print(spacer .. currentOption, textX + textWidth, self.y + self.topPadding)
+            love.graphics.print(spacer .. currentOption, textX + textWidth, textY)
           end
         end
       end

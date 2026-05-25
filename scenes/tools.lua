@@ -375,12 +375,13 @@ local function open_accent_settings()
         height = 40 * _G.scale,
         draw = function(self)
             local active_hex = get_active_accent_hex()
-            local swatch_size = 28
+            local swatch_size = 28 * _G.scale
             local padding = 10 * _G.scale
+            local swatch_y = self.y + (self.height - swatch_size) / 2
 
             -- Draw background
             love.graphics.setColor(theme:read_color("button", "BUTTON_BACKGROUND", "#2d3436"))
-            love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, 6, 6)
+            love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, 6 * _G.scale, 6 * _G.scale)
 
             -- Draw color swatch
             if active_hex then
@@ -388,17 +389,16 @@ local function open_accent_settings()
                 local g = tonumber(active_hex:sub(3, 4), 16) / 255
                 local b = tonumber(active_hex:sub(5, 6), 16) / 255
                 love.graphics.setColor(r, g, b, 1)
-                love.graphics.rectangle("fill", self.x + padding, self.y + 6, swatch_size, swatch_size, 4, 4)
+                love.graphics.rectangle("fill", self.x + padding, swatch_y, swatch_size, swatch_size, 4 * _G.scale, 4 * _G.scale)
                 -- Border
                 love.graphics.setColor(1, 1, 1, 0.5)
-                love.graphics.rectangle("line", self.x + padding, self.y + 6, swatch_size, swatch_size, 4, 4)
+                love.graphics.rectangle("line", self.x + padding, swatch_y, swatch_size, swatch_size, 4 * _G.scale, 4 * _G.scale)
             else
                 -- No accent (off mode)
                 love.graphics.setColor(0.3, 0.3, 0.3, 1)
-                love.graphics.rectangle("fill", self.x + padding, self.y + 6, swatch_size, swatch_size, 4, 4)
+                love.graphics.rectangle("fill", self.x + padding, swatch_y, swatch_size, swatch_size, 4 * _G.scale, 4 * _G.scale)
                 love.graphics.setColor(1, 1, 1, 0.3)
-                love.graphics.line(self.x + padding, self.y + 6, self.x + padding + swatch_size,
-                    self.y + 6 + swatch_size)
+                love.graphics.line(self.x + padding, swatch_y, self.x + padding + swatch_size, swatch_y + swatch_size)
             end
 
             -- Draw label - show "muOS accent" for muOS mode, hex for custom
@@ -411,7 +411,8 @@ local function open_accent_settings()
             else
                 label_text = "Current: #" .. (custom_accent or "cbaa0f")
             end
-            love.graphics.print(label_text, self.x + padding + swatch_size + 12, self.y + 12)
+            local text_y = self.y + (self.height - love.graphics.getFont():getHeight()) / 2
+            love.graphics.print(label_text, self.x + padding + swatch_size + 12 * _G.scale, text_y)
         end
     }
 
@@ -977,7 +978,7 @@ local function open_region_editor()
 
     region_menu = region_menu + (component {
         row = true,
-        gap = 6
+        gap = 6 * _G.scale
     } + (component {
         width = 22 * _G.scale, height = 32 * _G.scale,
         onUpdate = function(self, dt)
@@ -994,17 +995,17 @@ local function open_region_editor()
         end,
         draw = function(self)
             love.graphics.push()
-            love.graphics.translate(self.x + 11, self.y + 16)
+            love.graphics.translate(self.x + 11 * _G.scale, self.y + 16 * _G.scale)
             love.graphics.scale(self.icon_scale or 1)
-            love.graphics.translate(-(self.x + 11), -(self.y + 16))
-            local dpad = icon { name = "dpad", size = 22 }
-            dpad.x, dpad.y = self.x, self.y + (self.height - 22) / 2
+            love.graphics.translate(-(self.x + 11 * _G.scale), -(self.y + 16 * _G.scale))
+            local dpad = icon { name = "dpad", size = 22 * _G.scale }
+            dpad.x, dpad.y = self.x, self.y + (self.height - 22 * _G.scale) / 2
             dpad:draw()
             love.graphics.pop()
         end
     }) + label {
         text = "Navigate •",
-        y = (32 - love.graphics.getFont():getHeight()) / 2
+        y = (32 * _G.scale - love.graphics.getFont():getHeight()) / 2
     } + (component {
         width = 22 * _G.scale, height = 32 * _G.scale,
         onUpdate = function(self, dt)
@@ -1021,17 +1022,17 @@ local function open_region_editor()
         end,
         draw = function(self)
             love.graphics.push()
-            love.graphics.translate(self.x + 11, self.y + 16)
+            love.graphics.translate(self.x + 11 * _G.scale, self.y + 16 * _G.scale)
             love.graphics.scale(self.icon_scale or 1)
-            love.graphics.translate(-(self.x + 11), -(self.y + 16))
-            local dpad = icon { name = "dpad_horizontal", size = 22 }
-            dpad.x, dpad.y = self.x, self.y + (self.height - 22) / 2
+            love.graphics.translate(-(self.x + 11 * _G.scale), -(self.y + 16 * _G.scale))
+            local dpad = icon { name = "dpad_horizontal", size = 22 * _G.scale }
+            dpad.x, dpad.y = self.x, self.y + (self.height - 22 * _G.scale) / 2
             dpad:draw()
             love.graphics.pop()
         end
     }) + label {
         text = "Reorder •",
-        y = (32 - love.graphics.getFont():getHeight()) / 2
+        y = (32 * _G.scale - love.graphics.getFont():getHeight()) / 2
     } + (component {
         width = 22 * _G.scale, height = 32 * _G.scale,
         onUpdate = function(self, dt)
@@ -1048,17 +1049,17 @@ local function open_region_editor()
         end,
         draw = function(self)
             love.graphics.push()
-            love.graphics.translate(self.x + 11, self.y + 16)
+            love.graphics.translate(self.x + 11 * _G.scale, self.y + 16 * _G.scale)
             love.graphics.scale(self.icon_scale or 1)
-            love.graphics.translate(-(self.x + 11), -(self.y + 16))
-            local btn = icon { name = "button_a", size = 22 }
-            btn.x, btn.y = self.x, self.y + (self.height - 22) / 2
+            love.graphics.translate(-(self.x + 11 * _G.scale), -(self.y + 16 * _G.scale))
+            local btn = icon { name = "button_a", size = 22 * _G.scale }
+            btn.x, btn.y = self.x, self.y + (self.height - 22 * _G.scale) / 2
             btn:draw()
             love.graphics.pop()
         end
     }) + label {
         text = "Confirm",
-        y = (32 - love.graphics.getFont():getHeight()) / 2
+        y = (32 * _G.scale - love.graphics.getFont():getHeight()) / 2
     }) + (scroll_container {
         width = item_width,
         height = list_height,

@@ -89,7 +89,7 @@ local function popup(props)
         child:draw()
         love.graphics.pop()
       else
-        local _, wrappedtext = self._font:getWrap(self.content, content_width - 20)
+        local _, wrappedtext = self._font:getWrap(self.content, content_width - (20 * (_G.scale or 1)))
         love.graphics.push()
         love.graphics.translate(center_width, center_height)
         local boxColor = configs.theme:read_color("popup", "POPUP_BOX", "#2d3436")

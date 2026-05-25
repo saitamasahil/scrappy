@@ -7,8 +7,8 @@ return function(props)
   local theme = configs.theme
   local font = props.font or love.graphics.getFont()
   local padding = {
-    horizontal = (props.leftPadding or 8) + (props.rightPadding or 8),
-    vertical = (props.topPadding or 8) + (props.bottomPadding or 8)
+    horizontal = ((props.leftPadding or 8) + (props.rightPadding or 8)) * (_G.scale or 1),
+    vertical = ((props.topPadding or 8) + (props.bottomPadding or 8)) * (_G.scale or 1)
   }
   local text = props.text or ""
   local t = love.graphics.newText(font, text)
@@ -131,15 +131,18 @@ return function(props)
           local fill_y = self.y + (self.height - checkboxSize) / 2 + checkboxSize - fill_h
           local fill_x = self.x + padding.horizontal / 2
           
+          local border_offset = 1 * (_G.scale or 1)
+          local double_border = 2 * (_G.scale or 1)
           love.graphics.setColor(checkColor[1], checkColor[2], checkColor[3], (checkColor[4] or 1) * 0.4)
           -- Draw a slightly rounded water fill
-          love.graphics.rectangle("fill", fill_x + 1, fill_y + 1, checkboxSize - 2, fill_h - 2, 2)
+          love.graphics.rectangle("fill", fill_x + border_offset, fill_y + border_offset, checkboxSize - double_border, fill_h - double_border, double_border)
           
           -- Surface waves if not full
           if check_p < 0.99 then
-              love.graphics.setLineWidth(1)
-              local wave_y = fill_y + math.sin(love.timer.getTime() * 12) * 1
-              love.graphics.line(fill_x + 2, wave_y, fill_x + checkboxSize - 2, wave_y)
+              love.graphics.setLineWidth(1 * (_G.scale or 1))
+              local wave_offset = 1 * (_G.scale or 1)
+              local wave_y = fill_y + math.sin(love.timer.getTime() * 12) * wave_offset
+              love.graphics.line(fill_x + double_border, wave_y, fill_x + checkboxSize - double_border, wave_y)
           end
       end
 
@@ -187,7 +190,7 @@ return function(props)
               size = iconSize
           }
           itemIcon:draw()
-          currentX = currentX + iconSize + 6 -- Add gap after icon
+          currentX = currentX + iconSize + 6 * (_G.scale or 1) -- Add gap after icon
       end
       love.graphics.draw(t, currentX, self.y + (self.height - labelHeight) / 2)
 

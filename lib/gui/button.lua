@@ -132,7 +132,7 @@ return function(props)
       love.graphics.setColor(br, bg, bb, ba)
 
       -- Draw button background
-      love.graphics.rectangle('fill', self.x, self.y, self.width, self.height, self.cornerRadius or 6)
+      love.graphics.rectangle('fill', self.x, self.y, self.width, self.height, (self.cornerRadius or 6) * (_G.scale or 1))
 
       -- Liquid UI: Ripple
       if self.ripple_a and self.ripple_a > 0 then
@@ -163,6 +163,7 @@ return function(props)
         -- Draw icon and text perfectly centered together as a single block!
         local startX = self.x + (self.width - totalContentWidth) / 2
         
+        local textY = self.y + self.height * 0.5 - font:getHeight() * 0.5
         if self.icon then
           local leftIcon = icon {
             name = self.icon,
@@ -174,11 +175,11 @@ return function(props)
           
           -- Draw text right after the icon
           love.graphics.setColor(textColor)
-          love.graphics.print(currentText, startX + iconSize + gap, self.y + self.topPadding)
+          love.graphics.print(currentText, startX + iconSize + gap, textY)
         else
           -- No icon, just print centered text
           love.graphics.setColor(textColor)
-          love.graphics.printf(currentText, self.x, self.y + self.topPadding, self.width, 'center')
+          love.graphics.printf(currentText, self.x, textY, self.width, 'center')
         end
       else
         -- If the content is too wide, draw the icon pinned to the left and scroll the text
@@ -194,11 +195,12 @@ return function(props)
         
         love.graphics.setColor(textColor)
         local textX = self.x + self.leftPadding + iconPadding - scrollOffset
-        love.graphics.print(currentText, textX, self.y + self.topPadding)
+        local textY = self.y + self.height * 0.5 - font:getHeight() * 0.5
+        love.graphics.print(currentText, textX, textY)
 
         -- Draw the wrapped text with a spacer to the right of the first text
         if scrollOffset > textWidth - contentWidth then
-          love.graphics.print(spacer .. currentText, textX + textWidth, self.y + self.topPadding)
+          love.graphics.print(spacer .. currentText, textX + textWidth, textY)
         end
       end
 

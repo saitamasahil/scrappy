@@ -94,7 +94,7 @@ local function label(props)
         if self.buoyant then
             -- Use X position to stagger the waves
             local stagger = (self.x or 0) * 0.05
-            self.buoyancy_y = math.sin(love.timer.getTime() * 2.5 + stagger) * 2
+            self.buoyancy_y = math.sin(love.timer.getTime() * 2.5 + stagger) * 2 * (_G.scale or 1)
         else
             self.buoyancy_y = 0
         end
@@ -153,9 +153,9 @@ local function label(props)
       
       local content_w = self.font:getWidth(txt)
       if available_width and content_w > available_width then
-        local scroll_speed = 40
+        local scroll_speed = 40 * (_G.scale or 1)
         local t = love.timer.getTime()
-        local extra = content_w - available_width + 10
+        local extra = content_w - available_width + 10 * (_G.scale or 1)
         local wait_time = 1.5
         local cycle = wait_time * 2 + (extra / scroll_speed)
         local phase = t % cycle
