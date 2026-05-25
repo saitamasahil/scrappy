@@ -1918,7 +1918,7 @@ function tools:load()
         onClick = on_update_press,
         icon = "cache"
     } + listitem {
-        text = "Run Custom Import (adds custom data to cache, read Wiki!)",
+        text = "Run Custom Import (adds custom data to cache, read FAQ!)",
         width = item_width,
         onClick = on_import_press,
         icon = "file_import"
@@ -1994,6 +1994,14 @@ function tools:load()
             scenes:push("showcase")
         end,
         icon = "showcase"
+    } + listitem {
+        id = "faq_scrappy",
+        text = "FAQ",
+        width = item_width,
+        onClick = function()
+            scenes:push("faq")
+        end,
+        icon = "faq"
     } + listitem {
         id = "about_scrappy",
         text = "About Scrappy",

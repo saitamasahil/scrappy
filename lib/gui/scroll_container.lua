@@ -50,12 +50,18 @@ return function(props)
       local childY = focusedChild.y - self.y - self.targetScrollY -- Calculate relative to where the screen WILL be
       -- Dynamic margin so section headers above the focused control are fully visible
       local margin = math.max(24, math.min(80, math.floor(height * 0.12)))
+      
       if childY < margin then
         -- Scroll up slightly more to reveal the header above the focused control
         self:scrollTo(self.scrollY + childY - margin)
       elseif childY + focusedChild.height > height - margin then
-        -- Scroll down and keep a bottom margin
-        self:scrollTo(self.scrollY + childY + focusedChild.height - height + margin)
+        if focusedChild.height <= height - 2 * margin then
+          -- Scroll down and keep a bottom margin
+          self:scrollTo(self.scrollY + childY + focusedChild.height - height + margin)
+        else
+          -- Element is taller than viewable area. Prioritize the top of the element.
+          self:scrollTo(self.scrollY + childY - margin)
+        end
       end
     end,
 

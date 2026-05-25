@@ -347,7 +347,8 @@ function badr:keypressed(key)
 
   if nextElement and nextElement ~= root.focusedElement then
     local scenes = require("lib.scenes")
-    if scenes:currentFocus() ~= "about" then
+    local current_scene = scenes:currentFocus()
+    if current_scene ~= "about" and current_scene ~= "faq" then
       local sound = require("lib.sound")
       sound.play("nav_move")
     end
