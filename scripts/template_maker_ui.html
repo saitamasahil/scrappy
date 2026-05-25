@@ -3560,7 +3560,7 @@
                         
                         // If it was the active template, clear it
                         if (document.getElementById('templateName').value === name) {
-                            createNewTemplate();
+                            createNewTemplate(true);
                         }
                         
                         await refreshTemplatesList();
@@ -3662,7 +3662,12 @@
                 }
             }
 
-            function createNewTemplate() {
+            function createNewTemplate(skipConfirm = false) {
+                if (!skipConfirm) {
+                    if (!confirm('Create new template? Any unsaved changes will be lost.')) {
+                        return;
+                    }
+                }
                 const blankXml = `<?xml version="1.0" encoding="UTF-8"?>\n<artwork>\n  <output type="cover" width="640" height="480">\n    <layer resource="screenshot" width="400" align="center" valign="middle"/>\n  </output>\n</artwork>`;
                 document.getElementById('templateName').value = 'New Template';
                 document.getElementById('quickTemplateSelect').value = '';
