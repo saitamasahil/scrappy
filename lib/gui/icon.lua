@@ -57,6 +57,9 @@ local icon_paths = {
   password     = "assets/icons/password.png",
   sound        = "assets/icons/sound.png",
   mapping      = "assets/icons/mapping.png",
+  new          = "assets/icons/new.png",
+  view         = "assets/icons/view.png",
+  plugin       = "assets/icons/plugin.png",
 }
 
 local icons = {}

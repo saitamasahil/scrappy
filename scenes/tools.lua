@@ -1355,6 +1355,15 @@ local function open_manage_presets_menu()
         width = item_width,
         onClick = open_delete_preset_selector,
         icon = "remove"
+    } + listitem {
+        text = "Close",
+        width = item_width,
+        onClick = function()
+            if manage_presets_popup then
+                manage_presets_popup.visible = false
+            end
+        end,
+        icon = "refresh"
     }
     
     menu_root:updatePosition(0, 0)
@@ -1385,6 +1394,7 @@ local function open_platform_editor(is_refresh)
     p_list = p_list + listitem {
         text = "Add New Platform Mapping",
         width = item_width,
+        icon = "new",
         onClick = function()
             vk = virtual_keyboard.create({
                 title = "1/2: Enter ROM Folder Name",
@@ -1433,6 +1443,7 @@ local function open_platform_editor(is_refresh)
     p_list = p_list + listitem {
         text = "View Supported Platform IDs",
         width = item_width,
+        icon = "view",
         onClick = function()
             local list_menu = component:root{ column = true, gap = 8 * _G.scale, width = item_width }
             local list_p = component { column = true, gap = 6 * _G.scale, width = item_width, height = 0 }
@@ -1489,6 +1500,16 @@ local function open_platform_editor(is_refresh)
             supported_platforms_popup.children = { list_menu }
             supported_platforms_popup.visible = true
         end
+    }
+
+    -- Current Platform Mappings header
+    p_list = p_list + listitem {
+        id = "current_platforms_header",
+        text = "Current Platform Mappings",
+        width = item_width,
+        focusable = false,
+        disabled = true,
+        icon = "plugin"
     }
 
     -- 2. List currently mapped platforms from user_config
@@ -1582,6 +1603,19 @@ local function open_platform_editor(is_refresh)
     end
 
     selector_menu = selector_menu + (scroll_container { width = item_width, height = list_height, scroll_speed = 30 } + p_list)
+    
+    -- Close button
+    selector_menu = selector_menu + listitem {
+        text = "Close",
+        width = item_width,
+        onClick = function()
+            if platform_editor_popup then
+                platform_editor_popup.visible = false
+            end
+        end,
+        icon = "refresh"
+    }
+
     selector_menu:updatePosition(0, 0)
     selector_menu:focusFirstElement()
 
