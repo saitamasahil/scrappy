@@ -40,8 +40,6 @@ local initial_accent_mode, initial_custom_accent
 local offline_mode = false -- Offline mode setting
 local vk = nil
 
-local w_width, w_height = love.window.getMode()
-
 local function make_terminal_progress(progress)
     local width = 30
     local filled_width = math.floor(progress * width)
@@ -359,7 +357,7 @@ local function open_accent_settings()
     initial_accent_mode = accent_mode
     initial_custom_accent = custom_accent
 
-    local item_width = math.min(w_width - 120, 560)
+    local item_width = math.min(love.graphics.getWidth() - 120 * _G.scale, 560 * _G.scale)
 
     -- Helper to apply a preset color
     local function apply_preset(hex, is_muos)
@@ -445,7 +443,7 @@ local function open_accent_settings()
     }
 
     -- Use scroll container for presets to handle smaller screens or long lists
-    local scroll_height = math.min(w_height - 280, 240)
+    local scroll_height = math.min(love.graphics.getHeight() - 280 * _G.scale, 240 * _G.scale)
     local preset_list = component {
         column = true,
         gap = 8 * _G.scale,
@@ -982,8 +980,8 @@ local function open_region_editor()
         column = true,
         gap = 10 * _G.scale
     }
-    local item_width = math.min(w_width - 120, 560)
-    local list_height = math.min(w_height - 220, 360)
+    local item_width = math.min(love.graphics.getWidth() - 120 * _G.scale, 560 * _G.scale)
+    local list_height = math.min(love.graphics.getHeight() - 220 * _G.scale, 360 * _G.scale)
 
     region_list = component {
         id = "region_list",
@@ -1139,8 +1137,8 @@ local function open_preset_selector()
         return
     end
 
-    local item_width = math.min(w_width - 120, 560)
-    local list_height = math.min(w_height - 220, 380)
+    local item_width = math.min(love.graphics.getWidth() - 120 * _G.scale, 560 * _G.scale)
+    local list_height = math.min(love.graphics.getHeight() - 220 * _G.scale, 380 * _G.scale)
 
     preset_menu = component:root{
         column = true,
@@ -1239,8 +1237,8 @@ local function open_capture_rom_selector(platform)
         return
     end
     
-    local item_width = math.min(w_width - 120, 560)
-    local list_height = math.min(w_height - 220, 380)
+    local item_width = math.min(love.graphics.getWidth() - 120 * _G.scale, 560 * _G.scale)
+    local list_height = math.min(love.graphics.getHeight() - 220 * _G.scale, 380 * _G.scale)
     
     local selector_menu = component:root{ column = true, gap = 8 * _G.scale, width = item_width }
     local rom_list = component { column = true, gap = 8 * _G.scale, width = item_width, height = 0 }
@@ -1272,8 +1270,8 @@ local function open_capture_platform_selector()
         return
     end
     
-    local item_width = math.min(w_width - 120, 560)
-    local list_height = math.min(w_height - 220, 380)
+    local item_width = math.min(love.graphics.getWidth() - 120 * _G.scale, 560 * _G.scale)
+    local list_height = math.min(love.graphics.getHeight() - 220 * _G.scale, 380 * _G.scale)
     
     local selector_menu = component:root{ column = true, gap = 8 * _G.scale, width = item_width }
     local platform_list = component { column = true, gap = 8 * _G.scale, width = item_width, height = 0 }
@@ -1311,8 +1309,8 @@ local function open_delete_preset_selector(is_refresh)
         return
     end
     
-    local item_width = math.min(w_width - 120, 560)
-    local list_height = math.min(w_height - 220, 380)
+    local item_width = math.min(love.graphics.getWidth() - 120 * _G.scale, 560 * _G.scale)
+    local list_height = math.min(love.graphics.getHeight() - 220 * _G.scale, 380 * _G.scale)
     
     local selector_menu = component:root{ column = true, gap = 8 * _G.scale, width = item_width }
     local p_list = component { column = true, gap = 8 * _G.scale, width = item_width, height = 0 }
@@ -1340,7 +1338,7 @@ local function open_delete_preset_selector(is_refresh)
 end
 
 local function open_manage_presets_menu()
-    local item_width = math.min(w_width - 120, 560)
+    local item_width = math.min(love.graphics.getWidth() - 120 * _G.scale, 560 * _G.scale)
     local menu_root = component:root{
         column = true,
         gap = 8 * _G.scale,
@@ -1377,8 +1375,8 @@ local function open_manage_presets_menu()
 end
 
 local function open_platform_editor(is_refresh)
-    local item_width = math.min(w_width - 120, 560)
-    local list_height = math.min(w_height - 220, 380)
+    local item_width = math.min(love.graphics.getWidth() - 120 * _G.scale, 560 * _G.scale)
+    local list_height = math.min(love.graphics.getHeight() - 220 * _G.scale, 380 * _G.scale)
 
     local selector_menu = component:root{ column = true, gap = 8 * _G.scale, width = item_width }
     local p_list = component { column = true, gap = 8 * _G.scale, width = item_width, height = 0 }
@@ -1766,11 +1764,11 @@ function tools:load()
     info_window = popup {
         visible = false
     }
-    local item_width = w_width - 20
+    local item_width = love.graphics.getWidth() - 20 * _G.scale
 
     menu = menu + (scroll_container {
-        width = w_width,
-        height = w_height - (70 * _G.scale),
+        width = love.graphics.getWidth(),
+        height = love.graphics.getHeight() - (70 * _G.scale),
         scroll_speed = 30
     } + (component {
         column = true,
@@ -1979,7 +1977,7 @@ function tools:load()
         visible = false,
         id = "scraping_log",
         width = info_window.width - 20,
-        height = w_height * 0.50
+        height = love.graphics.getHeight() * 0.50
     })
 
     menu:updatePosition(10, 10)
@@ -1989,7 +1987,7 @@ function tools:load()
         + label { id = "footer_a", text = "Select", icon = "button_a" }
         + label { id = "footer_b", text = "Back", icon = "button_b" }
         + label { id = "footer_dpad", text = "Navigate", icon = "dpad" }
-    footer:updatePosition(w_width * 0.5 - footer.width * 0.5, w_height - footer.height - (15 * _G.scale))
+    footer:updatePosition(love.graphics.getWidth() * 0.5 - footer.width * 0.5, love.graphics.getHeight() - footer.height - (15 * _G.scale))
 end
 
 function tools:update(dt)
@@ -2147,7 +2145,7 @@ function tools:update(dt)
 end
 
 open_grid_size_settings = function()
-    local item_width = math.min(w_width - 120, 560)
+    local item_width = math.min(love.graphics.getWidth() - 120 * _G.scale, 560 * _G.scale)
     local current_size = user_config:read("main", "gridSize") or "Dynamic"
     local current_source = user_config:read("main", "gridSource") or "cover"
 
@@ -2178,7 +2176,7 @@ open_grid_size_settings = function()
         width = item_width
     }
 
-    local list_height = math.min(w_height - 220, 380)
+    local list_height = math.min(love.graphics.getHeight() - 220 * _G.scale, 380 * _G.scale)
 
     local grid_list = component {
         column = true,
