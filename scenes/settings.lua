@@ -440,7 +440,7 @@ function settings:load()
     gap = 15 * _G.scale
   } + output_log {
     id = "scraping_log",
-    width = info_window.width - 20,
+    width = info_window.width - (20 * (_G.scale or 1)),
     height = info_window.height * 0.8
   })
 

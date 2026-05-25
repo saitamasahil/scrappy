@@ -1976,7 +1976,7 @@ function tools:load()
     } + output_log {
         visible = false,
         id = "scraping_log",
-        width = info_window.width - 20,
+        width = info_window.width - (40 * (_G.scale or 1)),
         height = love.graphics.getHeight() * 0.50
     })
 
