@@ -161,18 +161,21 @@ local function set_region_action_active(id)
     end
 end
 
+local last_active_mode = "muos"
+
 local function accent_status_text()
     if accent_mode == "off" then
         return "Off"
     end
-    if accent_mode == "custom" then
-        return "Custom #" .. tostring(custom_accent or "")
-    end
-    return "muOS"
+    return "On"
 end
 
 -- Preset accent colors (alternatives to muOS default)
 local accent_presets = {{
+    name = "muOS Default",
+    hex = "cbaa0f",
+    is_muos = true
+}, {
     name = "Blue",
     hex = "3498db"
 }, {
@@ -269,22 +272,32 @@ local function update_accent_popup_text()
     end
     local it_mode = accent_menu ^ "accent_mode"
     if it_mode then
-        local label = (accent_mode == "off") and "Off" or ((accent_mode == "custom") and "Custom" or "muOS")
+        local label = (accent_mode == "off") and "Off" or "On"
         it_mode.text = "Mode (current: " .. label .. ")"
     end
+    
+    local is_off = (accent_mode == "off")
+    
     local it_edit = accent_menu ^ "accent_custom"
     if it_edit then
-        it_edit.disabled = accent_mode ~= "custom"
+        it_edit.disabled = is_off
         it_edit.text = "Custom accent (current: #" .. tostring(custom_accent or "") .. ")"
+    end
+    
+    local i = 1
+    while true do
+        local preset_item = accent_menu ^ ("preset_" .. i)
+        if not preset_item then break end
+        preset_item.disabled = is_off
+        i = i + 1
     end
 end
 
 local function cycle_accent_mode()
     if accent_mode == "off" then
-        accent_mode = "muos"
-    elseif accent_mode == "muos" then
-        accent_mode = "custom"
+        accent_mode = last_active_mode
     else
+        last_active_mode = accent_mode
         accent_mode = "off"
     end
     update_accent_popup_text()
@@ -349,9 +362,13 @@ local function open_accent_settings()
     local item_width = math.min(w_width - 120, 560)
 
     -- Helper to apply a preset color
-    local function apply_preset(hex)
-        custom_accent = hex
-        accent_mode = "custom"
+    local function apply_preset(hex, is_muos)
+        if is_muos then
+            accent_mode = "muos"
+        else
+            custom_accent = hex
+            accent_mode = "custom"
+        end
         sync_accent_to_config()
         update_accent_popup_text()
         update_accent_menu_text()
@@ -421,7 +438,7 @@ local function open_accent_settings()
     -- Mode toggle
     accent_menu = accent_menu + listitem {
         id = "accent_mode",
-        text = "Mode: " .. ((accent_mode == "off") and "Off" or ((accent_mode == "custom") and "Custom" or "muOS")),
+        text = "Mode: " .. ((accent_mode == "off") and "Off" or "On"),
         width = item_width,
         onClick = cycle_accent_mode,
         icon = "mode"
@@ -452,8 +469,9 @@ local function open_accent_settings()
             id = "preset_" .. i,
             text = preset.name,
             width = item_width,
+            disabled = (accent_mode == "off"),
             onClick = function()
-                apply_preset(preset.hex)
+                apply_preset(preset.hex, preset.is_muos)
             end
         }
     end
