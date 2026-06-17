@@ -27,7 +27,7 @@ local icon_input = require "helpers.input"
 local footer_factory = require "lib.gui.footer"
 
 
-local menu, info_window, scraping_window, footer
+local menu, info_window, scraping_window, footer, start_generation_phase
 
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 local theme = configs.theme
@@ -869,7 +869,7 @@ local function halt_scraping()
 end
 
 -- Consolidates and transitions to generation phase, dividing work into chunks for thread workers
-local function start_generation_phase()
+function start_generation_phase()
     state.fetch_phase = false
     state.phase_start_time = love.timer.getTime()
     print(string.format("==== STARTING GENERATION PHASE ===="))
