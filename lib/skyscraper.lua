@@ -254,6 +254,10 @@ function skyscraper.init(config_path, binary)
 
 end
 
+function skyscraper.get_gen_thread_count()
+    return gen_thread_count
+end
+
 -- Shutdown function to clean up backend processes on app exit
 function skyscraper.shutdown()
     log.write("Shutting down Skyscraper backend")
@@ -349,6 +353,9 @@ local function generate_command(config)
         local escaped_rom = escape_shell_arg(config.rom)
         -- Use double quotes since other paths in the command use double quotes
         command = string.format('%s --startat "%s" --endat "%s"', command, escaped_rom, escaped_rom)
+    end
+    if config.include_from then
+        command = string.format('%s --includefrom "%s"', command, config.include_from)
     end
     if config.artwork then
         command = string.format('%s -a "%s"', command, config.artwork)
@@ -476,6 +483,19 @@ function skyscraper.update_artwork(rom_path, rom, input_folder, platform, artwor
         refresh = true
     })
     skyscraper.run(update_command, input_folder, platform, "generate", rom)
+end
+
+function skyscraper.update_artwork_chunk(rom_path, include_file, input_folder, platform, artwork, chunk_id)
+    local artwork = WORK_DIR .. "/templates/" .. artwork .. ".xml"
+
+    local update_command = generate_command({
+        platform = platform,
+        input = rom_path,
+        artwork = artwork,
+        include_from = include_file,
+        refresh = true
+    })
+    skyscraper.run(update_command, input_folder, platform, "generate", "chunk-" .. chunk_id)
 end
 
 function skyscraper.fetch_single(rom_path, rom, input_folder, platform, flags, query)

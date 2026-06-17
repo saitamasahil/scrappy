@@ -650,20 +650,7 @@ local function scrape_platforms()
         -- If no platforms need fetching, go straight to generation
         if state.pending_platforms == 0 then
             log.write("All games cached, starting generation phase")
-            state.fetch_phase = false
-
-            -- Push all games directly to the generation queue since we're skipping fetch
-            for platform, games in pairs(game_file_map) do
-                for game_title, game_info in pairs(games) do
-                    -- Use the input_folder stored per-game (fixes bug where multiple folders map to same platform)
-                    channels.SKYSCRAPER_GAME_QUEUE:push({
-                        game = game_title,
-                        platform = platform,
-                        input_folder = game_info.input_folder,
-                        skipped = false
-                    })
-                end
-            end
+            start_generation_phase()
         end
 
         if scraping_window then
@@ -881,6 +868,133 @@ local function halt_scraping()
     end
 end
 
+-- Consolidates and transitions to generation phase, dividing work into chunks for thread workers
+local function start_generation_phase()
+    state.fetch_phase = false
+    state.phase_start_time = love.timer.getTime()
+    print(string.format("==== STARTING GENERATION PHASE ===="))
+
+    local old_total = state.total
+    state.total = #state.queued_games
+    state.tasks = #state.queued_games
+
+    print(string.format("Transitioning to GENERATION PHASE with %d queued games (was expecting %d)", state.total, old_total))
+    log.write(string.format("Syncing task count: %d -> %d to match queued games", old_total, state.total))
+
+    -- Update UI
+    local ui_progress = scraping_window ^ "progress"
+    if ui_progress then
+        ui_progress.text = string.format("Generating: %d / %d", (state.total - state.tasks), state.total)
+    end
+    local ui_progress_bar = scraping_window ^ "progress_bar"
+    if ui_progress_bar and state.total > 0 then
+        ui_progress_bar:setProgress((state.total - state.tasks) / state.total)
+    end
+
+    -- Group games by platform
+    local platforms = {}
+    for _, game_info in ipairs(state.queued_games) do
+        local platform = game_info.platform
+        local title = game_info.title or game_info.game
+        
+        -- Get the filename (game_file)
+        local game_file = game_info.game_file
+        if not game_file and title and game_file_map[platform] and game_file_map[platform][title] then
+            game_file = game_file_map[platform][title].file
+        end
+
+        if game_file then
+            if not platforms[platform] then
+                platforms[platform] = {
+                    input_folder = game_info.input_folder,
+                    games = {}
+                }
+            end
+            table.insert(platforms[platform].games, game_file)
+        else
+            print(string.format("Warning: ROM filename not found for game: %s on platform: %s", tostring(title), tostring(platform)))
+        end
+    end
+
+    -- Split games per platform into chunks and queue them
+    local num_workers = skyscraper.get_gen_thread_count() or 1
+    for platform, info in pairs(platforms) do
+        local games = info.games
+        local total_games = #games
+        local input_folder = info.input_folder
+        local platform_path = user_config:get_platform_path(input_folder)
+
+        if total_games > 0 and platform_path then
+            local actual_chunks = math.min(num_workers, total_games)
+            local chunk_size = math.ceil(total_games / actual_chunks)
+
+            for chunk_id = 1, actual_chunks do
+                local start_idx = (chunk_id - 1) * chunk_size + 1
+                local end_idx = math.min(chunk_id * chunk_size, total_games)
+
+                local chunk_games = {}
+                for j = start_idx, end_idx do
+                    table.insert(chunk_games, games[j])
+                end
+
+                -- Write the chunk to a temporary file
+                local temp_file = string.format("/tmp/scrappy_chunk_%s_%d.txt", platform, chunk_id)
+                local f = io.open(temp_file, "w")
+                if f then
+                    for _, file_name in ipairs(chunk_games) do
+                        f:write(file_name .. "\n")
+                    end
+                    f:close()
+
+                    print(string.format("Queueing platform %s chunk %d (%d games) via include list %s", platform, chunk_id, #chunk_games, temp_file))
+                    channels.SKYSCRAPER_GAME_QUEUE:push({
+                        game = "chunk-" .. chunk_id,
+                        platform = platform,
+                        input_folder = input_folder,
+                        platform_path = platform_path,
+                        include_file = temp_file,
+                        skipped = false
+                    })
+                else
+                    log.write("Failed to create temporary chunk file: " .. temp_file)
+                    print("Error writing to temporary file: " .. temp_file)
+                end
+            end
+        else
+            print(string.format("No games or invalid platform path for platform %s", tostring(platform)))
+        end
+    end
+
+    -- Clear queued_games after processing
+    state.queued_games = {}
+
+    -- If sync resulted in 0 tasks, finish immediately
+    if state.tasks == 0 then
+        log.write("No tasks to process, finishing scrape")
+        state.scraping = false
+        if scraping_window then
+            scraping_window.visible = false
+        end
+        state.log = {}
+        if scraping_window then
+            local scraping_log = scraping_window ^ "scraping_log"
+            if scraping_log then
+                scraping_log.text = ""
+            end
+        end
+
+        local msg
+        if #state.failed_tasks > 0 then
+            msg = string.format("Scraped 0 games, %d failed or skipped! %s", #state.failed_tasks, table.concat(state.failed_tasks, ", "))
+        else
+            msg = "All selected platforms already have complete artwork or no new games were found!"
+        end
+        show_info_window("Finished scraping", msg)
+        channels.SKYSCRAPER_OUTPUT:clear()
+    end
+end
+
+
 -- Takes the output from Skyscraper commands and updates state
 local function update_state(t)
     if t.error and t.error ~= "" then
@@ -952,69 +1066,7 @@ local function update_state(t)
 
             -- When all fetches complete, transition to generation phase
             if state.pending_platforms == 0 and state.fetch_phase then
-                state.fetch_phase = false
-                state.phase_start_time = love.timer.getTime()
-                print(string.format("==== FETCH PHASE COMPLETE ===="))
-
-                -- SYNC TASK COUNT:
-                -- Skyscraper fetch might ignore some files (e.g. unrecognized extension, read error)
-                -- so we must update our task count to match what was ACTUALLY queued for generation.
-                -- Otherwise, we might wait forever for tasks that will never start.
-                local old_total = state.total
-                state.total = #state.queued_games
-                state.tasks = #state.queued_games
-                
-                print(string.format("Transitioning to GENERATION PHASE with %d queued games (was expecting %d)", state.total, old_total))
-                log.write(string.format("Syncing task count: %d -> %d to match queued games", old_total, state.total))
-
-                -- Update UI to reflect new total
-                local ui_progress = scraping_window ^ "progress"
-                if ui_progress then
-                    ui_progress.text = string.format("Generating: %d / %d", (state.total - state.tasks), state.total)
-                end
-                local ui_progress_bar = scraping_window ^ "progress_bar"
-                if ui_progress_bar and state.total > 0 then
-                    ui_progress_bar:setProgress((state.total - state.tasks) / state.total)
-                end
-
-                -- Start processing queued games by pushing them back to the queue
-                for i, game_info in ipairs(state.queued_games) do
-                    local game_title = game_info.title or game_info.game -- Support both keys for backward compatibility
-                    print(string.format("[%d/%d] Queueing %s for generation", i, #state.queued_games, game_title))
-                    channels.SKYSCRAPER_GAME_QUEUE:push({
-                        game = game_title,
-                        platform = game_info.platform,
-                        input_folder = game_info.input_folder,
-                        skipped = false
-                    })
-                end
-                -- Clear queued_games after processing to prevent reprocessing
-                state.queued_games = {}
-
-                -- If sync resulted in 0 tasks, finish immediately
-                if state.tasks == 0 then
-                    log.write("No tasks to process, finishing scrape")
-                    state.scraping = false
-                    if scraping_window then
-                        scraping_window.visible = false
-                    end
-                    state.log = {}
-                    if scraping_window then
-                        local scraping_log = scraping_window ^ "scraping_log"
-                        if scraping_log then
-                            scraping_log.text = ""
-                        end
-                    end
-
-                    local msg
-                    if #state.failed_tasks > 0 then
-                        msg = string.format("Scraped 0 games, %d failed or skipped! %s", #state.failed_tasks, table.concat(state.failed_tasks, ", "))
-                    else
-                        msg = "All selected platforms already have complete artwork or no new games were found!"
-                    end
-                    show_info_window("Finished scraping", msg)
-                    channels.SKYSCRAPER_OUTPUT:clear()
-                end
+                start_generation_phase()
             end
         end
     end
@@ -1626,6 +1678,12 @@ local function process_game_queue()
             for i, task in ipairs(state.tasks_in_progress) do
                 if task.game_file == finished_signal.game and task.platform == finished_signal.platform then
                     print(string.format("Finished task \"%s\" on platform %s", task.game_file, task.platform))
+                    -- Clean up temporary chunk file if applicable
+                    if task.game_file:sub(1, 6) == "chunk-" then
+                        local temp_file = string.format("/tmp/scrappy_chunk_%s_%s.txt", task.platform, task.game_file:sub(7))
+                        os.remove(temp_file)
+                        print("Removed temporary chunk file: " .. temp_file)
+                    end
                     table.remove(state.tasks_in_progress, i)
                     found = true
                     break
@@ -1639,6 +1697,12 @@ local function process_game_queue()
                     if task.platform == finished_signal.platform then
                         print(string.format("Fallback: removing task \"%s\" on platform %s (signal game: %s)",
                             task.game_file, task.platform, finished_signal.game or "nil"))
+                        -- Clean up temporary chunk file if applicable
+                        if task.game_file:sub(1, 6) == "chunk-" then
+                            local temp_file = string.format("/tmp/scrappy_chunk_%s_%s.txt", task.platform, task.game_file:sub(7))
+                            os.remove(temp_file)
+                            print("Removed temporary chunk file (fallback): " .. temp_file)
+                        end
                         table.remove(state.tasks_in_progress, i)
                         found = true
                         break
@@ -1648,8 +1712,15 @@ local function process_game_queue()
 
             -- Last resort: just remove the oldest task to prevent permanent stuck state
             if not found and #state.tasks_in_progress > 0 then
+                local task = state.tasks_in_progress[1]
                 print(string.format("Last resort: removing oldest task \"%s\"",
-                    state.tasks_in_progress[1].game_file or "unknown"))
+                    task.game_file or "unknown"))
+                -- Clean up temporary chunk file if applicable
+                if task.game_file and task.game_file:sub(1, 6) == "chunk-" then
+                    local temp_file = string.format("/tmp/scrappy_chunk_%s_%s.txt", task.platform, task.game_file:sub(7))
+                    os.remove(temp_file)
+                    print("Removed temporary chunk file (last resort): " .. temp_file)
+                end
                 table.remove(state.tasks_in_progress, 1)
             end
         end
@@ -1718,6 +1789,20 @@ local function process_game_queue()
                     finished = true
                 })
                 -- continue
+            elseif game:sub(1, 6) == "chunk-" then
+                local chunk_id = game:sub(7)
+                print(string.format("Processing queued chunk %s for platform %s", chunk_id, platform))
+                table.insert(state.tasks_in_progress, {
+                    game_file = game,
+                    started_at = love.timer.getTime(),
+                    title = "Chunk " .. chunk_id,
+                    platform = platform,
+                    input_folder = input_folder
+                })
+                print(string.format("Task in progress: %s (Total concurrent: %d)", game,
+                    #state.tasks_in_progress))
+                skyscraper.update_artwork_chunk(platform_path, ready.include_file, input_folder, platform,
+                    templates[current_template], chunk_id)
             elseif game_file_map[platform] and game_file_map[platform][game] then
                 local game_info = game_file_map[platform][game]
                 local game_file = game_info.file
