@@ -12,7 +12,11 @@ if command -v SETUP_APP >/dev/null 2>&1; then
     APP_BIN="bin/love"
     SETUP_APP "love" ""
 
-    APP_DIR="/run/muos/storage/application/Scrappy"
+    if [ -d "$MUOS_SHARE_DIR/application/Scrappy" ]; then
+        APP_DIR="$MUOS_SHARE_DIR/application/Scrappy"
+    else
+        APP_DIR="$MUOS_STORE_DIR/application/Scrappy"
+    fi
     cd "$APP_DIR/.scrappy" || exit
 
     export SDL_GAMECONTROLLERCONFIG_FILE="/usr/lib/gamecontrollerdb.txt"
@@ -62,7 +66,12 @@ else
 
     echo app >/tmp/act_go
 
-    LOVEDIR="$MUOS_STORE_DIR/application/Scrappy/.scrappy"
+    if [ -d "$MUOS_SHARE_DIR/application/Scrappy" ]; then
+        APP_DIR="$MUOS_SHARE_DIR/application/Scrappy"
+    else
+        APP_DIR="$MUOS_STORE_DIR/application/Scrappy"
+    fi
+    LOVEDIR="$APP_DIR/.scrappy"
     GPTOKEYB="$(GET_VAR "device" "storage/rom/mount")/MUOS/emulator/gptokeyb/gptokeyb2.armhf"
     STATICDIR="$LOVEDIR/static/"
     BINDIR="$LOVEDIR/bin"
