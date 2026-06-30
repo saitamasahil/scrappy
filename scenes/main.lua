@@ -329,6 +329,22 @@ local function has_missing_catalogue_artwork(dest_platform, game_title)
     if required.splash and missing_for("splash") then
         return true
     end
+
+    local videos_cfg = skyscraper_config:read("main", "videos") or "false"
+    local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
+    if videos_enabled then
+        local video_fp = string.format("%s/video/%s.mp4", base, game_title)
+        local sanitized_title = game_title:gsub(":", "_")
+        local video_missing = not nativefs.getInfo(video_fp)
+        if video_missing and sanitized_title ~= game_title then
+            local video_fp_sanitized = string.format("%s/video/%s.mp4", base, sanitized_title)
+            video_missing = not nativefs.getInfo(video_fp_sanitized)
+        end
+        if video_missing then
+            return true
+        end
+    end
+
     return false
 end
 
@@ -407,6 +423,20 @@ local function get_missing_media_types(dest_platform, game_title)
     if required.splash and missing_for("splash") then
         result.splash = true
     end
+
+    local videos_cfg = skyscraper_config:read("main", "videos") or "false"
+    local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
+    if videos_enabled then
+        local video_fp = string.format("%s/video/%s.mp4", base, game_title)
+        local sanitized_title = game_title:gsub(":", "_")
+        local video_missing = not nativefs.getInfo(video_fp)
+        if video_missing and sanitized_title ~= game_title then
+            local video_fp_sanitized = string.format("%s/video/%s.mp4", base, sanitized_title)
+            video_missing = not nativefs.getInfo(video_fp_sanitized)
+        end
+        result.video = video_missing
+    end
+
     return result
 end
 
@@ -548,6 +578,7 @@ local function scrape_platforms()
         -- Iterate over ROMs
         table.sort(roms)
         local seen_titles = {}
+        local fetch_rom_files = {}
         for _, rom in ipairs(roms) do
             -- Get the title without extension
             local game_title = utils.get_filename(rom)
@@ -581,23 +612,25 @@ local function scrape_platforms()
                 goto continue_rom
             end
 
-            -- For games that need scraping, verify if the game is already in Skyscraper's cache
-            if not uncached_games then
-                local pea_key = utils.normalize_platform(dest)
-                local rom_lower = rom:lower()
-                local platform_cache = artwork.cached_game_ids[pea_key]
-                
-                -- Check for the game in the cache (matches by full path or just filename for backward compatibility/subfolders)
-                local cached_res = platform_cache and (platform_cache[rom_lower] or platform_cache[rom_lower:match("([^/]+)$")])
+            -- Verify if the game needs to be fetched from the online API (uncached or missing videos)
+            local pea_key = utils.normalize_platform(dest)
+            local rom_lower = rom:lower()
+            local platform_cache = artwork.cached_game_ids[pea_key]
+            
+            -- Check for the game in the cache (matches by full path or just filename for backward compatibility/subfolders)
+            local cached_res = platform_cache and (platform_cache[rom_lower] or platform_cache[rom_lower:match("([^/]+)$")])
 
-                if not cached_res then
-                    -- Game not found in cache at all, definitely need to fetch
-                    uncached_games = true
-                end
-                
-                -- NOTE: We no longer check specific resource types (cover, screenshot, etc.) here.
-                -- If the game is in the cache but missing artwork, it usually means it's not available 
-                -- on the server. Forcing a fetch every time wastes time and bandwidth for the user.
+            local videos_cfg = skyscraper_config:read("main", "videos") or "false"
+            local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
+
+            local has_video = false
+            if cached_res then
+                has_video = cached_res["video"] or false
+            end
+
+            if not cached_res or (videos_enabled and not has_video) then
+                table.insert(fetch_rom_files, rom)
+                uncached_games = true
             end
 
             -- Save in reference map
@@ -624,7 +657,23 @@ local function scrape_platforms()
                 rom_path = platform_path
             }
             state.pending_platforms = state.pending_platforms + 1
-            skyscraper.fetch_artwork(platform_path, src, dest)
+
+            local fetch_file = nil
+            local force_refresh = false
+            if #fetch_rom_files > 0 then
+                fetch_file = string.format("/tmp/scrappy_fetch_%s.txt", dest)
+                local content = table.concat(fetch_rom_files, "\n")
+                nativefs.write(fetch_file, content)
+                
+                -- Force a refresh on fetch if video scraping is active to force-fetch missing videos
+                local videos_cfg = skyscraper_config:read("main", "videos") or "false"
+                local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
+                if videos_enabled then
+                    force_refresh = true
+                end
+            end
+
+            skyscraper.fetch_artwork(platform_path, src, dest, nil, fetch_file, force_refresh)
         else
             print("ALL GAMES ARE CACHED FOR " .. src)
             -- Queue cached games for generation phase instead of processing immediately

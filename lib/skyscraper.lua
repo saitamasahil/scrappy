@@ -33,6 +33,7 @@ require("globals")
 local json = require("lib.json")
 local log = require("lib.log")
 local channels = require("lib.backend.channels")
+local utils = require("helpers.utils")
 local skyscraper_config = require("helpers.config").skyscraper_config
 
 local skyscraper = {
@@ -460,14 +461,26 @@ function skyscraper.custom_update_artwork(platform, cache, input, artwork)
     skyscraper.run(command)
 end
 
-function skyscraper.fetch_artwork(rom_path, input_folder, platform, start_at)
+function skyscraper.fetch_artwork(rom_path, input_folder, platform, start_at, include_from, refresh)
+    local flags = {"unattend"}
+    if not refresh then
+        table.insert(flags, "onlymissing")
+    end
+    local videos_cfg = skyscraper_config:read("main", "videos") or "false"
+    local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
+    if videos_enabled then
+        table.insert(flags, "videos")
+    end
+
     local command = generate_command({
         platform = platform,
         input = rom_path,
         fetch = true,
         module = get_default_module_for(platform),
-        flags = {"unattend", "onlymissing"},
-        start_at = start_at
+        flags = flags,
+        start_at = start_at,
+        include_from = include_from,
+        refresh = refresh
     })
     skyscraper.run(command, input_folder, platform, "update")
 end
@@ -500,6 +513,22 @@ end
 
 function skyscraper.fetch_single(rom_path, rom, input_folder, platform, flags, query)
     flags = flags or {"unattend"}
+
+    local videos_cfg = skyscraper_config:read("main", "videos") or "false"
+    local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
+    if videos_enabled then
+        local has_videos = false
+        for _, f in ipairs(flags) do
+            if f == "videos" then
+                has_videos = true
+                break
+            end
+        end
+        if not has_videos then
+            table.insert(flags, "videos")
+        end
+    end
+
     local fetch_command = generate_command({
         platform = platform,
         input = rom_path,
@@ -507,7 +536,8 @@ function skyscraper.fetch_single(rom_path, rom, input_folder, platform, flags, q
         module = get_default_module_for(platform),
         rom = rom,
         flags = flags,
-        query = query -- Custom search query for refine search
+        query = query, -- Custom search query for refine search
+        refresh = true  -- Force refresh to fetch newly enabled resource types like videos
     })
     skyscraper.run(fetch_command, input_folder, platform, "fetch", rom)
 end
@@ -525,6 +555,13 @@ end
 -- Fetch game manual (PDF) for a single ROM from ScreenScraper
 -- Fetch game manual (PDF) for a single ROM from ScreenScraper
 function skyscraper.fetch_single_manual(rom_path, rom, input_folder, platform, query)
+    local flags = {"unattend", "manuals"}
+    local videos_cfg = skyscraper_config:read("main", "videos") or "false"
+    local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
+    if videos_enabled then
+        table.insert(flags, "videos")
+    end
+
     local command = generate_command({
         platform = platform,
         input = rom_path,
@@ -532,7 +569,7 @@ function skyscraper.fetch_single_manual(rom_path, rom, input_folder, platform, q
         module = "screenscraper",
         refresh = true,
         rom = rom,
-        flags = {"unattend", "manuals"},
+        flags = flags,
         query = query
     })
     skyscraper.run(command, input_folder, platform, "fetch", rom)

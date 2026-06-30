@@ -407,6 +407,22 @@ local function has_missing_media(dest_platform, rom)
     if required.splash and missing_for("splash") then
         return true
     end
+
+    local videos_cfg = skyscraper_config:read("main", "videos") or "false"
+    local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
+    if videos_enabled then
+        local video_fp = string.format("%s/video/%s.mp4", base, game_title)
+        local sanitized_title = game_title:gsub(":", "_")
+        local video_missing = nativefs.getInfo(video_fp) == nil
+        if video_missing and sanitized_title ~= game_title then
+            local video_fp_sanitized = string.format("%s/video/%s.mp4", base, sanitized_title)
+            video_missing = nativefs.getInfo(video_fp_sanitized) == nil
+        end
+        if video_missing then
+            return true
+        end
+    end
+
     return false
 end
 

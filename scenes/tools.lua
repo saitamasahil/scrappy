@@ -68,6 +68,7 @@ local confirm_popup, confirm_popup_visible = nil, false
 local clear_cache_popup_visible = false
 local offline_popup_visible = false -- Offline mode confirmation popup
 local confirm_fade, clear_cache_fade, offline_fade = 0, 0, 0 -- Zoom animation state
+local video_warning_visible, video_warning_fade = false, 0
 local accent_popup, accent_menu
 local artwork_manager_running = false
 local artwork_manager_ip = nil
@@ -748,6 +749,26 @@ end
 local function on_cancel_offline_mode()
     sound.play("nav_back")
     offline_popup_visible = false
+end
+
+local function on_confirm_video_warning()
+    video_warning_visible = false
+    skyscraper_config:insert("main", "videos", '"true"')
+    skyscraper_config:save()
+    local item = menu ^ "video_toggle"
+    if item then
+        item.text = "Video Preview Scraping: ON"
+    end
+    if sound.enabled then
+        sound.play("nav_confirm")
+    end
+end
+
+local function on_cancel_video_warning()
+    video_warning_visible = false
+    if sound.enabled then
+        sound.play("nav_back")
+    end
 end
 
 local function trim(s)
@@ -1908,6 +1929,35 @@ function tools:load()
             end
         end
     } + listitem {
+        id = "video_toggle",
+        text = function()
+            local videos_cfg = skyscraper_config:read("main", "videos") or "false"
+            local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
+            return "Video Preview Scraping: " .. (videos_enabled and "ON" or "OFF")
+        end,
+        width = item_width,
+        icon = "video",
+        onClick = function()
+            local videos_cfg = skyscraper_config:read("main", "videos") or "false"
+            local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
+            if videos_enabled then
+                -- Turn OFF directly
+                skyscraper_config:insert("main", "videos", '"false"')
+                skyscraper_config:save()
+                local item = menu ^ "video_toggle"
+                if item then
+                    item.text = "Video Preview Scraping: OFF"
+                end
+                if sound.enabled then
+                    sound.play("nav_back")
+                end
+            else
+                -- Show warning popup before turning ON
+                video_warning_visible = true
+                video_warning_fade = 0
+            end
+        end
+    } + listitem {
         text = "Edit Region Priorities",
         width = item_width,
         onClick = open_region_editor,
@@ -2579,6 +2629,89 @@ local function draw_offline_popup()
     love.graphics.pop()
 end
 
+-- Draw the video warning confirmation popup
+local function draw_video_warning_popup()
+    if not video_warning_visible then
+        video_warning_fade = 0
+        return
+    end
+
+    video_warning_fade = video_warning_fade + (1 - video_warning_fade) * 20 * love.timer.getDelta()
+    if video_warning_fade > 0.999 then video_warning_fade = 1 end
+
+    local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
+    local font = love.graphics.getFont()
+    local font_h = font:getHeight()
+
+    love.graphics.push()
+    love.graphics.origin()
+
+    -- Dim background
+    love.graphics.setColor(0, 0, 0, 0.8 * video_warning_fade)
+    love.graphics.rectangle("fill", 0, 0, sw, sh)
+
+    local popup_scale = 0.85 + 0.15 * video_warning_fade
+    love.graphics.translate(sw / 2, sh / 2)
+    love.graphics.scale(popup_scale, popup_scale)
+    love.graphics.translate(-sw / 2, -sh / 2)
+
+    -- Popup box dimensions
+    local box_w = math.min(sw - (40 * _G.scale), 360 * _G.scale)
+    
+    -- Warning message
+    local msg = "Enabling video scraping consumes significantly more storage space and download time. Proceed?"
+    local _, lines = font:getWrap(msg, box_w - (30 * _G.scale))
+    local text_h = #lines * font_h
+    
+    local title_h = font_h + (30 * _G.scale)
+    local button_h = (38 * _G.scale)
+    local box_h = text_h + title_h + button_h + (20 * _G.scale)
+
+    local box_x = (sw - box_w) / 2
+    local box_y = (sh - box_h) / 2
+
+    -- Draw box background
+    love.graphics.setColor(0.18, 0.18, 0.18, 1)
+    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
+
+    -- Draw border
+    love.graphics.setColor(0.4, 0.4, 0.4, 1)
+    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
+
+    love.graphics.setColor(1, 1, 1, 1)
+
+    -- Title
+    love.graphics.printf("Enable Videos?", box_x, box_y + (12 * _G.scale), box_w, "center")
+
+    -- Draw message
+    love.graphics.printf(msg, box_x + (15 * _G.scale), box_y + title_h, box_w - (30 * _G.scale), "center")
+
+    -- Button icons and labels
+    local icon_size = 24 * _G.scale
+    local btn_y = box_y + box_h - (38 * _G.scale)
+    local left_center = box_x + box_w * 0.25
+    local right_center = box_x + box_w * 0.75
+
+    local proceed_total_w = icon_size + (6 * _G.scale) + font:getWidth("Yes")
+    local proceed_x = left_center - proceed_total_w / 2
+    if button_a_icon then
+        local iw, ih = button_a_icon:getDimensions()
+        local sx, sy = icon_size / iw, icon_size / ih
+        love.graphics.draw(button_a_icon, proceed_x, btn_y, 0, sx, sy)
+    end
+    love.graphics.print("Yes", proceed_x + icon_size + (6 * _G.scale), btn_y + (icon_size - font_h) / 2)
+
+    local cancel_total_w = icon_size + (6 * _G.scale) + font:getWidth("No")
+    local cancel_x = right_center - cancel_total_w / 2
+    if button_b_icon then
+        local iw, ih = button_b_icon:getDimensions()
+        local sx, sy = icon_size / iw, icon_size / ih
+        love.graphics.draw(button_b_icon, cancel_x, btn_y, 0, sx, sy)
+    end
+    love.graphics.print("No", cancel_x + icon_size + (6 * _G.scale), btn_y + (icon_size - font_h) / 2)
+
+    love.graphics.pop()
+end
 
 local function draw_missing_media_popup()
     if not missing_media_popup_visible then return end
@@ -2698,6 +2831,7 @@ function tools:draw()
     draw_clear_cache_popup()
     draw_offline_popup()
     draw_missing_media_popup()
+    draw_video_warning_popup()
     info_window:draw()
 
     -- Draw footer (hidden if any popup/VK is visible)
@@ -2711,7 +2845,8 @@ function tools:draw()
                          grid_size_popup_visible or
                          confirm_popup_visible or 
                          clear_cache_popup_visible or 
-                         offline_popup_visible
+                         offline_popup_visible or
+                         video_warning_visible
     
     if footer and not (vk and vk.visible) and not popup_active and not info_window.visible then
         footer:draw()
@@ -2800,6 +2935,17 @@ function tools:keypressed(key)
             return
         elseif key == "escape" or key == "b" then
             on_cancel_offline_mode()
+            return
+        end
+        return -- Block all other keys while popup is visible
+    end
+
+    if video_warning_visible then
+        if key == "return" or key == "a" then
+            on_confirm_video_warning()
+            return
+        elseif key == "escape" or key == "b" then
+            on_cancel_video_warning()
             return
         end
         return -- Block all other keys while popup is visible

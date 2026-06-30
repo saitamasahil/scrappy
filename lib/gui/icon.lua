@@ -61,6 +61,7 @@ local icon_paths = {
   view         = "assets/icons/view.png",
   plugin       = "assets/icons/plugin.png",
   faq          = "assets/icons/faq.png",
+  video        = "assets/icons/video.png",
 }
 
 local icons = {}

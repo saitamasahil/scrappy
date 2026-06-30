@@ -287,6 +287,102 @@ function artwork.copy_artwork_type(platform, game, media_path, copy_path, output
     end
 end
 
+function artwork.copy_video_from_cache(platform, game, copy_path)
+    local cache_folder = skyscraper_config:read("main", "cacheFolder")
+    if not cache_folder or cache_folder == "\"\"" then return false end
+    cache_folder = utils.strip_quotes(cache_folder)
+
+    local pea_key = normalize_platform(platform)
+    local videos_cache_dir = string.format("%s/%s/videos", cache_folder, pea_key)
+    if not nativefs.getInfo(videos_cache_dir) then return false end
+
+    -- Parse quickid.xml to map game title to cache ID
+    local quickid_path = string.format("%s/%s/quickid.xml", cache_folder, pea_key)
+    local quickid = nativefs.read(quickid_path)
+    if not quickid then return false end
+
+    local cache_id = nil
+    for _, line in ipairs(utils.split(quickid, "\n")) do
+        if line:find("<quickid%s") then
+            local filepath = line:match('filepath="([^"]+)"')
+            if filepath then
+                local filename = filepath:match("([^/]+)$")
+                local id = line:match('id="([^"]+)"')
+                if filename and id then
+                    local decoded_name = xml_decode(filename)
+                    local base_name = decoded_name:match("^(.+)%.[^.]+$") or decoded_name
+                    -- Match against the requested game (ignoring case)
+                    if base_name:lower() == game:lower() then
+                        cache_id = id
+                        break
+                    end
+                end
+            end
+        end
+    end
+
+    if not cache_id then 
+        log.write(string.format("Video cache ID not found in quickid.xml for game: %s", game))
+        return false 
+    end
+
+    -- Search scraper source directories under videos cache directory for this cache ID
+    local source_dirs = nativefs.getDirectoryItems(videos_cache_dir)
+    if not source_dirs then return false end
+
+    local found_path = nil
+    for _, source_dir in ipairs(source_dirs) do
+        local source_path = string.format("%s/%s", videos_cache_dir, source_dir)
+        local source_info = nativefs.getInfo(source_path)
+        if source_info and source_info.type == "directory" then
+            -- In cache, videos might be saved with or without extension
+            local test_path_no_ext = string.format("%s/%s", source_path, cache_id)
+            if nativefs.getInfo(test_path_no_ext) then
+                found_path = test_path_no_ext
+            else
+                -- Try common video extensions
+                local exts = {"mp4", "avi", "mkv", "webm"}
+                for _, ext in ipairs(exts) do
+                    local test_path = string.format("%s/%s.%s", source_path, cache_id, ext)
+                    if nativefs.getInfo(test_path) then
+                        found_path = test_path
+                        break
+                    end
+                end
+            end
+            if found_path then break end
+        end
+    end
+
+    if not found_path then 
+        log.write(string.format("Video cache file not found for cache ID: %s", cache_id))
+        return false 
+    end
+
+    -- Ensure destination directory 'video' exists
+    local dest_dir = string.format("%s/video", copy_path)
+    if not nativefs.getInfo(dest_dir) then
+        nativefs.createDirectory(dest_dir)
+    end
+
+    -- Copy to catalogue/Platform/video/GameName.mp4
+    local dest_file = string.format("%s/video/%s.mp4", copy_path, game)
+    local video_bytes = nativefs.read(found_path)
+    if not video_bytes then
+        log.write(string.format("Failed to read video file from cache: %s", found_path))
+        return false
+    end
+
+    local success, err = nativefs.write(dest_file, video_bytes)
+    if err then
+        log.write(string.format("Failed to write video to %s: %s", dest_file, err))
+        return false
+    else
+        log.write(string.format("Successfully copied video preview from cache to %s", dest_file))
+        return true
+    end
+end
+
 function artwork.copy_grid_from_cache(platform, game, copy_path)
     local cache_folder = skyscraper_config:read("main", "cacheFolder")
     if not cache_folder or cache_folder == "\"\"" then return end
@@ -454,7 +550,13 @@ function artwork.copy_to_catalogue(platform, game)
     if not nativefs.getInfo(copy_path) then
         nativefs.createDirectory(copy_path)
     end
+    local videos_cfg = skyscraper_config:read("main", "videos") or "false"
+    local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
+
     local ensure_dirs = {"box", "preview", "splash", "text", "grid"}
+    if videos_enabled then
+        table.insert(ensure_dirs, "video")
+    end
     for _, d in ipairs(ensure_dirs) do
         local p = string.format("%s/%s", copy_path, d)
         if not nativefs.getInfo(p) then
@@ -471,6 +573,11 @@ function artwork.copy_to_catalogue(platform, game)
 
     -- Extract Grid image from Raw Cache Covers
     artwork.copy_grid_from_cache(platform, game, copy_path)
+
+    -- Copy video preview if enabled
+    if videos_enabled then
+        artwork.copy_video_from_cache(platform, game, copy_path)
+    end
 
     -----------------------------
     -- Read Pegasus-formatted metadata
