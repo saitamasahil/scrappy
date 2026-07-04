@@ -101,34 +101,13 @@ if [ -d "$PROJECT_ROOT/assets" ]; then
     )
 fi
 
-# Ensure glyph directory exists in the root of the app and copy scrappy.png
+# Ensure glyph directory exists in the root of the app and copy logo_scrappy.svg
 mkdir -p "$WORKDIR/Scrappy/glyph"
-GLYPH_SRC=""
-if [ -f "$PROJECT_ROOT/assets/scrappy.png" ]; then
-    GLYPH_SRC="$PROJECT_ROOT/assets/scrappy.png"
-elif [ -f "$PROJECT_ROOT/glyph/scrappy.png" ]; then
-    GLYPH_SRC="$PROJECT_ROOT/glyph/scrappy.png"
-fi
-if [ -n "$GLYPH_SRC" ]; then
-    echo "Copying scrappy.png to glyph directory..."
-    cp "$GLYPH_SRC" "$WORKDIR/Scrappy/glyph/"
-    # Copy resolution-specific pre-sized icons for proper muOS glyph display
-    GLYPH_ASSET_DIR="$PROJECT_ROOT/assets/glyph"
-    for res in 640x480 720x480 720x576 720x720 1024x768 1280x720 1920x1080; do
-        mkdir -p "$WORKDIR/Scrappy/glyph/$res"
-        if [ -f "$GLYPH_ASSET_DIR/$res.png" ]; then
-            cp "$GLYPH_ASSET_DIR/$res.png" "$WORKDIR/Scrappy/glyph/$res/scrappy.png"
-        else
-            # Fallback to default icon if resolution-specific one not found
-            cp "$GLYPH_SRC" "$WORKDIR/Scrappy/glyph/$res/scrappy.png"
-        fi
-    done
-    # Cleanup before zipping update package
-    if [ -d "$WORKDIR/Scrappy/glyph/" ]; then
-        find "$WORKDIR/Scrappy/glyph/" -maxdepth 1 -name "*.png" ! -name "scrappy.png" -delete
-    fi
+if [ -f "$PROJECT_ROOT/assets/glyph/logo_scrappy.svg" ]; then
+    echo "Copying logo_scrappy.svg to glyph directory..."
+    cp "$PROJECT_ROOT/assets/glyph/logo_scrappy.svg" "$WORKDIR/Scrappy/glyph/"
 else
-    echo "Warning: scrappy.png not found in expected locations"
+    echo "Warning: logo_scrappy.svg not found in assets/glyph"
 fi
 
 if [ "$BUILD_UPDATE" = true ]; then
@@ -147,11 +126,7 @@ if [ "$BUILD_FULL" = true ]; then
     cp -r "$PROJECT_ROOT/showcase" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
     cp -r "$PROJECT_ROOT/static" "$WORKDIR/Scrappy/.scrappy/"
 
-    # Final Cleanup: Remove loose resolution-specific icons from the glyph root
-    # but keep the main scrappy.png as a fallback
-    if [ -d "$WORKDIR/Scrappy/glyph/" ]; then
-        find "$WORKDIR/Scrappy/glyph/" -maxdepth 1 -name "*.png" ! -name "scrappy.png" -delete
-    fi
+
 
     # Create full package
     echo "Creating full package..."

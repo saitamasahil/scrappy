@@ -201,43 +201,16 @@ if (Test-Path -LiteralPath $assetsDir -PathType Container) {
     Copy-DirectoryContents -SourceDir $assetsDir -DestinationDir $workAssetsDir
 }
 
-# Ensure glyph directory exists in the root of the app and copy scrappy.png
+# Ensure glyph directory exists in the root of the app and copy logo_scrappy.svg
 $workGlyphDir = Join-Path $workScrappyDir "glyph"
 New-Item -ItemType Directory -Force -Path $workGlyphDir | Out-Null
 
-$glyphSource = $null
-$assetGlyphSource = Join-Path $ProjectRoot "assets/scrappy.png"
-$glyphDirSource = Join-Path $ProjectRoot "glyph/scrappy.png"
-if (Test-Path -LiteralPath $assetGlyphSource -PathType Leaf) {
-    $glyphSource = $assetGlyphSource
-} elseif (Test-Path -LiteralPath $glyphDirSource -PathType Leaf) {
-    $glyphSource = $glyphDirSource
-}
-
-if ($glyphSource) {
-    Write-Host "Copying scrappy.png to glyph directory..."
-    Copy-Item -LiteralPath $glyphSource -Destination $workGlyphDir -Force
-    # Copy resolution-specific pre-sized icons for proper muOS glyph display
-    $glyphAssetDir = Join-Path $ProjectRoot "assets/glyph"
-    foreach ($res in @("640x480", "720x480", "720x576", "720x720", "1024x768", "1280x720", "1920x1080")) {
-        $resDir = Join-Path $workGlyphDir $res
-        New-Item -ItemType Directory -Force -Path $resDir | Out-Null
-        $resSrc = Join-Path $glyphAssetDir "$res.png"
-        if (Test-Path -LiteralPath $resSrc -PathType Leaf) {
-            Copy-Item -LiteralPath $resSrc -Destination (Join-Path $resDir "scrappy.png") -Force
-        } else {
-            # Fallback to default icon if resolution-specific one not found
-            Copy-Item -LiteralPath $glyphSource -Destination (Join-Path $resDir "scrappy.png") -Force
-        }
-    }
-    }
+$svgSource = Join-Path $ProjectRoot "assets/glyph/logo_scrappy.svg"
+if (Test-Path -LiteralPath $svgSource -PathType Leaf) {
+    Write-Host "Copying logo_scrappy.svg to glyph directory..."
+    Copy-Item -LiteralPath $svgSource -Destination $workGlyphDir -Force
 } else {
-    Write-Host "Warning: scrappy.png not found in expected locations" -ForegroundColor Yellow
-}
-
-# Cleanup before zipping update package
-if (Test-Path -LiteralPath $workGlyphDir -PathType Container) {
-    Get-ChildItem -Path $workGlyphDir -Filter "*.png" | Where-Object { $_.Name -ne "scrappy.png" } | Remove-Item -Force
+    Write-Host "Warning: logo_scrappy.svg not found in assets/glyph" -ForegroundColor Yellow
 }
 
 if ($buildUpdate) {
@@ -256,11 +229,7 @@ if ($buildFull) {
     }
     Copy-Item -LiteralPath (Join-Path $ProjectRoot "static") -Destination $workHiddenDir -Recurse -Force
 
-    # Final Cleanup: Remove loose resolution-specific icons from the glyph root
-    # but keep the main scrappy.png as a fallback
-    if (Test-Path -LiteralPath $workGlyphDir -PathType Container) {
-        Get-ChildItem -Path $workGlyphDir -Filter "*.png" | Where-Object { $_.Name -ne "scrappy.png" } | Remove-Item -Force
-    }
+
 
     Write-Host "Creating full package..."
     New-MuxappZip -SourceScrappyDir $workScrappyDir -DestinationPath $fullPackage
