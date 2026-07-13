@@ -989,8 +989,8 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
     <div id="platform-tabs"></div>
 
     <main>
-        <div id="cache-hint" style="text-align:center; padding:6px 16px; margin-bottom:12px; font-size:11px; color:var(--text-secondary); opacity:0; transition: opacity 0.6s ease; cursor:pointer;" onclick="this.style.display='none'">
-            Only ROMs that have been scraped will appear here.
+        <div id="cache-hint" style="text-align:center; padding:12px 20px; margin: 16px 24px; font-size:12px; color:var(--text-secondary); background:var(--tpl-select-bg); border:1px dashed var(--card-border); border-radius:8px; opacity:0; transition: opacity 0.6s ease; cursor:pointer;" onclick="this.style.display='none'">
+            <span style="font-weight:700; color:var(--accent);">💡 Note:</span> Artwork Manager works best when games have been scraped on the device. Restoring a cache backup alone won't show games here, and newly added or unscraped ROMs will not appear until they are scraped. (Click to dismiss)
         </div>
         <div class="search-container">
             <input type="text" id="search-input" placeholder="Search games...">
@@ -1061,14 +1061,10 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 
             if (platforms.length > 0) switchPlatform(platforms[0]);
 
-            // Subtle hint: fade in after 1s, auto-dismiss after 8s
+            // Subtle hint: fade in after 1s, dismissible on click
             const hint = document.getElementById('cache-hint');
             if (hint) {{
-                setTimeout(() => {{ hint.style.opacity = '0.7'; }}, 1000);
-                setTimeout(() => {{
-                    hint.style.opacity = '0';
-                    setTimeout(() => {{ hint.style.display = 'none'; }}, 600);
-                }}, 8000);
+                setTimeout(() => {{ hint.style.opacity = '1'; }}, 1000);
             }}
         }}
 
