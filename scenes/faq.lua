@@ -138,6 +138,13 @@ function faq:load()
     "• Edit Platform Mappings: Maps your ROM directories to their corresponding muOS core/system IDs, ensuring accurate matching databases and scraper profiles.\n" ..
     "• Update Cache: Runs Skyscraper in multi-threaded fetch-only mode to update the local assets cache for your games without generating final images.")
 
+  -- Offline Scraping FAQ
+  content = content + add_section("section_offline_scraping", "Offline Scraping & Generation",
+    "Offline scraping is the generating phase of the scraping process. Instead of querying online APIs, it utilizes your existing locally downloaded game cache:\n\n" ..
+    "• Fast Generation: Since it uses already cached assets, generating artwork is instantaneous and does not require an active internet connection.\n" ..
+    "• Output Customization: You can experiment with different themes and visual layout styles by generating artwork using different XML layouts (e.g., 2D box art, 3D boxes, compound mixes) for the available games in your cache.\n" ..
+    "• How to run: Open the 'Generate Artwork' menu, select your platform, choose your preferred XML layout template, and start the generation.")
+
   -- Wrap in scroll container
   scroller = scroll_container {
     width = w_width,
