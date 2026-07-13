@@ -161,7 +161,7 @@ function faq:update(dt)
 
   -- Continuous smooth scrolling via held D-pad/Direction keys
   local input = require("helpers.input")
-  local scroll_speed = 90 * _G.scale * dt
+  local scroll_speed = 350 * _G.scale * dt
   local content_h = scroller:getContentHeight()
   local view_h = scroller.height
   local max_scroll = math.max(0, content_h - view_h)
