@@ -352,8 +352,8 @@ local function generate_command(config)
         -- Escape special characters for ROM filenames to handle characters
         -- like parentheses, which are common in ROM names (e.g., "Super Metroid (USA).sfc")
         local escaped_rom = escape_shell_arg(config.rom)
-        -- Use double quotes since other paths in the command use double quotes
-        command = string.format('%s --startat "%s" --endat "%s"', command, escaped_rom, escaped_rom)
+        -- Pass the ROM relative path as a positional argument at the end of the options
+        command = string.format('%s "%s"', command, escaped_rom)
     end
     if config.include_from then
         command = string.format('%s --includefrom "%s"', command, config.include_from)

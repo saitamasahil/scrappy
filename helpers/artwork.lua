@@ -274,6 +274,11 @@ function artwork.copy_artwork_type(platform, game, media_path, copy_path, output
     end
     -- Copy to catalogue
     local dest_file = string.format("%s/%s/%s.png", copy_path, output_type, game)
+    -- Ensure parent subdirectories exist for games in subfolders
+    local parent_dir = dest_file:match("(.+)/[^/]+$")
+    if parent_dir and not nativefs.getInfo(parent_dir) then
+        nativefs.createDirectory(parent_dir)
+    end
     local success, err = nativefs.write(dest_file, scraped_art)
     if err then
         log.write(string.format("Failed to write artwork to %s: %s", dest_file, err))
@@ -311,8 +316,11 @@ function artwork.copy_video_from_cache(platform, game, copy_path)
                 if filename and id then
                     local decoded_name = xml_decode(filename)
                     local base_name = decoded_name:match("^(.+)%.[^.]+$") or decoded_name
-                    -- Match against the requested game (ignoring case)
-                    if base_name:lower() == game:lower() then
+                    -- Match against the requested game (ignoring case, supporting subfolders)
+                    local fp_lower = filepath:lower()
+                    local match_str = "/" .. game:lower()
+                    local fp_no_ext = fp_lower:gsub("%.%w+$", "")
+                    if fp_no_ext:find(match_str, 1, true) or base_name:lower() == game:lower() then
                         cache_id = id
                         break
                     end
@@ -367,6 +375,11 @@ function artwork.copy_video_from_cache(platform, game, copy_path)
 
     -- Copy to catalogue/Platform/video/GameName.mp4
     local dest_file = string.format("%s/video/%s.mp4", copy_path, game)
+    -- Ensure parent subdirectories exist for games in subfolders
+    local parent_dir = dest_file:match("(.+)/[^/]+$")
+    if parent_dir and not nativefs.getInfo(parent_dir) then
+        nativefs.createDirectory(parent_dir)
+    end
     local video_bytes = nativefs.read(found_path)
     if not video_bytes then
         log.write(string.format("Failed to read video file from cache: %s", found_path))
@@ -409,8 +422,11 @@ function artwork.copy_grid_from_cache(platform, game, copy_path)
                 if filename and id then
                     local decoded_name = xml_decode(filename)
                     local base_name = decoded_name:match("^(.+)%.[^.]+$") or decoded_name
-                    -- Match against the requested game (ignoring case)
-                    if base_name:lower() == game:lower() then
+                    -- Match against the requested game (ignoring case, supporting subfolders)
+                    local fp_lower = filepath:lower()
+                    local match_str = "/" .. game:lower()
+                    local fp_no_ext = fp_lower:gsub("%.%w+$", "")
+                    if fp_no_ext:find(match_str, 1, true) or base_name:lower() == game:lower() then
                         cache_id = id
                         break
                     end
@@ -452,6 +468,11 @@ function artwork.copy_grid_from_cache(platform, game, copy_path)
 
     -- Extract, dynamically scale based on device resolution, and explicitly encode PNG
     local dest_file = string.format("%s/grid/%s.png", copy_path, game)
+    -- Ensure parent subdirectories exist for games in subfolders
+    local parent_dir = dest_file:match("(.+)/[^/]+$")
+    if parent_dir and not nativefs.getInfo(parent_dir) then
+        nativefs.createDirectory(parent_dir)
+    end
     local file_data = nativefs.newFileData(found_path)
 
     local success, result_or_err = nil, nil
@@ -589,7 +610,13 @@ function artwork.copy_to_catalogue(platform, game)
             for _, entry in ipairs(games) do
                 if entry.filename == game then
                     print(string.format("Writing desc for %s", game))
-                    local _, err = nativefs.write(string.format("%s/text/%s.txt", copy_path, game),
+                    local desc_file = string.format("%s/text/%s.txt", copy_path, game)
+                    -- Ensure parent subdirectories exist for games in subfolders
+                    local parent_dir = desc_file:match("(.+)/[^/]+$")
+                    if parent_dir and not nativefs.getInfo(parent_dir) then
+                        nativefs.createDirectory(parent_dir)
+                    end
+                    local _, err = nativefs.write(desc_file,
                         string.format("%s\nGenre: %s", entry.description, entry.genre))
                     if err then
                         log.write(err)

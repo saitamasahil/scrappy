@@ -132,10 +132,12 @@ class ArtworkManagerHandler(http.server.BaseHTTPRequestHandler):
                     rel_path = filepath
                     if rel_path.startswith("./"):
                         rel_path = rel_path[2:]
-                    elif "/ROMS/" in rel_path:
+                    elif "/roms/" in rel_path.lower():
                         # Extract part after [PlatformName]/ if it exists
                         try:
-                            roms_part = rel_path.split("/ROMS/", 1)[1]
+                            # Split case-insensitively
+                            idx = rel_path.lower().find("/roms/")
+                            roms_part = rel_path[idx + 6:]
                             parts = roms_part.split("/")
                             if len(parts) > 1:
                                 rel_path = "/".join(parts[1:])
@@ -1034,7 +1036,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 
         function buildMediaUrl(platform, relPath) {{
             const encodedPath = relPath.split('/').map(encodeURIComponent).join('/');
-            return `/api/media/${{encodeURIComponent(platform)}}/${{encodedPath}}`;
+            return `/api/media/${{encodeURIComponent(platform)}}/${{encodedPath}}?t=${{Date.now()}}`;
         }}
 
         async function init() {{
