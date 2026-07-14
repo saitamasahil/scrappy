@@ -8,7 +8,9 @@ local scenes = {
         push = false,
         pop = false,
         newid = 0
-    }
+    },
+    popping_scene = nil,
+    scene_fade = 1
 }
 scenes.__index = scenes
 
@@ -50,6 +52,7 @@ function scenes:switch(state)
 end
 
 function scenes:_do_push(state)
+    self.popping_scene = nil
     require("helpers.input").ignoreCurrentPresses()
     self.states[state]:load()
     self.focus[#self.focus + 1] = state
@@ -62,6 +65,7 @@ function scenes:_do_pop()
         if (self.states[cfocus].close ~= nil) then
             self.states[cfocus]:close()
         end
+        self.popping_scene = cfocus
         self.focus[#self.focus] = nil
 
         local new_focus_id = self:currentFocus()
@@ -74,6 +78,7 @@ function scenes:_do_pop()
 end
 
 function scenes:_do_switch(state)
+    self.popping_scene = nil
     for i, _ in ipairs(self.focus) do
         self.focus[i] = nil
     end
@@ -106,20 +111,68 @@ function scenes:update(dt)
         end
     end
 
-    if self.scene_fade then
-        self.scene_fade = math.min(1, self.scene_fade + dt * 8)
+    if self.scene_fade and self.scene_fade < 1 then
+        self.scene_fade = math.min(1, self.scene_fade + dt * 6) -- smooth transition duration
+        if self.scene_fade == 1 then
+            self.popping_scene = nil
+        end
     end
     self.states[self:currentFocus()]:update(dt)
 end
 
 function scenes:draw()
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
     local top = self:currentFocus()
-    if top then
-        self.states[top]:draw()
-        if self.scene_fade and self.scene_fade < 1 then
-            love.graphics.setColor(0, 0, 0, 1 - self.scene_fade)
-            love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+    
+    if not top then return end
+    
+    if self.scene_fade and self.scene_fade < 1 then
+        local t = self.scene_fade
+        -- cubic out easing for smooth scaling deceleration
+        local ease = 1 - (1 - t) * (1 - t) * (1 - t)
+        
+        if self.popping_scene then
+            -- Popping scene transition (Zoom & Fade)
+            -- Draw resumed top scene solid underneath
+            self.states[top]:draw()
+            
+            -- Draw popped scene scaling down and fading out on top
+            local s = 1.0 - 0.05 * ease
+            love.graphics.push()
+            love.graphics.translate(w / 2, h / 2)
+            love.graphics.scale(s, s)
+            love.graphics.translate(-w / 2, -h / 2)
+            love.graphics.setColor(1, 1, 1, 1 - ease)
+            self.states[self.popping_scene]:draw()
+            love.graphics.setColor(1, 1, 1, 1) -- Reset color
+            love.graphics.pop()
+        elseif #self.focus > 1 then
+            -- Pushing scene transition (Zoom & Fade)
+            local prev = self.focus[#self.focus - 1]
+            
+            -- Draw previous scene solid underneath
+            self.states[prev]:draw()
+            
+            -- Draw new top scene scaling up and fading in on top
+            local s = 0.95 + 0.05 * ease
+            love.graphics.push()
+            love.graphics.translate(w / 2, h / 2)
+            love.graphics.scale(s, s)
+            love.graphics.translate(-w / 2, -h / 2)
+            love.graphics.setColor(1, 1, 1, ease)
+            self.states[top]:draw()
+            love.graphics.setColor(1, 1, 1, 1) -- Reset color
+            love.graphics.pop()
+        else
+            -- Loading the very first scene (fade in from black)
+            self.states[top]:draw()
+            love.graphics.setColor(0, 0, 0, 1 - ease)
+            love.graphics.rectangle("fill", 0, 0, w, h)
+            love.graphics.setColor(1, 1, 1, 1) -- Reset color
         end
+    else
+        self.states[top]:draw()
     end
 end
 
