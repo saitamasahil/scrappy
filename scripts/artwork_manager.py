@@ -94,7 +94,7 @@ class ArtworkManagerHandler(http.server.BaseHTTPRequestHandler):
             logo_b64=get_logo_b64(args.logo)
         )
         self.send_response(200)
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-type", "text/html; charset=utf-8")
         self.end_headers()
         self.wfile.write(html.encode("utf-8"))
 
@@ -542,6 +542,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Scrappy Artwork Manager</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="shortcut icon" type="image/png" href="/favicon.png">
