@@ -80,6 +80,8 @@ local template_maker_ip = nil
 local template_maker_status = ""
 local TPL_REGEN_FILE = "/tmp/scrappy_tpl_regen.json"
 local tpl_regen_check_timer = 0
+local template_popup_visible = false
+local template_fade = 0
 local preset_popup, preset_menu
 local preset_popup_visible = false
 local preset_fade = 0
@@ -1720,6 +1722,7 @@ local function on_toggle_template_maker()
         os.execute("pkill -9 -f template_maker.py")
         template_maker_running = false
         template_maker_status = "Server stopped."
+        template_popup_visible = true
         return
     end
 
@@ -2799,6 +2802,79 @@ local function draw_missing_media_popup()
     love.graphics.pop()
 end
 
+-- Draw the template maker restart notification popup
+local function draw_template_popup()
+    if not template_popup_visible then
+        template_fade = 0
+        return
+    end
+
+    template_fade = template_fade + (1 - template_fade) * 20 * love.timer.getDelta()
+    if template_fade > 0.999 then template_fade = 1 end
+
+    local sw, sh = love.graphics.getWidth(), love.graphics.getHeight()
+    local font = love.graphics.getFont()
+    local font_h = font:getHeight()
+
+    love.graphics.push()
+    love.graphics.origin()
+
+    -- Dim background
+    love.graphics.setColor(0, 0, 0, 0.8 * template_fade)
+    love.graphics.rectangle("fill", 0, 0, sw, sh)
+
+    local popup_scale = 0.85 + 0.15 * template_fade
+    love.graphics.translate(sw / 2, sh / 2)
+    love.graphics.scale(popup_scale, popup_scale)
+    love.graphics.translate(-sw / 2, -sh / 2)
+
+    -- Popup box dimensions
+    local box_w = math.min(sw - (40 * _G.scale), 400 * _G.scale)
+    
+    local msg = "Please restart Scrappy to refresh the templates list."
+    local _, lines = font:getWrap(msg, box_w - (30 * _G.scale))
+    local text_h = #lines * font_h
+    
+    local title_h = font_h + (30 * _G.scale)
+    local button_h = (45 * _G.scale)
+    local box_h = text_h + title_h + button_h + (30 * _G.scale)
+    
+    local box_x = (sw - box_w) / 2
+    local box_y = (sh - box_h) / 2
+
+    -- Draw box background
+    love.graphics.setColor(0.18, 0.18, 0.18, 1)
+    love.graphics.rectangle("fill", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
+
+    -- Draw border
+    love.graphics.setColor(0.4, 0.4, 0.4, 1)
+    love.graphics.rectangle("line", box_x, box_y, box_w, box_h, 8 * _G.scale, 8 * _G.scale)
+
+    love.graphics.setColor(1, 1, 1, 1)
+
+    -- Title
+    love.graphics.printf("Notice", box_x, box_y + (15 * _G.scale), box_w, "center")
+
+    -- Draw message
+    love.graphics.printf(msg, box_x + (15 * _G.scale), box_y + title_h, box_w - (30 * _G.scale), "center")
+
+    -- Button (A: OK)
+    local icon_size = 24 * _G.scale
+    local btn_y = box_y + box_h - (45 * _G.scale)
+    local center_x = box_x + box_w * 0.5
+
+    local proceed_total_w = icon_size + (6 * _G.scale) + font:getWidth("OK")
+    local proceed_x = center_x - proceed_total_w / 2
+    if button_a_icon then
+        local iw, ih = button_a_icon:getDimensions()
+        local sx, sy = icon_size / iw, icon_size / ih
+        love.graphics.draw(button_a_icon, proceed_x, btn_y, 0, sx, sy)
+    end
+    love.graphics.print("OK", proceed_x + icon_size + (6 * _G.scale), btn_y + (icon_size - font_h) / 2)
+
+    love.graphics.pop()
+end
+
 function tools:draw()
     love.graphics.clear(theme:read_color("main", "BACKGROUND", "#000000"))
     menu:draw()
@@ -2832,6 +2908,7 @@ function tools:draw()
     draw_offline_popup()
     draw_missing_media_popup()
     draw_video_warning_popup()
+    draw_template_popup()
     info_window:draw()
 
     -- Draw footer (hidden if any popup/VK is visible)
@@ -2846,7 +2923,8 @@ function tools:draw()
                          confirm_popup_visible or 
                          clear_cache_popup_visible or 
                          offline_popup_visible or
-                         video_warning_visible
+                         video_warning_visible or
+                         template_popup_visible
     
     if footer and not (vk and vk.visible) and not popup_active and not info_window.visible then
         footer:draw()
@@ -2947,6 +3025,13 @@ function tools:keypressed(key)
         elseif key == "escape" or key == "b" then
             on_cancel_video_warning()
             return
+        end
+        return -- Block all other keys while popup is visible
+    end
+
+    if template_popup_visible then
+        if key == "return" or key == "a" or key == "escape" or key == "b" then
+            template_popup_visible = false
         end
         return -- Block all other keys while popup is visible
     end
@@ -3194,6 +3279,14 @@ function tools:gamepadpressed(joystick, button)
             return true
         elseif btn == 'b' then
             on_cancel_offline_mode()
+            return true
+        end
+        return true -- Block all buttons while popup is visible
+    end
+
+    if template_popup_visible then
+        if btn == "a" or btn == "b" then
+            template_popup_visible = false
             return true
         end
         return true -- Block all buttons while popup is visible
