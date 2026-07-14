@@ -124,6 +124,10 @@ function input.onEvent(callback)
 end
 
 function love.keypressed(key)
+    local scenes = require("lib.scenes")
+    if scenes.isTransitionPending and scenes:isTransitionPending() then
+        return
+    end
     for _, k in pairs(input.events) do
         if key == k then
             emit(key, false)
@@ -140,6 +144,10 @@ function love.keypressed(key)
 end
 
 function love.keyreleased(key)
+    local scenes = require("lib.scenes")
+    if scenes.isTransitionPending and scenes:isTransitionPending() then
+        return
+    end
     if key == holding.dir then
         holding.dir = nil
         holding.started = false
@@ -147,8 +155,11 @@ function love.keyreleased(key)
 end
 
 function love.gamepadpressed(js, button)
-    -- Forward all button presses to the current scene's gamepadpressed handler
     local scenes = require("lib.scenes")
+    if scenes.isTransitionPending and scenes:isTransitionPending() then
+        return true
+    end
+    -- Forward all button presses to the current scene's gamepadpressed handler
     local focus = scenes:currentFocus()
     local handled = false
     if focus and scenes.states[focus] and scenes.states[focus].gamepadpressed then
@@ -175,6 +186,10 @@ function love.gamepadpressed(js, button)
 end
 
 function love.gamepadreleased(js, button)
+    local scenes = require("lib.scenes")
+    if scenes.isTransitionPending and scenes:isTransitionPending() then
+        return
+    end
     local event = input.joystick_mapping[button]
     if event and event == holding.dir then
         holding.dir = nil
@@ -184,6 +199,7 @@ end
 
 local current_button_states = {}
 local last_button_states = {}
+local ignore_until_released = {}
 
 function input.isEventJustPressed(event)
     return current_button_states[event] and not last_button_states[event]
@@ -193,7 +209,7 @@ function input.isEventJustReleased(event)
     return last_button_states[event] and not current_button_states[event]
 end
 
-function input.isEventDown(event)
+function input.isPhysicallyDown(event)
     -- Check keyboard
     if love.keyboard.isDown(event) then return true end
     
@@ -209,9 +225,29 @@ function input.isEventDown(event)
     return false
 end
 
+function input.isEventDown(event)
+    if ignore_until_released[event] then
+        return false
+    end
+    return input.isPhysicallyDown(event)
+end
+
+function input.ignoreCurrentPresses()
+    for _, event in pairs(input.events) do
+        if input.isPhysicallyDown(event) then
+            ignore_until_released[event] = true
+        end
+        current_button_states[event] = false
+        last_button_states[event] = false
+    end
+end
+
 -- Call this at the end of every frame to update state for the NEXT frame
 function input.postUpdate()
     for _, event in pairs(input.events) do
+        if ignore_until_released[event] and not input.isPhysicallyDown(event) then
+            ignore_until_released[event] = nil
+        end
         last_button_states[event] = current_button_states[event] or false
         current_button_states[event] = input.isEventDown(event)
     end
