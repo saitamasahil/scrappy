@@ -36,7 +36,7 @@ while true do
     })
 
     local stderr_to_stdout = " 2>&1"
-    local output = io.popen(command .. stderr_to_stdout)
+    local output = io.popen("nice -n 19 " .. command .. stderr_to_stdout)
 
     log.write(string.format("Running generate command: %s", command))
     log.write(string.format("Platform: %s | Game: %s\n", current_platform or "none", game or "none"))

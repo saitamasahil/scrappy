@@ -98,7 +98,7 @@ while true do
             log.write("[fetch] Using ScreenScraper API - network delays or rate limits may occur")
         end
 
-        local output = io.popen(command .. stderr_to_stdout)
+        local output = io.popen("nice -n 19 " .. command .. stderr_to_stdout)
 
         if not output then
             log.write("Failed to run Skyscraper")

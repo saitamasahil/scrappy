@@ -23,7 +23,7 @@ end
 
 local function base_task_command(id, command)
     local stderr_to_stdout = " 2>&1"
-    local handle = io.popen(command .. stderr_to_stdout)
+    local handle = io.popen("nice -n 19 " .. command .. stderr_to_stdout)
 
     if not handle then
         log.write(string.format("Failed to run %s - '%s'", id, command))
@@ -52,7 +52,7 @@ end
 
 local function base_task_command_with_progress(id, command, total_items)
     local stderr_to_stdout = " 2>&1"
-    local handle = io.popen(command .. stderr_to_stdout)
+    local handle = io.popen("nice -n 19 " .. command .. stderr_to_stdout)
 
     if not handle then
         log.write(string.format("Failed to run %s - '%s'", id, command))
