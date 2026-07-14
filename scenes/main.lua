@@ -34,6 +34,9 @@ local theme = configs.theme
 local loader = loading.new("highlight", 1)
 
 local w_width, w_height = love.window.getMode()
+local quit_pending = false
+local quit_timer = 0
+local QUIT_DELAY = 0.15
 local padding = 10 * _G.scale
 local canvas = love.graphics.newCanvas(w_width, w_height)
 local sample_media_root = "sample/media"
@@ -1901,6 +1904,13 @@ local function process_game_queue()
 end
 
 function main:update(dt)
+    if quit_pending then
+        quit_timer = quit_timer - dt
+        if quit_timer <= 0 then
+            love.event.quit()
+        end
+    end
+
     -- Periodically check wifi status (every 5 seconds)
     wifi_check_timer = wifi_check_timer + dt
     if wifi_check_timer > 5 then
@@ -2088,8 +2098,8 @@ function main:keypressed(key)
                 halt_scraping()
             else
                 sound.play("nav_back")
-                love.timer.sleep(0.15)
-                love.event.quit()
+                quit_pending = true
+                quit_timer = QUIT_DELAY
             end
         end
     end
@@ -2127,8 +2137,8 @@ function main:gamepadpressed(joystick, button)
             state.scraping = false
         else
             sound.play("nav_back")
-            love.timer.sleep(0.15)
-            love.event.quit()
+            quit_pending = true
+            quit_timer = QUIT_DELAY
         end
         return true -- Handled, prevent global input from double-processing
     end
