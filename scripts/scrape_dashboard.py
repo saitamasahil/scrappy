@@ -928,14 +928,19 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             document.getElementById('logCount').textContent = logs.length + ' lines';
 
             // Rebuild log content
+            const isScrolledToBottom = logBox.scrollHeight - logBox.clientHeight - logBox.scrollTop < 50;
+
             let logHtml = '';
             for (let i = 0; i < logs.length; i++) {
                 const cls = classifyLog(logs[i]);
                 logHtml += '<div class="log-line' + (cls ? ' ' + cls : '') + '">' + escapeHtml(logs[i]) + '</div>';
             }
             logBox.innerHTML = logHtml;
-            // Auto-scroll to bottom
-            logBox.scrollTop = logBox.scrollHeight;
+
+            // Auto-scroll to bottom only if user was already at the bottom
+            if (isScrolledToBottom) {
+                logBox.scrollTop = logBox.scrollHeight;
+            }
 
             // Failed games
             const failedSection = document.getElementById('failedSection');

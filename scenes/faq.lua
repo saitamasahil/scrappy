@@ -100,7 +100,7 @@ function faq:load()
     "1. Fetching (Online): Downloads raw assets from the selected scraper module to your local cache. This depends on network speeds and how busy the scraper's servers are. ScreenScraper is usually the slowest because it is shared by thousands of users, meaning free accounts have limited speeds and get put in a waiting line (queue) when traffic is high.\n" ..
     "2. Generating (Local): Combines raw downloaded media using your active XML template to build the final artwork images. Runs entirely on your device and its speed scales up with the 'Concurrent Artwork Generation' thread count (1-8) in Settings.\n\n" ..
     "Concurrent Artwork Generation:\n" ..
-    "Scrappy leverages multi-threaded generation to build artwork faster. Choosing a setting of 8 means the app will spin up 8 parallel threads to combine and generate 8 game artworks simultaneously. While this dramatically cuts down generation time, it demands significantly more CPU power and system resources from your device. If your system stutters or struggles, you can scale this number down to 2 or 3 in Settings.")
+    "Scrappy leverages multi-threaded generation to build artwork faster. Setting this to 4 means the app will spin up 4 parallel threads to generate 4 game artworks simultaneously. For quad-core handhelds, a setting of 4 is highly recommended. While Scrappy runs background scraping tasks at a low CPU priority to keep the app perfectly smooth at any thread count, setting it higher than your hardware core count can add context-switching overhead and slow down generation.")
 
   -- Scraping Modes
   content = content + add_section("section_modes", "Scraping Modes",
