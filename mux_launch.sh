@@ -1,6 +1,6 @@
 #!/bin/sh
 # HELP: Scrappy
-# ICON: scrappy
+# ICON: logo_scrappy
 # GRID: Scrappy
 
 . /opt/muos/script/var/func.sh
