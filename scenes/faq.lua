@@ -145,6 +145,48 @@ function faq:load()
     "• Output Customization: You can experiment with different themes and visual layout styles by generating artwork using different XML layouts (e.g., 2D box art, 3D boxes, compound mixes) for the available games in your cache.\n" ..
     "• How to run: Open the 'Generate Artwork' menu, select your platform, choose your preferred XML layout template, and start the generation.")
 
+  -- Common Questions FAQ
+  content = content + add_section("section_common_questions", "Common Questions",
+    "• Can this scrape a single title, or just whole folders/systems?\n" ..
+    "Yes! Just choose 'Scrape single rom' from the main menu.\n\n" ..
+    "• Will it overwrite existing box art?\n" ..
+    "Yes, Scrappy will overwrite any existing box art if new artwork is downloaded for a game.")
+
+  -- Advanced Config (peas.json)
+  content = content + add_section("section_peas_json", "Advanced Config (peas.json)",
+    "The peas.json file is located in static/.skyscraper/peas.json inside the app bundle and is used by Skyscraper to define file extensions available for each platform, as well as supported scraper modules. You can edit this file to add file extensions or adjust scraper modules per platform.")
+
+  -- Region Priorities
+  content = content + add_section("section_region_prios", "Region Priorities",
+    "In Advanced Tools, you can customize region preference order (e.g., 'us, eu, jp, world'). Skyscraper uses this sequence to select regional artwork, titles, and box covers when a ROM exists across multiple regions.")
+
+  -- Live Dashboard
+  content = content + add_section("section_live_dashboard", "Live Dashboard",
+    "While scraping is running, Scrappy hosts a real-time web dashboard. Open the displayed IP address in any browser on your Wi-Fi network to monitor live logs, active worker threads, and progress percentage.")
+
+  -- Resolution Filtering
+  content = content + add_section("section_res_filter", "Template Resolution Filter",
+    "Under Settings, 'Filter Templates by Resolution' automatically hides XML artwork templates that do not match your device's screen aspect ratio (e.g., 640x480 vs 720x720). Disable this option if you want to preview or use templates designed for other resolutions.")
+
+  -- Video Scraping
+  content = content + add_section("section_video_scraping", "Video Previews",
+    "Video preview downloading can be toggled in Advanced Tools. When enabled, ScreenScraper will download short video clips alongside graphics.")
+
+  -- Cache Location (SD1 / SD2)
+  content = content + add_section("section_cache_location", "SD Card Storage (Cache Location)",
+    "Scrappy supports storing your media cache on SD1 or SD2 (/mnt/sdcard/scrappy_cache). Moving cache storage to SD2 prevents filling up your primary OS storage when scraping large ROM collections.")
+
+  -- Troubleshooting Unmatched Games
+  content = content + add_section("section_troubleshooting", "Troubleshooting Unmatched Games",
+    "If a ROM fails to scrape or match:\n" ..
+    "1. Use 'Refined Search' under Single Scrape to manually type the exact game title.\n" ..
+    "2. Use 'Edit Platform Mappings' in Settings to make sure your ROM folder is mapped to the correct muOS system core ID.\n" ..
+    "3. Check 'peas.json' to ensure your ROM's file extension (e.g. .7z, .iso, .chd) is registered for that platform.")
+
+  -- Custom UI Themes & Accents
+  content = content + add_section("section_custom_themes", "Themes & Accent Customization",
+    "In Advanced Tools, you can switch visual UI themes and customize accent colors. Accent modes let you match Scrappy directly to your active muOS system accent or set a custom hex color.")
+
   -- Wrap in scroll container
   scroller = scroll_container {
     width = w_width,
