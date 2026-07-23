@@ -47,10 +47,24 @@ To install Scrappy, follow these steps:
 2. Move the downloaded file to the `/mnt/mmc/MUOS/ARCHIVE` folder.
 3. Open **Archive Manager** and select the file to install.
 4. After installation, you'll find an entry called "Scrappy" in the **Applications** section.
-5. Please read the [Wiki](https://github.com/saitamasahil/scrappy/wiki/Getting-Started) for more info on installation and configuration.
+5. Please read the [FAQ](FAQ.md) for more info on usage and configuration, and refer to the official [muOS Artwork Documentation](https://muos.dev/installation/artwork) for details on muOS artwork.
+
+### Fixing White Grid Boxes in Grid View
+If you notice white boxes tinting or obscuring artwork in muOS Grid View while using certain themes like **OneTwo**, you can disable cell image recoloring specifically for the muOS content explorer (`muxplore`).
+
+Add the following lines to your `/MUOS/theme/override/muxplore.ini` file:
+
+```ini
+[grid]
+CELL_DEFAULT_IMAGE_RECOLOUR_ALPHA = 0
+CELL_FOCUS_IMAGE_RECOLOUR_ALPHA = 0
+```
+
+> **Note:** This safely overrides cell recoloring options specifically for the content explorer screen without affecting the rest of your system theme.
 
 ## Resources
 
+- **muOS Artwork Documentation** - Official guide on muOS artwork catalogue paths and structure [muOS Docs](https://muos.dev/installation/artwork)
 - **Skyscraper** - Artwork scraper framework by Gemba [Skyscraper on GitHub](https://github.com/Gemba/skyscraper)
 - **ini_parser** - INI file parser by nobytesgiven [GitHub](https://github.com/nobytesgiven/ini_parser)
 - **nativefs** - Native filesystem interface by EngineerSmith [GitHub](https://github.com/EngineerSmith/nativefs)
