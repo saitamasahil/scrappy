@@ -94,7 +94,9 @@ while true do
         -- Update last output time since we got a line
         last_output_time = current_time
         line = utils.strip_ansi_colors(line)
-        if game ~= "fake-rom" then
+        if game == "fake-rom" then
+            log.write("[gen:preview] " .. line, "skyscraper")
+        else
             log.write(line, "skyscraper")
         end
         local res, error, skipped, rtype = parser.parse(line)
