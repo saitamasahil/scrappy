@@ -701,7 +701,6 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             <div class="log-section">
                 <div class="log-header">
                     <span class="card-title">Live Log</span>
-                    <span class="log-count" id="logCount">0 lines</span>
                 </div>
                 <div class="log-box" id="logBox"></div>
             </div>
@@ -925,7 +924,6 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             // Logs
             const logBox = document.getElementById('logBox');
             const logs = d.logs || [];
-            document.getElementById('logCount').textContent = logs.length + ' lines';
 
             // Rebuild log content
             const isScrolledToBottom = logBox.scrollHeight - logBox.clientHeight - logBox.scrollTop < 50;
