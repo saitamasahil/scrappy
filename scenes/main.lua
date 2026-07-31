@@ -1060,9 +1060,9 @@ local function update_state(t)
             table.remove(state.log, 1)
         end
 
-        -- Track log lines for dashboard (keep last 20)
+        -- Track log lines for dashboard (keep last 100)
         table.insert(dashboard_log_lines, t.log)
-        if #dashboard_log_lines > 20 then
+        if #dashboard_log_lines > 100 then
             table.remove(dashboard_log_lines, 1)
         end
         local log_str = ""
