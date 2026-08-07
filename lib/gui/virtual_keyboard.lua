@@ -4,6 +4,38 @@
 local w_width, w_height = love.window.getMode()
 local configs = require("helpers.config")
 local sound = require("lib.sound")
+local utf8 = require("utf8")
+
+-- Helper: Get UTF-8 character length safely
+local function utf8_len(str)
+  if not str or str == "" then return 0 end
+  local ok, len = pcall(utf8.len, str)
+  if ok and len then return len end
+  return #str
+end
+
+-- Helper: UTF-8 substring by 1-based character indices
+local function utf8_sub(str, start_char, end_char)
+  if not str or str == "" then return "" end
+  local total_chars = utf8_len(str)
+  if total_chars == 0 then return "" end
+
+  if start_char < 1 then start_char = 1 end
+  if not end_char or end_char > total_chars then end_char = total_chars end
+  if start_char > end_char then return "" end
+
+  local ok, start_byte = pcall(utf8.offset, str, start_char)
+  if not ok or not start_byte then start_byte = 1 end
+
+  local ok2, end_byte = pcall(utf8.offset, str, end_char + 1)
+  if ok2 and end_byte then
+    end_byte = end_byte - 1
+  else
+    end_byte = #str
+  end
+
+  return str:sub(start_byte, end_byte)
+end
 
 -- Virtual keyboard layout
 local MASK_CHAR = "*"
@@ -106,7 +138,7 @@ local function create_vk(config)
     self.mode = 'lower'
     self.visible = true
     self.opened_at = love.timer.getTime()
-    self.cursor_pos = #self.buffer  -- Start cursor at end of text
+    self.cursor_pos = utf8_len(self.buffer)  -- Start cursor at end of text
     self.text_field_focused = false
     self.focus_initialized = false -- reset so it snaps to first key on show
     self.fade = 0
@@ -170,8 +202,9 @@ local function create_vk(config)
     
     -- Helper: insert character at cursor position
     local function insert_at_cursor(char)
-      local before = self.buffer:sub(1, self.cursor_pos)
-      local after = self.buffer:sub(self.cursor_pos + 1)
+      local total_chars = utf8_len(self.buffer)
+      local before = utf8_sub(self.buffer, 1, self.cursor_pos)
+      local after = utf8_sub(self.buffer, self.cursor_pos + 1, total_chars)
       self.buffer = before .. char .. after
       self.cursor_pos = self.cursor_pos + 1
       sound.play("keypress")
@@ -181,8 +214,9 @@ local function create_vk(config)
     -- Helper: delete character before cursor position
     local function delete_at_cursor()
       if self.cursor_pos > 0 then
-        local before = self.buffer:sub(1, self.cursor_pos - 1)
-        local after = self.buffer:sub(self.cursor_pos + 1)
+        local total_chars = utf8_len(self.buffer)
+        local before = utf8_sub(self.buffer, 1, self.cursor_pos - 1)
+        local after = utf8_sub(self.buffer, self.cursor_pos + 1, total_chars)
         self.buffer = before .. after
         self.cursor_pos = self.cursor_pos - 1
         sound.play("nav_back")
@@ -253,7 +287,7 @@ local function create_vk(config)
         return true
       elseif key == 'right' then
         if movement_locked() then return true end
-        if self.cursor_pos < #self.buffer then
+        if self.cursor_pos < utf8_len(self.buffer) then
           self.cursor_pos = self.cursor_pos + 1
           sound.play("nav_move")
         end
@@ -641,12 +675,12 @@ local function create_vk(config)
     local cursor_display_pos = self.cursor_pos  -- Position for cursor drawing
     if self.mask_input then
       local now = love.timer.getTime()
-      local n = #self.buffer
+      local n = utf8_len(self.buffer)
       if n > 0 then
         if self.last_char_time > 0 and (now - self.last_char_time) <= self.last_char_window and self.cursor_pos > 0 then
           -- Show visible character at cursor position (the character just typed)
           local before_cursor = string.rep(MASK_CHAR, self.cursor_pos - 1)
-          local visible = self.buffer:sub(self.cursor_pos, self.cursor_pos)
+          local visible = utf8_sub(self.buffer, self.cursor_pos, self.cursor_pos)
           local after_cursor = string.rep(MASK_CHAR, n - self.cursor_pos)
           preview = before_cursor .. visible .. after_cursor
         else
@@ -665,14 +699,14 @@ local function create_vk(config)
       end
     end
 
-    love.graphics.printf(preview, box_x + math.floor(12 * scale), box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2), box_w - math.floor(24 * scale), 'left')
+    pcall(love.graphics.printf, preview, box_x + math.floor(12 * scale), box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2), box_w - math.floor(24 * scale), 'left')
 
     -- Draw blinking cursor at the correct position
     local cursor_blink = math.floor(love.timer.getTime() / 0.53) % 2 == 0
     if cursor_blink or self.text_field_focused then
       -- Calculate cursor X based on cursor position, not end of text
       -- Calculate cursor X based on exactly what was printed before the cursor
-      local text_before_cursor = preview:sub(1, cursor_display_pos)
+      local text_before_cursor = utf8_sub(preview, 1, cursor_display_pos)
       local cursor_x = box_x + math.floor(12 * scale) + love.graphics.getFont():getWidth(text_before_cursor)
       local cursor_y = box_y + math.floor((box_h - love.graphics.getFont():getHeight())/2)
       local cursor_h = love.graphics.getFont():getHeight()
