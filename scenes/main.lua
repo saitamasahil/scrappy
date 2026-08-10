@@ -664,7 +664,8 @@ local function scrape_platforms()
             local fetch_file = nil
             local force_refresh = false
             if #fetch_rom_files > 0 then
-                fetch_file = string.format("/tmp/scrappy_fetch_%s.txt", dest)
+                local safe_src = src:gsub("[^%w_]", "_")
+                fetch_file = string.format("/tmp/scrappy_fetch_%s.txt", safe_src)
                 local content = table.concat(fetch_rom_files, "\n")
                 nativefs.write(fetch_file, content)
                 
@@ -943,10 +944,12 @@ function start_generation_phase()
         ui_progress_bar:setProgress((state.total - state.tasks) / state.total)
     end
 
-    -- Group games by platform
+    -- Group games by platform AND input_folder so subfolders generate artwork correctly
     local platforms = {}
     for _, game_info in ipairs(state.queued_games) do
         local platform = game_info.platform
+        local input_folder = game_info.input_folder or platform
+        local group_key = platform .. "::" .. tostring(input_folder)
         local title = game_info.title or game_info.game
         
         -- Get the filename (game_file)
@@ -956,21 +959,23 @@ function start_generation_phase()
         end
 
         if game_file then
-            if not platforms[platform] then
-                platforms[platform] = {
-                    input_folder = game_info.input_folder,
+            if not platforms[group_key] then
+                platforms[group_key] = {
+                    platform = platform,
+                    input_folder = input_folder,
                     games = {}
                 }
             end
-            table.insert(platforms[platform].games, game_file)
+            table.insert(platforms[group_key].games, game_file)
         else
             print(string.format("Warning: ROM filename not found for game: %s on platform: %s", tostring(title), tostring(platform)))
         end
     end
 
-    -- Split games per platform into chunks and queue them
+    -- Split games per platform/subfolder into chunks and queue them
     local num_workers = skyscraper.get_gen_thread_count() or 1
-    for platform, info in pairs(platforms) do
+    for group_key, info in pairs(platforms) do
+        local platform = info.platform
         local games = info.games
         local total_games = #games
         local input_folder = info.input_folder
