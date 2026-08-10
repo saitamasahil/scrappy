@@ -995,7 +995,8 @@ function start_generation_phase()
                 end
 
                 -- Write the chunk to a temporary file
-                local temp_file = string.format("/tmp/scrappy_chunk_%s_%d.txt", platform, chunk_id)
+                local safe_group = (platform .. "_" .. tostring(input_folder)):gsub("[^%w_]", "_")
+                local temp_file = string.format("/tmp/scrappy_chunk_%s_%d.txt", safe_group, chunk_id)
                 local f = io.open(temp_file, "w")
                 if f then
                     for _, file_name in ipairs(chunk_games) do
@@ -1003,7 +1004,7 @@ function start_generation_phase()
                     end
                     f:close()
 
-                    print(string.format("Queueing platform %s chunk %d (%d games) via include list %s", platform, chunk_id, #chunk_games, temp_file))
+                    print(string.format("Queueing platform %s (%s) chunk %d (%d games) via include list %s", platform, input_folder, chunk_id, #chunk_games, temp_file))
                     channels.SKYSCRAPER_GAME_QUEUE:push({
                         game = "chunk-" .. chunk_id,
                         platform = platform,
@@ -1736,7 +1737,10 @@ local function process_game_queue()
                 if task.game_file == finished_signal.game and task.platform == finished_signal.platform then
                     print(string.format("Finished task \"%s\" on platform %s", task.game_file, task.platform))
                     -- Clean up temporary chunk file if applicable
-                    if task.game_file:sub(1, 6) == "chunk-" then
+                    if task.include_file then
+                        os.remove(task.include_file)
+                        print("Removed temporary chunk file: " .. task.include_file)
+                    elseif task.game_file:sub(1, 6) == "chunk-" then
                         local temp_file = string.format("/tmp/scrappy_chunk_%s_%s.txt", task.platform, task.game_file:sub(7))
                         os.remove(temp_file)
                         print("Removed temporary chunk file: " .. temp_file)
@@ -1755,7 +1759,10 @@ local function process_game_queue()
                         print(string.format("Fallback: removing task \"%s\" on platform %s (signal game: %s)",
                             task.game_file, task.platform, finished_signal.game or "nil"))
                         -- Clean up temporary chunk file if applicable
-                        if task.game_file:sub(1, 6) == "chunk-" then
+                        if task.include_file then
+                            os.remove(task.include_file)
+                            print("Removed temporary chunk file (fallback): " .. task.include_file)
+                        elseif task.game_file:sub(1, 6) == "chunk-" then
                             local temp_file = string.format("/tmp/scrappy_chunk_%s_%s.txt", task.platform, task.game_file:sub(7))
                             os.remove(temp_file)
                             print("Removed temporary chunk file (fallback): " .. temp_file)
@@ -1773,7 +1780,10 @@ local function process_game_queue()
                 print(string.format("Last resort: removing oldest task \"%s\"",
                     task.game_file or "unknown"))
                 -- Clean up temporary chunk file if applicable
-                if task.game_file and task.game_file:sub(1, 6) == "chunk-" then
+                if task.include_file then
+                    os.remove(task.include_file)
+                    print("Removed temporary chunk file (last resort): " .. task.include_file)
+                elseif task.game_file and task.game_file:sub(1, 6) == "chunk-" then
                     local temp_file = string.format("/tmp/scrappy_chunk_%s_%s.txt", task.platform, task.game_file:sub(7))
                     os.remove(temp_file)
                     print("Removed temporary chunk file (last resort): " .. temp_file)
@@ -1854,7 +1864,8 @@ local function process_game_queue()
                     started_at = love.timer.getTime(),
                     title = "Chunk " .. chunk_id,
                     platform = platform,
-                    input_folder = input_folder
+                    input_folder = input_folder,
+                    include_file = ready.include_file
                 })
                 print(string.format("Task in progress: %s (Total concurrent: %d)", game,
                     #state.tasks_in_progress))
