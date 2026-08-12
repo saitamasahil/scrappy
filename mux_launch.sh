@@ -15,7 +15,6 @@ APP_BINARY_DIRECTORY="$APP_GAME_DIRECTORY/bin"
 LOVE_BINARY="$APP_BINARY_DIRECTORY/love"
 LOG_FILE="$APP_GAME_DIRECTORY/scrappy.log"
 ROM_MOUNT="$(GET_VAR "device" "storage/rom/mount")"
-GPTOKEYB="$ROM_MOUNT/MUOS/emulator/gptokeyb/gptokeyb2.armhf"
 SCREEN_WIDTH="$(GET_VAR device mux/width)"
 SCREEN_HEIGHT="$(GET_VAR device mux/height)"
 SCREEN_RESOLUTION="${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
@@ -52,11 +51,7 @@ SET_RK3576_WORKAROUND() {
 START_LOVE() {
     [ -n "$CAFFEINE" ] && "$CAFFEINE" on
     SET_VAR "system" "foreground_process" "love"
-    "$GPTOKEYB" "love" &
-    GPTOKEYB_PROCESS="$!"
     "$LOVE_BINARY" . "$SCREEN_RESOLUTION" > "$LOG_FILE" 2>&1
-    kill "$GPTOKEYB_PROCESS" 2>/dev/null || kill -9 "$(pidof gptokeyb2.armhf)" 2>/dev/null || true
-    wait "$GPTOKEYB_PROCESS" 2>/dev/null || true
     [ -n "$CAFFEINE" ] && "$CAFFEINE" off
 }
 
