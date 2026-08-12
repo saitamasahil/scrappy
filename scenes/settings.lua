@@ -520,7 +520,7 @@ function settings:draw()
     vk:draw()
   end
 
-  if footer and not (vk and vk.visible) then
+  if footer and not (vk and vk.visible and (vk.fade or 0) > 0.5) then
     footer:draw()
   end
 end

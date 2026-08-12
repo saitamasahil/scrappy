@@ -1133,7 +1133,7 @@ function single_scrape:draw()
     draw_refine_confirm_popup()
 
     -- Draw footer (hidden during VK, scraping, or info overlays)
-    if footer and not (vk and vk.visible) and not scraping_window.visible and not info_window.visible then
+    if footer and not (vk and vk.visible and (vk.fade or 0) > 0.5) and not scraping_window.visible and not info_window.visible then
         footer:draw()
     end
 

@@ -142,9 +142,25 @@ local function create_vk(config)
     self.text_field_focused = false
     self.focus_initialized = false -- reset so it snaps to first key on show
     self.fade = 0
+    self.closing = false
+    self.close_apply = nil
     _G.ui_overlay_active = true
+    local input = require("helpers.input")
+    input.ignoreCurrentPresses()
   end
   
+  function vk:request_close(apply)
+    if self.closing then return end
+    self.closing = true
+    self.close_apply = apply
+    self.icon_scales = self.icon_scales or { a = 1, b = 1, x = 1, y = 1, dpad = 1 }
+    if apply then
+      self.icon_scales['a'] = 0.6
+    else
+      self.icon_scales['b'] = 0.6
+    end
+  end
+
   function vk:hide(apply)
     if apply and self.on_done then
       self.on_done(self.buffer, self.target)
@@ -152,12 +168,16 @@ local function create_vk(config)
       self.on_cancel(self.target)
     end
     self.visible = false
+    self.closing = false
+    self.close_apply = nil
     self.target = nil
     self.hold_dir = nil
     self.hold_time = 0
     self.repeat_started = false
     self.hold_acc = 0
     _G.ui_overlay_active = false
+    local input = require("helpers.input")
+    input.ignoreCurrentPresses()
   end
   
   function vk:get_layout()
@@ -318,7 +338,7 @@ local function create_vk(config)
         return true
       elseif key == 'cancel' then
         sound.play("nav_back")
-        self:hide(false)
+        self:request_close(false)
         return true
       elseif key == 'backspace' or key == 'y' then
         if movement_locked() then return true end
@@ -398,7 +418,8 @@ local function create_vk(config)
       self.move_lock_until = love.timer.getTime() + 0.12
       return true
     elseif key == 'ok_now' then
-      self:hide(true)
+      sound.play("nav_confirm")
+      self:request_close(true)
       return true
     elseif key == 'confirm' then
       if movement_locked() then return true end
@@ -410,7 +431,7 @@ local function create_vk(config)
           delete_at_cursor()
         elseif keydef.t == 'ok' then 
           sound.play("nav_confirm")
-          self:hide(true)
+          self:request_close(true)
         elseif keydef.t == 'toggle' then
           sound.play("option")
           if self.mode == 'lower' then self.mode = 'upper'
@@ -430,7 +451,7 @@ local function create_vk(config)
       return true
     elseif key == 'cancel' then
       sound.play("nav_back")
-      self:hide(false)
+      self:request_close(false)
       return true
     end
     return key == 'up' or key == 'down' or key == 'left' or key == 'right'
@@ -442,6 +463,22 @@ local function create_vk(config)
       self.fade = 0
       return 
     end
+
+    if self.closing then
+      self.fade = (self.fade or 1) - 18 * dt
+      if self.icon_scales then
+        for k, v in pairs(self.icon_scales) do
+          self.icon_scales[k] = v + (1 - v) * 15 * dt
+        end
+      end
+      if self.fade <= 0.05 then
+        self.fade = 0
+        local apply = self.close_apply
+        self:hide(apply)
+      end
+      return
+    end
+
     -- Organic opening curve (aggressive EaseOut)
     self.fade = (self.fade or 0) + (1 - (self.fade or 0)) * 12 * dt
     if self.fade > 0.999 then self.fade = 1 end

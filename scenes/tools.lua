@@ -2926,7 +2926,7 @@ function tools:draw()
                          video_warning_visible or
                          template_popup_visible
     
-    if footer and not (vk and vk.visible) and not popup_active and not info_window.visible then
+    if footer and not (vk and vk.visible and (vk.fade or 0) > 0.5) and not popup_active and not info_window.visible then
         footer:draw()
     end
 
