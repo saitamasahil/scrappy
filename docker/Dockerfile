@@ -3,7 +3,7 @@ FROM docker.io/arm64v8/ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Skyscraper version to build
-ARG VERSION=3.20.2
+ARG VERSION=3.20.3
 
 # Toolchain and runtime deps (Qt6, OpenSSL 3.0, etc.)
 RUN apt-get update && \

@@ -1,7 +1,4 @@
 #!/bin/bash
-# Patch update_skyscraper.sh to inject applicationDirPath check into src/config.cpp before qmake6
-sed -i 's/^[[:space:]]*qmake6$/sed -i '\''s#if (!QFileInfo::exists(localEtcPath) || isRpInstall)#if (localEtcPath.startsWith(QCoreApplication::applicationDirPath()) || !QFileInfo::exists(localEtcPath) || isRpInstall)#g'\'' src\/config.cpp\nqmake6/' /skysource/update_skyscraper.sh
-
 # Run the update script to build Skyscraper
 /skysource/update_skyscraper.sh
 
