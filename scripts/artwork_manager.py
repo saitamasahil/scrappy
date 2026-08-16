@@ -1144,7 +1144,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
 
         function openGameModal(g) {{
             activeGame = g;
-            const romBase = g.rom.replace(/\.[^/.]+$/, "");
+            const romBase = g.rom.replace(/\\.[^/.]+$/, "");
             modalTitle.textContent = romBase || 'Unknown Game';
             modalSubtitle.textContent = g.rom;
             modalMediaList.innerHTML = '';
@@ -1336,7 +1336,7 @@ def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
             const img = document.getElementById('final-preview');
             const loader = document.getElementById('regen-loader');
             if (img && activeGame) {{
-                const romBase = activeGame.rom.replace(/\.[^/.]+$/, "");
+                const romBase = activeGame.rom.replace(/\\.[^/.]+$/, "");
                 const outputUrl = `/api/output/${{encodeURIComponent(activePlatform)}}/${{encodeURIComponent(romBase)}}.png`;
                 if (loader) loader.style.display = 'block';
                 img.src = `${{outputUrl}}?t=${{Date.now()}}`;

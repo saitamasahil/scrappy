@@ -37,58 +37,54 @@ function parser.parse(line)
         end
     end
 
-    -- Match progress lines like #1/10: Game 'xyz' ... or #1/1: Processing 'xyz' ...
-    local count_idx, count_tot, extracted_title = line:match("#(%d+)/(%d+).+['\"](.-)['\"]")
-    if count_idx and extracted_title then
-        local is_not_found = line:find("not found") ~= nil
-        local is_skipped = line:find("Skipping") ~= nil or is_not_found
-        return extracted_title, nil, is_skipped, return_types.GAME
+    -- Check specific game title patterns directly to handle apostrophes correctly
+    local found_title = string.match(line, game_title_patterns.FOUND)
+    if found_title then
+        return found_title, nil, false, return_types.GAME
     end
 
-    for _, pattern in ipairs(line_patterns) do
-        if line:find(pattern) then
-            line_match = pattern
-            break
-        end
+    local not_found_title = string.match(line, game_title_patterns.NOT_FOUND)
+    if not_found_title then
+        return not_found_title, nil, true, return_types.GAME
     end
 
-    if line_match then
-        -- Extract game title
-        if line_match == line_patterns[1] then -- Found
-            local game_title = string.match(line, game_title_patterns.FOUND)
-            return game_title or "N/A", nil, false, return_types.GAME
-        elseif line_match == line_patterns[2] then -- Skipped
-            local game_title = string.match(line, game_title_patterns.SKIPPED)
-            return game_title or "N/A", nil, false, return_types.GAME
-        elseif line_match == line_patterns[3] then -- Not found
-            local game_title = string.match(line, game_title_patterns.NOT_FOUND)
-            return game_title or "N/A", nil, true, return_types.GAME
-        elseif line_match == line_patterns[4] then -- Match too low
-            local game_title = string.match(line, game_title_patterns.MATCH_TOO_LOW)
-            return game_title or "N/A", nil, true, return_types.GAME
-        elseif line_match == "Processing" then
-            local game_title = string.match(line, game_title_patterns.PROCESSING)
-            return game_title or "N/A", nil, false, return_types.GAME
-        elseif line_match == "completed" then
-            local game_title = string.match(line, game_title_patterns.COMPLETED)
-            return game_title or "N/A", nil, false, return_types.GAME
-        end
-        return "N/A", nil, false, return_types.GAME
-    else
-        -- Check explicit error patterns
-        for _, err_pattern in ipairs(SKYSCRAPER_ERRORS) do
-            if line:find(err_pattern, 1, true) then
-                return nil, line, true, return_types.LOG
-            end
-        end
+    local match_low_title = string.match(line, game_title_patterns.MATCH_TOO_LOW)
+    if match_low_title then
+        return match_low_title, nil, true, return_types.GAME
+    end
 
-        -- Check generic error indicators
-        if line:find("qt.qpa.plugin") or line:lower():find("could not find") or line:find("Error:") or line:find("Fatal:") then
+    local skipped_title = string.match(line, game_title_patterns.SKIPPED)
+    if skipped_title then
+        return skipped_title, nil, true, return_types.GAME
+    end
+
+    local proc_title = string.match(line, game_title_patterns.PROCESSING)
+    if proc_title then
+        return proc_title, nil, false, return_types.GAME
+    end
+
+    local completed_title = string.match(line, game_title_patterns.COMPLETED)
+    if completed_title then
+        return completed_title, nil, false, return_types.GAME
+    end
+
+    local gen_title = string.match(line, game_title_patterns.GENERATED) or string.match(line, game_title_patterns.SAVED)
+    if gen_title then
+        return gen_title, nil, false, return_types.GAME
+    end
+    -- Check explicit error patterns
+    for _, err_pattern in ipairs(SKYSCRAPER_ERRORS) do
+        if line:find(err_pattern, 1, true) then
             return nil, line, true, return_types.LOG
         end
-
-        return nil, nil, nil
     end
+
+    -- Check generic error indicators
+    if line:find("qt.qpa.plugin") or line:lower():find("could not find") or line:find("Error:") or line:find("Fatal:") then
+        return nil, line, true, return_types.LOG
+    end
+
+    return nil, nil, nil
 end
 
 return parser

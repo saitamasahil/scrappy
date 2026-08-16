@@ -19,12 +19,13 @@ def get_gid_from_quickid(quickid_path: Path, rom: str):
         return None
     try:
         tree = ET.parse(quickid_path)
+        rom_base = os.path.basename(rom)
         for q in tree.findall("quickid"):
             filepath = q.get("filepath")
             gid = q.get("id")
             if filepath and gid:
                 filename = os.path.basename(filepath)
-                if filename == rom:
+                if filename == rom or filename == rom_base or filepath == rom or filepath.endswith("/" + rom_base):
                     return gid
     except Exception:
         pass

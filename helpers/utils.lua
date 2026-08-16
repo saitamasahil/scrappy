@@ -52,7 +52,7 @@ function utils.get_filename_from_path(str)
     if not str then
         return nil
     end
-    return str:match("([^/]+)%.%w+$")
+    return str:match("([^/]+)%.%w+$") or str:match("([^/]+)$") or str
 end
 
 function utils.escape_html(input)

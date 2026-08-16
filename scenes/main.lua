@@ -631,7 +631,7 @@ local function scrape_platforms()
                 has_video = cached_res["video"] or false
             end
 
-            if not cached_res or (videos_enabled and not has_video) then
+            if not scrape_missing_only or not cached_res or (videos_enabled and not has_video) or (scrape_missing_only and needs_scraping) then
                 table.insert(fetch_rom_files, rom)
                 uncached_games = true
             end
@@ -641,10 +641,15 @@ local function scrape_platforms()
                 game_file_map[dest] = {}
             end
             if game_title then
-                game_file_map[dest][game_title] = {
+                local entry = {
                     file = rom,
                     input_folder = src
                 }
+                game_file_map[dest][game_title] = entry
+                local name_only = utils.get_filename_from_path(rom)
+                if name_only and name_only ~= game_title then
+                    game_file_map[dest][name_only] = entry
+                end
             end
             state.tasks = state.tasks + 1
             table.insert(game_list, game_title)
@@ -662,7 +667,7 @@ local function scrape_platforms()
             state.pending_platforms = state.pending_platforms + 1
 
             local fetch_file = nil
-            local force_refresh = false
+            local force_refresh = not scrape_missing_only
             if #fetch_rom_files > 0 then
                 local safe_src = src:gsub("[^%w_]", "_")
                 fetch_file = string.format("/tmp/scrappy_fetch_%s.txt", safe_src)
@@ -1871,8 +1876,8 @@ local function process_game_queue()
                     #state.tasks_in_progress))
                 skyscraper.update_artwork_chunk(platform_path, ready.include_file, input_folder, platform,
                     templates[current_template], chunk_id)
-            elseif game_file_map[platform] and game_file_map[platform][game] then
-                local game_info = game_file_map[platform][game]
+            elseif game_file_map[platform] and (game_file_map[platform][game] or game_file_map[platform][utils.get_filename_from_path(game)]) then
+                local game_info = game_file_map[platform][game] or game_file_map[platform][utils.get_filename_from_path(game)]
                 local game_file = game_info.file
                 -- Use the stored input_folder if available (fixes multi-folder platform bug)
                 if not input_folder then
