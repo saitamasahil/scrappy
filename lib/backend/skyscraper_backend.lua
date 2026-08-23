@@ -122,6 +122,7 @@ while true do
         local parsed = false
         local retriable_error = false
         local line_count = 0
+        local games_emitted = 0
 
         log.write("[fetch] Reading output from Skyscraper...")
 
@@ -179,6 +180,7 @@ while true do
                     log = string.format("[fetch] %s", line)
                 })
                 if rtype == "game" then
+                    games_emitted = games_emitted + 1
                     emit_ready(res, current_platform, input_folder, skipped)
                 end
             end
@@ -241,6 +243,12 @@ while true do
         if aborted then
             -- graceful stop
             break
+        end
+
+        -- For single-game scrape runs, if process ended without emitting a game result,
+        -- emit a skipped event so single_scrape scene does not hang indefinitely.
+        if input_data.game and input_data.game ~= "none" and games_emitted == 0 and not aborted then
+            emit_ready(input_data.game, current_platform, input_folder, true)
         end
 
         -- Notify that fetch operation completed for this platform

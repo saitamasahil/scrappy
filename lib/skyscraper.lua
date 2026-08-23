@@ -348,13 +348,6 @@ local function generate_command(config)
     if config.input then
         command = string.format('%s -i "%s"', command, config.input)
     end
-    if config.rom then
-        -- Escape special characters for ROM filenames to handle characters
-        -- like parentheses, which are common in ROM names (e.g., "Super Metroid (USA).sfc")
-        local escaped_rom = escape_shell_arg(config.rom)
-        -- Pass the ROM relative path as a positional argument at the end of the options
-        command = string.format('%s "%s"', command, escaped_rom)
-    end
     if config.include_from then
         command = string.format('%s --includefrom "%s"', command, config.include_from)
     end
@@ -394,12 +387,10 @@ local function generate_command(config)
         command = string.format('%s -t 1', command)
     end
 
-    -- When using --query, Skyscraper requires the filename as a positional argument at the end
-    -- Otherwise the query is ignored. See: https://gemba.github.io/skyscraper/CLIHELP/#-query-string
-    if config.query and config.query ~= "" and config.input and config.rom then
-        local full_rom_path = string.format('%s/%s', config.input, config.rom)
-        local escaped_path = escape_shell_arg(full_rom_path)
-        command = string.format('%s "%s"', command, escaped_path)
+    -- Pass the ROM filename as a single positional argument at the end
+    if config.rom then
+        local escaped_rom = escape_shell_arg(config.rom)
+        command = string.format('%s "%s"', command, escaped_rom)
     end
 
     -- Log the command for debugging
