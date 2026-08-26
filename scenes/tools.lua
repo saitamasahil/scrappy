@@ -611,7 +611,14 @@ local function update_task_state()
                 skyscraper_config:save()
                 log.write("Cache migrated successfully")
             elseif t.command == "update_app" then
-                dispatch_info("Updated Scrappy")
+                if t.success ~= false then
+                    dispatch_info("Updated Scrappy", "Scrappy has been updated to the latest version.\nPlease restart the app to apply changes.")
+                    log.write("Scrappy updated successfully")
+                else
+                    local err_msg = t.last_line or "Update failed. Check your internet connection or download the release manually."
+                    dispatch_info("Update Failed", err_msg)
+                    log.write("Scrappy update failed: " .. tostring(err_msg))
+                end
             end
         end
     end
@@ -1661,7 +1668,7 @@ local function on_backup_cache()
     local pb_text = make_terminal_progress(0)
     dispatch_info("Backing up cache to SD2/ARCHIVE folder", "Please wait...\n\nThis process may take a considerable amount of time depending on the size of your scraped media cache.\n\n" .. pb_text)
     local thread = love.thread.newThread("lib/backend/task_backend.lua")
-    thread:start("backup")
+    thread:start("backup", WORK_DIR)
 end
 
 local function on_backup_cache_sd1()
@@ -1669,21 +1676,21 @@ local function on_backup_cache_sd1()
     local pb_text = make_terminal_progress(0)
     dispatch_info("Backing up cache to SD1/ARCHIVE folder", "Please wait...\n\nThis process may take a considerable amount of time depending on the size of your scraped media cache.\n\n" .. pb_text)
     local thread = love.thread.newThread("lib/backend/task_backend.lua")
-    thread:start("backup_sd1")
+    thread:start("backup_sd1", WORK_DIR)
 end
 
 local function on_backup_config_sd1()
     log.write("Backing up config to SD1/ARCHIVE folder")
     dispatch_info("Backing up config to SD1/ARCHIVE folder", "Please wait...")
     local thread = love.thread.newThread("lib/backend/task_backend.lua")
-    thread:start("backup_config_sd1")
+    thread:start("backup_config_sd1", WORK_DIR)
 end
 
 local function on_migrate_cache()
     log.write("Migrating cache to SD2")
     dispatch_info("Migrating cache to SD2", "Please wait...")
     local thread = love.thread.newThread("lib/backend/task_backend.lua")
-    thread:start("migrate")
+    thread:start("migrate", WORK_DIR)
 end
 
 local function on_toggle_artwork_manager()
@@ -1755,9 +1762,10 @@ end
 
 local function on_app_update()
     log.write("Updating Scrappy")
-    dispatch_info("Updating Scrappy", "Please wait...")
+    command_output = ""
+    dispatch_info("Updating Scrappy", "Checking for latest release...")
     local thread = love.thread.newThread("lib/backend/task_backend.lua")
-    thread:start("update_app")
+    thread:start("update_app", WORK_DIR)
 end
 
 function tools:load()
