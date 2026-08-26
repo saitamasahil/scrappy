@@ -657,6 +657,16 @@ local function scrape_platforms()
             ::continue_rom::
         end
 
+        -- Queue all platform games for generation phase
+        for i = 1, #game_list do
+            table.insert(state.queued_games, {
+                title = game_list[i],
+                platform = dest,
+                input_folder = src,
+                skipped = false
+            })
+        end
+
         if uncached_games and not offline_mode then
             state.platform_context[dest] = {
                 games = game_list, -- Sorted game titles matching execution order
@@ -685,15 +695,6 @@ local function scrape_platforms()
             skyscraper.fetch_artwork(platform_path, src, dest, nil, fetch_file, force_refresh)
         else
             print("ALL GAMES ARE CACHED FOR " .. src)
-            -- Queue cached games for generation phase instead of processing immediately
-            for i = 1, #game_list do
-                table.insert(state.queued_games, {
-                    title = game_list[i],
-                    platform = dest,
-                    input_folder = src,
-                    skipped = false
-                })
-            end
         end
         ::skip::
     end
@@ -1903,17 +1904,10 @@ local function process_game_queue()
                     input_folder = game_info.input_folder
                 end
 
-                -- Two-phase logic: queue during fetch, process during generation
+                -- Two-phase logic: log during fetch, process during generation
                 if state.fetch_phase then
-                    -- FETCH PHASE: queue the game for later processing
-                    print(string.format("Fetched: %s/%s - queuing for generation phase", platform, game))
-                    table.insert(state.queued_games, {
-                        platform = platform,
-                        game_file = game_file,
-                        platform_path = platform_path,
-                        input_folder = input_folder,
-                        title = game
-                    })
+                    -- FETCH PHASE: log progress (all games already queued in state.queued_games)
+                    print(string.format("Fetched: %s/%s", platform, game))
                 else
                     -- GENERATION PHASE: process immediately
                     print(string.format("Processing queued game: %s/%s", platform, game))
