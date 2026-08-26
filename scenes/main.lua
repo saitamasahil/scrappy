@@ -1121,7 +1121,26 @@ local function update_state(t)
 
                 dashboard_fetch_progress = current .. "/" .. total
             end
-        end        -- Check if this is a fetch completion message
+        end        -- Check if a platform fetch just started
+        if t.platform_started then
+            local ui_platform = scraping_window ^ "platform"
+            if ui_platform then
+                ui_platform.text = muos.platforms[t.platform_started] or t.platform_started or "N/A"
+            end
+            local ui_source = scraping_window ^ "scraper_source"
+            if ui_source and state.fetch_phase then
+                local module = skyscraper.get_module_name(t.platform_started)
+                local module_map = {
+                    screenscraper = "ScreenScraper",
+                    thegamesdb = "TheGamesDB",
+                    igdb = "IGDB",
+                    import = "Import"
+                }
+                ui_source.text = string.format("Source: %s", module_map[module] or module or "N/A")
+            end
+        end
+
+        -- Check if this is a fetch completion message
         local completed_platform = t.log:match("%[fetch%] Platform (.-) completed")
         if completed_platform then
             state.pending_platforms = math.max(0, state.pending_platforms - 1)

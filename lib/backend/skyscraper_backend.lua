@@ -98,6 +98,13 @@ while true do
             log.write("[fetch] Using ScreenScraper API - network delays or rate limits may occur")
         end
 
+        if current_platform and current_platform ~= "none" then
+            channels.SKYSCRAPER_OUTPUT:push({
+                log = string.format("[fetch] Starting platform %s", current_platform),
+                platform_started = current_platform
+            })
+        end
+
         local output = io.popen("nice -n 19 " .. command .. stderr_to_stdout)
 
         if not output then

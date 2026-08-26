@@ -156,11 +156,12 @@ end
 -- Returns the preferred module for a given platform
 -- Ports always use TheGamesDB, other platforms respect Advanced Tools selection
 local function get_default_module_for(platform)
+    if not platform then return "screenscraper" end
     local pea_key = normalize_platform(platform)
 
     -- Ports: use IGDB if explicitly selected, otherwise fall back to TheGamesDB
     -- (ScreenScraper lacks ports/PC game coverage)
-    if pea_key == "ports" or pea_key == "PORTS" then
+    if pea_key == "ports" or tostring(platform):lower():find("ports") then
         if skyscraper.module == "igdb" then
             return "igdb"
         end
@@ -363,6 +364,9 @@ local function generate_command(config)
         local query_str = config.query:gsub(" ", "+")
         query_str = escape_shell_arg(query_str)
         command = string.format('%s --query "%s"', command, query_str)
+    end
+    if config.min_match then
+        command = string.format('%s -m %d', command, config.min_match)
     end
     -- Add startat flag for resuming
     if config.start_at then
