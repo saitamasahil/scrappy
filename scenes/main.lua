@@ -631,7 +631,7 @@ local function scrape_platforms()
                 has_video = cached_res["video"] or false
             end
 
-            if not offline_mode and (not scrape_missing_only or not cached_res or (videos_enabled and not has_video) or (scrape_missing_only and needs_scraping)) then
+            if not offline_mode and (not cached_res or (videos_enabled and not has_video)) then
                 table.insert(fetch_rom_files, rom)
                 uncached_games = true
             end
@@ -667,7 +667,7 @@ local function scrape_platforms()
             state.pending_platforms = state.pending_platforms + 1
 
             local fetch_file = nil
-            local force_refresh = not scrape_missing_only
+            local force_refresh = false
             if #fetch_rom_files > 0 then
                 local safe_src = src:gsub("[^%w_]", "_")
                 fetch_file = string.format("/tmp/scrappy_fetch_%s.txt", safe_src)
