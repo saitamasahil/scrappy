@@ -631,7 +631,7 @@ local function scrape_platforms()
                 has_video = cached_res["video"] or false
             end
 
-            if not scrape_missing_only or not cached_res or (videos_enabled and not has_video) or (scrape_missing_only and needs_scraping) then
+            if not offline_mode and (not scrape_missing_only or not cached_res or (videos_enabled and not has_video) or (scrape_missing_only and needs_scraping)) then
                 table.insert(fetch_rom_files, rom)
                 uncached_games = true
             end
@@ -657,7 +657,7 @@ local function scrape_platforms()
             ::continue_rom::
         end
 
-        if uncached_games then
+        if uncached_games and not offline_mode then
             state.platform_context[dest] = {
                 games = game_list, -- Sorted game titles matching execution order
                 source = src,
