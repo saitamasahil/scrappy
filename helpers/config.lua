@@ -648,12 +648,20 @@ function user_config:load_platforms()
             end
             -- Heuristic override: SG-1000 vs Master System
             if assignment == "mastersystem" then
-                local platform_path = string.format("%s/%s", get_rom_path_for(item), item)
-                local files = nativefs.getDirectoryItems(platform_path) or {}
-                for _, f in ipairs(files) do
-                    if f:lower():match("%.sg$") then
+                local leaf_l = tostring(item):lower():gsub("[%W_]", "")
+                if leaf_l:find("sg1000") or leaf_l:find("sg 1000") then
+                    assignment = "sg-1000"
+                else
+                    local platform_path = string.format("%s/%s", get_rom_path_for(item), item)
+                    local files = nativefs.getDirectoryItems(platform_path) or {}
+                    local sms_count, sg_count = 0, 0
+                    for _, f in ipairs(files) do
+                        local fl = f:lower()
+                        if fl:match("%.sms$") then sms_count = sms_count + 1 end
+                        if fl:match("%.sg$") then sg_count = sg_count + 1 end
+                    end
+                    if sg_count > 0 and sg_count > sms_count then
                         assignment = "sg-1000"
-                        break
                     end
                 end
             end
