@@ -16,8 +16,8 @@ return function(props)
   local height = math.max(props.height or 0, itemHeight + padding.vertical)
 
   -- Scroll-related variables
-  local scrollOffset = 0
-  local scrollSpeed = 50 -- Pixels per second
+  local scrollSpeed = 50
+  local scrollPause = 1.5 -- 1.5s pause before marquee scroll
   local spacer = " • " -- Spacer between wrapped text
   local spacerWidth = font:getWidth(spacer) -- Width of the spacer
 
@@ -31,6 +31,8 @@ return function(props)
     text = text,
     checked = props.checked or false,
     id = props.id,
+    scrollOffset = 0,
+    scrollTimer = 0,
     -- Positioning and layout properties
     x = props.x or 0,
     y = props.y or 0,
@@ -74,6 +76,8 @@ return function(props)
       -- Update focus state
       if self.focused and not self.last_focused then
         if self.onFocus then self:onFocus() end
+        self.scrollOffset = 0
+        self.scrollTimer = 0
       end
       self.last_focused = self.focused
 
@@ -114,13 +118,20 @@ return function(props)
       local textWidth = font:getWidth(self.displayText or "")
       -- Only scroll if the button is focused and the text is longer than the button width
       if self.focused and textWidth > contentWidth then
-        scrollOffset = scrollOffset + scrollSpeed * dt
-        -- Wrap the scroll offset when it exceeds the text width
-        if scrollOffset > textWidth + spacerWidth then
-          scrollOffset = 0 -- Reset to the beginning
+        self.scrollTimer = (self.scrollTimer or 0) + dt
+        if self.scrollTimer > scrollPause then
+          self.scrollOffset = (self.scrollOffset or 0) + scrollSpeed * dt
+          -- Wrap the scroll offset when it exceeds the text width
+          if self.scrollOffset > textWidth + spacerWidth then
+            self.scrollOffset = 0 -- Reset to the beginning
+            self.scrollTimer = 0
+          end
+        else
+          self.scrollOffset = 0
         end
       else
-        scrollOffset = 0 -- Reset scroll offset when not focused
+        self.scrollOffset = 0 -- Reset scroll offset when not focused
+        self.scrollTimer = 0
       end
     end,
     draw = function(self)
@@ -233,11 +244,12 @@ return function(props)
         love.graphics.printf(displayText, textX, self.y + topPadding, self.width, 'left')
       else
         -- Scroll the text if it's longer than the button width
-        textX = textX - scrollOffset
+        local offset = self.scrollOffset or 0
+        textX = textX - offset
         love.graphics.print(displayText, textX, self.y + topPadding)
 
         -- Draw the wrapped text with a spacer to the right of the first text
-        if scrollOffset > textWidth - available_width then
+        if offset > textWidth - available_width then
           love.graphics.print(spacer .. displayText, textX + textWidth, self.y + topPadding)
         end
       end
