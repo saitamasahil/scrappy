@@ -75,7 +75,7 @@ CELL_FOCUS_IMAGE_RECOLOUR_ALPHA = 0
 
 ## Special thanks
 
-- **chronoss09** - for testing infinite test builds of scrappy [GitHub](https://github.com/chronoss09)
+- **chronoss09** - for testing infinite test builds of scrappy and providing custom console frames [GitHub](https://github.com/chronoss09)
 - **10NES** - for testing and providing detailed feedback on the bug report
 - **Snow (snowram)** - for the initial Qt5 build work that inspired the Qt6 upgrade [Kofi](https://ko-fi.com/snowram)
 - **Portmaster and their devs** - for great documentation on porting games/software for Linux handhelds [Portmaster](https://portmaster.games/porting.html)
@@ -85,6 +85,7 @@ CELL_FOCUS_IMAGE_RECOLOUR_ALPHA = 0
 - **TheWalruzz** - for updating storage paths & adding Fluent theme compatible template [GitHub](https://github.com/TheWalruzz)
 - **antiKk** - for invaluable technical guidance, detailed logs, and testing to enable **RG Vita Pro** support [GitHub](https://github.com/antiKk)
 - **bulkh** - for the amazing UI sounds from the OneTwo theme [GitHub](https://github.com/bulkh/OneTwo)
+- **MIMI** - for providing the XML artwork template for Trimui Brick [GitHub](https://github.com/indigo206888)
 - Testers and many other contributors
 
 ## Supporting the project
