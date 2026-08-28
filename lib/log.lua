@@ -44,4 +44,22 @@ function log.write(msg, ...)
     return msg
 end
 
+function log.clear_logs()
+    local files = nativefs.getDirectoryItems("logs") or {}
+    local count = 0
+    for _, file in ipairs(files) do
+        if file:sub(-4) == ".log" or file:sub(-4) == ".txt" then
+            if nativefs.remove("logs/" .. file) then
+                count = count + 1
+            end
+        end
+    end
+    if nativefs.getInfo("scrappy.log") then
+        if nativefs.remove("scrappy.log") then
+            count = count + 1
+        end
+    end
+    return count
+end
+
 return log

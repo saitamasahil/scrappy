@@ -25,6 +25,7 @@ local icon_paths = {
   performance  = "assets/icons/performance.png",
   region       = "assets/icons/region.png",
   cache_clean  = "assets/icons/cache-clean.png",
+  clear_logs   = "assets/icons/clear_logs.png",
   backup       = "assets/icons/backup.png",
   cache        = "assets/icons/cache.png",
   theme        = "assets/icons/theme.png",

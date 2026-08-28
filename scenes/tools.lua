@@ -1147,6 +1147,11 @@ local function on_reset_configs()
     dispatch_info("Configs reset", "Configs have been reset.")
 end
 
+local function on_clear_logs()
+    local count = log.clear_logs()
+    dispatch_info("Logs Cleared", string.format("Removed %d log file%s.", count, count == 1 and "" or "s"))
+end
+
 local function on_select_preset(name)
     skyscraper.apply_sample_preset(name)
     if user_config then
@@ -2019,6 +2024,11 @@ function tools:load()
         width = item_width,
         onClick = on_clear_cache_press,
         icon = "cache_clean"
+    } + listitem {
+        text = "Clear Logs",
+        width = item_width,
+        onClick = on_clear_logs,
+        icon = "clear_logs"
     } + listitem {
         id = "artwork_manager_toggle",
         text = function()
