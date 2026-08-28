@@ -1059,6 +1059,16 @@ function start_generation_phase()
 end
 
 
+local function add_failed_task(game_name)
+    if not game_name or game_name == "" or game_name == "fake-rom" then return end
+    for _, name in ipairs(state.failed_tasks) do
+        if name == game_name then
+            return
+        end
+    end
+    table.insert(state.failed_tasks, game_name)
+end
+
 -- Takes the output from Skyscraper commands and updates state
 local function update_state(t)
     if t.error and t.error ~= "" then
@@ -1201,7 +1211,7 @@ local function update_state(t)
                 -- Copy game artwork
                 artwork.copy_to_catalogue(t.platform, t.title)
             else
-                state.failed_tasks[#state.failed_tasks + 1] = t.title
+                add_failed_task(t.title)
             end
 
             -- Update UI
@@ -1862,7 +1872,7 @@ local function process_game_queue()
         end
         if skipped then
             if state.fetch_phase then
-                state.failed_tasks[#state.failed_tasks + 1] = game
+                add_failed_task(game)
             else
                 update_state({
                     title = game,
