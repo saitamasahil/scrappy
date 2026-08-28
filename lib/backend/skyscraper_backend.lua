@@ -46,8 +46,158 @@ local function emit_ready(game, platform, input_folder, skipped)
     })
 end
 
+local function run_fetch_command(cmd, current_platform, input_folder, op, game_override, idx, total_games)
+    local stderr_to_stdout = " 2>&1"
+    local output = io.popen("nice -n 19 " .. cmd .. stderr_to_stdout)
+    if not output then
+        log.write("Failed to run Skyscraper")
+        channels.SKYSCRAPER_OUTPUT:push({
+            data = {},
+            error = "Failed to run Skyscraper",
+            loading = false
+        })
+        return false, false, true, false
+    end
+
+    local parsed = false
+    local retriable_error = false
+    local fatal_error = false
+    local aborted = false
+    local line_count = 0
+    local games_emitted = 0
+
+    for line in output:lines() do
+        line_count = line_count + 1
+
+        -- Abort check every line
+        local abort_sig = channels.SKYSCRAPER_ABORT:pop()
+        if abort_sig and (abort_sig == true or abort_sig.abort) then
+            aborted = true
+            log.write("[fetch] Abort signal received, killing process")
+            channels.SKYSCRAPER_OUTPUT:push({
+                log = "[fetch] Aborted by user"
+            })
+            if output then
+                pcall(output.close, output)
+                output = nil
+            end
+            os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
+            break
+        end
+
+        -- Network check during scraping (skip in offline mode)
+        if not is_offline_mode() and not wifi.is_connected() then
+            aborted = true
+            log.write("Network disconnected during scraping")
+            channels.SKYSCRAPER_OUTPUT:push({
+                log = "[fetch] Network disconnected. Stopping scrape.",
+                error = "Network disconnected",
+                loading = false
+            })
+            if output then
+                pcall(output.close, output)
+                output = nil
+            end
+            os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
+            break
+        end
+
+        line = utils.strip_ansi_colors(line)
+
+        -- If running in per-game incremental mode, adjust #1/1 to true total progress #idx/total_games
+        if total_games and total_games > 1 and line:find("#1/1") then
+            line = line:gsub("#1/1", string.format("#%d/%d", idx, total_games))
+        end
+
+        -- Filter repetitive startup/shutdown boilerplate logs in incremental multi-game mode
+        local is_boilerplate = false
+        if total_games and total_games > 1 then
+            if idx > 1 and (
+                line:find("Running Skyscraper") or
+                line:find("Fetching limits for user") or
+                line:find("Looking for optional") or
+                line:find("Starting scraping run") or
+                line:find("Sit back, relax")
+            ) then
+                is_boilerplate = true
+            end
+            if idx < total_games and (
+                line:find("Resource gathering run completed") or
+                line:find("And here are some neat stats") or
+                line:find("Total completion time") or
+                line:find("Average search match") or
+                line:find("Average entry completeness") or
+                line:find("Total number of games") or
+                line:find("Successfully processed games") or
+                line:find("Skipped games") or
+                line:find("Writing quick id xml") or
+                line:find("resources to cache, please wait")
+            ) then
+                is_boilerplate = true
+            end
+        end
+
+        -- RUNNING TASK; PUSH OUTPUT
+        if (op == "update" or op == "import") and not is_boilerplate then
+            channels.TASK_OUTPUT:push({
+                output = line,
+                error = nil
+            })
+        end
+
+        local res, error, skipped, rtype = parser.parse(line)
+        if res ~= nil or error then
+            parsed = true
+        end
+        if res ~= nil then
+            if not is_boilerplate or rtype == "game" then
+                log.write(string.format("[fetch] %s", line), "skyscraper")
+                channels.SKYSCRAPER_OUTPUT:push({
+                    log = string.format("[fetch] %s", line)
+                })
+            end
+            if rtype == "game" then
+                games_emitted = games_emitted + 1
+                emit_ready(res, current_platform, input_folder, skipped)
+            end
+        end
+
+        if res == nil and (error == nil or error == "") and not is_boilerplate then 
+            log.write(string.format("[fetch:raw] %s", line), "skyscraper") 
+        end
+
+        if error ~= nil and error ~= "" then
+            log.write("ERROR: " .. error, "skyscraper")
+            channels.SKYSCRAPER_OUTPUT:push({
+                data = {},
+                error = error,
+                loading = false
+            })
+            if error:lower():find("invalid/empty json") then
+                retriable_error = true
+            else
+                fatal_error = true
+            end
+            break
+        end
+    end
+
+    if output then
+        pcall(output.close, output)
+        output = nil
+    end
+
+    -- For single-game scrape runs, if process ended without emitting a game result,
+    -- emit a skipped event so UI/state does not hang indefinitely.
+    local game_name = game_override
+    if game_name and game_name ~= "none" and games_emitted == 0 and not aborted then
+        emit_ready(game_name, current_platform, input_folder, true)
+    end
+
+    return (not aborted and not fatal_error), aborted, fatal_error, retriable_error
+end
+
 while true do
-    ::continue::
     -- Demand a table with command, platform, type, and game from SKYSCRAPER_INPUT
     local input_data = channels.SKYSCRAPER_INPUT:demand()
 
@@ -73,22 +223,12 @@ while true do
             error = "Network not connected",
             loading = false
         })
-        goto continue
-    end
-
-    if current_platform then
-        channels.SKYSCRAPER_OUTPUT:push({
-            log = "[fetch] Starting Skyscraper for \"" .. current_platform .. "\", please wait..."
-        })
-    end
-
-    local attempts, max_attempts = 0, 3
-    local retry_delay_secs = 5
-    local aborted = false
-    local fatal_error = false
-    while attempts < max_attempts do
-        attempts = attempts + 1
-        local stderr_to_stdout = " 2>&1"
+    else
+        if current_platform then
+            channels.SKYSCRAPER_OUTPUT:push({
+                log = "[fetch] Starting Skyscraper for \"" .. current_platform .. "\", please wait..."
+            })
+        end
 
         log.write(string.format("Running command: %s", command))
         log.write(string.format("Platform: %s | Game: %s", current_platform or "none", input_data.game or "none"))
@@ -105,177 +245,99 @@ while true do
             })
         end
 
-        local output = io.popen("nice -n 19 " .. command .. stderr_to_stdout)
-
-        if not output then
-            log.write("Failed to run Skyscraper")
-            channels.SKYSCRAPER_OUTPUT:push({
-                data = {},
-                error = "Failed to run Skyscraper",
-                loading = false
-            })
-            break
-        end
-
-        if input_data.version then -- Special command. Log version only
-            local result = output:read("*a")
-            pcall(output.close, output)
-            output = nil
-            local lines = utils.split(result, "\n")
-            log_version(lines)
-            goto continue
-        end
-
-        local parsed = false
-        local retriable_error = false
-        local line_count = 0
-        local games_emitted = 0
-
-        log.write("[fetch] Reading output from Skyscraper...")
-
-        for line in output:lines() do
-            line_count = line_count + 1
-
-            -- Abort check every line
-            local abort_sig = channels.SKYSCRAPER_ABORT:pop()
-            if abort_sig and (abort_sig == true or abort_sig.abort) then
-                aborted = true
-                log.write("[fetch] Abort signal received, killing process")
-                channels.SKYSCRAPER_OUTPUT:push({
-                    log = "[fetch] Aborted by user"
-                })
-                if output then
-                    pcall(output.close, output)
-                    output = nil
-                end
-                os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
-                break
+        -- Special command: version check
+        if input_data.version then
+            local output = io.popen("nice -n 19 " .. command .. " 2>&1")
+            if output then
+                local result = output:read("*a")
+                pcall(output.close, output)
+                local lines = utils.split(result, "\n")
+                log_version(lines)
             end
-
-            -- Network check during scraping (skip in offline mode)
-            if not is_offline_mode() and not wifi.is_connected() then
-                aborted = true
-                log.write("Network disconnected during scraping")
-                channels.SKYSCRAPER_OUTPUT:push({
-                    log = "[fetch] Network disconnected. Stopping scrape.",
-                    error = "Network disconnected",
-                    loading = false
-                })
-                if output then
-                    pcall(output.close, output)
-                    output = nil
-                end
-                os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
-                break
-            end
-
-            line = utils.strip_ansi_colors(line)
-            -- RUNNING TASK; PUSH OUTPUT
-            if op == "update" or op == "import" then
-                channels.TASK_OUTPUT:push({
-                    output = line,
-                    error = nil
-                })
-            end
-            local res, error, skipped, rtype = parser.parse(line)
-            if res ~= nil or error then
-                parsed = true
-            end
-            if res ~= nil then
-                log.write(string.format("[fetch] %s", line), "skyscraper")
-                channels.SKYSCRAPER_OUTPUT:push({
-                    log = string.format("[fetch] %s", line)
-                })
-                if rtype == "game" then
-                    games_emitted = games_emitted + 1
-                    emit_ready(res, current_platform, input_folder, skipped)
+        else
+            -- Check if include_from file is provided with multiple ROMs to scrape
+            local include_file = command:match('%-%-includefrom "([^"]+)"')
+            local rom_list = {}
+            if include_file then
+                local f = io.open(include_file, "r")
+                if f then
+                    for rom_line in f:lines() do
+                        rom_line = rom_line:gsub("^%s*(.-)%s*$", "%1")
+                        if rom_line ~= "" then
+                            table.insert(rom_list, rom_line)
+                        end
+                    end
+                    f:close()
                 end
             end
-            
-            if res == nil and (error == nil or error == "") then 
-                log.write(string.format("[fetch:raw] %s", line), "skyscraper") 
-            end
 
-                if error ~= nil and error ~= "" then
-                    log.write("ERROR: " .. error, "skyscraper")
+            local aborted = false
+
+            if #rom_list > 1 then
+                log.write(string.format("[fetch] Auto-saving DB per game for %d games in platform '%s'", #rom_list, current_platform or "none"))
+                local temp_single_include = "/tmp/scrappy_fetch_single_game.txt"
+                local all_completed = true
+
+                for idx, single_rom in ipairs(rom_list) do
+                    -- Abort check before starting each game
+                    local abort_sig = channels.SKYSCRAPER_ABORT:pop()
+                    if abort_sig and (abort_sig == true or abort_sig.abort) then
+                        aborted = true
+                        all_completed = false
+                        break
+                    end
+                    if not is_offline_mode() and not wifi.is_connected() then
+                        aborted = true
+                        all_completed = false
+                        log.write("Network disconnected during scraping")
+                        channels.SKYSCRAPER_OUTPUT:push({
+                            log = "[fetch] Network disconnected. Stopping scrape.",
+                            error = "Network disconnected",
+                            loading = false
+                        })
+                        break
+                    end
+
+                    -- Write single ROM to temporary include file
+                    local sf = io.open(temp_single_include, "w")
+                    if sf then
+                        sf:write(single_rom .. "\n")
+                        sf:close()
+                    end
+
+                    -- Replace includefrom parameter with the single-game include file
+                    local single_cmd = command:gsub('%-%-includefrom "[^"]+"', string.format('--includefrom "%s"', temp_single_include))
+
+                    local success, was_aborted, was_fatal, was_retriable = run_fetch_command(
+                        single_cmd, current_platform, input_folder, op, single_rom, idx, #rom_list
+                    )
+
+                    if was_aborted then
+                        aborted = true
+                        all_completed = false
+                        break
+                    end
+                end
+
+                pcall(os.remove, temp_single_include)
+
+                if current_platform and not aborted and all_completed then
                     channels.SKYSCRAPER_OUTPUT:push({
-                        data = {},
-                        error = error,
-                        loading = false
+                        log = string.format("[fetch] Platform %s completed", current_platform)
                     })
-                    if error:lower():find("invalid/empty json") then
-                        retriable_error = true
-                    else
-                        fatal_error = true
-                    end
-                    break
-                end
-        end
-
-        -- Safely close output and check exit status
-        local command_failed = false
-        if output then
-            local ok, status, exit_type, exit_code = pcall(output.close, output)
-            if ok then
-                if type(status) == "boolean" then
-                    -- Lua 5.2+ / modern Luajit with 5.2 compatibility
-                    if not status then
-                        command_failed = true
-                    end
-                elseif type(status) == "number" then
-                    -- Lua 5.1 / standard Luajit
-                    if status ~= 0 then
-                        command_failed = true
-                    end
                 end
             else
-                command_failed = true
+                -- Single game or non-includefrom command: run directly
+                local success, was_aborted, was_fatal, was_retriable = run_fetch_command(
+                    command, current_platform, input_folder, op, input_data.game, 1, 1
+                )
+
+                if current_platform and not was_aborted and not was_fatal then
+                    channels.SKYSCRAPER_OUTPUT:push({
+                        log = string.format("[fetch] Platform %s completed", current_platform)
+                    })
+                end
             end
-        end
-
-        if command_failed and not aborted then
-            fatal_error = true
-            log.write("[fetch] Skyscraper process exited with a non-zero status code", "skyscraper")
-            channels.SKYSCRAPER_OUTPUT:push({
-                data = {},
-                error = "Skyscraper process crashed or exited with an error",
-                loading = false
-            })
-        end
-
-        -- Log completion details
-        log.write(string.format("[fetch] Process ended. Lines received: %d, Aborted: %s, Retriable error: %s",
-            line_count, tostring(aborted), tostring(retriable_error)))
-
-        if aborted then
-            -- graceful stop
-            break
-        end
-
-        -- For single-game scrape runs, if process ended without emitting a game result,
-        -- emit a skipped event so single_scrape scene does not hang indefinitely.
-        if input_data.game and input_data.game ~= "none" and games_emitted == 0 and not aborted then
-            emit_ready(input_data.game, current_platform, input_folder, true)
-        end
-
-        -- Notify that fetch operation completed for this platform
-        if current_platform and not aborted and not retriable_error and not fatal_error then
-            channels.SKYSCRAPER_OUTPUT:push({
-                log = string.format("[fetch] Platform %s completed", current_platform)
-            })
-        end
-
-        if retriable_error and attempts < max_attempts then
-            channels.SKYSCRAPER_OUTPUT:push({
-                log = string.format("[fetch] Retrying in %ds (attempt %d/%d)", retry_delay_secs, attempts + 1,
-                    max_attempts)
-            })
-            socket.sleep(retry_delay_secs)
-            retry_delay_secs = math.min(15, retry_delay_secs * 2)
-            -- retry loop continues
-        else
-            -- either success or non-retriable error or max attempts exhausted
-            break
         end
     end
 end
