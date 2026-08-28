@@ -37,8 +37,8 @@ Importing your custom resources is supported by Scrappy, but you have to follow 
 1. Name your resource with the exact base name of the ROM you wish to connect it to. Example: 'Goodboy Galaxy.gba' will import images with a filename of 'Goodboy Galaxy.png' (or other supported image formats).
 2. Create a folder for your platform in '/mnt/mmc/MUOS/application/Scrappy/.scrappy/static/.skyscraper/import'. If you're importing GBA resources, the folder path must be: '/mnt/mmc/MUOS/application/Scrappy/.scrappy/static/.skyscraper/import/gba'.
 3. Place all of your images in the path you've just created, inside their corresponding subfolders: 'screenshots', 'covers', 'marquees', 'textures', and 'wheels'.
-4. Open Advanced Tools in Scrappy and run the 'Custom import' task.
-5. Restart Scrappy for changes to take effect.
+4. Open Advanced Tools in Scrappy and run the 'Run Custom Import' task.
+5. Generate your artwork by running Scrape All on that platform, or use Artwork Manager in Advanced Tools to generate individually.
 
 ### Backup & Restore
 Scrappy integrates with the native muOS Archive Manager, allowing you to back up and restore your settings and cache easily:
