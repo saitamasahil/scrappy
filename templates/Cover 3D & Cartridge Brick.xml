@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artwork>
+  <output type="cover" width="1024" height="768">
+    <layer resource="cover" height="450" x="300" y="-30" align="center" valign="bottom">
+      <shadow distance="8" softness="5" opacity="50"/>
+      <gamebox side="wheel" rotate="90"/>
+    </layer>
+    <layer resource="texture" height="180" x="120" y="-30" align="center" valign="bottom">
+      <shadow distance="8" softness="5" opacity="50"/>
+    </layer>
+  </output>
+</artwork>
