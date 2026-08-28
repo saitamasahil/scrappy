@@ -114,6 +114,7 @@ function love.quit()
     os.execute("pkill -9 -f tgdb_server.py 2>/dev/null")
     os.execute("pkill -9 -f igdb_server.py 2>/dev/null")
     os.execute("pkill -9 -f template_maker.py 2>/dev/null")
+    os.execute("pkill -9 -f folder_art_maker.py 2>/dev/null")
 
     skyscraper.shutdown()
     return false -- Allow quit to proceed

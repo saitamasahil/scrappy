@@ -78,6 +78,9 @@ local regen_check_timer = 0
 local template_maker_running = false
 local template_maker_ip = nil
 local template_maker_status = ""
+local folder_art_maker_running = false
+local folder_art_maker_ip = nil
+local folder_art_maker_status = ""
 local TPL_REGEN_FILE = "/tmp/scrappy_tpl_regen.json"
 local tpl_regen_check_timer = 0
 local template_popup_visible = false
@@ -1765,6 +1768,37 @@ local function on_toggle_template_maker()
     end
 end
 
+local function on_toggle_folder_art_maker()
+    if folder_art_maker_running then
+        os.execute("pkill -9 -f folder_art_maker.py")
+        folder_art_maker_running = false
+        folder_art_maker_status = "Server stopped."
+        return
+    end
+
+    local ip = utils.get_ip_address()
+    if ip then
+        local server_path = WORK_DIR .. "/scripts/folder_art_maker.py"
+        local logo_path = WORK_DIR .. "/assets/scrappy_logo.png"
+        local theme_name = theme:get_current_name() or "dark"
+        local accent_color = user_config:read("main", "customAccent") or "cbaa0f"
+        local accent_mode = tostring(user_config:read("main", "accentMode") or "muos"):lower()
+        if accent_mode == "muos" then
+            accent_color = theme:read("button", "BUTTON_FOCUS") or "cbaa0f"
+        end
+
+        os.execute(string.format(
+            'python3 "%s" --theme %s --accent "%s" --logo "%s" --work-dir "%s" --port 8084 > /dev/null 2>&1 &',
+            server_path, theme_name, accent_color, logo_path, WORK_DIR))
+
+        folder_art_maker_running = true
+        folder_art_maker_ip = ip
+        folder_art_maker_status = 'Go to http://' .. ip .. ':8084 on phone/PC (same network)'
+    else
+        folder_art_maker_status = "No IP found! Check network connection."
+    end
+end
+
 local function on_app_update()
     log.write("Updating Scrappy")
     command_output = ""
@@ -2057,6 +2091,20 @@ function tools:load()
         width = item_width,
         onClick = on_toggle_template_maker,
         icon = "canvas"
+    } + listitem {
+        id = "folder_art_maker_toggle",
+        text = function()
+            if folder_art_maker_running then
+                return "Stop Folder Art Studio (http://" .. (folder_art_maker_ip or "") .. ":8084)"
+            elseif folder_art_maker_status == "No IP found! Check network connection." then
+                return "Folder Art Studio (No Network Connection!)"
+            else
+                return "Start Folder Art Studio (Web)"
+            end
+        end,
+        width = item_width,
+        onClick = on_toggle_folder_art_maker,
+        icon = "folder"
     } + listitem {
         id = "showcase_scrappy",
         text = "Visual Tour",
@@ -3214,10 +3262,11 @@ function tools:keypressed(key)
         if info_window.visible then
             -- Already handled above
         else
-            if artwork_manager_running or template_maker_running then
+            if artwork_manager_running or template_maker_running or folder_art_maker_running then
                 local server_names = {}
                 if artwork_manager_running then table.insert(server_names, "Artwork Manager") end
                 if template_maker_running then table.insert(server_names, "Template Maker") end
+                if folder_art_maker_running then table.insert(server_names, "Folder Art Studio") end
                 dispatch_info("Servers still running!",
                     table.concat(server_names, " & ") .. " is still running.\nPlease stop it before exiting Advanced Tools.")
             else
