@@ -88,9 +88,10 @@ local function format_time(seconds)
         return "Calculating..."
     end
     seconds = math.floor(seconds)
-    local mins = math.floor(seconds / 60)
+    local hours = math.floor(seconds / 3600)
+    local mins = math.floor((seconds % 3600) / 60)
     local secs = seconds % 60
-    return string.format("%02d:%02d", mins, secs)
+    return string.format("%02d:%02d:%02d", hours, mins, secs)
 end
 
 -- Draw the core assignment reminder popup (matches Clear Cache style)
