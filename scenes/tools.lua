@@ -2262,6 +2262,22 @@ open_grid_size_settings = function()
     local current_size = user_config:read("main", "gridSize") or "Dynamic"
     local current_source = user_config:read("main", "gridSource") or "cover"
 
+    local source_labels = {
+        cover = "Cover",
+        wheel = "Wheel",
+        screen_wheel = "Screenshot + Wheel"
+    }
+
+    local function get_next_source(cur)
+        if cur == "cover" then
+            return "wheel"
+        elseif cur == "wheel" then
+            return "screen_wheel"
+        else
+            return "cover"
+        end
+    end
+
     local function apply_grid_source(source)
         user_config:insert("main", "gridSource", source)
         user_config:save()
@@ -2270,7 +2286,8 @@ open_grid_size_settings = function()
             grid_size_popup_visible = false
         end
         open_grid_size_settings()
-        dispatch_info("Grid Source", "Grid source set to " .. source .. ". Please run a scrape to apply.")
+        local label = source_labels[source] or source
+        dispatch_info("Grid Source", "Grid source set to " .. label .. ". Please run a scrape to apply.")
     end
 
     local function apply_grid_size(size)
@@ -2298,12 +2315,13 @@ open_grid_size_settings = function()
         height = 0
     }
 
+    local current_source_label = source_labels[current_source] or "Cover"
     grid_list = grid_list + listitem {
         id = "grid_src_toggle",
-        text = "Source: " .. (current_source == "wheel" and "Wheel" or "Cover"),
+        text = "Source: " .. current_source_label,
         width = item_width,
         onClick = function()
-            local new_source = (current_source == "cover") and "wheel" or "cover"
+            local new_source = get_next_source(current_source)
             apply_grid_source(new_source)
         end,
         icon = "image"

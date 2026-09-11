@@ -396,6 +396,31 @@ function artwork.copy_video_from_cache(platform, game, copy_path)
     end
 end
 
+local function find_cached_resource_file(cache_folder, pea_key, res_type, cache_id)
+    local res_dir = string.format("%s/%s/%s", cache_folder, pea_key, res_type)
+    if not nativefs.getInfo(res_dir) then return nil end
+    local source_dirs = nativefs.getDirectoryItems(res_dir)
+    if not source_dirs then return nil end
+    for _, source_dir in ipairs(source_dirs) do
+        local source_path = string.format("%s/%s", res_dir, source_dir)
+        local source_info = nativefs.getInfo(source_path)
+        if source_info and source_info.type == "directory" then
+            local test_path_no_ext = string.format("%s/%s", source_path, cache_id)
+            if nativefs.getInfo(test_path_no_ext) then
+                return test_path_no_ext
+            end
+            local exts = {"png", "jpg", "jpeg", "webp"}
+            for _, ext in ipairs(exts) do
+                local test_path = string.format("%s/%s.%s", source_path, cache_id, ext)
+                if nativefs.getInfo(test_path) then
+                    return test_path
+                end
+            end
+        end
+    end
+    return nil
+end
+
 function artwork.copy_grid_from_cache(platform, game, copy_path)
     local cache_folder = skyscraper_config:read("main", "cacheFolder")
     if not cache_folder or cache_folder == "\"\"" then return end
@@ -403,9 +428,6 @@ function artwork.copy_grid_from_cache(platform, game, copy_path)
 
     local pea_key = normalize_platform(platform)
     local grid_source = user_config:read("main", "gridSource") or "cover"
-    local source_type = (grid_source == "wheel") and "wheels" or "covers"
-    local covers_cache_dir = string.format("%s/%s/%s", cache_folder, pea_key, source_type)
-    if not nativefs.getInfo(covers_cache_dir) then return end
 
     -- Parse quickid.xml to map game title to cache ID
     local quickid_path = string.format("%s/%s/quickid.xml", cache_folder, pea_key)
@@ -437,76 +459,139 @@ function artwork.copy_grid_from_cache(platform, game, copy_path)
 
     if not cache_id then return end
 
-    -- Search source directores for this cache ID
-    local source_dirs = nativefs.getDirectoryItems(covers_cache_dir)
-    if not source_dirs then return end
+    -- Dynamically determine max grid size according to MUOS official dimension specs
+    local screen_w = love.graphics.getWidth()
+    local screen_h = love.graphics.getHeight()
+    local max_size = 120 -- Default safe size for 640x480
 
-    local found_path = nil
-    for _, source_dir in ipairs(source_dirs) do
-        local source_path = string.format("%s/%s", covers_cache_dir, source_dir)
-        local source_info = nativefs.getInfo(source_path)
-        if source_info and source_info.type == "directory" then
-            local test_path_no_ext = string.format("%s/%s", source_path, cache_id)
-            if nativefs.getInfo(test_path_no_ext) then
-                found_path = test_path_no_ext
-            else
-                -- Try common extensions as fallback
-                local exts = {"png", "jpg", "jpeg", "webp"}
-                for _, ext in ipairs(exts) do
-                    local test_path = string.format("%s/%s.%s", source_path, cache_id, ext)
-                    if nativefs.getInfo(test_path) then
-                        found_path = test_path
-                        break
-                    end
-                end
-            end
-            if found_path then break end
+    if screen_w >= 1024 then
+        max_size = 204
+    elseif screen_h >= 576 then
+        max_size = 140
+    end
+
+    -- Apply user config override if set
+    local config_grid_size = user_config:read("main", "gridSize")
+    if config_grid_size and string.lower(tostring(config_grid_size)) ~= "dynamic" then
+        local parsed_size = tonumber(config_grid_size)
+        if parsed_size and parsed_size > 0 then
+            max_size = parsed_size
         end
     end
 
-    if not found_path then return end
-
-    -- Extract, dynamically scale based on device resolution, and explicitly encode PNG
     local dest_file = string.format("%s/grid/%s.png", copy_path, game)
-    -- Ensure parent subdirectories exist for games in subfolders
     local parent_dir = dest_file:match("(.+)/[^/]+$")
     if parent_dir and not nativefs.getInfo(parent_dir) then
         nativefs.createDirectory(parent_dir)
     end
-    local file_data = nativefs.newFileData(found_path)
 
+    if grid_source == "screen_wheel" then
+        -- Composite Screenshot + Wheel with rounded corners
+        local screen_path = find_cached_resource_file(cache_folder, pea_key, "screenshots", cache_id)
+        local wheel_path = find_cached_resource_file(cache_folder, pea_key, "wheels", cache_id)
+        local cover_path = find_cached_resource_file(cache_folder, pea_key, "covers", cache_id)
+
+        local bg_path = screen_path or cover_path
+        if not bg_path then return end
+
+        local corner_radius = math.floor(max_size * 0.12)
+        local success, result_or_err = pcall(function()
+            local canvas = love.graphics.newCanvas(max_size, max_size)
+            love.graphics.push("all")
+            love.graphics.setCanvas({canvas, stencil = true})
+            love.graphics.clear(0, 0, 0, 0)
+
+            -- Stencil mask for rounded tile
+            love.graphics.stencil(function()
+                love.graphics.rectangle("fill", 0, 0, max_size, max_size, corner_radius, corner_radius)
+            end, "replace", 1)
+            love.graphics.setStencilTest("greater", 0)
+
+            -- Draw background (screenshot or fallback cover)
+            local bg_data = nativefs.newFileData(bg_path)
+            if bg_data then
+                local bg_raw = love.image.newImageData(bg_data)
+                local bg_img = love.graphics.newImage(bg_raw)
+                local bw, bh = bg_img:getWidth(), bg_img:getHeight()
+                local scale = math.max(max_size / bw, max_size / bh)
+                local draw_w = bw * scale
+                local draw_h = bh * scale
+                local ox = (max_size - draw_w) / 2
+                local oy = (max_size - draw_h) / 2
+                love.graphics.setColor(1, 1, 1, 1)
+                love.graphics.draw(bg_img, ox, oy, 0, scale, scale)
+                bg_img:release()
+            end
+
+            -- Subtle vignette/dimming overlay for logo contrast
+            love.graphics.setColor(0, 0, 0, 0.15)
+            love.graphics.rectangle("fill", 0, 0, max_size, max_size)
+
+            -- Draw wheel logo centered with soft drop shadow
+            if wheel_path then
+                local wheel_data = nativefs.newFileData(wheel_path)
+                if wheel_data then
+                    local wheel_raw = love.image.newImageData(wheel_data)
+                    local wheel_img = love.graphics.newImage(wheel_raw)
+                    local ww, wh = wheel_img:getWidth(), wheel_img:getHeight()
+                    local max_w = max_size * 0.82
+                    local max_h = max_size * 0.60
+                    local w_scale = math.min(max_w / ww, max_h / wh)
+                    local w_draw_w = ww * w_scale
+                    local w_draw_h = wh * w_scale
+                    local wx = (max_size - w_draw_w) / 2
+                    local wy = (max_size - w_draw_h) / 2
+
+                    -- Drop shadow
+                    love.graphics.setColor(0, 0, 0, 0.65)
+                    love.graphics.draw(wheel_img, wx + 1.5, wy + 1.5, 0, w_scale, w_scale)
+
+                    -- Main wheel
+                    love.graphics.setColor(1, 1, 1, 1)
+                    love.graphics.draw(wheel_img, wx, wy, 0, w_scale, w_scale)
+                    wheel_img:release()
+                end
+            end
+
+            love.graphics.setStencilTest()
+            love.graphics.setCanvas()
+            love.graphics.pop()
+
+            local final_data = canvas:newImageData()
+            canvas:release()
+            return final_data
+        end)
+
+        if success and result_or_err then
+            local encoded = result_or_err:encode("png")
+            nativefs.write(dest_file, encoded:getString())
+            log.write(string.format("[Grid] Successfully composited screenshot+wheel to %s (size: %dx%d)", dest_file, result_or_err:getWidth(), result_or_err:getHeight()))
+        else
+            log.write(string.format("[Grid] Failed compositing screenshot+wheel: %s", tostring(result_or_err)))
+        end
+        return
+    end
+
+    -- Standard Cover or Wheel source
+    local source_type = (grid_source == "wheel") and "wheels" or "covers"
+    local found_path = find_cached_resource_file(cache_folder, pea_key, source_type, cache_id)
+    if not found_path and grid_source == "wheel" then
+        found_path = find_cached_resource_file(cache_folder, pea_key, "covers", cache_id)
+    end
+
+    if not found_path then return end
+
+    local file_data = nativefs.newFileData(found_path)
     local success, result_or_err = nil, nil
     if file_data then
         success, result_or_err = pcall(function()
             local raw_img_data = love.image.newImageData(file_data)
             local w, h = raw_img_data:getWidth(), raw_img_data:getHeight()
-            
-            -- Dynamically determine max grid size according to MUOS official dimension specs
-            local screen_w = love.graphics.getWidth()
-            local screen_h = love.graphics.getHeight()
-            local max_size = 120 -- Default safe size for 640x480
-            
-            if screen_w >= 1024 then
-                max_size = 204
-            elseif screen_h >= 576 then
-                max_size = 140
-            end
-
-            -- Apply user config override if set
-            local config_grid_size = user_config:read("main", "gridSize")
-            if config_grid_size and string.lower(tostring(config_grid_size)) ~= "dynamic" then
-                local parsed_size = tonumber(config_grid_size)
-                if parsed_size and parsed_size > 0 then
-                    max_size = parsed_size
-                end
-            end
 
             if w <= max_size and h <= max_size then
-                -- Already small enough, return the raw data
                 return raw_img_data
             end
 
-            -- Needs downscaling
             local img = love.graphics.newImage(raw_img_data)
             local scale = max_size / math.max(w, h)
             local target_w = math.max(1, math.floor(w * scale))
@@ -524,6 +609,7 @@ function artwork.copy_grid_from_cache(platform, game, copy_path)
 
             local final_data = canvas:newImageData()
             img:release()
+            canvas:release()
             return final_data
         end)
     end
@@ -533,7 +619,6 @@ function artwork.copy_grid_from_cache(platform, game, copy_path)
         nativefs.write(dest_file, encoded:getString())
         log.write(string.format("[Grid] Successfully scaled and exported grid cover to %s (size: %dx%d)", dest_file, result_or_err:getWidth(), result_or_err:getHeight()))
     else
-        -- Fallback to a raw byte copy if image parsing fails
         nativefs.write(dest_file, nativefs.read(found_path))
     end
 end
