@@ -308,7 +308,7 @@ local function on_enter_tgdb_key_web()
     
     tgdb_server_running = true
     tgdb_server_ip = ip
-    dispatch_info("TheGamesDB Web Server", 'Go to http://' .. ip .. ':8080 on phone/PC (same network)\n\nWaiting for you to enter the API key...')
+    dispatch_info("TheGamesDB Web Server", 'Go to http://' .. ip .. ':8085 on phone/PC (same network)\n\nWaiting for you to enter the API key...')
   else
     dispatch_info("TheGamesDB Web Server", "No IP found! Check network connection.")
   end

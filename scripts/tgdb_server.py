@@ -6,7 +6,7 @@ import sys
 import base64
 import argparse
 
-PORT = 8080
+PORT = 8085
 TMP_FILE = "/tmp/scrappy_tgdb_key.txt"
 
 def build_html(theme="dark", accent="cbaa0f", logo_b64=""):
