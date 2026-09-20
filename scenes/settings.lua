@@ -61,7 +61,7 @@ local function load_screenscraper_creds()
     local u, p = cleaned:match('([^:]+):(.+)')
     if u and p then
       ss_username = u
-      ss_password = p
+      ss_password = p:gsub('\\"', '"')
     end
   end
 end
@@ -224,7 +224,9 @@ end
 local function on_save_ss()
   local sk = configs.skyscraper_config
   if ss_username ~= '' and ss_password ~= '' then
-    sk:insert('screenscraper', 'userCreds', string.format('"%s:%s"', ss_username, ss_password))
+    -- Escape internal double-quotes with \" per Skyscraper INI format conventions
+    local safe_pass = ss_password:gsub('"', '\\"')
+    sk:insert('screenscraper', 'userCreds', string.format('"%s:%s"', ss_username, safe_pass))
     sk:save()
     sk:sync_native_config()
     dispatch_info("ScreenScraper", "Saved credentials.")

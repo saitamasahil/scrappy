@@ -360,9 +360,7 @@ local function generate_command(config)
     end
     -- Custom query for refine search feature (Skyscraper --query option)
     if config.query and config.query ~= "" then
-        -- Convert spaces to + for URL-style query, escape special characters
-        local query_str = config.query:gsub(" ", "+")
-        query_str = escape_shell_arg(query_str)
+        local query_str = escape_shell_arg(config.query)
         command = string.format('%s --query "%s"', command, query_str)
     end
     if config.min_match then

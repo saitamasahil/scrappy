@@ -1,4 +1,5 @@
 #!/bin/bash
+export BUNDLE_QRC=1
 # Run the update script to build Skyscraper
 /skysource/update_skyscraper.sh
 
