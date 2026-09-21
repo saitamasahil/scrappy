@@ -1,5 +1,3 @@
-# Scrappy
-
 <p align="center">
   <img src="banner/banner1.png" alt="scrappy" width="60%">
 </p>
