@@ -97,6 +97,17 @@ If you would like to support my work & this fork further, you can donate here:
 
 Contributions to Scrappy are welcome! Please fork the repository, make your changes, and submit a pull request.
 
+### Regression checks
+
+From the repository root, run the batch cache recovery checks with Lua or LuaJIT:
+
+```bash
+lua tests/batch_cache_test.lua
+```
+
+These checks exercise cache parsing and fetch/refresh decisions without LÖVE,
+ROM files, scraper credentials, or network access.
+
 ## Build from source
 
 Scrappy includes build scripts for packaging releases on both Linux and Windows.

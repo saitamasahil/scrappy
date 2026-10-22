@@ -520,6 +520,7 @@ local function scrape_platforms()
 
         -- Identify if this platform needs fetching
         local uncached_games = false
+        local force_refresh = false
         local game_list = {}
 
         -- Get list of files and per-game subfolders
@@ -616,7 +617,7 @@ local function scrape_platforms()
                 goto continue_rom
             end
 
-            -- Verify if the game needs to be fetched from the online API (uncached or missing videos)
+            -- Fetch new games, incomplete cache records, or missing enabled videos.
             local pea_key = utils.normalize_platform(dest)
             local rom_lower = rom:lower()
             local platform_cache = artwork.cached_game_ids[pea_key]
@@ -627,14 +628,11 @@ local function scrape_platforms()
             local videos_cfg = skyscraper_config:read("main", "videos") or "false"
             local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
 
-            local has_video = false
-            if cached_res then
-                has_video = cached_res["video"] or false
-            end
-
-            if not offline_mode and (not cached_res or (videos_enabled and not has_video)) then
+            local needs_fetch, refresh = artwork.get_fetch_requirements(cached_res, videos_enabled, offline_mode)
+            if needs_fetch then
                 table.insert(fetch_rom_files, rom)
                 uncached_games = true
+                force_refresh = force_refresh or refresh
             end
 
             -- Save in reference map
@@ -678,19 +676,11 @@ local function scrape_platforms()
             state.pending_platforms = state.pending_platforms + 1
 
             local fetch_file = nil
-            local force_refresh = false
             if #fetch_rom_files > 0 then
                 local safe_src = src:gsub("[^%w_]", "_")
                 fetch_file = string.format("/tmp/scrappy_fetch_%s.txt", safe_src)
                 local content = table.concat(fetch_rom_files, "\n")
                 nativefs.write(fetch_file, content)
-                
-                -- Force a refresh on fetch if video scraping is active to force-fetch missing videos
-                local videos_cfg = skyscraper_config:read("main", "videos") or "false"
-                local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
-                if videos_enabled then
-                    force_refresh = true
-                end
             end
 
             skyscraper.fetch_artwork(platform_path, src, dest, nil, fetch_file, force_refresh)
