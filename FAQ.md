@@ -26,8 +26,6 @@ Scrappy leverages multi-threaded generation to build artwork faster. Setting thi
 - **Scrape Only Missing Artwork**: Scrapes only games that do not have existing artwork yet, saving massive amounts of bandwidth and time.
 - **Refined Search**: Available under Single Scrape. If auto-matching fails, this lets you manually type the exact game title to get a correct match.
 
-Batch scraping reuses cached games with a title. If an earlier attempt recorded a ROM's ID but did not cache its title, an online batch retries that game instead of treating the ID alone as a completed scrape. These retries refresh only the selected fetch list; usable cached games remain local, and offline generation does not fetch resources.
-
 ### Web Tools
 Enable these tools via Advanced Tools, then open the displayed IP address in a browser on any phone/PC connected to the same Wi-Fi network:
 - **Template Maker**: A visual, interactive playground to design, preview, and customize your XML artwork templates.
