@@ -139,6 +139,9 @@ function user_config:fill_defaults()
     if not self:read("main", "gridSource") then
         self:insert("main", "gridSource", "cover")
     end
+    if not self:read("main", "videoTarget") then
+        self:insert("main", "videoTarget", "preview")
+    end
     self:save()
 end
 

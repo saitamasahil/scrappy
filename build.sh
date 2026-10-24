@@ -72,6 +72,7 @@ mkdir -p "$WORKDIR/Scrappy/.scrappy"
 # Copy all necessary files (Base files for both packages)
 echo "Copying base files..."
 cp "$PROJECT_ROOT/mux_launch.sh" "$WORKDIR/Scrappy/"
+[ -f "$PROJECT_ROOT/mux_lang.ini" ] && cp "$PROJECT_ROOT/mux_lang.ini" "$WORKDIR/Scrappy/"
 
 # Copy core directories
 cp -r "$PROJECT_ROOT/helpers" "$WORKDIR/Scrappy/.scrappy/"

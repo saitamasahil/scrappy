@@ -1974,6 +1974,35 @@ function tools:load()
             end
         end
     } + listitem {
+        id = "video_target_toggle",
+        text = function()
+            local target = artwork.get_video_target()
+            if target == "box" then
+                return "Video Target: Box (Main Menu Artwork)"
+            else
+                return "Video Target: Preview (Info Section)"
+            end
+        end,
+        width = item_width,
+        icon = "video_source",
+        onClick = function()
+            local current = artwork.get_video_target()
+            local new_target = (current == "box") and "preview" or "box"
+            user_config:insert("main", "videoTarget", new_target)
+            user_config:save()
+            local item = menu ^ "video_target_toggle"
+            if item then
+                if new_target == "box" then
+                    item.text = "Video Target: Box (Main Menu Artwork)"
+                else
+                    item.text = "Video Target: Preview (Info Section)"
+                end
+            end
+            if sound.enabled then
+                sound.play("nav_confirm")
+            end
+        end
+    } + listitem {
         text = "Edit Region Priorities",
         width = item_width,
         onClick = open_region_editor,

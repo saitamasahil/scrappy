@@ -292,6 +292,15 @@ function artwork.copy_artwork_type(platform, game, media_path, copy_path, output
     end
 end
 
+function artwork.get_video_target()
+    local raw = user_config:read("main", "videoTarget")
+    local target = raw and utils.strip_quotes(raw):lower() or "preview"
+    if target ~= "box" and target ~= "preview" then
+        target = "preview"
+    end
+    return target
+end
+
 function artwork.copy_video_from_cache(platform, game, copy_path)
     local cache_folder = skyscraper_config:read("main", "cacheFolder")
     if not cache_folder or cache_folder == "\"\"" then return false end
@@ -367,14 +376,13 @@ function artwork.copy_video_from_cache(platform, game, copy_path)
         return false 
     end
 
-    -- Ensure destination directory 'video' exists
-    local dest_dir = string.format("%s/video", copy_path)
+    local target_folder = artwork.get_video_target()
+    local dest_dir = string.format("%s/%s", copy_path, target_folder)
     if not nativefs.getInfo(dest_dir) then
         nativefs.createDirectory(dest_dir)
     end
 
-    -- Copy to catalogue/Platform/video/GameName.mp4
-    local dest_file = string.format("%s/video/%s.mp4", copy_path, game)
+    local dest_file = string.format("%s/%s/%s.mp4", copy_path, target_folder, game)
     -- Ensure parent subdirectories exist for games in subfolders
     local parent_dir = dest_file:match("(.+)/[^/]+$")
     if parent_dir and not nativefs.getInfo(parent_dir) then
@@ -660,9 +668,6 @@ function artwork.copy_to_catalogue(platform, game)
     local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
 
     local ensure_dirs = {"box", "preview", "splash", "text", "grid"}
-    if videos_enabled then
-        table.insert(ensure_dirs, "video")
-    end
     for _, d in ipairs(ensure_dirs) do
         local p = string.format("%s/%s", copy_path, d)
         if not nativefs.getInfo(p) then

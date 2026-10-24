@@ -172,6 +172,11 @@ New-Item -ItemType Directory -Force -Path $workHiddenDir | Out-Null
 Write-Host "Copying base files..."
 Copy-Item -LiteralPath (Join-Path $ProjectRoot "mux_launch.sh") -Destination $workScrappyDir -Force
 Set-UnixLineEndings -Path (Join-Path $workScrappyDir "mux_launch.sh")
+$muxLangPath = Join-Path $ProjectRoot "mux_lang.ini"
+if (Test-Path -LiteralPath $muxLangPath) {
+    Copy-Item -LiteralPath $muxLangPath -Destination $workScrappyDir -Force
+    Set-UnixLineEndings -Path (Join-Path $workScrappyDir "mux_lang.ini")
+}
 
 # Copy core directories
 Copy-Item -LiteralPath (Join-Path $ProjectRoot "helpers") -Destination $workHiddenDir -Recurse -Force
