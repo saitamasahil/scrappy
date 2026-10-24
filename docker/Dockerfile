@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV BUNDLE_QRC=1
 
 # Skyscraper version to build
-ARG VERSION=3.21.0
+ARG VERSION=3.21.1
 
 # Toolchain and runtime deps (Qt6, OpenSSL 3.0, etc.)
 RUN apt-get update && \
