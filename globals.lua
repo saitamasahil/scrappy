@@ -30,7 +30,7 @@ function _G.update_ui_scale()
     _G.sy = h / _G.design_h
     _G.scale = math.min(_G.sx, _G.sy)
     
-    -- Snap to 1.0 if very close (prevents tiny rounding errors on 640x480)
+    -- Snap to 1.0 if close to avoid rounding errors
     if math.abs(_G.scale - 1) < 0.01 then
         _G.scale = 1
         _G.sx = 1

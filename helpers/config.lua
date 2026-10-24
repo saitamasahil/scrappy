@@ -173,7 +173,7 @@ function user_config:get_paths()
       None
     Returns:
     (user)
-      rom_path: string  -- primary ROM path (for single-path operations like scraping)
+      rom_path: string  -- Primary ROM path for single path operations
       catalogue_path: string
   ]]
     -- Check for overrides
@@ -185,7 +185,7 @@ function user_config:get_paths()
 
     local catalogue_path = muos.CATALOGUE
 
-    -- Backward compat: Try MuOS union mount first (older muOS versions)
+    -- Backward compat: Try MuOS union mount first
     local union_roms_path = muos.UNION_PATH .. "/ROMS"
     if nativefs.getInfo(union_roms_path) then
         log.write("Using legacy union mount: " .. union_roms_path)
@@ -206,14 +206,14 @@ function user_config:get_paths()
         return nil
     end
 
-    -- SD2 (sdcard) takes priority if it has ROMs
+    -- Secondary storage takes priority if it has ROMs
     local sd2_roms = find_roms_on(muos.SD2_PATH)
     if sd2_roms then
         log.write("Primary ROM path: " .. sd2_roms)
         return rom_path_override or sd2_roms, catalogue_path_override or catalogue_path
     end
 
-    -- Fall back to SD1 (mmc)
+    -- Fall back to primary storage
     local sd1_roms = find_roms_on(muos.SD1_PATH)
     if sd1_roms then
         log.write("Primary ROM path: " .. sd1_roms)
@@ -261,7 +261,7 @@ function user_config:get_all_rom_paths()
         end
     end
 
-    -- Priority: SD2 (external) then SD1 (internal)
+    -- Priority: SD2 then SD1
     try_add(muos.SD2_PATH)  -- /mnt/sdcard/ROMS
     try_add(muos.SD1_PATH)  -- /mnt/mmc/ROMS
 
@@ -274,9 +274,9 @@ function user_config:get_all_rom_paths()
 end
 
 function user_config:load_platforms()
-    -- Gather all ROM root paths (both SD cards on new muOS, union on old muOS)
+    -- Gather all ROM root paths across storage devices
     local all_rom_paths = self:get_all_rom_paths()
-    local rom_path = all_rom_paths[1] -- primary path (for core.cfg resolution)
+    local rom_path = all_rom_paths[1] -- Primary path for core.cfg resolution
 
     log.write(string.format("Loading platforms from %d ROM root(s): %s",
         #all_rom_paths, table.concat(all_rom_paths, ", ")))
@@ -360,9 +360,9 @@ function user_config:load_platforms()
 
     local inserted = {}
     for _, item in ipairs(platforms) do
-        -- Use leaf folder for core assignment (so nested like "Consoles/nes" resolves to "nes")
+        -- Use leaf folder for core assignment
         local leaf = tostring(item):match("[^/]+$") or tostring(item)
-        -- Also get parent folder for inheritance (e.g., "GBA" from "GBA/Homebrew")
+        -- Also check parent folder for inheritance
         local parent = tostring(item):match("^([^/]+)/") or nil
         local assignment = nil
 
@@ -376,7 +376,7 @@ function user_config:load_platforms()
                     local folder_name, err = parse_dir(file)
                     if not err and folder_name then
                         local result = muos.assignment[folder_name]
-                        -- Fallback for cores with different labels (e.g., DOSBox Pure, blueMSX)
+                        -- Fallback for cores with alternate labels
                         if not result then
                             local fn = tostring(folder_name):lower()
                             if fn:find("dosbox") then
@@ -386,7 +386,7 @@ function user_config:load_platforms()
                                 result = "msx"
                             end
                         end
-                        -- Handle multi-system umbrella cores (e.g., SMS Plus GX -> "SVI - ColecoVision - SG1000")
+                        -- Handle multi-system umbrella cores
                         -- These map to "coleco_" which is not a valid Skyscraper platform.
                         -- Disambiguate using the folder name and file extensions.
                         if result == "coleco_" or result == "coleco" then
@@ -431,13 +431,13 @@ function user_config:load_platforms()
         end
 
         -- 1. Attempt to resolve via muOS core.cfg
-        -- MuOS stores core assignments at /opt/muos/share/info/content/ (or core/) with full folder path
+        -- MuOS stores core assignments with full folder path
         -- e.g., /opt/muos/share/info/content/Atari Collection/Atari 5200/core.cfg
-        -- Check FULL folder path first (for nested folders like "Atari Collection/Atari 5200")
+        -- Check full folder path first for nested folders
         if not assignment then
             assignment = try_core_cfg(muos.CORE_DIR, item)
         end
-        -- Then try just the leaf folder name (for simple folders like "NES")
+        -- Then try leaf folder name
         if not assignment then
             assignment = try_core_cfg(muos.CORE_DIR, leaf)
         end
@@ -451,7 +451,7 @@ function user_config:load_platforms()
             end
         end
 
-        -- 2. Fallback: infer assignment by matching LEAF folder name to muOS platform labels or keys (case-insensitive)
+        -- 2. Fallback: infer assignment by matching leaf folder name
         if not assignment then
             local item_l = tostring(leaf):lower()
             -- Heuristic shortcuts and common aliases for folder names
@@ -522,7 +522,7 @@ function user_config:load_platforms()
                     end
                 end
             end
-            -- Partial label contains match (e.g., leaf "genesis" in label "Sega Mega Drive - Genesis")
+            -- Partial label contains match
             if not assignment then
                 local function normalize_string(str)
                     return tostring(str):lower():gsub("[%W_]", "")
@@ -668,7 +668,7 @@ function user_config:load_platforms()
                     end
                 end
             end
-            -- Heuristic override: Umbrella 'coleco' (MSX-SVI-ColecoVision-SG1000) -> specialize based on files/folder
+            -- Override umbrella coleco core based on folder content
             if assignment == "coleco" then
                 local platform_path = string.format("%s/%s", get_rom_path_for(item), item)
                 local files = nativefs.getDirectoryItems(platform_path) or {}
@@ -702,7 +702,7 @@ function user_config:load_platforms()
                 self:insert("platforms", key, "unmapped")
                 self:insert("platformsSelected", key, 0)
             end
-            -- Store which ROM root this platform lives on (enables dual-SD support)
+            -- Store ROM root for dual storage support
             self:insert("platformRoots", key, get_rom_path_for(item))
             inserted[key] = true
         end
@@ -713,8 +713,8 @@ function user_config:load_platforms()
 end
 
 -- Returns the absolute path to a specific platform's ROM folder.
--- Uses the stored root from [platformRoots] if available (dual-SD support),
--- falling back to the primary get_paths() result for backward compatibility.
+-- Uses stored root from [platformRoots] if available for dual-SD support,
+-- Falling back to primary get_paths result for backward compatibility
 function user_config:get_platform_path(platform_relative)
     local stored_root = self:read("platformRoots", platform_relative)
     if stored_root then
@@ -795,7 +795,7 @@ function skyscraper_config:init()
             self:insert("main", "subdirs", "\"false\"")
         end
         
-        -- Validate TheGamesDB API key (must be exactly 64 characters)
+        -- Validate TheGamesDB API key must be 64 characters
         local tgdb_creds = self:read("thegamesdb", "userCreds")
         if tgdb_creds then
             local stripped_key = tgdb_creds:gsub('"', '')
@@ -808,7 +808,7 @@ function skyscraper_config:init()
             end
         end
 
-        -- Validate IGDB credentials (must be in CLIENT_ID:CLIENT_SECRET format)
+        -- Validate IGDB credentials format
         local igdb_creds = self:read("igdb", "userCreds")
         if igdb_creds then
             local stripped_creds = igdb_creds:gsub('"', '')
@@ -924,7 +924,7 @@ theme.__index = theme
 local current_theme_name = "dark"
 local muos_accent_enabled = true
 
--- Singleton instances (must be initialized before theme.create uses them)
+-- Singleton instances initialized before theme create
 local user_config_instance
 local skyscraper_config_instance
 
@@ -1151,7 +1151,7 @@ elseif saved_mode == "muos" or saved_mode == "custom" then
     muos_on = true
 else
     local saved_muos = user_config_instance:read("main", "muosAccent")
-    muos_on = saved_muos ~= "0" -- default to true (ON)
+    muos_on = saved_muos ~= "0" -- Default to true
 end
 local theme_instance = theme.create(saved_theme, muos_on)
 

@@ -8,9 +8,9 @@ set -euo pipefail
 #   Result: docker_out/skyscraper_package.zip
 #
 # After it finishes, unzip and copy into the app:
-# - Replace bin/Skyscraper.aarch64 with Skyscraper (rename as needed)
+# - Replace bin/Skyscraper.aarch64 with Skyscraper
 # - Copy only needed Qt/OpenSSL/ICU libs into bin/libs.aarch64/ if required
-# - Do not copy generic system libs (e.g., libc, libstdc++, libX11, libGL, etc.)
+# - Do not copy generic system libs
 
 VERSION="${1:-3.21.1}"
 

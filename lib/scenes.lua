@@ -133,7 +133,7 @@ function scenes:draw()
         local ease = 1 - (1 - t) * (1 - t) * (1 - t)
         
         if self.popping_scene then
-            -- Popping scene transition (Zoom & Fade)
+            -- Scene pop transition zoom and fade
             -- Draw resumed top scene solid underneath
             self.states[top]:draw()
             
@@ -148,7 +148,7 @@ function scenes:draw()
             love.graphics.setColor(1, 1, 1, 1) -- Reset color
             love.graphics.pop()
         elseif #self.focus > 1 then
-            -- Pushing scene transition (Zoom & Fade)
+            -- Scene push transition zoom and fade
             local prev = self.focus[#self.focus - 1]
             
             -- Draw previous scene solid underneath
@@ -165,7 +165,7 @@ function scenes:draw()
             love.graphics.setColor(1, 1, 1, 1) -- Reset color
             love.graphics.pop()
         else
-            -- Loading the very first scene (fade in from black)
+            -- Initial scene fade in from black
             self.states[top]:draw()
             love.graphics.setColor(0, 0, 0, 1 - ease)
             love.graphics.rectangle("fill", 0, 0, w, h)

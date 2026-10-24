@@ -1,14 +1,14 @@
 -- Network status helper module
 local wifi = {}
 
--- Network interfaces to check (standard Linux WiFi and Ethernet interfaces)
+-- Network interfaces to check
 local INTERFACES = {"wlan0", "eth0", "wlan1", "eth1", "wlp1s0"}
 
 -- Check if network is connected by reading operstate
 -- Returns true if connected, false otherwise
 function wifi.is_connected()
     for _, iface in ipairs(INTERFACES) do
-        -- Try operstate first (more reliable)
+        -- Try operstate first
         local operstate_path = string.format("/sys/class/net/%s/operstate", iface)
         local f = io.open(operstate_path, "r")
         if f then

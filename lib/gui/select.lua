@@ -41,7 +41,7 @@ return function(props)
     font = font,
     focusable = props.focusable or true,
     -- styles
-    -- styles (explicit overrides only)
+    -- Apply style overrides
     backgroundColor = props.backgroundColor,
     focusColor = props.focusColor,
     textColor = props.textColor,
@@ -100,7 +100,7 @@ return function(props)
       local target_p = self.focused and 1 or 0
       self.anim_p = self.anim_p + (target_p - self.anim_p) * 15 * dt
 
-      -- Liquid UI: Compression (Squish)
+      -- Item compression state
       local input_helper = require("helpers.input")
       local is_pressed = self.focused and (input_helper.isEventDown("return") or input_helper.isEventDown("left") or input_helper.isEventDown("right"))
       
@@ -111,7 +111,7 @@ return function(props)
       self.squish_x = self.squish_x + (target_sx - self.squish_x) * 20 * dt
       self.squish_y = self.squish_y + (target_sy - self.squish_y) * 20 * dt
 
-      -- Liquid UI: Ripple
+      -- Draw focus ripple
       if self.focused and (input_helper.isEventJustPressed("return") or input_helper.isEventJustPressed("left") or input_helper.isEventJustPressed("right")) then
           self.ripple_r = 0
           self.ripple_a = 0.25
@@ -170,7 +170,7 @@ return function(props)
       -- Draw background rectangle
       love.graphics.rectangle('fill', self.x, self.y, self.width, self.height)
 
-      -- Liquid UI: Ripple
+      -- Draw focus ripple
       if self.ripple_a and self.ripple_a > 0 then
           love.graphics.setColor(textColor[1], textColor[2], textColor[3], self.ripple_a)
           love.graphics.setLineWidth(1)

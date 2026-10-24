@@ -145,12 +145,12 @@ local function backup_cache()
     local zip_file = string.format("/mnt/sdcard/ARCHIVE/scrappy_cache-%s.zip", ts)
     local mux_file = string.format("/mnt/sdcard/ARCHIVE/scrappy_cache-%s.muxzip", ts)
     
-    -- Ensure relative path structure for MuOS Archive Manager (starts with 'application')
+    -- Ensure archive path starts with application
     local relative_cache = CACHE_DIR:gsub(STORAGE_ROOT .. "/", ""):gsub("/$", "")
     local total_items = get_item_count(CACHE_DIR)
     log.write(string.format("Total cache items to backup: %d", total_items))
     
-    -- cd to STORAGE_ROOT so zip captures 'application/...' structure (run zip with -r to output files for progress bar)
+    -- Archive files relative to storage root
     local cmd = string.format('mkdir -p /mnt/sdcard/ARCHIVE && cd "%s" && zip -r "%s" "%s" && mv "%s" "%s"', STORAGE_ROOT, zip_file, relative_cache, zip_file, mux_file)
     base_task_command_with_progress("backup", cmd, total_items)
 end
@@ -161,12 +161,12 @@ local function backup_cache_sd1()
     local zip_file = string.format("/mnt/mmc/ARCHIVE/scrappy_cache-%s.zip", ts)
     local mux_file = string.format("/mnt/mmc/ARCHIVE/scrappy_cache-%s.muxzip", ts)
     
-    -- Ensure relative path structure for MuOS Archive Manager (starts with 'application')
+    -- Ensure archive path starts with application
     local relative_cache = CACHE_DIR:gsub(STORAGE_ROOT .. "/", ""):gsub("/$", "")
     local total_items = get_item_count(CACHE_DIR)
     log.write(string.format("Total cache items to backup: %d", total_items))
     
-    -- cd to STORAGE_ROOT so zip captures 'application/...' structure (run zip with -r to output files for progress bar)
+    -- Archive files relative to storage root
     local cmd = string.format('mkdir -p /mnt/mmc/ARCHIVE && cd "%s" && zip -r "%s" "%s" && mv "%s" "%s"', STORAGE_ROOT, zip_file, relative_cache, zip_file, mux_file)
     base_task_command_with_progress("backup_sd1", cmd, total_items)
 end
@@ -177,7 +177,7 @@ local function backup_config_sd1()
     local zip_file = string.format("/mnt/mmc/ARCHIVE/scrappy_config-%s.zip", ts)
     local mux_file = string.format("/mnt/mmc/ARCHIVE/scrappy_config-%s.muxzip", ts)
     
-    -- Ensure relative path structure for MuOS Archive Manager (starts with 'application')
+    -- Ensure archive path starts with application
     local relative_skyscraper_ini = "application/Scrappy/.scrappy/skyscraper_config.ini"
     local relative_config_ini = "application/Scrappy/.scrappy/config.ini"
     

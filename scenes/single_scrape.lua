@@ -48,8 +48,8 @@ local state = {
     refine_query = "",
     last_failed_rom = nil,
     last_failed_platform = nil,
-    refine_attempted = false, -- Track if we've already tried a refine search
-    refine_confirm_visible = false, -- Confirmation popup before showing VK
+    refine_attempted = false, -- Track refine search attempt state
+    refine_confirm_visible = false, -- Confirmation popup before opening keyboard
     refine_fade = 0
 }
 
@@ -235,7 +235,7 @@ local function show_refine_confirm(rom, platform)
     state.last_failed_rom = rom
     state.last_failed_platform = platform
     state.refine_confirm_visible = true
-    state.refine_fade = 0 -- Explicit reset
+    state.refine_fade = 0 -- Reset fade transition
 end
 
 -- User confirmed they want to refine search
@@ -322,7 +322,7 @@ local function draw_refine_confirm_popup()
     local left_center = box_x + box_w * 0.25
     local right_center = box_x + box_w * 0.75
 
-    -- Yes button (A)
+    -- Confirm button A
     local yes_total_w = icon_size + (6 * _G.scale) + font:getWidth("Yes")
     local yes_x = left_center - yes_total_w / 2
     if button_a_icon then
@@ -332,7 +332,7 @@ local function draw_refine_confirm_popup()
     end
     love.graphics.print("Yes", yes_x + icon_size + (6 * _G.scale), btn_y + (icon_size - font_h) / 2)
 
-    -- No button (B)
+    -- Cancel button B
     local no_total_w = icon_size + (6 * _G.scale) + font:getWidth("No")
     local no_x = right_center - no_total_w / 2
     if button_b_icon then
@@ -645,7 +645,7 @@ local function load_rom_buttons(src_platform, dest_platform)
     if menu then
         local focused = menu.focusedElement
         if focused and focused.parent == rom_list then
-            -- Focus a safe non-disabled element (first platform or menu root)
+            -- Focus first selectable element
             local safe_target = platform_list and platform_list.children and platform_list.children[1]
             menu:setFocus(safe_target or menu)
         end
@@ -678,7 +678,7 @@ local function load_rom_buttons(src_platform, dest_platform)
             if show_missing_only and not has_missing_media(dest_platform, rom) then
                 goto continue
             end
-            -- Green (2) if artwork exists, Red (3) if missing
+            -- Status indicator color
             local has_artwork = not has_missing_media(dest_platform, rom)
             rom_list = rom_list + listitem {
                 id = rom, -- Add id for lookup after scraping
@@ -847,7 +847,7 @@ local function process_fetched_game()
                 script_path, cache_path, t.platform, rom_escaped))
         end
 
-        -- Manual mode: extract PDF from cache and finish (no artwork generation)
+        -- Extract manual PDF from cache
         if state.manual_mode then
             local ui_status = scraping_window ^ "status"
             if ui_status then
@@ -873,7 +873,7 @@ local function process_fetched_game()
         end
 
         -- For IGDB, patch localized cover in cache before template generation.
-        -- This preserves XML effects (background/fade/cart overlays) in final output.
+        -- Preserve template overlays in final output
         artwork.override_igdb_cover_in_cache(t.platform, state.current_game or utils.get_filename(last_selected_rom))
 
         state.generate_stage = true
@@ -1032,7 +1032,7 @@ function single_scrape:load()
         scroll_speed = 30
     } + platform_list)
 
-    -- Create scroll container for ROMs so we can control it (reset scroll)
+    -- Create scroll container for ROM list
     rom_scroll = scroll_container {
         width = ((w_width - 30) / 3) * 2,
         height = w_height - (155 * _G.scale),
@@ -1125,7 +1125,7 @@ function single_scrape:update(dt)
     update_scrape_state()
     process_fetched_game()
 
-    -- Update scraping window components (enables marquee scrolling in log)
+    -- Update scraping window state
     if scraping_window and scraping_window.visible then
         scraping_window:update(dt)
     end
@@ -1145,7 +1145,7 @@ function single_scrape:draw()
     -- Draw confirmation popup on top
     draw_refine_confirm_popup()
 
-    -- Draw footer (hidden during VK, scraping, or info overlays)
+    -- Draw footer when overlays are closed
     if footer and not (vk and vk.visible and (vk.fade or 0) > 0.5) and not scraping_window.visible and not info_window.visible then
         footer:draw()
     end
@@ -1157,7 +1157,7 @@ function single_scrape:draw()
 end
 
 function single_scrape:keypressed(key)
-    -- Handle virtual keyboard input first if visible (highest priority)
+    -- Handle virtual keyboard input first
     if vk and vk.visible then
         local mapped = nil
         if key == 'up' or key == 'down' or key == 'left' or key == 'right' then
@@ -1181,7 +1181,7 @@ function single_scrape:keypressed(key)
         return
     end
 
-    -- Handle info popup first (highest priority)
+    -- Handle info popup first
     if info_window.visible then
         if key == "escape" or key == "return" or key == "a" or key == "b" then
             toggle_info()

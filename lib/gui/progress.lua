@@ -14,7 +14,7 @@ return function(props)
     height = height,
     progress = progress,
     -- colors
-    -- colors (explicit overrides only)
+    -- Apply color overrides
     backgroundColor = props.backgroundColor,
     barColor = props.barColor,
     borderColor = props.borderColor,
@@ -47,7 +47,7 @@ return function(props)
       -- Determine displayed progress
       local current_p = self.anim_progress or self.progress
 
-      -- Draw progress bar (Liquid Style)
+      -- Draw progress bar
       love.graphics.setColor(barColor)
       local barWidth = self.width * current_p
       love.graphics.rectangle('fill', self.x, self.y, barWidth, self.height)
@@ -79,7 +79,7 @@ return function(props)
       -- Update progress, clamping between 0 and 1
       self.progress = math.max(0, math.min(self.progress, 1))
       
-      -- Smooth interpolation (prevent Euler explosion on lag spikes)
+      -- Interpolate progress value
       self.anim_progress = self.anim_progress or self.progress
       local speed = 10 * dt
       if speed >= 1 then

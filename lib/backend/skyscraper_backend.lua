@@ -85,7 +85,7 @@ local function run_fetch_command(cmd, current_platform, input_folder, op, game_o
             break
         end
 
-        -- Network check during scraping (skip in offline mode)
+        -- Check network connection
         if not is_offline_mode() and not wifi.is_connected() then
             aborted = true
             log.write("Network disconnected during scraping")
@@ -215,7 +215,7 @@ while true do
 
     log.write("Starting Skyscraper, please wait...")
 
-    -- Check network before starting command (skip in offline mode)
+    -- Check network connection
     if not is_offline_mode() and not wifi.is_connected() then
         log.write("Network disconnected, aborting scrape")
         channels.SKYSCRAPER_OUTPUT:push({

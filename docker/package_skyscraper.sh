@@ -21,7 +21,7 @@ cp $(which Skyscraper) /skysource/output/
 # Copy shared libraries needed by Skyscraper
 ldd $(which Skyscraper) | grep "=>" | awk '{print $3}' | xargs -I '{}' cp '{}' /skysource/output/
 
-# Copy OpenSSL 3.0 libraries (Ubuntu 22.04)
+# Copy OpenSSL 3.0 libraries
 cp /usr/lib/aarch64-linux-gnu/libssl.so.3 /skysource/output/
 cp /usr/lib/aarch64-linux-gnu/libcrypto.so.3 /skysource/output/
 

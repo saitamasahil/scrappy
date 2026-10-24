@@ -58,7 +58,7 @@ local function can_trigger_global()
 end
 
 -- Emit an event into the input queue. When bypass is true, ignore the global cooldown
--- (used for hold-to-scroll repeats) while keeping cooldown for discrete presses.
+-- Used for scroll repeats while keeping cooldown for discrete presses
 local function emit(event, bypass)
     if bypass or can_trigger_global() then
         state.last_event = state.current_event
@@ -133,7 +133,7 @@ function love.keypressed(key)
             emit(key, false)
         end
     end
-    -- Start hold for directional keys and shoulder paging (PREV/NEXT)
+    -- Start hold for directional keys and shoulder paging
     if key == input.events.LEFT or key == input.events.RIGHT or key == input.events.UP or key == input.events.DOWN or
         key == input.events.PREV or key == input.events.NEXT then
         holding.dir = key
@@ -169,11 +169,11 @@ function love.gamepadpressed(js, button)
     -- Only emit global events if scene didn't handle the button
     -- This prevents double-processing of input
     if not handled then
-        -- Use mapping table to trigger events (for global input handling)
+        -- Use mapping table to trigger events
         local event = input.joystick_mapping[button]
         if event then
             emit(event, false)
-            -- Start hold for directional and paging (shoulder) gamepad events
+            -- Start hold for directional and shoulder gamepad events
             if event == input.events.LEFT or event == input.events.RIGHT or event == input.events.UP or event ==
                 input.events.DOWN or event == input.events.PREV or event == input.events.NEXT then
                 holding.dir = event

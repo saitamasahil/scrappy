@@ -271,7 +271,7 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
         info = {}
         types = ["cover", "marquee", "screenshot", "texture", "wheel"]
         for t in types:
-            # Check source sample images (not the generated preview!)
+            # Check sample source images
             folder = t + "s"
             path = os.path.join(args.sample_dir, folder, "screenscraper", "fake-rom")
             dims = get_png_dims(path)
@@ -295,7 +295,7 @@ class TemplateMakerHandler(http.server.BaseHTTPRequestHandler):
         }
         folder = type_map.get(media_type, media_type)
         sample_dir = args.sample_dir
-        # Check cache folder first (source images)
+        # Check cache directory for source images
         cache_path = os.path.join(sample_dir, folder)
         if os.path.isdir(cache_path):
             for src_dir in sorted(os.listdir(cache_path)):

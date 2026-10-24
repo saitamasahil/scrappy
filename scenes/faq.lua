@@ -152,7 +152,7 @@ function faq:load()
     "• Will it overwrite existing box art?\n" ..
     "Yes, Scrappy will overwrite any existing box art if new artwork is downloaded for a game.")
 
-  -- Advanced Config (peas.json)
+  -- Advanced peas.json config
   content = content + add_section("section_peas_json", "Advanced Config (peas.json)",
     "The peas.json file is located in static/.skyscraper/peas.json inside the app bundle and is used by Skyscraper to define file extensions available for each platform, as well as supported scraper modules. You can edit this file to add file extensions or adjust scraper modules per platform.")
 
@@ -172,7 +172,7 @@ function faq:load()
   content = content + add_section("section_video_scraping", "Video Previews",
     "Video preview downloading can be toggled in Advanced Tools. When enabled, ScreenScraper will download short video clips alongside graphics.")
 
-  -- Cache Location (SD1 / SD2)
+  -- Storage cache location
   content = content + add_section("section_cache_location", "SD Card Storage (Cache Location)",
     "Scrappy supports storing your media cache on SD1 or SD2 (/mnt/sdcard/scrappy_cache). Moving cache storage to SD2 prevents filling up your primary OS storage when scraping large ROM collections.")
 

@@ -69,7 +69,7 @@ WORKDIR="$BUILD_DIR/pkg_${MAJOR}${MINOR}${PATCH}"
 rm -rf "$WORKDIR" "$FULL" "$UPDATE"
 mkdir -p "$WORKDIR/Scrappy/.scrappy"
 
-# Copy all necessary files (Base files for both packages)
+# Copy base package files
 echo "Copying base files..."
 cp "$PROJECT_ROOT/mux_launch.sh" "$WORKDIR/Scrappy/"
 [ -f "$PROJECT_ROOT/mux_lang.ini" ] && cp "$PROJECT_ROOT/mux_lang.ini" "$WORKDIR/Scrappy/"

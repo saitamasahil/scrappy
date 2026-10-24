@@ -60,7 +60,7 @@ function badr.__add(self, component)
   local lastChild = self.children[#self.children] or {}
 
   if self.column then
-    -- Initial positioning logic (preserved for performance on first add)
+    -- Initial positioning logic
     component.y = (lastChild.height or 0) + (lastChild.y or self.y)
     if #self.children > 0 then
       component.y = component.y + gap

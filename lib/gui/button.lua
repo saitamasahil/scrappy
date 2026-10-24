@@ -20,7 +20,7 @@ return function(props)
   local spacer = " • " -- Spacer between wrapped text
   local spacerWidth = font:getWidth(spacer) -- Width of the spacer
 
-  -- Support dynamic button text (function returning string)
+  -- Support dynamic button text function
   local get_text = (type(props.text) == "function") and props.text or function() return props.text or "" end
 
   return component {
@@ -38,7 +38,7 @@ return function(props)
     font = font,
     focusable = props.focusable or true,
     -- styles
-    -- styles (explicit overrides only)
+    -- Apply style overrides
     backgroundColor = props.backgroundColor,
     focusColor = props.focusColor,
     textColor = props.textColor,
@@ -73,7 +73,7 @@ return function(props)
       local target_p = self.focused and 1 or 0
       self.anim_p = self.anim_p + (target_p - self.anim_p) * 15 * dt
 
-      -- Liquid UI: Compression (Squish)
+      -- Item compression state
       local input_helper = require("helpers.input")
       local is_pressed = self.focused and input_helper.isEventDown("return")
       
@@ -145,7 +145,7 @@ return function(props)
       -- Draw button background
       love.graphics.rectangle('fill', self.x, self.y, self.width, self.height, (self.cornerRadius or 6) * (_G.scale or 1))
 
-      -- Liquid UI: Ripple
+      -- Draw focus ripple
       if self.ripple_a and self.ripple_a > 0 then
           love.graphics.setColor(textColor[1], textColor[2], textColor[3], self.ripple_a)
           love.graphics.setLineWidth(2)
@@ -154,7 +154,7 @@ return function(props)
           local tw = font:getWidth(currentText)
           local content_cx = self.x + self.width / 2 -- Default to center
           
-          -- If not using full width or centered printf (unlikely but safe)
+          -- Handle left aligned text
           -- we could calculate exactly, but buttons are generally designed around their center.
           -- However, to be safe: 
           love.graphics.circle("line", content_cx, cy, self.ripple_r)

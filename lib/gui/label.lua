@@ -206,7 +206,7 @@ local function label(props)
 
       love.graphics.setColor({ 1, 1, 1 }) -- Reset color to white
 
-      -- Liquid UI: Ripple (focused on icon if present, otherwise text)
+      -- Draw focus ripple
       if self.ripple_a and self.ripple_a > 0 then
           love.graphics.setColor(c[1], c[2], c[3], self.ripple_a)
           love.graphics.setLineWidth(1)

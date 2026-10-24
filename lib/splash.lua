@@ -65,7 +65,7 @@ local anim = {
     fade_out = 1,          -- Final sequence to exit
     wave_1_x = 0,
     wave_2_x = 0,
-    reveal_style = "wave", -- wave | bubbles | droplet | rain
+    reveal_style = "wave", -- Splash animation styles
     bubble_progress = 0,
     drop_y = -100,
     drop_trail = {},
@@ -89,7 +89,7 @@ local colors = {
 function splash.load(delay)
     delay = delay or 1
     
-    -- Reset state if re-entered (e.g. from About screen)
+    -- Reset state when re-entering
     anim.pop_scale = 0
     anim.slide_y = 0
     anim.title_alpha = 0
@@ -147,19 +147,19 @@ function splash.load(delay)
     splash.finished = false
     splash.is_revealing = false
 
-    -- PHASE 1: Logo Pop-In (Elastic/Bouncy)
+    -- Animate logo entry
     timer.after(0.3, function()
         play_sfx("logo")
         timer.tween(0.8, anim, { pop_scale = 1.0 }, 'out-elastic')
     end)
 
-    -- PHASE 2: Logo Slides Up, Main Title Fades In
+    -- Animate title fade in
     timer.after(0.7, function()
         timer.tween(0.6, anim, { slide_y = 1 }, 'in-out-cubic')
         timer.tween(0.6, anim, { title_alpha = 1, title_y_offset = 0 }, 'out-cubic')
     end)
     
-    -- PHASE 3: The Staggered Cascade (Version -> Maintainer -> Author)
+    -- Animate credits fade in
     local cascade_start = 1.0 
     
     timer.after(cascade_start, function()
@@ -307,7 +307,7 @@ function splash.draw()
             end
         end, "replace", 1)
 
-        -- Draw the MASK color where stencil is 0 (not revealed yet)
+        -- Draw mask color where stencil is unrevealed
         love.graphics.setStencilTest("equal", 0)
         love.graphics.setColor(colors.background)
         love.graphics.rectangle("fill", 0, 0, width, height)
@@ -320,7 +320,7 @@ function splash.draw()
             local t = love.timer.getTime()
 
             -- ==========================================
-            -- LAYER 1: Deep Back Wave (25% opacity, offset 120px to the right)
+            -- Layer 1: Deep back wave
             -- ==========================================
             local points_back = {}
             for i = 0, segments do
@@ -341,7 +341,7 @@ function splash.draw()
             love.graphics.polygon("fill", points_back)
 
             -- ==========================================
-            -- LAYER 2: Middle Wave (55% opacity, offset 50px to the right)
+            -- Layer 2: Middle wave
             -- ==========================================
             local points_mid = {}
             for i = 0, segments do
@@ -362,7 +362,7 @@ function splash.draw()
             love.graphics.polygon("fill", points_mid)
 
             -- ==========================================
-            -- LAYER 3: Main Front Wave (100% opacity, base sweep line)
+            -- Layer 3: Main front wave
             -- ==========================================
             local points_front = {}
             local foam_points = {}
@@ -393,7 +393,7 @@ function splash.draw()
             love.graphics.setLineWidth(2)
             love.graphics.line(foam_points)
 
-            -- 2. Draw Soft Foam Fizz Backing (Outer pass, semi-transparent)
+            -- 2. Draw soft foam fizz backing
             for i = 0, segments do
                 local y = (i / segments) * height
                 local sine = math.sin(y * 0.02 + t * 8)
@@ -405,7 +405,7 @@ function splash.draw()
                 love.graphics.circle("fill", wx, y, foam_r * 1.5)
             end
             
-            -- 3. Draw Solid Dense Foam Core (Inner pass, fully opaque)
+            -- 3. Draw solid dense foam core
             for i = 0, segments do
                 local y = (i / segments) * height
                 local sine = math.sin(y * 0.02 + t * 8)
@@ -417,7 +417,7 @@ function splash.draw()
                 love.graphics.circle("fill", wx, y, foam_r)
             end
 
-            -- 4. Draw & Update Trailing Foam Bubbles (Dynamic 3D particles)
+            -- 4. Draw and update trailing foam bubbles
             local dt = love.timer.getDelta()
             
             -- Spawn new foam particles at random points along the wave front
@@ -472,7 +472,7 @@ function splash.draw()
                 
                 local base_r = 15 + math.abs(math.sin(seed * 2)) * 80
                 
-                -- Accent bubbles (these pop/fade out)
+                -- Accent bubbles that pop and fade
                 local pop_r = base_r * (1 - anim.bubble_progress)
                 if pop_r > 0 then
                     local wobble_x = 1 + math.sin(t * 8 + seed) * 0.1
@@ -488,7 +488,7 @@ function splash.draw()
                     love.graphics.setLineWidth(2)
                     love.graphics.ellipse("line", bx, by, rx, ry)
                     
-                    -- Specular highlight (white reflection spot)
+                    -- Specular highlight reflection
                     if rx > 5 then
                         love.graphics.setColor(1, 1, 1, anim.bubble_progress * 2.0)
                         love.graphics.ellipse("fill", bx + rx * 0.3, by - ry * 0.4, rx * 0.2, ry * 0.1)
@@ -643,7 +643,7 @@ function splash.draw()
                             speed = 280 + math.random(0, 110)
                         })
                         
-                        -- Spawn Propelled Crown Splash Particles (Symmetric left/right)
+                        -- Spawn crown splash particles
                         for k = 1, 8 do
                             local p_angle = math.rad(math.random(-140, -40))
                             local p_speed = 180 + math.random(0, 160)
@@ -686,7 +686,7 @@ function splash.draw()
             end
 
             -- 2. DRAWING: Render falling streaks, ripples, and glistening drops
-            -- Draw raindrops (straight vertical lines)
+            -- Draw vertical raindrops
             love.graphics.setLineWidth(1.5)
             for _, drop in ipairs(anim.raindrops) do
                 if drop.active and anim.rain_time >= drop.delay then
@@ -695,7 +695,7 @@ function splash.draw()
                 end
             end
 
-            -- Draw expanding circular ripples (original style)
+            -- Draw expanding circular ripples
             for _, rip in ipairs(anim.ripples) do
                 if rip.life > 0 then
                     -- Main Outer Ripple Ring
@@ -717,7 +717,7 @@ function splash.draw()
                 love.graphics.setColor(accent_color[1], accent_color[2], accent_color[3], p.life * 0.8)
                 love.graphics.circle("fill", p.x, p.y, p.size * p.life)
                 
-                -- Specs of light (3D glistening highlights)
+                -- Highlight specs of light
                 love.graphics.setColor(1, 1, 1, p.life * 0.95)
                 love.graphics.circle("fill", p.x - p.size * 0.25 * p.life, p.y - p.size * 0.25 * p.life, p.size * 0.25 * p.life)
             end
@@ -730,13 +730,13 @@ function splash.draw()
         love.graphics.push()
         love.graphics.translate(width * 0.5, height * 0.5)
 
-        -- Draw Logo (Scale handled by pop_scale, Y sliding handled by slide_y + Buoyancy)
+        -- Draw logo with scaling and sliding offset
         local buoyancy = math.sin(love.timer.getTime() * 2) * 4
         love.graphics.setColor(r, g, b, anim.fade_out)
         love.graphics.draw(logo, 0, -anim.slide_y * half_logo_height + buoyancy, 0, anim.pop_scale * _G.scale, anim.pop_scale * _G.scale, logo:getWidth() * 0.5,
             logo:getHeight() * 0.5)
 
-        -- Draw App Name (Title)
+        -- Draw app title
         love.graphics.setColor(r, g, b, anim.title_alpha * anim.fade_out)
         love.graphics.push()
         love.graphics.translate(0, half_logo_height)

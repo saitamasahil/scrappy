@@ -32,7 +32,7 @@ local scraper_opts = {"screenscraper", "thegamesdb", "igdb"}
 local scraper_index = 1
 local theme_opts = {"dark", "light"}
 local theme_index = 1
-local muos_accent = true -- legacy (derived from accent_mode)
+local muos_accent = true -- Legacy accent setting
 
 local accent_mode = "muos" -- off | muos | custom
 local custom_accent = "cbaa0f"
@@ -171,7 +171,7 @@ local function accent_status_text()
     return "On"
 end
 
--- Preset accent colors (alternatives to muOS default)
+-- Accent color presets
 local accent_presets = {{
     name = "muOS Default",
     hex = "cbaa0f",
@@ -386,7 +386,7 @@ local function open_accent_settings()
         width = item_width
     }
 
-    -- Color swatch display component (shows current accent color)
+    -- Accent color swatch display
     local swatch_component = component {
         id = "color_swatch",
         width = item_width,
@@ -412,7 +412,7 @@ local function open_accent_settings()
                 love.graphics.setColor(1, 1, 1, 0.5)
                 love.graphics.rectangle("line", self.x + padding, swatch_y, swatch_size, swatch_size, 4 * _G.scale, 4 * _G.scale)
             else
-                -- No accent (off mode)
+                -- Disable accent color
                 love.graphics.setColor(0.3, 0.3, 0.3, 1)
                 love.graphics.rectangle("fill", self.x + padding, swatch_y, swatch_size, swatch_size, 4 * _G.scale, 4 * _G.scale)
                 love.graphics.setColor(1, 1, 1, 0.3)
@@ -895,19 +895,19 @@ local function get_cache_path()
     return cache_path
 end
 
--- Clear all potential cache locations (SD1 and SD2)
+-- Clear all cache locations on SD1 and SD2
 local function clear_all_caches()
     -- 1. Clear the default SD1 cache
     local sd1_cache = WORK_DIR .. "/data/cache"
     log.write("Clearing SD1 cache: " .. sd1_cache)
     clear_directory(sd1_cache)
 
-    -- 2. Clear the SD2 cache (standard location)
+    -- Clear secondary storage cache
     local sd2_cache = "/mnt/sdcard/scrappy_cache"
     log.write("Clearing SD2 cache: " .. sd2_cache)
     clear_directory(sd2_cache)
 
-    -- 3. Clear the currently configured cache folder if it's different (e.g. if pointing elsewhere)
+    -- Clear custom cache folder
     local config_cache = skyscraper_config:read("main", "cacheFolder")
     config_cache = utils.strip_quotes(config_cache or "")
     if config_cache ~= "" and config_cache ~= sd2_cache then
@@ -1235,7 +1235,7 @@ local function open_capture_name_input(platform, hash, title)
         })
     end
 
-    -- Update callbacks on every call to avoid stale closure (bug fix)
+    -- Refresh callbacks to prevent stale closures
     vk.on_done = function(text)
         if text == "" then return end
         
@@ -2147,7 +2147,7 @@ function tools:update(dt)
         elseif icon_input.isEventDown("right") then held = "right"
         elseif icon_input.isEventDown("return") then held = "return" end
 
-        -- Smooth kinetic transitions (spring animation towards target)
+        -- Animate scroll position to target
         for k, v in pairs(region_icon_scales) do
             local target = 1.0
             if held then
@@ -2185,7 +2185,7 @@ function tools:update(dt)
                     region_repeat_acc = region_repeat_acc + dt
                     if region_repeat_acc > 0.08 then -- repeat rate
                         region_repeat_acc = 0
-                        -- Perform repeat action (no scale resets here to prevent vibration)
+                        -- Repeat key action
                         if held == "up" or held == "down" then
                             sound.play("nav_move")
                             region_menu:keypressed(held)
@@ -2218,7 +2218,7 @@ function tools:update(dt)
     else
         menu:update(dt)
     end
-    -- Update info window components (enables marquee scrolling in log)
+    -- Update info window state
     if info_window and info_window.visible then
         info_window:update(dt)
     end
@@ -2582,7 +2582,7 @@ local function draw_clear_cache_popup()
     local left_center = box_x + box_w * 0.25
     local right_center = box_x + box_w * 0.75
 
-    -- Clear button (A)
+    -- Confirm clear button A
     local proceed_total_w = icon_size + 6 + font:getWidth("Clear")
     local proceed_x = left_center - proceed_total_w / 2
     if button_a_icon then
@@ -2592,7 +2592,7 @@ local function draw_clear_cache_popup()
     end
     love.graphics.print("Clear", proceed_x + icon_size + 6, btn_y + (icon_size - font_h) / 2)
 
-    -- Cancel button (B)
+    -- Cancel button B
     local cancel_total_w = icon_size + 6 + font:getWidth("Cancel")
     local cancel_x = right_center - cancel_total_w / 2
     if button_b_icon then
@@ -2674,7 +2674,7 @@ local function draw_offline_popup()
     local left_center = box_x + box_w * 0.25
     local right_center = box_x + box_w * 0.75
 
-    -- Enable button (A)
+    -- Confirm enable button A
     local proceed_total_w = icon_size + (6 * _G.scale) + font:getWidth("Enable")
     local proceed_x = left_center - proceed_total_w / 2
     if button_a_icon then
@@ -2684,7 +2684,7 @@ local function draw_offline_popup()
     end
     love.graphics.print("Enable", proceed_x + icon_size + (6 * _G.scale), btn_y + (icon_size - font_h) / 2)
 
-    -- Cancel button (B)
+    -- Cancel button B
     local cancel_total_w = icon_size + (6 * _G.scale) + font:getWidth("Cancel")
     local cancel_x = right_center - cancel_total_w / 2
     if button_b_icon then
@@ -2923,7 +2923,7 @@ local function draw_template_popup()
     -- Draw message
     love.graphics.printf(msg, box_x + (15 * _G.scale), box_y + title_h, box_w - (30 * _G.scale), "center")
 
-    -- Button (A: OK)
+    -- Confirm button A
     local icon_size = 24 * _G.scale
     local btn_y = box_y + box_h - (45 * _G.scale)
     local center_x = box_x + box_w * 0.5
@@ -2976,7 +2976,7 @@ function tools:draw()
     draw_template_popup()
     info_window:draw()
 
-    -- Draw footer (hidden if any popup/VK is visible)
+    -- Draw footer when no popup is active
     local popup_active = (region_popup and region_popup.visible) or 
                          (accent_popup and accent_popup.visible) or 
                          (manage_presets_popup and manage_presets_popup.visible) or
@@ -3001,7 +3001,7 @@ function tools:draw()
 end
 
 function tools:keypressed(key)
-    -- Handle virtual keyboard input first if visible (highest priority for text input)
+    -- Handle virtual keyboard input first
     if vk and vk.visible then
         local mapped = nil
         if key == 'up' or key == 'down' or key == 'left' or key == 'right' then
@@ -3025,7 +3025,7 @@ function tools:keypressed(key)
         return
     end
 
-    -- 1. Missing Media Popup (High Priority)
+    -- Missing media popup check
     if missing_media_popup_visible then
         if key == "return" or key == "a" then
             on_confirm_missing_media()
@@ -3037,7 +3037,7 @@ function tools:keypressed(key)
         return -- Block all other keys
     end
 
-    -- 2. Handle info popup (highest priority)
+    -- Handle info popup
     if info_window.visible then
         if key == "return" or key == "a" or key == "escape" or key == "b" then
             info_window.visible = false
@@ -3117,7 +3117,7 @@ function tools:keypressed(key)
         return
     end
 
-    -- 4. Manage presets popup (Hierarchical Navigation)
+    -- Manage presets popup navigation
     if manage_presets_popup and manage_presets_popup.visible then
         if key == "escape" or key == "b" then
             if manage_presets_view == "capture_roms" then
@@ -3277,7 +3277,7 @@ end
 function tools:gamepadpressed(joystick, button)
     local btn = type(button) == 'string' and button:lower() or button
 
-    -- Virtual Keyboard (highest priority)
+    -- Virtual keyboard priority handler
     if vk and vk.visible then
         local map = {
             dpup = 'up', dpdown = 'down', dpleft = 'left', dpright = 'right',
@@ -3302,7 +3302,7 @@ function tools:gamepadpressed(joystick, button)
         return true
     end
 
-    -- 1. Handle info popup (highest priority)
+    -- Handle info popup
     if info_window.visible then
         if btn == "a" or btn == "b" then
             sound.play("nav_back")
@@ -3481,7 +3481,7 @@ function tools:gamepadpressed(joystick, button)
         return true -- Block other buttons
     end
 
-    -- Handle region popup (mostly handled in tools:update)
+    -- Handle region popup
     if region_popup and region_popup.visible then
         if btn == "b" then
             sound.play("nav_back")
@@ -3493,7 +3493,7 @@ function tools:gamepadpressed(joystick, button)
 
 
 
-    -- Rely on global input handling for D-Pad (to support hold-repeat) and standard keys
+    -- Use global D-pad handler for repeat
     return false
 end
 

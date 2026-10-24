@@ -125,7 +125,7 @@ while true do
 
         if error ~= nil and error ~= "" then
             log.write("ERROR: " .. error, "skyscraper")
-            -- IMPORTANT: Include title so state.tasks gets decremented in main.lua
+            -- Include title to track task completion
             channels.SKYSCRAPER_OUTPUT:push({
                 title = game,
                 platform = current_platform,

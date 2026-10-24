@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Toggle Skyscraper --help logging by editing BOTH files in-place:
-# - lib/skyscraper.lua        (fetch_single)
-# - scenes/main.lua           (scrape_platforms)
+# - lib/skyscraper.lua fetch_single
+# - scenes/main.lua scrape_platforms
 # Usage: scripts/toggle-help-logs.sh enable|disable
 
 MODE=${1:-}
@@ -29,11 +29,11 @@ if [[ "$MODE" == "enable" ]]; then
     mkdir -p "$BACKUP_DIR"
     # Clean legacy backups that break loader
     [[ -f "scenes/main.lua.bak-help" ]] && rm -f "scenes/main.lua.bak-help"
-    # Backups (only once)
+    # Create initial backup
     [[ -f "$SKY_BAK" ]] || cp -f "$SKY_FILE" "$SKY_BAK"
     [[ -f "$MAIN_BAK" ]] || cp -f "$MAIN_FILE" "$MAIN_BAK"
 
-    # 1) Modify lib/skyscraper.lua (inject nativefs require if missing and replace fetch_single)
+    # 1. Patch fetch_single in skyscraper.lua
     awk '
 BEGIN { in_fetch=0; have_nativefs=0 }
 {
@@ -78,7 +78,7 @@ in_fetch==1 && $0 ~ /^end[[:space:]]*$/ {
 in_fetch==0 { print $0 }
 ' "$SKY_FILE" >"$SKY_FILE.tmp" && mv -f "$SKY_FILE.tmp" "$SKY_FILE"
 
-    # 2) Modify scenes/main.lua by inserting exact block from template after function line
+    # 2. Patch main.lua hook block
     if ! grep -q "run_help_and_log_once" "$MAIN_FILE"; then
         HOOK_FILE="scripts/templates/scrape_hook_block.lua"
         if [[ ! -f "$HOOK_FILE" ]]; then

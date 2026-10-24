@@ -85,7 +85,7 @@ return function(props)
       -- Resolve colors dynamically
       local barColor = self.barColor or theme:read_color("scroll", "SCROLLBAR_COLOR", "#636e72")
 
-      -- Liquid UI: Scrollbar Bulge and Stretch
+      -- Animate scrollbar size on movement
       local bulge = (self.scrollbarBulge or 0) * 4
       local bw = scrollbarWidth + bulge
       

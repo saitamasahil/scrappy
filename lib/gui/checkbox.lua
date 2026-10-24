@@ -30,7 +30,7 @@ return function(props)
     height = height,
     focusable = props.focusable ~= false,
     -- Colors and styles
-    -- Colors and styles (explicit overrides only)
+    -- Apply color overrides
     backgroundColor = props.backgroundColor,
     focusColor = props.focusColor,
     checkColor = props.checkColor,
@@ -65,10 +65,10 @@ return function(props)
 
       self.check_p = self.check_p or (self.checked and 1 or 0)
       local check_target = self.checked and 1 or 0
-      -- Snappier animation for checking (18x speed for organic feel)
+      -- Animate checkbox toggle
       self.check_p = self.check_p + (check_target - self.check_p) * 18 * dt
 
-      -- Liquid UI: Ripple
+      -- Draw focus ripple
       if self.ripple_a and self.ripple_a > 0 then
           self.ripple_r = self.ripple_r + 250 * dt
           self.ripple_a = self.ripple_a - 1.5 * dt
@@ -125,7 +125,7 @@ return function(props)
 
       local check_p = self.check_p or (self.checked and 1 or 0)
 
-      -- Liquid UI: Water Fill
+      -- Animate fill transition
       if check_p > 0.001 then
           local fill_h = checkboxSize * check_p
           local fill_y = self.y + (self.height - checkboxSize) / 2 + checkboxSize - fill_h
@@ -169,7 +169,7 @@ return function(props)
         love.graphics.pop()
       end
 
-      -- Liquid UI: Ripple
+      -- Draw focus ripple
       if self.ripple_a and self.ripple_a > 0 then
           love.graphics.setColor(textColor[1], textColor[2], textColor[3], self.ripple_a)
           love.graphics.setLineWidth(1)

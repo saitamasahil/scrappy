@@ -47,14 +47,14 @@ local cover_preview
 local wifi_icon
 local offline_icon
 local wifi_connected = true
-local offline_mode = false -- Offline mode setting (disables network checks)
+local offline_mode = false -- Offline mode setting to disable network checks
 local wifi_check_timer = 0
 
 local main = {}
 
 local templates = {}
 local current_template = 1
--- Debounce configuration for preview generation (seconds)
+-- Debounce configuration for preview generation in seconds
 local preview_debounce = 0.6
 local scheduled_preview_at = nil
 local scheduled_template_index = nil
@@ -76,7 +76,7 @@ local dashboard_fetch_progress = "0/0"
 local dashboard_eta = "Calculating..."
 local dashboard_elapsed = "00:00"
 local dashboard_log_lines = {}
-local dashboard_cached_ip = nil -- Cached before scraping starts (avoids blocking network probe)
+local dashboard_cached_ip = nil -- Cached before scraping starts to avoid blocking network probe
 
 -- Load button icons for popup buttons
 local button_a_icon = love.graphics.newImage("assets/inputs/switch_button_a.png")
@@ -94,7 +94,7 @@ local function format_time(seconds)
     return string.format("%02d:%02d:%02d", hours, mins, secs)
 end
 
--- Draw the core assignment reminder popup (matches Clear Cache style)
+-- Draw core assignment reminder popup
 local function draw_core_reminder_popup()
     if not showing_core_reminder then 
         reminder_fade = 0
@@ -219,7 +219,7 @@ local state = {
     log = {},
     sample_poll = nil,
     queued_games = {}, -- Games waiting for artwork generation
-    selected_output = nil -- Currently displayed artwork type (box/preview/splash)
+    selected_output = nil -- Currently displayed artwork type
 }
 
 --[[
@@ -242,7 +242,7 @@ local function show_info_window(title, content)
         sound.play("nav_back")
     end
     info_window.visible = true
-    info_window.fade = 0 -- Explicit reset
+    info_window.fade = 0 -- Reset fade transition
     info_window.title = title
     info_window.content = content
 end
@@ -312,7 +312,7 @@ local function has_missing_catalogue_artwork(dest_platform, game_title)
             return false
         end
 
-        -- Check sanitized version (exFAT/sanitized filesystem support)
+        -- Check sanitized filesystem name
         local sanitized_title = game_title:gsub(":", "_")
         if sanitized_title ~= game_title then
             local fp_sanitized = string.format("%s/%s/%s.png", base, output_type, sanitized_title)
@@ -472,14 +472,14 @@ local function scrape_platforms()
     sound.play("nav_confirm")
     log.write("Scraping artwork")
 
-    -- Check network connection before starting (skip in offline mode)
+    -- Check network connection before starting
     if not offline_mode and not wifi.is_connected() then
         log.write("Network not connected, aborting scrape")
         show_info_window("No Network Connection", "Please connect to a network and try again.")
         return
     end
 
-    -- Offline mode only works with "Scrape all" (cached data); missing artwork needs internet
+    -- Offline mode only works with cached scrape all data
     if offline_mode and scrape_missing_only then
         show_info_window("Offline Mode Active", "Scraping missing artwork requires an internet connection. Use 'Scrape all' in offline mode.")
         return
@@ -503,7 +503,7 @@ local function scrape_platforms()
     state.pending_platforms = 0
     game_file_map = {}
 
-    -- Cache IP address now (before network gets busy with ScreenScraper)
+    -- Cache IP address before starting scrape
     dashboard_cached_ip = utils.get_ip_address()
 
     -- Process cached data from quickid and db
@@ -517,7 +517,7 @@ local function scrape_platforms()
             goto skip
         end
 
-        -- Use per-platform root to support both SD cards (dual-SD muOS)
+        -- Use platform root to support dual storage cards
         local platform_path = user_config:get_platform_path(src)
 
         -- Identify if this platform needs fetching
@@ -547,7 +547,7 @@ local function scrape_platforms()
                             "Skipping file %s because it doesn't match any supported extensions for %s", file, dest))
                     end
                 elseif file_info.type == "directory" then
-                    -- Ignore hidden metadata folders (e.g., .psmultidisc)
+                    -- Ignore hidden metadata folders
                     if file:sub(1, 1) == "." then
                         goto next_file
                     end
@@ -555,7 +555,7 @@ local function scrape_platforms()
                         -- DOS often uses per-game folders; treat folder names as ROM identifiers
                         table.insert(roms, file)
                     else
-                        -- One-level deep scan: pick the first matching ROM inside the folder (prefer .m3u if present)
+                        -- Pick first matching ROM inside folder preferring m3u files
                         local sub_items = nativefs.getDirectoryItems(full_path) or {}
                         local candidate, fallback
                         for _, sub in ipairs(sub_items) do
@@ -590,7 +590,7 @@ local function scrape_platforms()
             -- Get the title without extension
             local game_title = utils.get_filename(rom)
 
-            -- Skip if we already processed a ROM with this same title (e.g. game.zip vs game.min)
+            -- Skip duplicate title already processed
             if seen_titles[game_title] then
                 goto continue_rom
             end
@@ -619,12 +619,12 @@ local function scrape_platforms()
                 goto continue_rom
             end
 
-            -- Verify if the game needs to be fetched from the online API (uncached or missing videos)
+            -- Check if game requires online fetch
             local pea_key = utils.normalize_platform(dest)
             local rom_lower = rom:lower()
             local platform_cache = artwork.cached_game_ids[pea_key]
             
-            -- Check for the game in the cache (matches by full path or just filename for backward compatibility/subfolders)
+            -- Check for game in cache by path or filename
             local cached_res = platform_cache and (platform_cache[rom_lower] or platform_cache[rom_lower:match("([^/]+)$")])
 
             local videos_cfg = skyscraper_config:read("main", "videos") or "false"
@@ -711,7 +711,7 @@ local function scrape_platforms()
                 ui_progress.text = string.format("Generating: %d / %d", (state.total - state.tasks), state.total)
             end
             scraping_window.visible = true
-            scraping_window.fade = 0 -- Explicit reset
+            scraping_window.fade = 0 -- Reset fade transition
         end
     else
         -- Determine if platforms were actually selected
@@ -759,7 +759,7 @@ local function write_dashboard_state(extra)
         if ui_source then data.source = ui_source.text end
     end
 
-    -- Build JSON manually (no json lib dependency from main thread)
+    -- Build JSON manually without json library
     local function escape_json_str(s)
         if not s then return "" end
         return s:gsub('\\', '\\\\'):gsub('"', '\\"'):gsub('\n', '\\n'):gsub('\r', '\\r'):gsub('\t', '\\t')
@@ -892,12 +892,12 @@ end
 
 -- Stops all scraping and clears queue
 local function halt_scraping()
-    -- Clear UI output channel (restart_threads handles backend channels)
+    -- Clear UI output channel
     channels.TASK_OUTPUT:clear()
 
     log.write("Halting scraping...")
 
-    -- Restart threads to ensure clean state (handles killing processes and clearing channels)
+    -- Restart threads to ensure clean state
     skyscraper.restart_threads()
 
     state.scraping = false
@@ -914,7 +914,7 @@ local function halt_scraping()
         scraping_window.visible = false
     end
 
-    -- Write final state to dashboard (keep server running so user can review)
+    -- Write final state to dashboard
     if dashboard_server_running then
         write_dashboard_state()
     end
@@ -951,7 +951,7 @@ function start_generation_phase()
         local group_key = platform .. "::" .. tostring(input_folder)
         local title = game_info.title or game_info.game
         
-        -- Get the filename (game_file)
+        -- Get game filename
         local game_file = game_info.game_file
         if not game_file and title and game_file_map[platform] and game_file_map[platform][title] then
             game_file = game_file_map[platform][title].file
@@ -1075,7 +1075,7 @@ local function update_state(t)
             table.remove(state.log, 1)
         end
 
-        -- Track log lines for dashboard (keep last 100)
+        -- Track last 100 log lines for dashboard
         table.insert(dashboard_log_lines, t.log)
         if #dashboard_log_lines > 100 then
             table.remove(dashboard_log_lines, 1)
@@ -1095,7 +1095,7 @@ local function update_state(t)
             state.loading = false
         end
 
-        -- Parse fetch progress from Skyscraper output (e.g., "#26/761 (T2) Pass 1")
+        -- Parse fetch progress from Skyscraper output
         if t.log then
             local current, total = t.log:match("#(%d+)/(%d+)")
             if current and total then
@@ -1239,7 +1239,7 @@ local function update_state(t)
                 -- Clear state
                 state.scraping = false
 
-                -- Notify dashboard of completion (keep server running so user can see results)
+                -- Notify dashboard of completion
                 if dashboard_server_running then
                     write_dashboard_state({ finished = true })
                 end
@@ -1373,7 +1373,7 @@ local function render_to_canvas()
     end)
 end
 
--- Triggered when one of the outputs item is focused ("box" | "preview" | "splash")
+-- Triggered when an output item is focused
 local function on_output_focus(output_type)
     local folder, resolved = resolve_preview_output(output_type)
     state.selected_output = resolved
@@ -1406,7 +1406,7 @@ function main:load()
     cover_preview_path = build_media_path(sample_media_root, initial_folder, "fake-rom")
     render_to_canvas()
 
-    -- Load concurrent generation setting from config (1-8, default 3)
+    -- Load concurrent generation setting from config
     local concurrent_cfg = user_config:read("main", "concurrentGeneration")
     local concurrent = tonumber(concurrent_cfg or "") or 3
     if concurrent < 1 then
@@ -1430,7 +1430,7 @@ function main:load()
         title = "Scraping in progress"
     }
 
-    -- Show core assignment reminder on first load (unless user dismissed it)
+    -- Show core assignment reminder on first load
     if user_config:read("main", "hideCoreReminder") ~= "1" then
         showing_core_reminder = true
     end
@@ -1445,12 +1445,12 @@ function main:load()
             love.graphics.push()
             love.graphics.translate(self.x, self.y)
             love.graphics.scale(scale)
-            -- Background (uses theme color)
+            -- Draw background using theme color
             local preview_bg = theme:read_color("button", "BUTTON_BACKGROUND", "#2d3436")
             love.graphics.setColor(preview_bg)
             love.graphics.rectangle("fill", 0, 0, cw, ch)
             love.graphics.setColor(1, 1, 1);
-            -- Artwork (canvas)
+            -- Draw artwork canvas
             love.graphics.draw(canvas, 0, 0);
             if state.loading then
                 love.graphics.setColor(0, 0, 0, 0.4);
@@ -1476,12 +1476,12 @@ function main:load()
             love.graphics.push()
             love.graphics.translate(self.x, self.y)
             love.graphics.scale(scale)
-            -- Background (uses theme color)
+            -- Draw background using theme color
             local preview_bg = theme:read_color("button", "BUTTON_BACKGROUND", "#2d3436")
             love.graphics.setColor(preview_bg)
             love.graphics.rectangle("fill", 0, 0, cw, ch)
             love.graphics.setColor(1, 1, 1);
-            -- Artwork (canvas)
+            -- Draw artwork canvas
             love.graphics.draw(canvas, 0, 0);
             if state.loading then
                 love.graphics.setColor(0, 0, 0, 0.4);
@@ -1668,7 +1668,7 @@ function main:load()
             love.graphics.push()
             local icon_size = 22 * _G.scale
             local gap = 6 * _G.scale
-            -- Draw X button icon (scaled for high-res displays)
+            -- Draw X button icon
             if button_x_icon then
                 love.graphics.push()
                 local center_x = self.x + icon_size / 2
@@ -1681,7 +1681,7 @@ function main:load()
                 btn:draw()
                 love.graphics.pop()
             end
-            -- Draw text (clamped to available width)
+            -- Draw text clamped to available width
             local txt
             if dashboard_server_running and dashboard_server_ip then
                 txt = "Dashboard: http://" .. dashboard_server_ip .. ":8081 (Same network)"
@@ -1750,7 +1750,7 @@ end
 
 -- Reads games from fetch queue and pushes "ready" games into generate queue
 local function process_game_queue()
-    -- Drain ALL finished signals (not just one per frame)
+    -- Drain all finished signals
     -- This fixes the issue where scraping gets stuck near the end with concurrent tasks
     while true do
         local finished_signal = channels.SKYSCRAPER_GEN_OUTPUT:pop()
@@ -1826,10 +1826,10 @@ local function process_game_queue()
         return
     end
 
-    -- Drain ALL game events from Skyscraper (not just one per frame)
+    -- Drain all game events from Skyscraper
     -- This prevents race conditions where "fetch completed" arrives before all "game found" events are processed
     while true do
-        -- Check if we're at max concurrent capacity (only relevant for Generation Phase)
+        -- Check maximum concurrent worker capacity
         if not state.fetch_phase and #state.tasks_in_progress >= state.max_concurrent_tasks then
             break
         end
@@ -1902,14 +1902,14 @@ local function process_game_queue()
             elseif game_file_map[platform] and (game_file_map[platform][game] or game_file_map[platform][utils.get_filename_from_path(game)]) then
                 local game_info = game_file_map[platform][game] or game_file_map[platform][utils.get_filename_from_path(game)]
                 local game_file = game_info.file
-                -- Use the stored input_folder if available (fixes multi-folder platform bug)
+                -- Use stored input folder if available
                 if not input_folder then
                     input_folder = game_info.input_folder
                 end
 
                 -- Two-phase logic: log during fetch, process during generation
                 if state.fetch_phase then
-                    -- FETCH PHASE: log progress (all games already queued in state.queued_games)
+                    -- Fetch phase: log progress
                     print(string.format("Fetched: %s/%s", platform, game))
                 else
                     -- GENERATION PHASE: process immediately
@@ -1933,7 +1933,7 @@ local function process_game_queue()
                     finished = true
                 })
                 -- Do NOT call update_state here - this game was never added to state.tasks
-                -- (filtered out by scrape_missing_only or other conditions)
+                -- Filtered out by scrape options
                 print(string.format("Skipping game %s (not in game_file_map, likely filtered)", game))
             end
         end
@@ -1948,7 +1948,7 @@ function main:update(dt)
         end
     end
 
-    -- Periodically check wifi status (every 5 seconds)
+    -- Periodically check wifi status
     wifi_check_timer = wifi_check_timer + dt
     if wifi_check_timer > 5 then
         wifi_check_timer = 0
@@ -1959,7 +1959,7 @@ function main:update(dt)
     -- before we process any "completed" signals in the output loop below.
     process_game_queue()
 
-    -- Drain output messages from Skyscraper (limited to 50 per frame)
+    -- Drain output messages from Skyscraper
     -- This prevents message pile-up while avoiding UI freeze if volume is high
     local processed_count = 0
     while processed_count < 50 do
@@ -2008,7 +2008,7 @@ function main:update(dt)
     -- end
 
 
-    -- Update scraping window components (enables marquee scrolling in log)
+    -- Update scraping window state
     if scraping_window and scraping_window.visible then
         scraping_window:update(dt)
     end
@@ -2095,13 +2095,13 @@ function main:draw()
             t_width = font:getWidth(time_str)
         end
 
-        -- Calculate position (Top-Right)
+        -- Calculate top-right position
         local x_pos = cw - (t_width or 0) - margin
         local y_pos = margin
 
-        -- Shift left if status icon (offline or no-network) is visible
+        -- Shift left if status icon is visible
         if (offline_mode and offline_icon) or (not wifi_connected and wifi_icon) then
-            x_pos = x_pos - (24 * _G.scale) - (10 * _G.scale) -- icon_width (24) + padding (10)
+            x_pos = x_pos - (24 * _G.scale) - (10 * _G.scale) -- Icon width and padding offset
         end
 
         -- Draw text in Accent Color
@@ -2191,7 +2191,7 @@ function main:gamepadpressed(joystick, button)
             menu:gamepadpressed(joystick, button)
         end
     elseif showing_core_reminder and button == "a" then
-        -- A button just dismisses the popup (no "don't show again")
+        -- Button A dismisses popup
         sound.play("nav_back")
         showing_core_reminder = false
     elseif info_window.visible and button == "a" then

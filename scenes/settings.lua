@@ -20,7 +20,7 @@ local theme             = configs.theme
 local w_width, w_height = love.window.getMode()
 -- Smaller font for virtual keyboard labels
 local vk_font = love.graphics.newFont(_G.MAIN_FONT_PATH or 12, 12)
--- Larger font for password preview (bigger asterisks)
+-- Large font for password preview
 local vk_password_font = love.graphics.newFont(_G.MAIN_FONT_PATH or 18, 18)
 
 local settings          = {}
@@ -117,7 +117,7 @@ local function on_filter_resolution(index)
 end
 
 local function on_concurrent_change(_, idx)
-  -- idx is 1-based (1-8), save it directly
+  -- Save 1-based thread index directly
   user_config:insert("main", "concurrentGeneration", tostring(idx))
   user_config:save()
 end
@@ -180,7 +180,7 @@ end
 local function on_refresh_press()
   local btn = menu ^ "rescan_btn"
   if btn then btn.text = "Scanning..." end
-  -- Force a slight delay or draw to let UI update? (Not easily possible in blocking sync)
+  -- Wait for UI update
   
   user_config:load_platforms()
   user_config:save()
@@ -298,7 +298,7 @@ local function on_enter_tgdb_key_web()
     local server_path = WORK_DIR .. "/scripts/tgdb_server.py"
     local logo_path = WORK_DIR .. "/assets/scrappy_logo.png"
     local theme_name = theme:get_current_name() or "dark"
-    -- Get the accent color (hex string without #)
+    -- Get accent hex string
     local accent_color = configs.user_config:read("main", "customAccent") or "cbaa0f"
     local accent_mode = tostring(configs.user_config:read("main", "accentMode") or "muos"):lower()
     if accent_mode == "muos" then

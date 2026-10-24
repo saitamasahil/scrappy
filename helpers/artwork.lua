@@ -246,7 +246,7 @@ function artwork.copy_artwork_type(platform, game, media_path, copy_path, output
         end
     end
 
-    -- Wait a bit for file to be fully written (sometimes filesystem is slow)
+    -- Wait for file write to complete
     local max_retries = 2
     local retry_delay = 0.05 -- 50ms
     local scraped_art = nil
@@ -325,7 +325,7 @@ function artwork.copy_video_from_cache(platform, game, copy_path)
                 if filename and id then
                     local decoded_name = xml_decode(filename)
                     local base_name = decoded_name:match("^(.+)%.[^.]+$") or decoded_name
-                    -- Match against the requested game (ignoring case, supporting subfolders)
+                    -- Match requested game ignoring case and subfolders
                     local fp_lower = filepath:lower()
                     local match_str = "/" .. game:lower()
                     local fp_no_ext = fp_lower:gsub("%.%w+$", "")
@@ -452,7 +452,7 @@ function artwork.copy_grid_from_cache(platform, game, copy_path)
                 if filename and id then
                     local decoded_name = xml_decode(filename)
                     local base_name = decoded_name:match("^(.+)%.[^.]+$") or decoded_name
-                    -- Match against the requested game (ignoring case, supporting subfolders)
+                    -- Match requested game ignoring case and subfolders
                     local fp_lower = filepath:lower()
                     local match_str = "/" .. game:lower()
                     local fp_no_ext = fp_lower:gsub("%.%w+$", "")
@@ -515,7 +515,7 @@ function artwork.copy_grid_from_cache(platform, game, copy_path)
             end, "replace", 1)
             love.graphics.setStencilTest("greater", 0)
 
-            -- Draw background (screenshot or fallback cover)
+            -- Draw background screenshot or fallback cover
             local bg_data = nativefs.newFileData(bg_path)
             if bg_data then
                 local bg_raw = love.image.newImageData(bg_data)
@@ -781,14 +781,14 @@ function artwork.process_cached_by_platform(platform, cache_folder)
         end
     end
 
-    -- Keep entries even if no resources are found (means it was scraped but no art found)
+    -- Keep entries even if no resources found
     for filename, id in pairs(quick_id_entries) do
         -- Store the resource types for this game filename; fallback to empty table if no resources
         quick_id_entries[filename] = cached_games[id] or {}
     end
 
 
-    -- Save entries globally (use lowercase platform ID for consistent lookup)
+    -- Save entries globally with lowercase platform id
     local pea_key = normalize_platform(platform):lower() -- Normalize and lowercase platform key
     log.write(string.format("PLATFORM %s: Loaded %d cache entries (Pea key: %s)", platform, utils.table_length(quick_id_entries), pea_key))
     artwork.cached_game_ids[pea_key] = quick_id_entries
@@ -833,7 +833,7 @@ end
 
 -- Extract manual PDFs from cache and copy them to Game Manuals folder
 -- Skyscraper stores manuals in cache/<platform>/manuals/<source>/<cache_id>.pdf
--- platform: Skyscraper platform ID (e.g., "nds")
+-- platform: Skyscraper platform id like nds
 -- Returns: number of manuals copied, number skipped
 function artwork.extract_manuals(platform, target_rom_name)
     local copied = 0
@@ -858,7 +858,7 @@ function artwork.extract_manuals(platform, target_rom_name)
         return copied, skipped
     end
 
-    -- Collect all manual files from source subdirectories (screenscraper/, thegamesdb/, etc.)
+    -- Collect manual files from source subdirectories
     local all_manual_files = {}
     local source_dirs = nativefs.getDirectoryItems(manuals_cache_dir)
     if not source_dirs then

@@ -160,7 +160,7 @@ class ArtworkManagerHandler(http.server.BaseHTTPRequestHandler):
         games = []
         try:
             tree = ET.parse(db_path)
-            game_data = {} # id -> {rom -> name, media -> {type -> [{source, file}]}}
+            game_data = {} # id mapping from rom name to media type and file
             for res in tree.findall("resource"):
                 gid = res.get("id")
                 rtype = res.get("type", "").lower()
@@ -170,7 +170,7 @@ class ArtworkManagerHandler(http.server.BaseHTTPRequestHandler):
                 path = res.text
                 if path:
                     source_type = res.get("source")
-                    # Extract the type-specific filename (which is the SHA1/ID)
+                    # Extract type-specific media filename
                     filename = os.path.basename(path)
                     
                     if rtype not in game_data[gid]["media"]:
@@ -1374,7 +1374,7 @@ if __name__ == "__main__":
     parser.add_argument("--cache", required=True)
     args = parser.parse_args()
 
-    # Use ThreadingTCPServer to handle multiple simultaneous requests (UI + images)
+    # Use ThreadingTCPServer to handle multiple simultaneous requests
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     socketserver.ThreadingTCPServer.daemon_threads = True
     with socketserver.ThreadingTCPServer(("", PORT), ArtworkManagerHandler) as httpd:

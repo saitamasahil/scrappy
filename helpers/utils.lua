@@ -4,7 +4,7 @@ function utils.split(inputstr, sep)
     if sep == nil then
         sep = "%s"
     end
-    -- Strip carriage returns to prevent issues with Windows line endings (\r\n) on Linux
+    -- Strip carriage returns to handle Windows line endings on Linux
     local s = inputstr:gsub("\r", "")
     local t = {}
     for str in string.gmatch(s, "([^" .. sep .. "]+)") do
@@ -163,7 +163,7 @@ local function orderedNext(t, state)
 end
 
 function utils.orderedPairs(t)
-    -- Equivalent of the pairs() function on tables. Allows to iterate
+    -- Equivalent of pairs function on tables to iterate
     -- in order
     return orderedNext, t, nil
 end

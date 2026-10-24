@@ -70,18 +70,18 @@ function love.load(args)
     skyscraper.init(skyscraper_config.path, user_config:read("overrides", "binary") or "bin/Skyscraper.aarch64")
     input.load()
 
-    -- footer:updatePosition(...) removed
+    -- Removed footer updatePosition call
 end
 
 function love.update(dt)
-    -- Cap dt to 0.05 (20fps minimum) to prevent animations from glitching/exploding
-    -- when the main thread blocks during heavy operations (like rebuilding long lists).
+    -- Cap dt to 0.05 to prevent animation glitching on lag spikes
+    -- Avoids large delta spikes during list rebuilding
     dt = math.min(dt, 0.05)
     
     timer.update(dt)
     input.update(dt)
     scenes:update(dt)
-    -- footer:update(dt) removed
+    -- Removed footer update call
     input.onEvent(function(key)
         scenes:keypressed(key)
     end)
@@ -92,7 +92,7 @@ function love.draw()
 
     if splash.finished or splash.is_revealing then
         scenes:draw()
-        -- Draw footer on main scene; also on settings when no overlay (VK) is active
+        -- Draw footer when no keyboard overlay is active
         -- Footers are now drawn by individual scenes to avoid overlap
         -- local focus = scenes:currentFocus()
         -- if focus == "main" or (focus == "settings" and not (_G.ui_overlay_active or false)) then
@@ -108,7 +108,7 @@ end
 -- Cleanup when app quits
 function love.quit()
     -- Stop any background web servers started by Scrappy
-    -- (Artwork Manager, Scrape Dashboard, TGDB key helper, etc.)
+    -- Background helper servers
     os.execute("pkill -9 -f artwork_manager.py 2>/dev/null")
     os.execute("pkill -9 -f scrape_dashboard.py 2>/dev/null")
     os.execute("pkill -9 -f tgdb_server.py 2>/dev/null")

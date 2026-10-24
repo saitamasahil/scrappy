@@ -1,7 +1,7 @@
 local component = require 'lib.gui.badr'
 local configs   = require 'helpers.config'
 
--- Icons definition (Paths)
+-- Icon asset paths
 local icon_paths = {
   caret_left   = "assets/icons/caret-left-solid.png",
   caret_right  = "assets/icons/caret-right-solid.png",
@@ -69,7 +69,7 @@ local icon_paths = {
 local icons = {}
 local icon_metadata = {}
 
--- Helper to scan image data for content bounds (trimmed of transparency)
+-- Find image content bounds
 local function get_content_bounds(data)
   local w, h = data:getDimensions()
   local x_min, y_min = w, h
@@ -110,7 +110,7 @@ return function(props)
   local boxSize = props.size or (24 * (_G.scale or 1))
   
   -- Normalization Scaling: 
-  -- We scale based on the ACTUAL content bounds to ensure consistent visual weight
+  -- Scale using content bounds
   local scale = boxSize / math.max(meta.w, meta.h)
   local sx, sy = scale, scale
 

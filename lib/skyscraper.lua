@@ -13,13 +13,13 @@ local function normalize_platform(platform)
 end
 
 -- Escape special shell characters in filenames
--- This is critical for games with parentheses, apostrophes, etc.
+-- Escape shell characters for filenames
 local function escape_shell_arg(arg)
     if not arg then
         return arg
     end
-    -- For use with double quotes: escape backslash, double quote, dollar, backtick, and newline
-    -- Parentheses don't need escaping inside double quotes
+    -- Escape backslash, quote, dollar, and backtick
+    -- Retain literal characters inside quotes
     local escaped = arg:gsub('\\', '\\\\') -- Backslash first
     escaped = escaped:gsub('"', '\\"') -- Double quotes
     escaped = escaped:gsub('%$', '\\$') -- Dollar signs
@@ -77,7 +77,7 @@ function skyscraper.restart_threads()
     log.write("Restarting Skyscraper threads")
 
     -- CRITICAL: Kill any running Skyscraper processes FIRST
-    -- This forces io.popen() to return in threads that are blocked on it
+    -- Forces io.popen to return for blocked threads
     os.execute("killall -9 Skyscraper Skyscraper.aarch64 2>/dev/null")
 
     -- Set abort flag so threads know to stop
@@ -100,7 +100,7 @@ function skyscraper.restart_threads()
         })
     end
 
-    -- Wait for threads to actually terminate (up to 3 seconds - io.popen may take time)
+    -- Wait for threads to terminate
     local timeout = 3.0
     local start_time = love.timer.getTime()
     while love.timer.getTime() - start_time < timeout do
@@ -140,7 +140,7 @@ function skyscraper.restart_threads()
         end
     end
 
-    -- Clear ALL channels again (completely clean state)
+    -- Clear all channels
     channels.SKYSCRAPER_ABORT:clear()
     channels.SKYSCRAPER_INPUT:clear()
     channels.SKYSCRAPER_GEN_INPUT:clear()
@@ -160,7 +160,7 @@ local function get_default_module_for(platform)
     local pea_key = normalize_platform(platform)
 
     -- Ports: use IGDB if explicitly selected, otherwise fall back to TheGamesDB
-    -- (ScreenScraper lacks ports/PC game coverage)
+    -- ScreenScraper lacks port and PC game coverage
     if pea_key == "ports" or tostring(platform):lower():find("ports") then
         if skyscraper.module == "igdb" then
             return "igdb"
@@ -213,7 +213,7 @@ function skyscraper.init(config_path, binary)
         gen_thread_count = concurrent
     end
 
-    -- Create and start threads (spawns gen_thread_count generation workers)
+    -- Spawns generation worker threads
     create_threads()
 
     -- Load peas.json file
@@ -386,8 +386,8 @@ local function generate_command(config)
     command = string.format('%s -f pegasus', command)
 
     -- Performance optimization: If running multiple parallel workers, 
-    -- force each Skyscraper process to be single-threaded to avoid core contention.
-    -- (Only for generation phase; fetch can still use multiple threads for networking).
+    -- Force single threaded workers to avoid core contention
+    -- Networking can still use multiple threads during fetch
     if not config.fetch and gen_thread_count > 1 then
         command = string.format('%s -t 1', command)
     end
@@ -548,8 +548,8 @@ function skyscraper.custom_import(rom_path, platform)
     skyscraper.run(command, "N/A", platform, "import")
 end
 
--- Fetch game manual (PDF) for a single ROM from ScreenScraper
--- Fetch game manual (PDF) for a single ROM from ScreenScraper
+-- Fetch game manual for single ROM
+-- Fetch game manual for single ROM
 function skyscraper.fetch_single_manual(rom_path, rom, input_folder, platform, query)
     local flags = {"unattend", "manuals"}
     local videos_cfg = skyscraper_config:read("main", "videos") or "false"
@@ -756,7 +756,7 @@ function skyscraper.delete_preset(preset_name)
     local info = nativefs.getInfo(preset_dir)
     if not info then return false end
     
-    -- Use rm -rf for recursive deletion on Linux/MuOS
+    -- Recursive delete directory on device
     os.execute(string.format('rm -rf "%s"', preset_dir))
     return true
 end

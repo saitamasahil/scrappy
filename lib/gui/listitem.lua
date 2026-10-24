@@ -42,7 +42,7 @@ return function(props)
     disabled = props.disabled or false,
     active = props.active or false,
     icon = props.icon or nil,
-    -- Colors and styles (explicit overrides only, otherwise dynamic in draw)
+    -- Apply color overrides
     backgroundColor = props.backgroundColor,
     focusColor = props.focusColor,
     indicatorColor = nil, -- Resolved in draw
@@ -85,7 +85,7 @@ return function(props)
       local target_p = self.focused and 1 or 0
       self.anim_p = self.anim_p + (target_p - self.anim_p) * 15 * dt
 
-      -- Liquid UI: Compression (Squish)
+      -- Item compression state
       local input_helper = require("helpers.input")
       local is_pressed = self.focused and input_helper.isEventDown("return")
       
@@ -147,7 +147,7 @@ return function(props)
       
       love.graphics.setFont(font)
 
-      -- Ensure displayText is resolved even if update wasn't called (unlikely but safe)
+      -- Resolve display text fallback
       local displayText = self.displayText
       if not displayText then
         if type(self.text) == "function" then
@@ -161,7 +161,7 @@ return function(props)
       local topPadding = self.height * 0.5 - labelHeight * 0.5
       local leftPadding = (props.leftPadding or 4) * (_G.scale or 1)
 
-      -- Resolve colors dynamically (fixes caching issue)
+      -- Resolve colors dynamically
       local backgroundColor = self.backgroundColor or theme:read_color("listitem", "ITEM_BACKGROUND", "#000000")
       local focusColor = self.focusColor or theme:read_color("listitem", "ITEM_FOCUS", "#2d3436")
       local textColor = self.textColor or theme:read_color("listitem", "ITEM_TEXT", "#dfe6e9")
@@ -184,7 +184,7 @@ return function(props)
         love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, props.cornerRadius or 4)
       end
 
-      -- Liquid UI: Ripple
+      -- Draw focus ripple
       if self.ripple_a and self.ripple_a > 0 then
           love.graphics.setColor(textColor[1], textColor[2], textColor[3], self.ripple_a)
           love.graphics.setLineWidth(1)
@@ -194,7 +194,7 @@ return function(props)
           local content_cx = textX + math.min(tw, self.width - padding.horizontal) / 2
           love.graphics.circle("line", content_cx, cy, self.ripple_r)
       end
-    -- Draw indicator pill (e.g., green for found, red for missing)
+    -- Draw status indicator pill
       if props.indicator and props.indicator > 1 then
         love.graphics.setColor(indicatorColor)
         local pillWidth = 4 * (_G.scale or 1)
@@ -211,7 +211,7 @@ return function(props)
         leftIcon:draw()
       end
 
-      -- Hardware-accelerated intersected scissor (replaces expensive stencil buffer operations)
+      -- Hardware scissor clipping without stencil buffer
       local sx, sy, sw, sh = love.graphics.getScissor()
       
       local available_width = self.width - padding.horizontal

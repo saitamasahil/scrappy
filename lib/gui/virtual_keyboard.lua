@@ -43,7 +43,7 @@ local MASK_CHAR = "*"
 -- Smaller font for virtual keyboard labels
 local vk_font = love.graphics.newFont(_G.MAIN_FONT_PATH or 12, 12)
 
--- Optional button prompt icons (A/B)
+-- Button prompt icons
 local INPUT_ICONS = {}
 local function load_input_icon(kind)
   if INPUT_ICONS[kind] ~= nil then return INPUT_ICONS[kind] end
@@ -118,9 +118,9 @@ local function create_vk(config)
     move_lock_until = 0,
     opened_at = 0,
     
-    -- Cursor position within text (0 = before first char, #buffer = after last char)
+    -- Cursor character index
     cursor_pos = 0,
-    -- Whether the text field is focused (for cursor movement within text)
+    -- Text field focus state
     text_field_focused = false,
     key_anim = {},
     key_ripples = {}, -- [row][col] = {r, a}
@@ -479,7 +479,7 @@ local function create_vk(config)
       return
     end
 
-    -- Organic opening curve (aggressive EaseOut)
+    -- Opening animation curve
     self.fade = (self.fade or 0) + (1 - (self.fade or 0)) * 12 * dt
     if self.fade > 0.999 then self.fade = 1 end
     
@@ -585,7 +585,7 @@ local function create_vk(config)
         local is_focused = (not self.text_field_focused and self.row == r and self.col == c)
         local target_v = is_focused and 1 or 0
         local prev_v = self.key_anim[r][c] or 0
-        -- Snap quickly toward target, decelerate near it (spring-like)
+        -- Decelerate near target position
         local diff = target_v - prev_v
         self.key_anim[r][c] = prev_v + diff * math.min(1, 28 * dt)
         
@@ -715,7 +715,7 @@ local function create_vk(config)
       local n = utf8_len(self.buffer)
       if n > 0 then
         if self.last_char_time > 0 and (now - self.last_char_time) <= self.last_char_window and self.cursor_pos > 0 then
-          -- Show visible character at cursor position (the character just typed)
+          -- Show visible character at cursor position
           local before_cursor = string.rep(MASK_CHAR, self.cursor_pos - 1)
           local visible = utf8_sub(self.buffer, self.cursor_pos, self.cursor_pos)
           local after_cursor = string.rep(MASK_CHAR, n - self.cursor_pos)

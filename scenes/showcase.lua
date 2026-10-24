@@ -33,7 +33,7 @@ function showcase:load()
     target_img_scale = 1
     load_timer = 0
     
-    -- 1. Load the "Hero" images immediately (Current + Neighbors)
+    -- Preload current and neighbor images
     -- This ensures the first swipe in either direction is ALWAYS smooth.
     self:load_image(1)
     self:load_image(2)

@@ -31,7 +31,7 @@ local function popup(props)
       local screenWidth = love.graphics.getWidth()
       local screenHeight = love.graphics.getHeight()
 
-      -- Organic damping animation (Increased to 20 for snappier feel)
+      -- Damping animation for popup transition
       self.fade = (self.fade or 0) + (1 - (self.fade or 0)) * 20 * love.timer.getDelta()
       if self.fade > 0.999 then self.fade = 1 end
 

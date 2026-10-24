@@ -70,7 +70,7 @@ def update():
     download_url = None
     asset_name = None
 
-    # Look for update package first (Scrappy_vX.Y.Z_update.muxapp)
+    # Check for update package file
     for a in assets:
         name = a.get("name", "")
         if name.endswith("_update.muxapp") or name.endswith("_update.zip"):
