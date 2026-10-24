@@ -114,8 +114,13 @@ local function halt_scraping()
     -- Also reset refine search state
     state.refine_search_active = false
     state.refine_query = ""
+    if state.last_failed_rom then
+        local base_name = skyscraper.get_rom_base_name(state.last_failed_rom)
+        skyscraper.remove_alias(base_name)
+    end
     state.last_failed_rom = nil
     state.last_failed_platform = nil
+    state.refine_attempted = false
     if vk then
         vk.visible = false
     end
@@ -141,6 +146,9 @@ local function on_refine_search_done(query, target)
         log.write("[single_scrape] Refine search failed: missing ROM or platform info")
         return
     end
+
+    local base_name = skyscraper.get_rom_base_name(rom)
+    skyscraper.set_alias(base_name, query)
 
     local rom_path = user_config:get_platform_path(last_selected_platform)
 
@@ -802,6 +810,10 @@ local function process_fetched_game()
             if state.refine_attempted then
                 -- Refine search also failed - show error message instead of looping
                 log.write("[single_scrape] Refine search also failed, showing error")
+                if state.last_failed_rom then
+                    local base_name = skyscraper.get_rom_base_name(state.last_failed_rom)
+                    skyscraper.remove_alias(base_name)
+                end
                 state.refine_attempted = false
                 state.last_failed_rom = nil
                 state.last_failed_platform = nil

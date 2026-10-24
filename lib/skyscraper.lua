@@ -358,12 +358,15 @@ local function generate_command(config)
     if config.flags and next(config.flags) then
         command = string.format('%s --flags %s', command, table.concat(config.flags, ","))
     end
-    -- Custom query for refine search feature (Skyscraper --query option)
+    -- Custom query for refine search
     if config.query and config.query ~= "" then
         local query_str = escape_shell_arg(config.query)
         command = string.format('%s --query "%s"', command, query_str)
+        if config.min_match == nil then
+            config.min_match = 0
+        end
     end
-    if config.min_match then
+    if config.min_match ~= nil then
         command = string.format('%s -m %d', command, config.min_match)
     end
     -- Add startat flag for resuming
@@ -756,6 +759,115 @@ function skyscraper.delete_preset(preset_name)
     -- Use rm -rf for recursive deletion on Linux/MuOS
     os.execute(string.format('rm -rf "%s"', preset_dir))
     return true
+end
+
+local function get_alias_map_paths()
+    local paths = {}
+    local seen = {}
+
+    local static_path = WORK_DIR .. "/static/.skyscraper/aliasMap.csv"
+    paths[#paths + 1] = static_path
+    seen[static_path] = true
+
+    local home = os.getenv("HOME")
+    if home and home ~= "" then
+        local home_path = home .. "/.skyscraper/aliasMap.csv"
+        if not seen[home_path] then
+            paths[#paths + 1] = home_path
+            seen[home_path] = true
+        end
+    end
+
+    return paths
+end
+
+function skyscraper.get_rom_base_name(rom)
+    if not rom then return "" end
+    local filename = rom:match("([^/\\]+)$") or rom
+    return filename:match("(.+)%.[^.]+$") or filename
+end
+
+function skyscraper.set_alias(base_name, alias_name)
+    if not base_name or base_name == "" or not alias_name or alias_name == "" then
+        return
+    end
+
+    local clean_base = base_name:gsub('"', ''):gsub(';', '')
+    local clean_alias = alias_name:gsub('"', ''):gsub(';', '')
+
+    local paths = get_alias_map_paths()
+    for _, target_path in ipairs(paths) do
+        local parent_dir = target_path:match("(.+)/[^/]+$")
+        if parent_dir then
+            nativefs.createDirectory(parent_dir)
+        end
+
+        local lines = {}
+        local found = false
+        local content = nativefs.read(target_path)
+        if content then
+            for line in content:gmatch("([^\r\n]+)") do
+                local trimmed = line:match("^%s*(.-)%s*$")
+                if trimmed ~= "" and not trimmed:match("^#") then
+                    local b = trimmed:match('^"([^"]+)";') or trimmed:match('^([^;]+);')
+                    if b then
+                        b = b:match('^%s*"?%s*(.-)%s*"?%s*$')
+                    end
+                    if b == clean_base then
+                        lines[#lines + 1] = string.format('"%s";"%s"', clean_base, clean_alias)
+                        found = true
+                    else
+                        lines[#lines + 1] = line
+                    end
+                else
+                    lines[#lines + 1] = line
+                end
+            end
+        end
+
+        if not found then
+            lines[#lines + 1] = string.format('"%s";"%s"', clean_base, clean_alias)
+        end
+
+        local new_content = table.concat(lines, "\n") .. "\n"
+        nativefs.write(target_path, new_content)
+    end
+end
+
+function skyscraper.remove_alias(base_name)
+    if not base_name or base_name == "" then
+        return
+    end
+
+    local clean_base = base_name:gsub('"', ''):gsub(';', '')
+    local paths = get_alias_map_paths()
+    for _, target_path in ipairs(paths) do
+        local content = nativefs.read(target_path)
+        if content then
+            local lines = {}
+            local changed = false
+            for line in content:gmatch("([^\r\n]+)") do
+                local trimmed = line:match("^%s*(.-)%s*$")
+                if trimmed ~= "" and not trimmed:match("^#") then
+                    local b = trimmed:match('^"([^"]+)";') or trimmed:match('^([^;]+);')
+                    if b then
+                        b = b:match('^%s*"?%s*(.-)%s*"?%s*$')
+                    end
+                    if b == clean_base then
+                        changed = true
+                    else
+                        lines[#lines + 1] = line
+                    end
+                else
+                    lines[#lines + 1] = line
+                end
+            end
+            if changed then
+                local new_content = #lines > 0 and (table.concat(lines, "\n") .. "\n") or ""
+                nativefs.write(target_path, new_content)
+            end
+        end
+    end
 end
 
 skyscraper.get_module_name = get_default_module_for
