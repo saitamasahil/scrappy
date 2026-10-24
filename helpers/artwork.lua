@@ -816,6 +816,21 @@ function artwork.process_cached_data()
     log.write("Finished processing cached data")
 end
 
+function artwork.get_fetch_requirements(cached_res, videos_enabled, offline_mode)
+    if offline_mode then
+        return false, false
+    end
+    if not cached_res then
+        return true, false
+    end
+    -- quickid.xml can contain IDs with no usable resources in db.xml
+    -- Skyscraper needs a cached title to generate a game
+    if not cached_res.title or (videos_enabled and not cached_res.video) then
+        return true, true
+    end
+    return false, false
+end
+
 -- Extract manual PDFs from cache and copy them to Game Manuals folder
 -- Skyscraper stores manuals in cache/<platform>/manuals/<source>/<cache_id>.pdf
 -- platform: Skyscraper platform ID (e.g., "nds")
