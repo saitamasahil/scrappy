@@ -50,6 +50,15 @@ function New-MuxappZip {
                 $relative = $file.FullName.Substring($sourceRoot.Length).TrimStart('\', '/')
                 $entryName = $rootName + '/' + ($relative -replace '\\', '/')
                 $entry = $zip.CreateEntry($entryName, [System.IO.Compression.CompressionLevel]::Optimal)
+
+                # Set unix file permissions in zip external attributes
+                $isExecutable = $entryName.EndsWith(".sh") -or $entryName.EndsWith("/love") -or $entryName.EndsWith("/Skyscraper.aarch64")
+                if ($isExecutable) {
+                    $entry.ExternalAttributes = -2115174400
+                } else {
+                    $entry.ExternalAttributes = -2119958528
+                }
+
                 $entryStream = $entry.Open()
                 try {
                     $inStream = [System.IO.File]::OpenRead($file.FullName)

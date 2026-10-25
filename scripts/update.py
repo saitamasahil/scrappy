@@ -123,6 +123,17 @@ def update():
             print(f"Error extracting update zip: {e}")
             sys.exit(1)
 
+        # Restore execute permissions for launch script and binaries
+        scrappy_dir = os.path.join(target_dir, "Scrappy")
+        for root, _, files in os.walk(scrappy_dir):
+            for file_name in files:
+                if file_name.endswith(".sh") or file_name in ("love", "Skyscraper.aarch64"):
+                    file_path = os.path.join(root, file_name)
+                    try:
+                        os.chmod(file_path, 0o755)
+                    except OSError:
+                        pass
+
     print(f"Success: Scrappy updated to {tag}!")
     print("Please restart Scrappy to apply the update.")
     sys.stdout.flush()

@@ -111,6 +111,12 @@ else
     echo "Warning: logo_scrappy.svg not found in assets/glyph"
 fi
 
+# Ensure script execution permissions
+chmod +x "$WORKDIR/Scrappy/mux_launch.sh"
+if [ -d "$WORKDIR/Scrappy/.scrappy/scripts" ]; then
+    chmod +x "$WORKDIR/Scrappy/.scrappy/scripts/"*.sh 2>/dev/null || true
+fi
+
 if [ "$BUILD_UPDATE" = true ]; then
     # Create update package
     echo "Creating update package..."
@@ -127,7 +133,11 @@ if [ "$BUILD_FULL" = true ]; then
     cp -r "$PROJECT_ROOT/showcase" "$WORKDIR/Scrappy/.scrappy/" 2>/dev/null || true
     cp -r "$PROJECT_ROOT/static" "$WORKDIR/Scrappy/.scrappy/"
 
-
+    # Ensure binary execution permissions
+    if [ -d "$WORKDIR/Scrappy/.scrappy/bin" ]; then
+        chmod +x "$WORKDIR/Scrappy/.scrappy/bin/love" 2>/dev/null || true
+        chmod +x "$WORKDIR/Scrappy/.scrappy/bin/Skyscraper.aarch64" 2>/dev/null || true
+    fi
 
     # Create full package
     echo "Creating full package..."

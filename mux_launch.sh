@@ -31,6 +31,10 @@ SET_LOVE_ENVIRONMENT() {
     export LD_LIBRARY_PATH="$APP_BINARY_DIRECTORY/libs.aarch64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     export QT_PLUGIN_PATH="$APP_BINARY_DIRECTORY/plugins"
 
+    # Ensure binary execution permissions
+    chmod +x "$LOVE_BINARY" 2>/dev/null || true
+    chmod +x "$APP_BINARY_DIRECTORY/Skyscraper.aarch64" 2>/dev/null || true
+
     mkdir -p "$HOME/.skyscraper/resources"
     cp -r "$APP_GAME_DIRECTORY/templates/resources/"* "$HOME/.skyscraper/resources/" 2>/dev/null || true
 }
