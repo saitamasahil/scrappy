@@ -109,6 +109,14 @@ function faq:load()
     "• Scrape Only Missing Artwork: Scrapes only games that do not have existing artwork yet, saving massive amounts of bandwidth and time.\n" ..
     "• Refined Search: Available under Single Scrape. If auto-matching fails, this lets you manually type the exact game title to get a correct match.")
 
+  -- ROM Status Indicators
+  content = content + add_section("section_indicators", "ROM Status Indicators",
+    "In the Single Scrape menu, each game displays a color indicator showing its current media coverage:\n\n" ..
+    "• Green: Complete. All required artwork defined by your active layout template (and video, if video scraping is enabled) exist on disk.\n" ..
+    "• Orange: Partial. Some media files exist (such as box art or preview image), but one or more enabled items are missing (such as no video being available on ScreenScraper).\n" ..
+    "• Red: None. No artwork or video files exist for this ROM.\n\n" ..
+    "When 'Video Previews' is disabled in Advanced Tools, videos are excluded from the check and games with full static artwork remain Green. Turning on 'Show Only Missing Artwork' displays both Orange (incomplete) and Red (unscraped) ROMs.")
+
   -- Web Tools
   content = content + add_section("section_web_tools", "Web Tools",
     "Enable these tools via Advanced Tools, then open the displayed IP address in a browser on any phone/PC connected to the same Wi-Fi network:\n" ..
@@ -170,7 +178,7 @@ function faq:load()
 
   -- Video Scraping
   content = content + add_section("section_video_scraping", "Video Previews",
-    "Video preview downloading can be toggled in Advanced Tools. When enabled, ScreenScraper will download short video clips alongside graphics.")
+    "Video preview downloading can be toggled in Advanced Tools. When enabled, ScreenScraper will download short video clips alongside graphics. In Single Scrape, games will require a video clip to display a Green status; if static artwork exists but no video is found, the game displays an Orange indicator.")
 
   -- Storage cache location
   content = content + add_section("section_cache_location", "SD Card Storage (Cache Location)",

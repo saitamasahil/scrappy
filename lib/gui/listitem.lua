@@ -25,6 +25,7 @@ return function(props)
     theme:read_color("listitem", "ITEM_INDICATOR_DEFAULT", "#dfe6e9"),
     theme:read_color("listitem", "ITEM_INDICATOR_SUCCESS", "#2ecc71"),
     theme:read_color("listitem", "ITEM_INDICATOR_ERROR", "#e74c3c"),
+    theme:read_color("listitem", "ITEM_INDICATOR_WARNING", "#f39c12"),
   }
 
   return component {
@@ -170,6 +171,7 @@ return function(props)
         theme:read_color("listitem", "ITEM_INDICATOR_DEFAULT", "#dfe6e9"),
         theme:read_color("listitem", "ITEM_INDICATOR_SUCCESS", "#2ecc71"),
         theme:read_color("listitem", "ITEM_INDICATOR_ERROR", "#e74c3c"),
+        theme:read_color("listitem", "ITEM_INDICATOR_WARNING", "#f39c12"),
       }
       local indicatorColor = indicators[props.indicator or 1]
 

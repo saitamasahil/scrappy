@@ -385,54 +385,76 @@ local function get_required_output_types()
     return output_types
 end
 
-local function has_missing_media(dest_platform, rom)
+local function get_rom_media_status(dest_platform, rom)
     if not dest_platform or not rom then
-        return false
+        return 3, true
     end
     local game_title = utils.get_filename(rom)
     if not game_title or game_title == "" then
-        return false
+        return 3, true
     end
     local _, catalogue_path = user_config:get_paths()
     if not catalogue_path or catalogue_path == "" then
-        return true
+        return 3, true
     end
     local platform_str = muos.platforms[dest_platform] or dest_platform
     local base = string.format("%s/%s", catalogue_path, platform_str)
     local required = get_required_output_types()
 
-    local function missing_for(output_type)
+    local total = 0
+    local present = 0
+
+    local function check_type(output_type)
+        total = total + 1
         local fp = string.format("%s/%s/%s.png", base, output_type, game_title)
-        return nativefs.getInfo(fp) == nil
+        if nativefs.getInfo(fp) ~= nil then
+            present = present + 1
+        end
     end
 
-    if required.box and missing_for("box") then
-        return true
+    if required.box then
+        check_type("box")
     end
-    if required.preview and missing_for("preview") then
-        return true
+    if required.preview then
+        check_type("preview")
     end
-    if required.splash and missing_for("splash") then
-        return true
+    if required.splash then
+        check_type("splash")
     end
 
     local videos_cfg = skyscraper_config:read("main", "videos") or "false"
     local videos_enabled = (utils.strip_quotes(videos_cfg) == "true")
     if videos_enabled then
+        total = total + 1
         local target_folder = artwork.get_video_target()
         local video_fp = string.format("%s/%s/%s.mp4", base, target_folder, game_title)
         local sanitized_title = game_title:gsub(":", "_")
-        local video_missing = nativefs.getInfo(video_fp) == nil
-        if video_missing and sanitized_title ~= game_title then
+        local video_found = (nativefs.getInfo(video_fp) ~= nil)
+        if not video_found and sanitized_title ~= game_title then
             local video_fp_sanitized = string.format("%s/%s/%s.mp4", base, target_folder, sanitized_title)
-            video_missing = nativefs.getInfo(video_fp_sanitized) == nil
+            video_found = (nativefs.getInfo(video_fp_sanitized) ~= nil)
         end
-        if video_missing then
-            return true
+        if video_found then
+            present = present + 1
         end
     end
 
-    return false
+    if total == 0 then
+        return 2, false
+    end
+
+    if present == total then
+        return 2, false
+    elseif present > 0 then
+        return 4, true
+    else
+        return 3, true
+    end
+end
+
+local function has_missing_media(dest_platform, rom)
+    local _, is_missing = get_rom_media_status(dest_platform, rom)
+    return is_missing
 end
 
 local function toggle_info()
@@ -675,13 +697,12 @@ local function load_rom_buttons(src_platform, dest_platform)
         end
 
         if file_info.type == "file" then
-            if show_missing_only and not has_missing_media(dest_platform, rom) then
+            local indicator_code, is_missing = get_rom_media_status(dest_platform, rom)
+            if show_missing_only and not is_missing then
                 goto continue
             end
-            -- Status indicator color
-            local has_artwork = not has_missing_media(dest_platform, rom)
             rom_list = rom_list + listitem {
-                id = rom, -- Add id for lookup after scraping
+                id = rom,
                 text = rom,
                 width = ((w_width - 30) / 3) * 2,
                 onClick = function()
@@ -692,7 +713,7 @@ local function load_rom_buttons(src_platform, dest_platform)
                 end,
                 disabled = true,
                 active = true,
-                indicator = has_artwork and 2 or 3
+                indicator = indicator_code
             }
         end
         ::continue::

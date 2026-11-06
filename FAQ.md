@@ -26,6 +26,14 @@ Scrappy leverages multi-threaded generation to build artwork faster. Setting thi
 - **Scrape Only Missing Artwork**: Scrapes only games that do not have existing artwork yet, saving massive amounts of bandwidth and time.
 - **Refined Search**: Available under Single Scrape. If auto-matching fails, this lets you manually type the exact game title to get a correct match.
 
+### ROM Status Indicators (Single Scrape)
+In the Single Scrape menu, each game displays a color indicator showing its current media coverage:
+- **Green**: Complete. All media required by your active layout template (and video, if video scraping is enabled) exist on disk.
+- **Orange**: Partial. Some media files exist (such as box art or preview image), but one or more enabled items are missing (such as no video being available on ScreenScraper).
+- **Red**: None. No artwork or video files exist for this ROM.
+
+When 'Video Previews' is disabled in Advanced Tools, videos are excluded from the check and games with full static artwork remain Green. Turning on 'Show Only Missing Artwork' displays both Orange (incomplete) and Red (unscraped) ROMs.
+
 ### Web Tools
 Enable these tools via Advanced Tools, then open the displayed IP address in a browser on any phone/PC connected to the same Wi-Fi network:
 - **Template Maker**: A visual, interactive playground to design, preview, and customize your XML artwork templates.
@@ -80,7 +88,7 @@ While scraping is running, Scrappy hosts a real-time web dashboard. Open the dis
 Under Settings, 'Filter Templates by Resolution' automatically hides XML artwork templates that do not match your device's screen aspect ratio (e.g., 640x480 vs 720x720). Disable this option if you want to preview or use templates designed for other resolutions.
 
 ### Video Previews
-Video preview downloading can be toggled in Advanced Tools. When enabled, ScreenScraper will download short video clips alongside graphics.
+Video preview downloading can be toggled in Advanced Tools. When enabled, ScreenScraper will download short video clips alongside graphics. In Single Scrape, games will require a video clip to display a Green status; if static artwork exists but no video is found, the game displays an Orange indicator.
 
 ### SD Card Storage (Cache Location)
 Scrappy supports storing your media cache on SD1 or SD2 (/mnt/sdcard/scrappy_cache). Moving cache storage to SD2 prevents filling up your primary OS storage when scraping large ROM collections.
