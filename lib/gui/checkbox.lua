@@ -18,6 +18,15 @@ return function(props)
   local width = math.max(props.width or 0, checkboxSize + padding.horizontal + labelWidth)
   local height = math.max(props.height or 0, checkboxSize + padding.vertical)
 
+  local bg_icon = icon {
+    name = "square",
+    size = checkboxSize
+  }
+  local fg_icon = icon {
+    name = "square_check",
+    size = checkboxSize
+  }
+
   return component {
     text = text,
     checked = props.checked or false,
@@ -59,16 +68,18 @@ return function(props)
       if self.onToggle then self:onToggle(self.checked) end
     end,
     onUpdate = function(self, dt)
-      self.anim_p = self.anim_p or (self.focused and 1 or 0)
       local target_p = self.focused and 1 or 0
+      local check_target = self.checked and 1 or 0
+      if not self.focused and (self.anim_p == target_p) and (self.check_p == check_target) and (not self.ripple_a or self.ripple_a <= 0) then
+        return
+      end
+
+      self.anim_p = self.anim_p or target_p
       self.anim_p = self.anim_p + (target_p - self.anim_p) * 15 * dt
 
-      self.check_p = self.check_p or (self.checked and 1 or 0)
-      local check_target = self.checked and 1 or 0
-      -- Animate checkbox toggle
+      self.check_p = self.check_p or check_target
       self.check_p = self.check_p + (check_target - self.check_p) * 18 * dt
 
-      -- Draw focus ripple
       if self.ripple_a and self.ripple_a > 0 then
           self.ripple_r = self.ripple_r + 250 * dt
           self.ripple_a = self.ripple_a - 1.5 * dt
@@ -115,13 +126,9 @@ return function(props)
 
       -- Inner box for the checkbox background
       love.graphics.setColor(checkBg)
-      local bgIcon = icon {
-        name = "square",
-        x = self.x + padding.horizontal / 2,
-        y = self.y + (self.height - checkboxSize) / 2,
-        size = checkboxSize
-      }
-      bgIcon:draw()
+      bg_icon.x = self.x + padding.horizontal / 2
+      bg_icon.y = self.y + (self.height - checkboxSize) / 2
+      bg_icon:draw()
 
       local check_p = self.check_p or (self.checked and 1 or 0)
 
@@ -159,13 +166,9 @@ return function(props)
         love.graphics.scale(c_scale, c_scale)
         love.graphics.translate(-icon_cx, -icon_cy)
         
-        local fgIcon = icon {
-          name = "square_check",
-          x = self.x + padding.horizontal / 2,
-          y = self.y + (self.height - checkboxSize) / 2,
-          size = checkboxSize
-        }
-        fgIcon:draw()
+        fg_icon.x = self.x + padding.horizontal / 2
+        fg_icon.y = self.y + (self.height - checkboxSize) / 2
+        fg_icon:draw()
         love.graphics.pop()
       end
 
@@ -183,13 +186,16 @@ return function(props)
       local currentX = self.x + checkboxSize + padding.horizontal
       if self.icon then
           local iconSize = (self.iconSize or 22) * (_G.scale or 1)
-          local itemIcon = icon {
-              name = self.icon,
-              x = currentX,
-              y = self.y + (self.height - iconSize) / 2,
-              size = iconSize
-          }
-          itemIcon:draw()
+          if not self._itemIcon or self._itemIconName ~= self.icon then
+              self._itemIcon = icon {
+                  name = self.icon,
+                  size = iconSize
+              }
+              self._itemIconName = self.icon
+          end
+          self._itemIcon.x = currentX
+          self._itemIcon.y = self.y + (self.height - iconSize) / 2
+          self._itemIcon:draw()
           currentX = currentX + iconSize + 6 * (_G.scale or 1) -- Add gap after icon
       end
       love.graphics.draw(t, currentX, self.y + (self.height - labelHeight) / 2)

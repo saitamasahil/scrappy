@@ -50,12 +50,6 @@ function badr.__add(self, component)
   component.x = self.x + component.x
   component.y = self.y + component.y
 
-  local childrenSize = { width = 0, height = 0 }
-  for _, child in ipairs(self.children) do
-    childrenSize.width = childrenSize.width + child.width
-    childrenSize.height = childrenSize.height + child.height
-  end
-
   local gap = self.gap or 0
   local lastChild = self.children[#self.children] or {}
 
@@ -138,6 +132,12 @@ function badr:recalculateSize()
         self.width = totalWidth
         self.height = maxHeight
     end
+
+    local root = self:getRoot()
+    if root then
+        root._focusableCache = nil
+        root._focusableIndexMap = nil
+    end
 end
 
 -- Remove child
@@ -147,6 +147,11 @@ function badr.__sub(self, component)
       if child.id == component.id then
         table.remove(self.children, index)
       end
+    end
+    local root = self:getRoot()
+    if root then
+      root._focusableCache = nil
+      root._focusableIndexMap = nil
     end
   end
   return self
@@ -191,10 +196,23 @@ function badr:isMouseInside()
 end
 
 function badr:draw()
-  if not self.visible then return end;
+  if not self.visible then return end
   if #self.children > 0 then
+    local _, sc_y, _, sc_h = love.graphics.getScissor()
     for _, child in ipairs(self.children) do
-      child:draw()
+      if child.visible ~= false then
+        if sc_h and child.height and child.height > 0 then
+          local _, screen_y1 = love.graphics.transformPoint(child.x, child.y)
+          local _, screen_y2 = love.graphics.transformPoint(child.x, child.y + child.height)
+          local top = math.min(screen_y1, screen_y2)
+          local bottom = math.max(screen_y1, screen_y2)
+          if bottom >= sc_y - 30 and top <= sc_y + sc_h + 30 then
+            child:draw()
+          end
+        else
+          child:draw()
+        end
+      end
     end
   end
 end
@@ -249,30 +267,40 @@ function badr:setFocus(element)
 end
 
 local function gatherFocusableComponents(root)
+  if root._focusableCache then
+    return root._focusableCache, root._focusableIndexMap
+  end
+
   local focusableComponents = {}
+  local indexMap = {}
 
   local function gather(component)
     if component.focusable and not component.disabled then
       table.insert(focusableComponents, component)
+      indexMap[component] = #focusableComponents
     end
     for _, child in ipairs(component.children or {}) do
-      gather(child) -- Recursively gather focusable components from all children
+      gather(child)
     end
   end
 
   gather(root)
-  return focusableComponents
+  root._focusableCache = focusableComponents
+  root._focusableIndexMap = indexMap
+  return focusableComponents, indexMap
 end
 
 function badr:getNextFocusable(direction)
-  local root = self:getRoot() -- Focus within the current root context
-  local focusableComponents = gatherFocusableComponents(root)
-  local currentIndex = nil
+  local root = self:getRoot()
+  local focusableComponents, indexMap = gatherFocusableComponents(root)
+  local currentIndex = indexMap and indexMap[root.focusedElement]
 
-  for i, component in ipairs(focusableComponents) do
-    if component == root.focusedElement then
-      currentIndex = i
-      break
+  if not currentIndex then
+    for i, component in ipairs(focusableComponents) do
+      if component == root.focusedElement then
+        currentIndex = i
+        break
+      end
     end
   end
 
@@ -289,14 +317,16 @@ function badr:getNextFocusable(direction)
 end
 
 function badr:getNthFocusable(direction, n)
-  local root = self:getRoot() -- Focus within the current root context
-  local focusableComponents = gatherFocusableComponents(root)
-  local currentIndex = nil
+  local root = self:getRoot()
+  local focusableComponents, indexMap = gatherFocusableComponents(root)
+  local currentIndex = indexMap and indexMap[root.focusedElement]
 
-  for i, component in ipairs(focusableComponents) do
-    if component == root.focusedElement then
-      currentIndex = i
-      break
+  if not currentIndex then
+    for i, component in ipairs(focusableComponents) do
+      if component == root.focusedElement then
+        currentIndex = i
+        break
+      end
     end
   end
 
@@ -306,9 +336,9 @@ function badr:getNthFocusable(direction, n)
   local total = #focusableComponents
 
   if direction == "previous" then
-    nextIndex = math.max(1, currentIndex - n) -- go to -n or the first element
+    nextIndex = math.max(1, currentIndex - n)
   elseif direction == "next" then
-    nextIndex = math.min(total, currentIndex + n) -- go to +n or the last element
+    nextIndex = math.min(total, currentIndex + n)
   end
 
   nextIndex = math.max(1, math.min(total, nextIndex))

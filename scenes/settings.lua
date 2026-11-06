@@ -140,20 +140,20 @@ local function update_checkboxes()
     end
   end
 
-  -- Clear children table so we can rebuild it with the correct platforms
   checkboxes.children = {}
 
   local platforms = user_config:get().platforms
   local selected_platforms = user_config:get().platformsSelected
+  local gap = checkboxes.gap or 0
+  local current_y = checkboxes.y
+  local max_w = checkboxes.width or (w_width - 20)
+
   for platform in utils.orderedPairs(platforms or {}) do
     local cb = existing[platform]
     if cb then
-      -- Reuse the existing checkbox component to preserve animation and focus states
       cb.checked = (selected_platforms[platform] == "1")
-      table.insert(checkboxes.children, cb)
     else
-      -- Create new checkbox component if it doesn't exist
-      checkboxes = checkboxes + checkbox {
+      cb = checkbox {
         text = platform,
         id = platform,
         onToggle = function() on_change_platform(platform) end,
@@ -161,9 +161,26 @@ local function update_checkboxes()
         width = w_width - 20,
       }
     end
+    cb.parent = checkboxes
+    cb.x = checkboxes.x
+    cb.y = current_y
+    current_y = current_y + cb.height + gap
+    max_w = math.max(max_w, cb.width)
+    table.insert(checkboxes.children, cb)
   end
-  -- Reposition recycled and new checkboxes
-  checkboxes:recalculateSize()
+
+  if #checkboxes.children > 0 then
+    checkboxes.height = current_y - checkboxes.y - gap
+  else
+    checkboxes.height = 0
+  end
+  checkboxes.width = max_w
+
+  local root = checkboxes:getRoot()
+  if root then
+    root._focusableCache = nil
+    root._focusableIndexMap = nil
+  end
 end
 
 local function dispatch_info(title, content_text)
@@ -548,6 +565,28 @@ function settings:keypressed(key)
     return
   end
 
+  if key == "pageup" or key == "[" then
+    local root = menu:getRoot()
+    if root and root.focusedElement then
+      local prev = root.focusedElement:getNthFocusable("previous", 10)
+      if prev and prev ~= root.focusedElement then
+        sound.play("nav_move")
+        root:setFocus(prev)
+      end
+    end
+    return
+  elseif key == "pagedown" or key == "]" then
+    local root = menu:getRoot()
+    if root and root.focusedElement then
+      local nxt = root.focusedElement:getNthFocusable("next", 10)
+      if nxt and nxt ~= root.focusedElement then
+        sound.play("nav_move")
+        root:setFocus(nxt)
+      end
+    end
+    return
+  end
+
   menu:keypressed(key)
   if key == "escape" or key == "lalt" then
     sound.play("nav_back")
@@ -574,6 +613,29 @@ function settings:gamepadpressed(joystick, button)
       info_window.visible = false
     end
     return true
+  end
+
+  local btn = type(button) == 'string' and button:lower() or button
+  if btn == "leftshoulder" or btn == "l1" or btn == "triggerleft" then
+    local root = menu:getRoot()
+    if root and root.focusedElement then
+      local prev = root.focusedElement:getNthFocusable("previous", 10)
+      if prev and prev ~= root.focusedElement then
+        sound.play("nav_move")
+        root:setFocus(prev)
+        return true
+      end
+    end
+  elseif btn == "rightshoulder" or btn == "r1" or btn == "triggerright" then
+    local root = menu:getRoot()
+    if root and root.focusedElement then
+      local nxt = root.focusedElement:getNthFocusable("next", 10)
+      if nxt and nxt ~= root.focusedElement then
+        sound.play("nav_move")
+        root:setFocus(nxt)
+        return true
+      end
+    end
   end
 
   if menu.gamepadpressed then return menu:gamepadpressed(joystick, button) end
