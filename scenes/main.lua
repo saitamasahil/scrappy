@@ -27,7 +27,7 @@ local icon_input = require "helpers.input"
 local footer_factory = require "lib.gui.footer"
 
 
-local menu, info_window, scraping_window, footer, start_generation_phase
+local menu, info_window, scraping_window, footer, start_generation_phase, selectionComponent
 
 local user_config, skyscraper_config = configs.user_config, configs.skyscraper_config
 local theme = configs.theme
@@ -453,18 +453,26 @@ local function update_output_types()
     local keys = {"box", "preview", "splash"}
     local outputs = artwork.get_output_types(sample_artwork)
     for _, key in ipairs(keys) do
-        if outputs and outputs[key] then
-            local output_item = menu ^ ("output_" .. key)
-            output_item.icon = "square_check"
-            output_item.focusable = true
-        else
-            local output_item = menu ^ ("output_" .. key)
-            output_item.icon = "square"
-            output_item.focusable = false
+        local output_item = menu ^ ("output_" .. key)
+        if output_item then
+            local is_available = (outputs and outputs[key]) and true or false
+            output_item.visible = is_available
+            output_item.focusable = is_available
+            output_item.icon = nil
         end
     end
     local _, resolved = resolve_preview_output(state.selected_output)
     state.selected_output = resolved
+    if selectionComponent then
+        selectionComponent:recalculateSize()
+    end
+    local root = menu and menu:getRoot()
+    if root and root.focusedElement and (not root.focusedElement.visible or not root.focusedElement.focusable) then
+        local box_item = menu ^ "output_box"
+        if box_item and box_item.visible and box_item.focusable then
+            root:setFocus(box_item)
+        end
+    end
 end
 
 -- Main function to scrape selected platforms
@@ -1497,7 +1505,7 @@ function main:load()
         end
     }
 
-    local selectionComponent = component {
+    selectionComponent = component {
         column = true,
         gap = 10 * _G.scale
     } + select {
@@ -1522,21 +1530,18 @@ function main:load()
     } + listitem {
         id = "output_box",
         text = "Boxart",
-        icon = "square",
         onFocus = function()
             on_output_focus("box")
         end
     } + listitem {
         id = "output_preview",
         text = "Preview",
-        icon = "square",
         onFocus = function()
             on_output_focus("preview")
         end
     } + listitem {
         id = "output_splash",
         text = "Splash",
-        icon = "square",
         onFocus = function()
             on_output_focus("splash")
         end

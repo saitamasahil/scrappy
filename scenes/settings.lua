@@ -175,12 +175,6 @@ local function update_checkboxes()
     checkboxes.height = 0
   end
   checkboxes.width = max_w
-
-  local root = checkboxes:getRoot()
-  if root then
-    root._focusableCache = nil
-    root._focusableIndexMap = nil
-  end
 end
 
 local function dispatch_info(title, content_text)

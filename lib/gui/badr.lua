@@ -81,31 +81,31 @@ function badr.__add(self, component)
 end
 
 function badr:recalculateSize()
-    local childrenSize = { width = 0, height = 0 }
     local gap = self.gap or 0
     
     if self.column then
         local totalHeight = 0
         local maxWidth = 0
-        for i, child in ipairs(self.children) do
-            -- Update child Y position based on previous siblings
-            if i > 1 then
-                local prev = self.children[i-1]
-                child.y = prev.y + prev.height + gap
-                -- Recursive update of child's children
-                if #child.children > 0 then
-                    child:updatePosition(0, 0) -- optimization: simplistic reflow
+        local prev = nil
+        local visibleCount = 0
+        for _, child in ipairs(self.children) do
+            if child.visible ~= false then
+                if prev then
+                    child.y = prev.y + prev.height + gap
+                else
+                    child.y = self.y
                 end
-            elseif i == 1 then
-                child.y = self.y -- Reset first child to top
+                if #child.children > 0 then
+                    child:updatePosition(0, 0)
+                end
+                totalHeight = totalHeight + child.height
+                maxWidth = math.max(maxWidth, child.width)
+                prev = child
+                visibleCount = visibleCount + 1
             end
-
-            totalHeight = totalHeight + child.height
-            maxWidth = math.max(maxWidth, child.width)
         end
-        -- Add gaps
-        if #self.children > 1 then
-            totalHeight = totalHeight + (gap * (#self.children - 1))
+        if visibleCount > 1 then
+            totalHeight = totalHeight + (gap * (visibleCount - 1))
         end
         self.height = totalHeight
         self.width = maxWidth
@@ -114,29 +114,26 @@ function badr:recalculateSize()
     if self.row then
         local totalWidth = 0
         local maxHeight = 0
-        for i, child in ipairs(self.children) do
-             -- Update child X position based on previous siblings
-             if i > 1 then
-                local prev = self.children[i-1]
-                child.x = prev.x + prev.width + gap
-            elseif i == 1 then
-                child.x = self.x
+        local prev = nil
+        local visibleCount = 0
+        for _, child in ipairs(self.children) do
+            if child.visible ~= false then
+                if prev then
+                    child.x = prev.x + prev.width + gap
+                else
+                    child.x = self.x
+                end
+                totalWidth = totalWidth + child.width
+                maxHeight = math.max(maxHeight, child.height)
+                prev = child
+                visibleCount = visibleCount + 1
             end
-
-            totalWidth = totalWidth + child.width
-            maxHeight = math.max(maxHeight, child.height)
         end
-        if #self.children > 1 then
-            totalWidth = totalWidth + (gap * (#self.children - 1))
+        if visibleCount > 1 then
+            totalWidth = totalWidth + (gap * (visibleCount - 1))
         end
         self.width = totalWidth
         self.height = maxHeight
-    end
-
-    local root = self:getRoot()
-    if root then
-        root._focusableCache = nil
-        root._focusableIndexMap = nil
     end
 end
 
@@ -147,11 +144,6 @@ function badr.__sub(self, component)
       if child.id == component.id then
         table.remove(self.children, index)
       end
-    end
-    local root = self:getRoot()
-    if root then
-      root._focusableCache = nil
-      root._focusableIndexMap = nil
     end
   end
   return self
@@ -267,17 +259,11 @@ function badr:setFocus(element)
 end
 
 local function gatherFocusableComponents(root)
-  if root._focusableCache then
-    return root._focusableCache, root._focusableIndexMap
-  end
-
   local focusableComponents = {}
-  local indexMap = {}
 
   local function gather(component)
-    if component.focusable and not component.disabled then
+    if component.focusable and not component.disabled and component.visible ~= false then
       table.insert(focusableComponents, component)
-      indexMap[component] = #focusableComponents
     end
     for _, child in ipairs(component.children or {}) do
       gather(child)
@@ -285,22 +271,18 @@ local function gatherFocusableComponents(root)
   end
 
   gather(root)
-  root._focusableCache = focusableComponents
-  root._focusableIndexMap = indexMap
-  return focusableComponents, indexMap
+  return focusableComponents
 end
 
 function badr:getNextFocusable(direction)
   local root = self:getRoot()
-  local focusableComponents, indexMap = gatherFocusableComponents(root)
-  local currentIndex = indexMap and indexMap[root.focusedElement]
+  local focusableComponents = gatherFocusableComponents(root)
+  local currentIndex = nil
 
-  if not currentIndex then
-    for i, component in ipairs(focusableComponents) do
-      if component == root.focusedElement then
-        currentIndex = i
-        break
-      end
+  for i, component in ipairs(focusableComponents) do
+    if component == root.focusedElement then
+      currentIndex = i
+      break
     end
   end
 
@@ -318,15 +300,13 @@ end
 
 function badr:getNthFocusable(direction, n)
   local root = self:getRoot()
-  local focusableComponents, indexMap = gatherFocusableComponents(root)
-  local currentIndex = indexMap and indexMap[root.focusedElement]
+  local focusableComponents = gatherFocusableComponents(root)
+  local currentIndex = nil
 
-  if not currentIndex then
-    for i, component in ipairs(focusableComponents) do
-      if component == root.focusedElement then
-        currentIndex = i
-        break
-      end
+  for i, component in ipairs(focusableComponents) do
+    if component == root.focusedElement then
+      currentIndex = i
+      break
     end
   end
 
