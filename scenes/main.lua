@@ -456,8 +456,9 @@ local function update_output_types()
         local output_item = menu ^ ("output_" .. key)
         if output_item then
             local is_available = (outputs and outputs[key]) and true or false
-            output_item.visible = is_available
+            output_item.visible = true
             output_item.focusable = is_available
+            output_item.disabled = not is_available
             output_item.icon = nil
         end
     end

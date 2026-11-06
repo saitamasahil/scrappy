@@ -166,6 +166,9 @@ return function(props)
       local backgroundColor = self.backgroundColor or theme:read_color("listitem", "ITEM_BACKGROUND", "#000000")
       local focusColor = self.focusColor or theme:read_color("listitem", "ITEM_FOCUS", "#2d3436")
       local textColor = self.textColor or theme:read_color("listitem", "ITEM_TEXT", "#dfe6e9")
+      if self.disabled then
+        textColor = { textColor[1], textColor[2], textColor[3], 0.35 }
+      end
       
       local indicators = {
         theme:read_color("listitem", "ITEM_INDICATOR_DEFAULT", "#dfe6e9"),
